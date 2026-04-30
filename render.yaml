@@ -7,6 +7,9 @@ services:
     startCommand: npm start
     plan: starter
     healthCheckPath: /health
+    filterPaths:
+      - server/**
+      - render.yaml
     envVars:
       - key: DATABASE_URL
         sync: false
@@ -109,6 +112,10 @@ services:
     rootDir: client
     buildCommand: npm install && npm run build
     staticPublishPath: dist
+    filterPaths:
+      - client/**
+      - shared/**
+      - render.yaml
     envVars:
       - key: VITE_API_URL
         value: https://vocesindigenas-backend.onrender.com
