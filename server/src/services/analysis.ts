@@ -9,6 +9,7 @@ import { splitIntoGroups } from '../lib/utils.js'
 import { createLogger } from '../lib/logger.js'
 import { taskRegistry } from '../lib/taskRegistry.js'
 import { getSmallLLM, getMediumLLM, getLLMByTier, rateLimitDelay } from './llm.js'
+import { withRetry } from '../lib/retry.js'
 import { buildPreassessPrompt, buildReclassifyPrompt, buildEmotionTagPrompt, buildAssessPrompt, buildSelectPrompt } from '../prompts/index.js'
 import type { StoryForPreassess, IssueForPreassess } from '../prompts/index.js'
 import { preAssessResultSchema, reclassifyResultSchema, assessResultSchema, selectResultSchema } from '../schemas/llm.js'
@@ -95,7 +96,7 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
         )
 
         await rateLimitDelay()
-        const response = await structuredLlm.invoke([new HumanMessage(prompt)])
+        const response = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
         batchesDone++
         log.info({ progress: `${batchesDone}/${totalBatches}`, resultCount: response.articles.length, batch: batchLabel }, 'batch complete')
 
@@ -270,7 +271,7 @@ export async function assessStory(storyId: string): Promise<void> {
   await rateLimitDelay()
   const llm = getLLMByTier(config.assess.modelTier)
   const structuredLlm = llm.withStructuredOutput(assessResultSchema)
-  const parsed = await structuredLlm.invoke([new HumanMessage(prompt)])
+  const parsed = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
 
   log.info({ storyId, rating: parsed.conservativeRating, title: parsed.relevanceTitle?.slice(0, 60) }, 'assessment complete')
 
@@ -406,7 +407,7 @@ export async function selectStories(storyIds: string[]): Promise<{ selected: str
   await rateLimitDelay()
   const llm = getLLMByTier(config.selection.modelTier)
   const structuredLlm = llm.withStructuredOutput(selectResultSchema)
-  const response = await structuredLlm.invoke([new HumanMessage(prompt)])
+  const response = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
 
   log.info({ selectedCount: response.selectedIds.length }, 'LLM selection response received')
 

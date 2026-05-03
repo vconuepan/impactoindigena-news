@@ -14,11 +14,20 @@ export function isRetryableError(err: unknown): boolean {
     if (msg.includes('timeout') || msg.includes('econnreset') || msg.includes('econnrefused') || msg.includes('socket hang up')) {
       return true
     }
+    // OpenRouter / OpenAI SDK rate limit messages
+    if (msg.includes('rate limit') || msg.includes('too many requests')) {
+      return true
+    }
+  }
+  // OpenAI SDK errors (.status directly on the error object)
+  const directStatus = (err as any)?.status
+  if (typeof directStatus === 'number') {
+    return directStatus === 429 || (directStatus >= 500 && directStatus < 600)
   }
   // Axios-style errors with response status
-  const status = (err as any)?.response?.status
-  if (typeof status === 'number') {
-    return status === 429 || (status >= 500 && status < 600)
+  const responseStatus = (err as any)?.response?.status
+  if (typeof responseStatus === 'number') {
+    return responseStatus === 429 || (responseStatus >= 500 && responseStatus < 600)
   }
   // Network errors (no response)
   if ((err as any)?.code === 'ECONNABORTED' || (err as any)?.code === 'ETIMEDOUT') {
