@@ -110,3 +110,12 @@ export async function cleanupExpiredTokens(): Promise<number> {
   })
   return result.count
 }
+
+/** Remove magic links that expired more than 24 hours ago (already used or timed out). */
+export async function cleanupExpiredMagicLinks(): Promise<number> {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const result = await prisma.magicLink.deleteMany({
+    where: { expiresAt: { lt: cutoff } },
+  })
+  return result.count
+}

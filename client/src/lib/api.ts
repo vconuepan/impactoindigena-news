@@ -73,31 +73,53 @@ export interface HomepageData {
 }
 
 // --- Member auth helpers ---
+// Auth is cookie-based: the httpOnly `member_token` cookie carries the JWT (set by the
+// magic-link verify endpoint). The non-httpOnly `member_email` cookie is an indicator
+// that JS can read to know whether a session exists — it contains no sensitive data.
 
-const MEMBER_TOKEN_KEY = 'member_token'
+function getCookieValue(name: string): string | null {
+  if (typeof document === 'undefined') return null
+  const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'))
+  return match ? decodeURIComponent(match[1]) : null
+}
 
 export const memberAuth = {
-  getToken(): string | null {
-    return localStorage.getItem(MEMBER_TOKEN_KEY)
-  },
-  setToken(token: string): void {
-    localStorage.setItem(MEMBER_TOKEN_KEY, token)
-  },
-  clearToken(): void {
-    localStorage.removeItem(MEMBER_TOKEN_KEY)
+  /** Email of the authenticated member, or null if not authenticated */
+  getEmail(): string | null {
+    try {
+      return getCookieValue('member_email')
+    } catch {
+      return null
+    }
   },
   isAuthenticated(): boolean {
-    return !!localStorage.getItem(MEMBER_TOKEN_KEY)
+    try {
+      return !!getCookieValue('member_email')
+    } catch {
+      return false
+    }
   },
+  /** Clear the indicator cookie client-side and call the logout endpoint to clear httpOnly cookie */
+  async logout(): Promise<void> {
+    try {
+      document.cookie = 'member_email=; Max-Age=0; path=/; SameSite=None; Secure'
+      await fetch(`${API_BASE}/auth/magic/logout`, { method: 'POST', credentials: 'include' })
+    } catch {
+      // best-effort
+    }
+  },
+  // Kept for backward-compat — no-ops since auth is now cookie-based
+  setToken(_token: string): void {},
+  clearToken(): void { void memberAuth.logout() },
+  getToken(): string | null { return null },
 }
 
 function memberRequest<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = memberAuth.getToken()
   return request<T>(path, {
     ...options,
+    credentials: 'include', // send member_token httpOnly cookie automatically
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options?.headers ?? {}),
     },
   })

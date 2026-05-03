@@ -1,7 +1,7 @@
 import prisma from './lib/prisma.js'
 import { createLogger } from './lib/logger.js'
 import { initScheduler, stopScheduler } from './jobs/scheduler.js'
-import { cleanupExpiredTokens } from './services/auth.js'
+import { cleanupExpiredTokens, cleanupExpiredMagicLinks } from './services/auth.js'
 import { taskRegistry } from './lib/taskRegistry.js'
 import app from './app.js'
 
@@ -43,6 +43,12 @@ const tokenCleanupTimer = setInterval(async () => {
     if (count > 0) log.info({ count }, 'cleaned up expired refresh tokens')
   } catch (err) {
     log.error({ err }, 'failed to clean up expired tokens')
+  }
+  try {
+    const count = await cleanupExpiredMagicLinks()
+    if (count > 0) log.info({ count }, 'cleaned up expired magic links')
+  } catch (err) {
+    log.error({ err }, 'failed to clean up expired magic links')
   }
 }, CLEANUP_INTERVAL_MS)
 

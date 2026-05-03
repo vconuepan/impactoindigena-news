@@ -105,11 +105,16 @@ export function requireApiKey(req: Request, res: Response, next: NextFunction): 
 
 /**
  * Member authentication middleware.
- * Reads a JWT from the Authorization: Bearer header.
+ * Accepts either an httpOnly cookie `member_token` (preferred, set by magic link verify)
+ * or a legacy Authorization: Bearer header. Cookie takes precedence.
  * Used for community join/leave/membership endpoints accessible to VEEDOR users.
  */
 export function requireMember(req: Request, res: Response, next: NextFunction): void {
-  const token = extractBearerToken(req)
+  // Cookie-based auth (preferred — token never exposed in URL or localStorage)
+  const cookieToken: string | undefined = (req.cookies as Record<string, string>)?.member_token
+  // Fallback: Authorization header (legacy / non-browser clients)
+  const bearerToken = extractBearerToken(req)
+  const token = cookieToken ?? bearerToken
 
   if (!token) {
     res.status(401).json({ error: 'Authentication required' })

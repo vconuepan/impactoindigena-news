@@ -49,6 +49,7 @@ type JoinState = 'anon' | 'email-sent' | 'member'
 function JoinBlock({ slug, communityName }: { slug: string; communityName: string }) {
   const navigate = useNavigate()
   const [joinState, setJoinState] = useState<JoinState>(
+    // isAuthenticated() reads a non-httpOnly cookie — safe in private mode (returns false on error)
     memberAuth.isAuthenticated() ? 'member' : 'anon'
   )
   const [email, setEmail] = useState('')
@@ -143,7 +144,7 @@ function StoryGrid({ stories }: { stories: PublicStory[] }) {
         <div className="md:col-span-2">
           <StoryCard story={first} variant="featured" />
         </div>
-        {rest.slice(0, 1).length > 0 && (
+        {rest.length > 0 && (
           <div className="space-y-3">
             {rest.slice(0, 4).map((s) => (
               <StoryCard key={s.id} story={s} variant="compact" />
@@ -167,14 +168,9 @@ export default function CommunityPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = parseInt(searchParams.get('page') ?? '1', 10) || 1
 
-  // Capture member_token from URL (set by magic link verify redirect) and store in localStorage
-  useEffect(() => {
-    const token = searchParams.get('member_token')
-    if (token) {
-      memberAuth.setToken(token)
-      setSearchParams((prev) => { prev.delete('member_token'); return prev }, { replace: true })
-    }
-  }, [])
+  // Auth is now cookie-based — no token in URL to capture.
+  // (Previously stored member_token in localStorage; now the httpOnly cookie is set
+  //  server-side by GET /api/auth/magic/verify before redirecting here.)
 
   const { data: community, isLoading: communityLoading, isError: communityError } = useCommunity(slug ?? '')
   const { data: storiesData, isLoading: storiesLoading } = useCommunityStories(slug ?? '', { page, pageSize: PAGE_SIZE })

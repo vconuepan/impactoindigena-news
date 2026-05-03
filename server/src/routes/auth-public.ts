@@ -13,6 +13,24 @@ const CLIENT_URL = process.env.CLIENT_URL || 'https://impactoindigena.news'
 const API_URL = process.env.API_URL || 'https://vocesindigenas-backend.onrender.com'
 const MAGIC_LINK_EXPIRY_MINUTES = 10
 
+/** Cookie options for the httpOnly JWT (not readable by JS) */
+const MEMBER_TOKEN_COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV !== 'development',
+  sameSite: 'none' as const,
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  path: '/',
+}
+
+/** Cookie options for the readable indicator (email only — not sensitive) */
+const MEMBER_EMAIL_COOKIE_OPTS = {
+  httpOnly: false,
+  secure: process.env.NODE_ENV !== 'development',
+  sameSite: 'none' as const,
+  maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  path: '/',
+}
+
 function magicLinkExpiresAt(): Date {
   return new Date(Date.now() + MAGIC_LINK_EXPIRY_MINUTES * 60 * 1000)
 }
@@ -123,9 +141,8 @@ router.post('/magic', magicLinkLimiter, async (req, res) => {
 router.get('/magic/verify', async (req, res) => {
   const { token, redirect_to } = req.query as { token?: string; redirect_to?: string }
 
-  const errorUrl = `${CLIENT_URL}/magic-sent?error=expired`
-
   if (!token) {
+    const errorUrl = buildErrorUrl(redirect_to)
     res.redirect(303, errorUrl)
     return
   }
@@ -135,6 +152,7 @@ router.get('/magic/verify', async (req, res) => {
 
     if (!link || link.usedAt || link.expiresAt < new Date()) {
       log.warn({ token }, 'magic link invalid or expired')
+      const errorUrl = buildErrorUrl(redirect_to ?? link?.redirectTo ?? undefined)
       res.redirect(303, errorUrl)
       return
     }
@@ -156,20 +174,20 @@ router.get('/magic/verify', async (req, res) => {
       },
     })
 
-    // Issue long-lived member token
+    // Issue long-lived member token as httpOnly cookie (never exposed in URL)
     const memberToken = generateMemberToken(user)
+    res.cookie('member_token', memberToken, MEMBER_TOKEN_COOKIE_OPTS)
+    // Non-httpOnly indicator so the frontend can detect auth state without an API call
+    res.cookie('member_email', user.email, MEMBER_EMAIL_COOKIE_OPTS)
 
-    // Redirect to frontend with token as query param.
-    // The frontend reads it, stores in localStorage, and strips from URL.
     const targetPath = redirect_to ?? link.redirectTo ?? '/'
-    const redirectUrl = new URL(`${CLIENT_URL}${targetPath.startsWith('/') ? targetPath : '/' + targetPath}`)
-    redirectUrl.searchParams.set('member_token', memberToken)
+    const redirectUrl = `${CLIENT_URL}${targetPath.startsWith('/') ? targetPath : '/' + targetPath}`
 
-    log.info({ userId: user.id, email: user.email }, 'magic link verified, user authenticated')
-    res.redirect(303, redirectUrl.toString())
+    log.info({ userId: user.id, email: user.email }, 'magic link verified, member cookie set')
+    res.redirect(303, redirectUrl)
   } catch (err) {
     log.error({ err, token }, 'magic link verification failed')
-    res.redirect(303, errorUrl)
+    res.redirect(303, buildErrorUrl())
   }
 })
 
@@ -185,6 +203,17 @@ router.post('/magic/resend', magicLinkLimiter, async (req, res) => {
   const normalizedEmail = email.toLowerCase().trim()
 
   try {
+    // Graceful email verification (same as /magic)
+    try {
+      const result = await brevo.verifyEmail(normalizedEmail)
+      if (!result.valid || !result.domainExists || result.isDisposable) {
+        res.status(422).json({ error: 'Please enter a valid email address.' })
+        return
+      }
+    } catch (err) {
+      log.warn({ err, email: normalizedEmail }, 'email verification failed on resend, proceeding')
+    }
+
     const token = randomUUID()
     await prisma.magicLink.create({
       data: {
@@ -204,5 +233,20 @@ router.post('/magic/resend', magicLinkLimiter, async (req, res) => {
     res.status(500).json({ error: 'Failed to resend magic link' })
   }
 })
+
+// POST /api/auth/magic/logout — clear member cookies
+router.post('/magic/logout', (req, res) => {
+  res.clearCookie('member_token', { ...MEMBER_TOKEN_COOKIE_OPTS, maxAge: 0 })
+  res.clearCookie('member_email', { ...MEMBER_EMAIL_COOKIE_OPTS, maxAge: 0 })
+  res.status(204).end()
+})
+
+/** Build the error redirect URL, preserving redirect_to so the user can retry */
+function buildErrorUrl(redirectTo?: string): string {
+  const url = new URL(`${CLIENT_URL}/magic-sent`)
+  url.searchParams.set('error', 'expired')
+  if (redirectTo) url.searchParams.set('redirect_to', redirectTo)
+  return url.toString()
+}
 
 export default router
