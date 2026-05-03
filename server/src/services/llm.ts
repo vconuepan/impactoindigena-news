@@ -35,9 +35,9 @@ function createLLM(tier: 'small' | 'medium' | 'large'): ChatOpenAI {
     return new ChatOpenAI({
       model: modelConfig.name,
       maxRetries: 3,
-      openAIApiKey: config.llm.openrouterApiKey,
       configuration: {
         baseURL: 'https://openrouter.ai/api/v1',
+        apiKey: config.llm.openrouterApiKey,
         defaultHeaders: {
           'HTTP-Referer': 'https://impactoindigena.news',
           'X-Title': 'Impacto Indígena',
