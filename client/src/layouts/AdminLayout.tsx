@@ -36,6 +36,7 @@ const navigation = [
   { name: 'Clusters', href: '/admin/clusters', icon: Square3Stack3DIcon },
   { name: 'Feeds', href: '/admin/feeds', icon: RssIcon },
   { name: 'Issues', href: '/admin/issues', icon: TagIcon },
+  { name: 'Voces Indígenas', href: '/admin/editorials', icon: DocumentTextIcon },
   { name: 'Newsletters', href: '/admin/newsletters', icon: EnvelopeIcon },
   { name: 'Podcasts', href: '/admin/podcasts', icon: MicrophoneIcon },
   { name: 'Instagram', href: '/admin/instagram', icon: GlobeAltIcon },
