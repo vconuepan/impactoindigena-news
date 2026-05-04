@@ -75,18 +75,26 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
 
     const feed = await parser.parseString(response.data)
     const items: RSSItem[] = []
+    const isGoogleNews = feedUrl.includes('news.google.com')
 
     for (const item of feed.items.slice(0, config.crawl.rssItemLimit)) {
-      const url = item.link
+      // Google News RSS links point to a news.google.com tracking URL that returns
+      // a JS SPA — unusable for extraction. The real article URL is in the
+      // <description> field as the href of the first <a> tag.
+      let url = item.link
+      if (isGoogleNews && item.description) {
+        const match = item.description.match(/href="(https?:\/\/(?!news\.google\.com)[^"]+)"/)
+        if (match) url = match[1]
+      }
       if (!url) continue
 
       items.push({
-  url: normalizeUrl(url),
-  title: item.title || 'Untitled',
-  datePublished: item.isoDate || item.pubDate || null,
-  description: item.contentSnippet || item.content || null,
-  imageUrl: item.enclosure?.url || item['media:content']?.['$']?.url || item['media:thumbnail']?.['$']?.url || null,
-})
+        url: normalizeUrl(url),
+        title: item.title?.replace(/\s*-\s*[^-]+$/, '').trim() || 'Untitled', // strip " - Source Name" suffix Google News adds
+        datePublished: item.isoDate || item.pubDate || null,
+        description: item.contentSnippet || item.content || null,
+        imageUrl: item.enclosure?.url || item['media:content']?.['$']?.url || item['media:thumbnail']?.['$']?.url || null,
+      })
     }
 
     return {
