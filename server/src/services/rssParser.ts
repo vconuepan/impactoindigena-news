@@ -6,7 +6,10 @@ import { withRetry } from '../lib/retry.js'
 import { normalizeUrl } from '../utils/urlNormalization.js'
 import { summarizeError } from '../utils/errors.js'
 import { crawlLimiter } from '../lib/crawlLimiter.js'
-import { SCRAPED_FEED_URLS, scrapeDISD } from './disdScraper.js'
+import { SCRAPED_FEED_URLS as DISD_SCRAPED_URLS, scrapeDISD } from './disdScraper.js'
+import { AUSTRAL_FEED_URL, scrapeAustral } from './australScraper.js'
+
+const SCRAPED_FEED_URLS = new Set([...DISD_SCRAPED_URLS, AUSTRAL_FEED_URL])
 
 const log = createLogger('rssParser')
 
@@ -33,9 +36,8 @@ export interface ParseFeedResult {
 
 export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders): Promise<ParseFeedResult> {
   // Route HTML-scraped feeds to their dedicated scrapers instead of the RSS parser
-  if (SCRAPED_FEED_URLS.has(feedUrl)) {
-    return scrapeDISD(feedUrl)
-  }
+  if (feedUrl === AUSTRAL_FEED_URL) return scrapeAustral(feedUrl)
+  if (SCRAPED_FEED_URLS.has(feedUrl)) return scrapeDISD(feedUrl)
 
   try {
     const headers: Record<string, string> = {
