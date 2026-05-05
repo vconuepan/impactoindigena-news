@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { adminApi, type AdminCommunity } from '../../lib/admin-api'
@@ -54,6 +55,86 @@ function ActiveToggle({ community }: { community: AdminCommunity }) {
   )
 }
 
+function CoordinatesEditor({ community }: { community: AdminCommunity }) {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+  const [editing, setEditing] = useState(false)
+  const [lat, setLat] = useState(community.lat != null ? String(community.lat) : '')
+  const [lng, setLng] = useState(community.lng != null ? String(community.lng) : '')
+
+  const mutation = useMutation({
+    mutationFn: () => {
+      const parsedLat = lat.trim() !== '' ? parseFloat(lat) : null
+      const parsedLng = lng.trim() !== '' ? parseFloat(lng) : null
+      return adminApi.communities.updateCoordinates(community.id, parsedLat, parsedLng)
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData<AdminCommunity[]>(['admin', 'communities'], (prev) =>
+        prev?.map((c) => (c.id === updated.id ? updated : c))
+      )
+      toast('success', `Coordenadas de ${updated.name} guardadas`)
+      setEditing(false)
+    },
+    onError: () => toast('error', 'Error al guardar coordenadas'),
+  })
+
+  const hasCoords = community.lat != null && community.lng != null
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => {
+          setLat(community.lat != null ? String(community.lat) : '')
+          setLng(community.lng != null ? String(community.lng) : '')
+          setEditing(true)
+        }}
+        className="text-xs text-neutral-400 hover:text-brand-700 transition-colors"
+        title="Editar coordenadas"
+      >
+        {hasCoords
+          ? `${community.lat?.toFixed(4)}, ${community.lng?.toFixed(4)}`
+          : <span className="italic text-neutral-300">Sin coordenadas</span>}
+      </button>
+    )
+  }
+
+  return (
+    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <input
+        type="number"
+        step="0.0001"
+        placeholder="Lat"
+        value={lat}
+        onChange={(e) => setLat(e.target.value)}
+        className="w-24 px-1.5 py-0.5 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-400"
+        aria-label="Latitud"
+      />
+      <input
+        type="number"
+        step="0.0001"
+        placeholder="Lng"
+        value={lng}
+        onChange={(e) => setLng(e.target.value)}
+        className="w-24 px-1.5 py-0.5 text-xs border border-neutral-300 rounded focus:outline-none focus:ring-1 focus:ring-brand-400"
+        aria-label="Longitud"
+      />
+      <button
+        onClick={() => mutation.mutate()}
+        disabled={mutation.isPending}
+        className="px-2 py-0.5 text-xs font-medium bg-brand-600 text-white rounded hover:bg-brand-700 disabled:opacity-50 transition-colors"
+      >
+        {mutation.isPending ? '…' : 'OK'}
+      </button>
+      <button
+        onClick={() => setEditing(false)}
+        className="px-2 py-0.5 text-xs text-neutral-500 hover:text-neutral-700 transition-colors"
+      >
+        ✕
+      </button>
+    </div>
+  )
+}
+
 export default function CommunitiesAdminPage() {
   const { data, isLoading, isError } = useQuery({
     queryKey: ['admin', 'communities'],
@@ -68,7 +149,7 @@ export default function CommunitiesAdminPage() {
 
       <PageHeader
         title="Comunidades"
-        description="Activa o desactiva comunidades para controlar su visibilidad pública"
+        description="Activa o desactiva comunidades, y añade coordenadas para mostrarlas en el mapa"
       />
 
       {isLoading ? (
@@ -82,6 +163,7 @@ export default function CommunitiesAdminPage() {
               <tr className="border-b border-neutral-200 bg-neutral-50">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wide">Comunidad</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wide">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wide">Coordenadas</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-600 uppercase tracking-wide">Miembros</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 uppercase tracking-wide">Activa</th>
               </tr>
@@ -102,6 +184,9 @@ export default function CommunitiesAdminPage() {
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${TYPE_BADGE[community.type] ?? 'bg-neutral-100 text-neutral-600'}`}>
                       {TYPE_LABEL[community.type] ?? community.type}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <CoordinatesEditor community={community} />
                   </td>
                   <td className="px-4 py-3 text-right text-neutral-600">
                     {community._count.members}

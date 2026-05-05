@@ -473,6 +473,8 @@ model Community {
   issueIds    String[]          @map("issue_ids")
   keywords    String[]          @default([]) @map("keywords")
   active      Boolean           @default(true)
+  lat         Float?
+  lng         Float?
   createdAt   DateTime          @default(now()) @map("created_at")
   updatedAt   DateTime          @updatedAt @map("updated_at")
   members          CommunityMember[]

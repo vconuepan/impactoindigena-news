@@ -1,8 +1,10 @@
 // Heavy map component — only imported via lazy() in MapPage
 // Keep all leaflet imports here so they're excluded from the main bundle
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Polygon, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import { API_BASE } from '../lib/api'
+import type { Community } from '@shared/types'
 
 // ---------------------------------------------------------------------------
 // Data
@@ -156,8 +158,26 @@ const NORTE_GRANDE_POLYGON: [number, number][] = [
 // Component
 // ---------------------------------------------------------------------------
 
+// Color by community type (distinct from the educational markers)
+const COMMUNITY_TYPE_COLOR: Record<string, string> = {
+  PUEBLO: '#4f46e5',     // indigo — pueblos
+  TERRITORIO: '#0891b2', // cyan — territorios
+  CAUSA: '#7c3aed',      // violet — causas
+}
+
 export default function MapWidget() {
   const [selected, setSelected] = useState<string | null>(null)
+  const [communities, setCommunities] = useState<Community[]>([])
+
+  // Fetch DB-driven communities with coordinates
+  useEffect(() => {
+    fetch(`${API_BASE}/communities`)
+      .then((r) => r.json())
+      .then((data: Community[]) => {
+        setCommunities(data.filter((c) => c.lat != null && c.lng != null))
+      })
+      .catch(() => { /* non-fatal — map works without live pins */ })
+  }, [])
 
   // Chile mainland center (excluding Easter Island)
   const CENTER: [number, number] = [-36.0, -71.5]
@@ -259,6 +279,50 @@ export default function MapWidget() {
           </Popup>
         </CircleMarker>
       ))}
+
+      {/* Live community pins — DB-driven, shown when lat/lng is set */}
+      {communities.map((c) => {
+        const color = COMMUNITY_TYPE_COLOR[c.type] ?? '#6b7280'
+        const markerId = `community-${c.slug}`
+        return (
+          <CircleMarker
+            key={c.slug}
+            center={[c.lat!, c.lng!]}
+            radius={selected === markerId ? 11 : 7}
+            pathOptions={{
+              color,
+              fillColor: color,
+              fillOpacity: 0.9,
+              weight: 2.5,
+            }}
+            eventHandlers={{
+              click: () => setSelected(markerId),
+              popupopen: () => setSelected(markerId),
+              popupclose: () => setSelected(null),
+            }}
+          >
+            <Popup>
+              <div style={{ minWidth: 200, maxWidth: 260 }}>
+                <div style={{ marginBottom: 4 }}>
+                  <strong style={{ fontSize: 14, color: '#111' }}>{c.name}</strong>
+                </div>
+                {c.region && (
+                  <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 6 }}>{c.region}</div>
+                )}
+                <p style={{ fontSize: 12, color: '#374151', lineHeight: 1.5, marginBottom: 8 }}>
+                  {c.description.slice(0, 120)}{c.description.length > 120 ? '…' : ''}
+                </p>
+                <a
+                  href={`/comunidad/${c.slug}`}
+                  style={{ fontSize: 12, fontWeight: 600, color, textDecoration: 'none' }}
+                >
+                  Ver noticias →
+                </a>
+              </div>
+            </Popup>
+          </CircleMarker>
+        )
+      })}
     </MapContainer>
   )
 }

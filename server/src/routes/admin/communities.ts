@@ -32,19 +32,22 @@ router.get('/', async (_req, res) => {
 router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { active } = req.body as { active?: boolean }
+    const { active, lat, lng } = req.body as { active?: boolean; lat?: number | null; lng?: number | null }
 
-    if (typeof active !== 'boolean') {
-      res.status(400).json({ error: 'active must be a boolean' })
+    const data: Record<string, unknown> = {}
+
+    if (typeof active === 'boolean') data.active = active
+    if ('lat' in req.body) data.lat = lat ?? null
+    if ('lng' in req.body) data.lng = lng ?? null
+
+    if (Object.keys(data).length === 0) {
+      res.status(400).json({ error: 'No valid fields to update' })
       return
     }
 
-    const community = await prisma.community.update({
-      where: { id },
-      data: { active },
-    })
+    const community = await prisma.community.update({ where: { id }, data })
 
-    log.info({ id, active }, 'community active status updated')
+    log.info({ id, ...data }, 'community updated')
     res.json(community)
   } catch (err) {
     log.error({ err }, 'failed to update community')

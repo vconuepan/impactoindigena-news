@@ -38,6 +38,8 @@ export interface AdminCommunity {
   type: 'PUEBLO' | 'TERRITORIO' | 'CAUSA'
   region: string | null
   active: boolean
+  lat: number | null
+  lng: number | null
   createdAt: string
   _count: { members: number }
 }
@@ -558,6 +560,11 @@ export const adminApi = {
       request<AdminCommunity>(`/communities/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ active }),
+      }),
+    updateCoordinates: (id: string, lat: number | null, lng: number | null) =>
+      request<AdminCommunity>(`/communities/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ lat, lng }),
       }),
   },
 

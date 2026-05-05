@@ -70,6 +70,17 @@ export default function CommunityDirectoryPage() {
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />Territorios</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-emerald-600 inline-block" />Causas</span>
           </div>
+          <div className="flex justify-center mt-5">
+            <Link
+              to="/mapa"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-800 hover:text-brand-700 border border-brand-200 bg-brand-50 hover:bg-brand-100 px-4 py-2 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-brand-500"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+                <path fillRule="evenodd" d="M8.157 2.175a1.5 1.5 0 0 0-1.147 0l-4.084 1.69A1.5 1.5 0 0 0 2 5.27v10.57a1.5 1.5 0 0 0 2.074 1.386l3.51-1.452 4.26 1.763a1.5 1.5 0 0 0 1.148 0l4.083-1.69A1.5 1.5 0 0 0 18 14.73V4.16a1.5 1.5 0 0 0-2.073-1.386l-3.51 1.452-4.26-1.763ZM7.5 4.695v9.886L6 14.026V4.14l1.5.555Zm2.5 10.609V5.304L12 5.86v9.885L10 15.304Zm4.5-10.57v9.886l-1.5-.555V4.14l1.5.555Z" clipRule="evenodd" />
+              </svg>
+              Ver en mapa
+            </Link>
+          </div>
         </header>
 
         {isLoading && (

@@ -509,6 +509,8 @@ export interface Community {
   imageUrl: string | null
   issueIds: string[]
   keywords: string[]
+  lat: number | null
+  lng: number | null
   memberCount?: number
   createdAt: string
   updatedAt: string
