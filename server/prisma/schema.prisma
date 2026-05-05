@@ -141,6 +141,7 @@ model Feed {
   lastModified            String?   @map("last_modified")
   lastCrawlResult         String?   @map("last_crawl_result")
   htmlSelector            String?   @map("html_selector")
+  feedCategory            String    @default("INDIGENOUS") @map("feed_category")
   stories            Story[]
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")

@@ -77,6 +77,19 @@ export interface CoverageStats {
   totalFeeds: number
 }
 
+export interface CategoryStat {
+  feedCount: number
+  storyCount: number
+  avgRelevance: number | null
+}
+
+export interface ComparisonStats {
+  periodDays: number
+  since: string
+  indigenous: CategoryStat
+  mainstream: CategoryStat
+}
+
 export interface HomepageData {
   issues: PublicIssue[]
   storiesByIssue: Record<string, { uplifting: PublicStory[]; calm: PublicStory[]; negative: PublicStory[] }>
@@ -215,6 +228,8 @@ export const publicApi = {
 
   coverage: () =>
     request<CoverageStats>('/coverage'),
+  coverageComparison: () =>
+    request<ComparisonStats>('/coverage/comparison'),
 
   subscribe: (data: { email: string; firstName?: string; language?: string }) =>
     request<{ success: boolean; message: string }>('/subscribe', {

@@ -7,7 +7,7 @@ import { buildBreadcrumbSchema } from '../lib/structured-data'
 import StructuredData from '../components/StructuredData'
 import LandingCta from '../components/LandingCta'
 import { publicApi } from '../lib/api'
-import type { RegionStat } from '../lib/api'
+import type { RegionStat, ComparisonStats } from '../lib/api'
 
 const META = {
   title: 'Comparar fuentes de noticias \u2014 Impacto Ind\u00edgena',
@@ -360,6 +360,8 @@ export default function ComparePage() {
           ))}
         </div>
 
+        <ComparisonSection />
+
         <CoverageSection />
 
         <LandingCta
@@ -368,6 +370,122 @@ export default function ComparePage() {
         />
       </div>
     </>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Comparison section — indigenous vs mainstream relevance
+// ---------------------------------------------------------------------------
+
+function ComparisonBar({
+  indigenous,
+  mainstream,
+}: {
+  indigenous: number | null
+  mainstream: number | null
+}) {
+  const max = 10
+  const indPct = indigenous != null ? Math.round((indigenous / max) * 100) : 0
+  const mainPct = mainstream != null ? Math.round((mainstream / max) * 100) : 0
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="flex justify-between text-xs text-neutral-600 mb-1">
+          <span className="font-medium">Medios indígenas y de derechos humanos</span>
+          <span className="font-semibold text-brand-700">
+            {indigenous != null ? indigenous.toFixed(1) : '—'}/10
+          </span>
+        </div>
+        <div className="h-3 bg-neutral-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-brand-600 transition-all duration-700"
+            style={{ width: `${indPct}%` }}
+          />
+        </div>
+      </div>
+      <div>
+        <div className="flex justify-between text-xs text-neutral-600 mb-1">
+          <span className="font-medium">Medios internacionales (BBC, DW, Le Monde…)</span>
+          <span className="font-semibold text-neutral-500">
+            {mainstream != null ? mainstream.toFixed(1) : '—'}/10
+          </span>
+        </div>
+        <div className="h-3 bg-neutral-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full bg-neutral-400 transition-all duration-700"
+            style={{ width: `${mainPct}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ComparisonSection() {
+  const { data, isLoading, isError } = useQuery<ComparisonStats>({
+    queryKey: ['coverage-comparison'],
+    queryFn: () => publicApi.coverageComparison(),
+    staleTime: 60 * 60 * 1000,
+  })
+
+  const hasData =
+    !isLoading &&
+    !isError &&
+    data != null &&
+    (data.indigenous.storyCount > 0 || data.mainstream.storyCount > 0)
+
+  // Don't render the section until mainstream feeds have produced data
+  if (!hasData && !isLoading) return null
+
+  return (
+    <section className="mt-16">
+      <h2 className="section-heading">Relevancia real: indígena vs. internacional</h2>
+      <p className="text-neutral-600 mt-2 mb-8 text-sm leading-relaxed max-w-2xl">
+        La misma IA que puntúa las noticias de Impacto Indígena también analiza medios como BBC,
+        Al Jazeera o Der Spiegel. El resultado muestra cuánto priorizan las voces indígenas en
+        su cobertura global. Puntuación media de relevancia indígena sobre{' '}
+        {data?.periodDays ?? 30} días.
+      </p>
+
+      {isLoading && (
+        <div className="space-y-4">
+          <div className="h-8 rounded-lg bg-neutral-100 animate-pulse w-3/4" />
+          <div className="h-8 rounded-lg bg-neutral-100 animate-pulse w-2/3" />
+        </div>
+      )}
+
+      {hasData && (
+        <>
+          <ComparisonBar
+            indigenous={data.indigenous.avgRelevance}
+            mainstream={data.mainstream.avgRelevance}
+          />
+
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="bg-brand-50 border border-brand-100 rounded-lg p-4 text-center">
+              <p className="text-3xl font-bold text-brand-700 tabular-nums">
+                {data.indigenous.avgRelevance?.toFixed(1) ?? '—'}
+              </p>
+              <p className="text-xs text-brand-600 mt-1">Relevancia media — medios indígenas</p>
+              <p className="text-xs text-neutral-400 mt-0.5">{data.indigenous.storyCount} noticias · {data.indigenous.feedCount} fuentes</p>
+            </div>
+            <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4 text-center">
+              <p className="text-3xl font-bold text-neutral-500 tabular-nums">
+                {data.mainstream.avgRelevance?.toFixed(1) ?? '—'}
+              </p>
+              <p className="text-xs text-neutral-500 mt-1">Relevancia media — medios internacionales</p>
+              <p className="text-xs text-neutral-400 mt-0.5">{data.mainstream.storyCount} noticias · {data.mainstream.feedCount} fuentes</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-neutral-400 mt-3">
+            Puntuación 1–10 por IA: relevancia para pueblos indígenas, derechos y territorio.
+            Últimos {data.periodDays} días.
+          </p>
+        </>
+      )}
+    </section>
   )
 }
 
