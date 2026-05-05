@@ -1,37 +1,24 @@
-import OpenAI, { AzureOpenAI } from 'openai'
-import { config } from '../config.js'
+import OpenAI from 'openai'
 import { createLogger } from './logger.js'
 import { uploadImageToR2 } from './imageStorage.js'
 
 const log = createLogger('image-gen')
 
-function createImageClient(): OpenAI {
-  if (config.llm.provider === 'azure') {
-    return new AzureOpenAI({
-      endpoint: config.llm.azure.endpoint,
-      apiKey: config.llm.azure.apiKey,
-      apiVersion: config.llm.azure.apiVersion,
-      deployment: config.llm.azure.deployments.dalle,
-    })
-  }
-  return new OpenAI()
-}
+// DALL-E 3 usa siempre OpenAI directo (OPENAI_API_KEY).
+// Azure OpenAI tiene cuotas muy limitadas para DALL-E y no está disponible
+// en todas las regiones — el resto de los servicios (LLM, embeddings, TTS)
+// usan Azure vía LLM_PROVIDER=azure.
+const openai = new OpenAI()
 
 /**
  * Genera una imagen con DALL-E 3 para una historia y la sube a R2.
  * Retorna la URL pública de la imagen.
- *
- * Soporta OpenAI directo y Azure OpenAI (LLM_PROVIDER=azure).
- * En Azure, requiere un deployment DALL-E 3 configurado con
- * AZURE_OPENAI_DEPLOYMENT_DALLE (default: 'dall-e-3').
  */
 export async function generateStoryImage(
   storyId: string,
   title: string,
   summary: string,
 ): Promise<string> {
-  const openai = createImageClient()
-
   const prompt = `
 Create a powerful, respectful editorial illustration for an indigenous news story.
 Title: "${title}"
