@@ -4,9 +4,14 @@ import { Link } from 'react-router-dom'
 import { SEO, CommonOgTags } from '../lib/seo'
 import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
+import { useCommunities } from '../hooks/useCommunities'
 
-// Lazy-load the heavy map component so it doesn't bloat the main bundle
+// Lazy-load heavy map components so they don't bloat the main bundle
 const MapWidget = lazy(() => import('../components/MapWidget'))
+const CommunityMap = lazy(() => import('../components/CommunityMap'))
+const NoCoordsList = lazy(() =>
+  import('../components/CommunityMap').then((m) => ({ default: m.NoCoordsList }))
+)
 
 const META = {
   title: 'Mapa de pueblos indígenas de Chile | Impacto Indígena',
@@ -15,7 +20,19 @@ const META = {
   url: `${SEO.siteUrl}/mapa`,
 }
 
+function MapSkeleton() {
+  return (
+    <div className="h-[520px] w-full rounded-xl bg-neutral-100 animate-pulse flex items-center justify-center text-neutral-400 text-sm">
+      Cargando mapa…
+    </div>
+  )
+}
+
 export default function MapPage() {
+  const { data: communities, isLoading, isError } = useCommunities()
+  const puebloCount     = communities?.filter((c) => c.type === 'PUEBLO').length ?? 0
+  const territorioCount = communities?.filter((c) => c.type === 'TERRITORIO').length ?? 0
+
   return (
     <>
       <Helmet>
@@ -98,6 +115,60 @@ export default function MapPage() {
             </Link>
           </div>
         </div>
+      </div>
+
+      {/* ── Dynamic communities map ────────────────────────────────────────── */}
+      <div className="page-section">
+        <div className="mb-6">
+          <h2 className="section-heading">Comunidades en Impacto Indígena</h2>
+          <p className="text-sm text-neutral-600 mt-1 leading-relaxed max-w-2xl">
+            Pueblos y territorios con cobertura de noticias curadas por IA.
+            {!isLoading && !isError && (
+              <span className="text-neutral-400">
+                {' '}— {puebloCount} pueblo{puebloCount !== 1 ? 's' : ''},{' '}
+                {territorioCount} territorio{territorioCount !== 1 ? 's' : ''}.
+              </span>
+            )}
+          </p>
+
+          {/* Legend */}
+          <div className="flex items-center gap-5 mt-3 text-xs text-neutral-500">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-brand-600 inline-block" aria-hidden="true" />
+              Pueblos
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" aria-hidden="true" />
+              Territorios
+            </span>
+          </div>
+        </div>
+
+        {isError && (
+          <p className="text-neutral-400 text-sm py-8 text-center">
+            Error al cargar las comunidades.
+          </p>
+        )}
+
+        {(isLoading || !communities) && <MapSkeleton />}
+
+        {!isLoading && !isError && communities && (
+          <Suspense fallback={<MapSkeleton />}>
+            <CommunityMap communities={communities} />
+            <NoCoordsList communities={communities} />
+          </Suspense>
+        )}
+
+        {!isLoading && !isError && communities && communities.length > 0 && (
+          <div className="mt-4 text-right">
+            <Link
+              to="/comunidades"
+              className="text-sm text-brand-800 hover:text-brand-700 underline underline-offset-2"
+            >
+              Ver lista completa →
+            </Link>
+          </div>
+        )}
       </div>
     </>
   )
