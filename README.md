@@ -6,7 +6,7 @@
 Noticias, iniciativas y tendencias relevantes para los pueblos indígenas, 
 seleccionadas con apoyo de inteligencia artificial.
 
-Voces Indígenas es una plataforma editorial que rastrea fuentes de noticias, 
+Impacto Indígena es una plataforma editorial que rastrea fuentes de noticias, 
 evalúa su relevancia mediante inteligencia artificial y publica historias 
 que impactan a pueblos indígenas, territorios, liderazgo, empresas indígenas 
 y desarrollo sostenible.
