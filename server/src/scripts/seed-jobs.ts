@@ -3,91 +3,52 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-async function main() {
-  const jobs = await Promise.all([
-    prisma.jobRun.upsert({
-      where: { jobName: 'crawl_feeds' },
-      update: {},
-      create: { jobName: 'crawl_feeds', cronExpression: '0 */6 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'preassess_stories' },
-      update: {},
-      create: { jobName: 'preassess_stories', cronExpression: '0 1,7,13,19 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'assess_stories' },
-      update: {},
-      create: { jobName: 'assess_stories', cronExpression: '0 9,21 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'select_stories' },
-      update: {},
-      create: { jobName: 'select_stories', cronExpression: '0 10 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'publish_stories' },
-      update: {},
-      create: { jobName: 'publish_stories', cronExpression: '0 11 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'social_auto_post' },
-      update: {},
-      create: { jobName: 'social_auto_post', cronExpression: '30 11 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'bluesky_update_metrics' },
-      update: {},
-      create: { jobName: 'bluesky_update_metrics', cronExpression: '0 */6 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'mastodon_update_metrics' },
-      update: {},
-      create: { jobName: 'mastodon_update_metrics', cronExpression: '0 4 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'instagram_update_metrics' },
-      update: {},
-      create: { jobName: 'instagram_update_metrics', cronExpression: '0 */6 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'linkedin_update_metrics' },
-      update: {},
-      create: { jobName: 'linkedin_update_metrics', cronExpression: '0 */6 * * *', enabled: false },
-    }),
-    prisma.jobRun.upsert({
-      where: { jobName: 'generate_newsletter' },
-      update: {},
-      create: { jobName: 'generate_newsletter', cronExpression: '0 4 * * 6', enabled: false },
-    }),
-    // 6 AM Chile (CLST = UTC-3, verano oct-mar): 9 AM UTC
-    // Ajustar a 0 10 * * * en invierno (abr-sep, CLT = UTC-4)
-    prisma.jobRun.upsert({
-      where: { jobName: 'send_fpic_newsletter' },
-      update: {},
-      create: { jobName: 'send_fpic_newsletter', cronExpression: '0 9 * * *', enabled: false },
-    }),
-    // 6:05 AM Chile (offset de 5 min respecto al FPIC)
-    prisma.jobRun.upsert({
-      where: { jobName: 'send_acuicultura_newsletter' },
-      update: {},
-      create: { jobName: 'send_acuicultura_newsletter', cronExpression: '5 9 * * *', enabled: false },
-    }),
-    // 6:10 AM Chile (offset de 10 min respecto al FPIC)
-    prisma.jobRun.upsert({
-      where: { jobName: 'send_chile_indigena_newsletter' },
-      update: {},
-      create: { jobName: 'send_chile_indigena_newsletter', cronExpression: '10 9 * * *', enabled: false },
-    }),
-    // 11 AM UTC = 8 AM Chile (después de que publish_stories corra a las 11 AM UTC)
-    prisma.jobRun.upsert({
-      where: { jobName: 'generate_chile_indigena_podcast' },
-      update: {},
-      create: { jobName: 'generate_chile_indigena_podcast', cronExpression: '30 14 * * *', enabled: false },
-    }),
-  ])
+// Keep in sync with server/src/jobs/handlers.ts
+// All jobs start disabled — enable via admin UI after verifying config.
+const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: boolean }> = [
+  // --- Pipeline ---
+  { jobName: 'crawl_feeds',             cronExpression: '0 */6 * * *' },
+  { jobName: 'preassess_stories',       cronExpression: '0 1,7,13,19 * * *' },
+  { jobName: 'assess_stories',          cronExpression: '0 9,21 * * *' },
+  { jobName: 'select_stories',          cronExpression: '0 10 * * *' },
+  { jobName: 'publish_stories',         cronExpression: '0 11 * * *' },
+  // --- Social ---
+  { jobName: 'social_auto_post',        cronExpression: '30 11 * * *' },
+  { jobName: 'bluesky_update_metrics',  cronExpression: '0 */6 * * *' },
+  { jobName: 'mastodon_update_metrics', cronExpression: '0 4 * * *' },
+  { jobName: 'instagram_update_metrics',cronExpression: '0 */6 * * *' },
+  { jobName: 'linkedin_update_metrics', cronExpression: '0 */6 * * *' },
+  // --- Newsletter ---
+  // generate_newsletter: sábados 4 AM UTC (prep del newsletter semanal)
+  { jobName: 'generate_newsletter',       cronExpression: '0 4 * * 6' },
+  // send_newsletter: lunes 12 PM UTC (~9 AM Chile)
+  { jobName: 'send_newsletter',           cronExpression: '0 12 * * 1' },
+  // send_private_newsletter: lunes 12:30 PM UTC (offset para no solapar)
+  { jobName: 'send_private_newsletter',   cronExpression: '30 12 * * 1' },
+  // send_community_digest: lunes 8 AM UTC (~5 AM Chile) — enabled by default
+  { jobName: 'send_community_digest',     cronExpression: '0 8 * * 1',  enabled: true },
+  // send_alerts: diario 9 AM UTC (~6 AM Chile) — enabled by default
+  { jobName: 'send_alerts',               cronExpression: '0 9 * * *',  enabled: true },
+  // --- Content ---
+  // generate_editorial: domingos 5 AM UTC (antes del lunes)
+  { jobName: 'generate_editorial',  cronExpression: '0 5 * * 0' },
+  // scrape_docip: diario 2 AM UTC (baja carga horaria)
+  { jobName: 'scrape_docip',        cronExpression: '0 2 * * *' },
+]
 
-  console.log(`Seeded ${jobs.length} job runs (all disabled)`)
+async function main() {
+  const results = await Promise.all(
+    JOB_SEEDS.map(({ jobName, cronExpression, enabled = false }) =>
+      prisma.jobRun.upsert({
+        where: { jobName },
+        update: {},
+        create: { jobName, cronExpression, enabled },
+      })
+    )
+  )
+
+  console.log(`Seeded ${results.length} job runs`)
+  results.forEach((j) => console.log(`  ${j.enabled ? '✓' : '○'} ${j.jobName}  (${j.cronExpression})`))
 }
 
 main()

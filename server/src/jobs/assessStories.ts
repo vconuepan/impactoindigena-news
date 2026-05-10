@@ -62,4 +62,12 @@ export async function runAssessStories(): Promise<void> {
   const result = await assessStories(allIds)
 
   log.info({ completed: result.completed, errors: result.errors, total: allIds.length }, 'assessment job finished')
+
+  // Surface errors to job_runs.last_error so they're visible in the admin panel
+  if (result.errors > 0 && result.completed === 0) {
+    throw new Error(`All ${result.errors} story assessments failed — check server logs for root cause (LLM/embedding error)`)
+  }
+  if (result.errors > 0) {
+    log.warn({ errors: result.errors, completed: result.completed }, 'partial assessment failures — check server logs')
+  }
 }

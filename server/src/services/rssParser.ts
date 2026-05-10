@@ -8,8 +8,11 @@ import { summarizeError } from '../utils/errors.js'
 import { crawlLimiter } from '../lib/crawlLimiter.js'
 import { SCRAPED_FEED_URLS as DISD_SCRAPED_URLS, scrapeDISD } from './disdScraper.js'
 import { AUSTRAL_FEED_URL, scrapeAustral } from './australScraper.js'
+import { ELMOSTRADOR_FEED_URL, scrapeElMostrador } from './elMostradorScraper.js'
+import { DESCONCIERTO_FEED_URL, scrapeElDesconcierto } from './elDesconciertoScraper.js'
+import { BIOBIO_FEED_URL, scrapeBioBio } from './biobioScraper.js'
 
-const SCRAPED_FEED_URLS = new Set([...DISD_SCRAPED_URLS, AUSTRAL_FEED_URL])
+const SCRAPED_FEED_URLS = new Set([...DISD_SCRAPED_URLS, AUSTRAL_FEED_URL, ELMOSTRADOR_FEED_URL, DESCONCIERTO_FEED_URL, BIOBIO_FEED_URL])
 
 const log = createLogger('rssParser')
 
@@ -37,6 +40,9 @@ export interface ParseFeedResult {
 export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders): Promise<ParseFeedResult> {
   // Route HTML-scraped feeds to their dedicated scrapers instead of the RSS parser
   if (feedUrl === AUSTRAL_FEED_URL) return scrapeAustral(feedUrl)
+  if (feedUrl === ELMOSTRADOR_FEED_URL) return scrapeElMostrador(feedUrl)
+  if (feedUrl === DESCONCIERTO_FEED_URL) return scrapeElDesconcierto(feedUrl)
+  if (feedUrl === BIOBIO_FEED_URL) return scrapeBioBio(feedUrl)
   if (SCRAPED_FEED_URLS.has(feedUrl)) return scrapeDISD(feedUrl)
 
   try {
