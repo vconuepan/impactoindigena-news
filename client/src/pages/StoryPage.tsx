@@ -234,15 +234,9 @@ export default function StoryPage() {
                 <span className="text-neutral-300" aria-hidden="true">·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <FeedFavicon feedId={story.feed.id} />
-                  <a
-                    href={story.sourceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-brand-800 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
-                  >
+                  <span className="text-neutral-600">
                     {story.feed.displayTitle || story.feed.title}
-                    <span className="sr-only"> (opens in new tab)</span>
-                  </a>
+                  </span>
                 </span>
                 <span className="text-neutral-300" aria-hidden="true">·</span>
                 <a

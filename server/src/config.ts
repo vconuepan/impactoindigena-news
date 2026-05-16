@@ -91,7 +91,9 @@ export const config = {
     totalFailThreshold: parseInt(process.env.TOTAL_FAIL_THRESHOLD || "3", 10),
   },
   content: {
-    storyAssignmentDays: parseInt(process.env.STORY_ASSIGNMENT_DAYS || "7", 10),
+    // Must be at least 2× the newsletter dedup window (7 days) so the second
+    // weekly send always has a fresh pool to draw from.
+    storyAssignmentDays: parseInt(process.env.STORY_ASSIGNMENT_DAYS || "14", 10),
   },
   newsletter: {
     storiesPerIssue: parseInt(

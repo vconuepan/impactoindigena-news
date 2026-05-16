@@ -43,7 +43,7 @@ export default function ReadingProgress({ color = 'var(--brand, #0D5F3C)' }: Rea
       aria-label="Progreso de lectura"
     >
       <div
-        className="h-full transition-[width] duration-75 ease-out"
+        className="h-full motion-safe:transition-[width] motion-safe:duration-75 ease-out"
         style={{ width: `${progress}%`, backgroundColor: color }}
       />
     </div>

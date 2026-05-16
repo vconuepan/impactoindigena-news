@@ -19,12 +19,12 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   { jobName: 'instagram_update_metrics',cronExpression: '0 */6 * * *' },
   { jobName: 'linkedin_update_metrics', cronExpression: '0 */6 * * *' },
   // --- Newsletter ---
-  // generate_newsletter: sábados 4 AM UTC (prep del newsletter semanal)
-  { jobName: 'generate_newsletter',       cronExpression: '0 4 * * 6' },
-  // send_newsletter: lunes 12 PM UTC (~9 AM Chile)
-  { jobName: 'send_newsletter',           cronExpression: '0 12 * * 1' },
-  // send_private_newsletter: lunes 12:30 PM UTC (offset para no solapar)
-  { jobName: 'send_private_newsletter',   cronExpression: '30 12 * * 1' },
+  // generate_newsletter: miércoles y sábados 4 AM UTC (2× por semana — genera Jue y Lun)
+  { jobName: 'generate_newsletter',       cronExpression: '0 4 * * 3,6' },
+  // send_newsletter: lunes y jueves 12 PM UTC (~9 AM Chile)
+  { jobName: 'send_newsletter',           cronExpression: '0 12 * * 1,4' },
+  // send_private_newsletter: lunes y jueves 12:30 PM UTC (offset para no solapar)
+  { jobName: 'send_private_newsletter',   cronExpression: '30 12 * * 1,4' },
   // send_community_digest: lunes 8 AM UTC (~5 AM Chile) — enabled by default
   { jobName: 'send_community_digest',     cronExpression: '0 8 * * 1',  enabled: true },
   // send_alerts: diario 9 AM UTC (~6 AM Chile) — enabled by default

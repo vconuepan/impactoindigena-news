@@ -41,7 +41,7 @@ export async function runGenerateNewsletter(): Promise<void> {
 
   // Skip if a newsletter was already generated today (e.g. from a partial run retry)
   const startOfDay = new Date(today)
-  startOfDay.setHours(0, 0, 0, 0)
+  startOfDay.setUTCHours(0, 0, 0, 0)
   const existing = await prisma.newsletter.findFirst({ where: { createdAt: { gte: startOfDay } } })
   if (existing) {
     log.info({ title, newsletterId: existing.id }, 'newsletter already generated today, skipping')
