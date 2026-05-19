@@ -109,7 +109,9 @@ d) Mecanismos de justicia indígena, justicia transicional o reparación histór
       name: 'Pueblos Indígenas de Chile',
       slug: 'chile-indigena',
       description: 'Noticias sobre derechos, territorios, políticas y comunidades de los pueblos indígenas en Chile',
-      promptFactors: `a) Derechos territoriales y de tierras: procesos de restitución, litigios, ocupaciones y acuerdos con el Estado chileno que afectan a comunidades mapuche, aymara, rapa nui u otros pueblos.
+      promptFactors: `⚠️ RESTRICCIÓN GEOGRÁFICA ABSOLUTA: Este issue es EXCLUSIVAMENTE para noticias cuyo tema central ocurre en Chile o involucra a pueblos indígenas chilenos. Una noticia de EE.UU., Canadá, Australia, México, Brasil, Nueva Zelanda u otro país — aunque trate sobre derechos indígenas, territorios, ríos o acuerdos con el Estado — NUNCA debe clasificarse aquí. Para esas noticias usa derechos-indigenas, cambio-climatico u otro issue apropiado.
+
+a) Derechos territoriales y de tierras: procesos de restitución, litigios, ocupaciones y acuerdos con el Estado chileno que afectan a comunidades mapuche, aymara, rapa nui u otros pueblos.
 b) Consulta indígena y Convenio 169 OIT: aplicación, incumplimiento o avances en la consulta previa, libre e informada en proyectos que afectan a comunidades en Chile.
 c) Evaluación ambiental y proyectos de inversión: impactos de proyectos mineros, energéticos, forestales o de infraestructura en territorios indígenas chilenos; resistencias y negociaciones.
 d) Políticas públicas del Estado chileno: acciones de CONADI, Ministerio de Desarrollo Social, planes de reparación, programas de fomento o políticas de seguridad que afectan a pueblos originarios.
@@ -118,7 +120,7 @@ f) Situación de pueblos específicos: mapuche (incluyendo warriache/mapuche urb
 g) Ley Lafkenche y derechos costeros: uso y gestión del borde costero por comunidades indígenas, espacios costeros marinos de pueblos originarios (ECMPO).
 h) Emprendimiento y economía indígena en Chile: empresas, cooperativas y proyectos productivos de comunidades chilenas.
 i) Figuras y patrimonio histórico: noticias relacionadas con Venancio Coñuepan, líderes históricos y patrimonio cultural de pueblos indígenas de Chile.`,
-      promptAntifactors: `- Noticias sobre pueblos indígenas de otros países sin conexión con Chile.
+      promptAntifactors: `- ❌ NUNCA: noticias de pueblos indígenas de EE.UU., Canadá, Australia, México, Brasil, Nueva Zelanda u otros países — aunque hablen de derechos, territorios o ríos. Usa derechos-indigenas u otro issue.
 - Noticias de política nacional chilena sin impacto directo en comunidades indígenas.
 - Noticias de turismo o cultura que no abordan derechos, impacto o autonomía de comunidades.
 - Eventos o actividades folclóricas sin relevancia para los derechos o bienestar de comunidades.`,
