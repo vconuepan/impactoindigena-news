@@ -152,4 +152,63 @@ export async function getPostMetrics(instagramPostId: string): Promise<PostMetri
   )
 }
 
+/**
+ * Publica una imagen sencilla en Instagram (sin carrusel).
+ * No requiere R2 — la imagen debe ser una URL pública permanente.
+ */
+export async function createSingleImagePost(
+  imageUrl: string,
+  caption: string,
+): Promise<CreatePostResult> {
+  if (!isConfigured()) {
+    throw new Error('Instagram credentials not configured.')
+  }
+
+  return withRetry(
+    async () => {
+      const { accessToken, userId } = config.instagram
+      const baseUrl = `https://graph.instagram.com/v21.0`
+
+      log.info({ captionLength: caption.length, imageUrl }, 'creating Instagram single-image post')
+
+      // Paso 1: Crear contenedor de la imagen
+      const params = new URLSearchParams({
+        image_url: imageUrl,
+        caption,
+        access_token: accessToken,
+      })
+      const res = await fetch(`${baseUrl}/${userId}/media?${params}`, { method: 'POST' })
+      const data = await res.json() as { id?: string; error?: unknown }
+
+      if (!res.ok || data.error) {
+        throw new Error(`Failed to create media container: ${JSON.stringify(data.error || data)}`)
+      }
+
+      const containerId = data.id!
+      log.info({ containerId }, 'media container created')
+
+      // Esperar 3 segundos antes de publicar
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+
+      // Paso 2: Publicar
+      const publishParams = new URLSearchParams({
+        creation_id: containerId,
+        access_token: accessToken,
+      })
+      const publishRes = await fetch(`${baseUrl}/${userId}/media_publish?${publishParams}`, { method: 'POST' })
+      const publishData = await publishRes.json() as { id?: string; error?: unknown }
+
+      if (!publishRes.ok || publishData.error) {
+        throw new Error(`Failed to publish post: ${JSON.stringify(publishData.error || publishData)}`)
+      }
+
+      const postId = publishData.id!
+      log.info({ postId }, 'Instagram single-image post published')
+
+      return { id: postId, permalink: `https://www.instagram.com/p/${postId}/` }
+    },
+    { retries: 2, baseDelayMs: 3000 },
+  )
+}
+
 export { isConfigured as isInstagramConfigured }

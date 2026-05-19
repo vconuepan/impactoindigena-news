@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { HumanMessage } from '@langchain/core/messages'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
-import { createCarouselPost, getPostMetrics, isInstagramConfigured } from '../lib/instagram.js'
+import { createCarouselPost, createSingleImagePost, getPostMetrics, isInstagramConfigured } from '../lib/instagram.js'
 import { generateCarousel } from '../lib/carouselGen.js'
 import { generateStoryImage } from '../lib/imageGen.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
@@ -77,33 +77,45 @@ export async function generateDraft(storyId: string) {
     }
   }
 
-  // Slide 2: resumen directo, Slide 3: por qué importa + consideraciones
-  const slide2Text = story.summary || ''
-  const slide3Text = story.relevanceReasons || ''
-  // Generar carrusel de 4 slides
-  const slides = await generateCarousel(
-    storyId,
-    story.title,
-    slide2Text,
-    slide3Text,
-    storyUrl,
-    aiImageUrl,
+  // Determinar si R2 está configurado para poder generar el carrusel
+  const r2Configured = Boolean(
+    config.r2.endpoint && config.r2.accessKeyId && config.r2.secretAccessKey && config.r2.publicUrl,
   )
 
-  const imageUrls = slides.sort((a, b) => a.order - b.order).map((s) => s.imageUrl)
+  let imageUrls: string[]
+
+  if (r2Configured) {
+    // Carrusel completo de 4 slides
+    const slide2Text = story.summary || ''
+    const slide3Text = story.relevanceReasons || ''
+    const slides = await generateCarousel(
+      storyId,
+      story.title,
+      slide2Text,
+      slide3Text,
+      storyUrl,
+      aiImageUrl,
+    )
+    imageUrls = slides.sort((a, b) => a.order - b.order).map((s) => s.imageUrl)
+    log.info({ storyId, slideCount: imageUrls.length }, 'carousel generated via R2')
+  } else {
+    // Sin R2: publicación de imagen sencilla con la imagen de portada
+    log.info({ storyId }, 'R2 not configured — using single-image post')
+    imageUrls = [aiImageUrl]
+  }
 
   const post = await prisma.instagramPost.create({
     data: {
       storyId,
       caption: trimmedCaption,
-      imageUrl: imageUrls[0], // Primera imagen como referencia
+      imageUrl: imageUrls[0],
       slideUrls: imageUrls,
       status: 'draft',
     },
     include: { story: { include: { feed: true, issue: true } } },
   })
 
-  log.info({ postId: post.id, storyId, slideCount: imageUrls.length }, 'Instagram carousel draft generated')
+  log.info({ postId: post.id, storyId, slideCount: imageUrls.length }, 'Instagram draft generated')
   return post
 }
 
@@ -175,10 +187,14 @@ export async function publishPost(postId: string) {
   if (!post) throw new Error('Post not found')
   if (post.status !== 'draft') throw new Error('Can only publish draft posts')
 
-  const imageUrls = post.slideUrls?.length ? post.slideUrls : [post.imageUrl]
+  const slideUrls: string[] = post.slideUrls?.length ? post.slideUrls : (post.imageUrl ? [post.imageUrl] : [])
+  if (slideUrls.length === 0) throw new Error('No images available for this post')
 
   try {
-    const result = await createCarouselPost(imageUrls, post.caption)
+    // Use carousel for multiple slides, single-image for one
+    const result = slideUrls.length > 1
+      ? await createCarouselPost(slideUrls, post.caption)
+      : await createSingleImagePost(slideUrls[0], post.caption)
 
     const updated = await prisma.instagramPost.update({
       where: { id: postId },
@@ -191,7 +207,7 @@ export async function publishPost(postId: string) {
       include: { story: { include: { feed: true, issue: true } } },
     })
 
-    log.info({ postId, instagramPostId: result.id }, 'Instagram carousel published')
+    log.info({ postId, instagramPostId: result.id, slideCount: slideUrls.length }, 'Instagram post published')
     return updated
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
@@ -199,7 +215,7 @@ export async function publishPost(postId: string) {
       where: { id: postId },
       data: { status: 'failed', error: errorMessage },
     })
-    log.error({ err, postId }, 'failed to publish Instagram carousel')
+    log.error({ err, postId }, 'failed to publish Instagram post')
     throw err
   }
 }
