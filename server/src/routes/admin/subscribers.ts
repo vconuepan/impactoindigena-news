@@ -64,8 +64,11 @@ router.get('/engagement', async (_req, res) => {
       select: { id: true, email: true },
     })
 
-    // Fetch Brevo stats in batches of 5 to avoid rate-limit hammering
-    const BATCH_SIZE = 5
+    // Fetch Brevo stats with concurrency limit.
+    // Batch of 15 concurrent requests — each has a 6s timeout, so worst-case
+    // per batch is ~6s. 100 subscribers ÷ 15 = ~7 batches × 6s = ~42s max, but
+    // typical latency is ~300ms per call so realistic time is <5s for 100 subs.
+    const BATCH_SIZE = 15
     const results: Array<{ id: string; email: string; engagement: brevo.ContactEngagement | null }> = []
 
     for (let i = 0; i < confirmed.length; i += BATCH_SIZE) {
@@ -74,7 +77,7 @@ router.get('/engagement', async (_req, res) => {
         batch.map(async (sub) => ({
           id: sub.id,
           email: sub.email,
-          engagement: await brevo.getContactEngagement(sub.email).catch(() => null),
+          engagement: await brevo.getContactEngagement(sub.email),
         }))
       )
       results.push(...batchResults)

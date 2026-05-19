@@ -263,32 +263,34 @@ export interface ContactEngagement {
 
 /**
  * Fetch a contact by email address and return their full engagement statistics.
- * Returns null if the contact doesn't exist in Brevo.
+ * Returns null if the contact doesn't exist in Brevo or on any error.
+ *
+ * No retries — this is called in bulk for many subscribers and must be fast.
+ * Individual failures are silently swallowed (returns null).
  */
 export async function getContactEngagement(email: string): Promise<ContactEngagement | null> {
-  return withRetry(
-    async () => {
-      const { data } = await client.get(`/contacts/${encodeURIComponent(email)}`, {
-        params: { includeStatistics: true },
-      })
-      const stats = data.statistics || {}
-      return {
-        messagesSent: Array.isArray(stats.messagesSent) ? stats.messagesSent.length : 0,
-        hardBounces: Array.isArray(stats.hardBounces) ? stats.hardBounces.length : 0,
-        softBounces: Array.isArray(stats.softBounces) ? stats.softBounces.length : 0,
-        opened: Array.isArray(stats.opened) ? stats.opened.length : 0,
-        clicked: Array.isArray(stats.clicked) ? stats.clicked.length : 0,
-        unsubscriptions:
-          (stats.unsubscriptions?.unsubscribeFromAllEmails?.eventData?.length ?? 0),
-        complaints: Array.isArray(stats.complaints) ? stats.complaints.length : 0,
-      }
-    },
-    { retries: 2, retryOn: isRetryableError },
-  ).catch((err: { response?: { status?: number } }) => {
-    // 404 = contact doesn't exist in Brevo yet
-    if (err?.response?.status === 404) return null
-    throw err
-  })
+  try {
+    const { data } = await client.get(`/contacts/${encodeURIComponent(email)}`, {
+      // Short timeout — called in bulk; a slow contact shouldn't block the batch
+      timeout: 6000,
+    })
+    const stats = data.statistics || {}
+    return {
+      messagesSent: Array.isArray(stats.messagesSent) ? stats.messagesSent.length : 0,
+      hardBounces: Array.isArray(stats.hardBounces) ? stats.hardBounces.length : 0,
+      softBounces: Array.isArray(stats.softBounces) ? stats.softBounces.length : 0,
+      opened: Array.isArray(stats.opened) ? stats.opened.length : 0,
+      clicked: Array.isArray(stats.clicked) ? stats.clicked.length : 0,
+      unsubscriptions: stats.unsubscriptions?.unsubscribeFromAllEmails?.eventData?.length ?? 0,
+      complaints: Array.isArray(stats.complaints) ? stats.complaints.length : 0,
+    }
+  } catch (err: unknown) {
+    const status = (err as { response?: { status?: number } })?.response?.status
+    if (status !== 404) {
+      log.warn({ email, status }, 'brevo engagement fetch failed')
+    }
+    return null
+  }
 }
 
 export async function deleteContact(id: string): Promise<void> {
