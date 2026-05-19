@@ -145,6 +145,29 @@ export default function AnalyticsPage() {
             )}
           </Card>
 
+          {/* Source breakdown */}
+          {data.bySource && data.bySource.length > 0 && (
+            <div className="bg-white rounded-lg border border-neutral-200 p-4">
+              <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Origen del tráfico</p>
+              <div className="flex gap-6 flex-wrap">
+                {data.bySource.map((s) => {
+                  const label =
+                    s.source === 'newsletter' ? '📧 Boletín'
+                    : s.source === 'social' ? '🔗 Social'
+                    : '🌐 Directo'
+                  const pct = data.total > 0 ? Math.round((s.count / data.total) * 100) : 0
+                  return (
+                    <div key={s.source} className="flex flex-col items-center gap-1">
+                      <span className="text-xs text-neutral-500">{label}</span>
+                      <span className="text-2xl font-bold text-neutral-900 tabular-nums">{s.count.toLocaleString('es-CL')}</span>
+                      <span className="text-xs text-neutral-400">{pct}%</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Top pages */}
             <Card title="Top páginas">

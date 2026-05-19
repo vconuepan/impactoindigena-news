@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
 import { createLogger } from '../../lib/logger.js'
+import * as brevo from '../../services/brevo.js'
 
 const router = Router()
 const log = createLogger('admin:subscribers')
@@ -48,6 +49,42 @@ router.get('/stats', async (_req, res) => {
     prisma.pendingSubscription.count({ where: { confirmedAt: null, expiresAt: { lte: now } } }),
   ])
   res.json({ confirmed, pending, expired, total: confirmed + pending + expired })
+})
+
+/**
+ * GET /api/admin/subscribers/engagement
+ * Fetches Brevo open/click stats for all confirmed subscribers.
+ * Returns { email: ContactEngagement | null } map.
+ * Capped at 100 concurrent requests with concurrency limiting.
+ */
+router.get('/engagement', async (_req, res) => {
+  try {
+    const confirmed = await prisma.pendingSubscription.findMany({
+      where: { confirmedAt: { not: null } },
+      select: { id: true, email: true },
+    })
+
+    // Fetch Brevo stats in batches of 5 to avoid rate-limit hammering
+    const BATCH_SIZE = 5
+    const results: Array<{ id: string; email: string; engagement: brevo.ContactEngagement | null }> = []
+
+    for (let i = 0; i < confirmed.length; i += BATCH_SIZE) {
+      const batch = confirmed.slice(i, i + BATCH_SIZE)
+      const batchResults = await Promise.all(
+        batch.map(async (sub) => ({
+          id: sub.id,
+          email: sub.email,
+          engagement: await brevo.getContactEngagement(sub.email).catch(() => null),
+        }))
+      )
+      results.push(...batchResults)
+    }
+
+    res.json(results)
+  } catch (err) {
+    log.error({ err }, 'failed to fetch subscriber engagement')
+    res.status(500).json({ error: 'Failed to fetch engagement' })
+  }
 })
 
 /**

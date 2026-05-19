@@ -251,6 +251,46 @@ export async function getContact(id: string): Promise<Contact> {
   )
 }
 
+export interface ContactEngagement {
+  messagesSent: number
+  hardBounces: number
+  softBounces: number
+  opened: number
+  clicked: number
+  unsubscriptions: number
+  complaints: number
+}
+
+/**
+ * Fetch a contact by email address and return their full engagement statistics.
+ * Returns null if the contact doesn't exist in Brevo.
+ */
+export async function getContactEngagement(email: string): Promise<ContactEngagement | null> {
+  return withRetry(
+    async () => {
+      const { data } = await client.get(`/contacts/${encodeURIComponent(email)}`, {
+        params: { includeStatistics: true },
+      })
+      const stats = data.statistics || {}
+      return {
+        messagesSent: Array.isArray(stats.messagesSent) ? stats.messagesSent.length : 0,
+        hardBounces: Array.isArray(stats.hardBounces) ? stats.hardBounces.length : 0,
+        softBounces: Array.isArray(stats.softBounces) ? stats.softBounces.length : 0,
+        opened: Array.isArray(stats.opened) ? stats.opened.length : 0,
+        clicked: Array.isArray(stats.clicked) ? stats.clicked.length : 0,
+        unsubscriptions:
+          (stats.unsubscriptions?.unsubscribeFromAllEmails?.eventData?.length ?? 0),
+        complaints: Array.isArray(stats.complaints) ? stats.complaints.length : 0,
+      }
+    },
+    { retries: 2, retryOn: isRetryableError },
+  ).catch((err: { response?: { status?: number } }) => {
+    // 404 = contact doesn't exist in Brevo yet
+    if (err?.response?.status === 404) return null
+    throw err
+  })
+}
+
 export async function deleteContact(id: string): Promise<void> {
   return withRetry(
     async () => {

@@ -90,6 +90,22 @@ export interface SubscriberStats {
   total: number
 }
 
+export interface ContactEngagement {
+  messagesSent: number
+  hardBounces: number
+  softBounces: number
+  opened: number
+  clicked: number
+  unsubscriptions: number
+  complaints: number
+}
+
+export interface SubscriberEngagement {
+  id: string
+  email: string
+  engagement: ContactEngagement | null
+}
+
 export interface FeedStatusItem {
   id: string
   title: string
@@ -615,6 +631,7 @@ export const adminApi = {
         byDay: Array<{ date: string; count: number }>
         topPages: Array<{ path: string; count: number }>
         topStories: Array<{ path: string; count: number }>
+        bySource: Array<{ source: string; count: number }>
       }>(`/analytics?days=${days}`),
   },
 
@@ -625,6 +642,7 @@ export const adminApi = {
       ),
     stats: () => request<SubscriberStats>('/subscribers/stats'),
     delete: (id: string) => request<{ ok: boolean }>(`/subscribers/${id}`, { method: 'DELETE' }),
+    engagement: () => request<SubscriberEngagement[]>('/subscribers/engagement'),
   },
 
   // Spotlights (En Foco)

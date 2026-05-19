@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
+import { Prisma } from '@prisma/client'
 
 const router = Router()
 
@@ -10,14 +11,14 @@ router.get('/', async (req, res) => {
   since.setUTCDate(since.getUTCDate() - days)
   since.setUTCHours(0, 0, 0, 0)
 
-  const [totalRow, byDay, byPath] = await Promise.all([
+  const [totalRow, byDay, byPath, rawBySource] = await Promise.all([
     // Total views in period
     prisma.pageView.aggregate({
       _sum: { count: true },
       where: { date: { gte: since } },
     }),
 
-    // Views grouped by day
+    // Views grouped by day (aggregate across all sources)
     prisma.pageView.groupBy({
       by: ['date'],
       _sum: { count: true },
@@ -25,7 +26,7 @@ router.get('/', async (req, res) => {
       orderBy: { date: 'asc' },
     }),
 
-    // Top pages (all time, limited to top 50)
+    // Top pages (limited to top 50, aggregate across all sources)
     prisma.pageView.groupBy({
       by: ['path'],
       _sum: { count: true },
@@ -33,6 +34,15 @@ router.get('/', async (req, res) => {
       orderBy: { _sum: { count: 'desc' } },
       take: 50,
     }),
+
+    // Breakdown by traffic source — raw query so it compiles before db:generate
+    prisma.$queryRaw<Array<{ source: string; total: bigint }>>`
+      SELECT source, SUM(count) AS total
+      FROM page_views
+      WHERE date >= ${since}
+      GROUP BY source
+      ORDER BY total DESC
+    `,
   ])
 
   // Today and yesterday views
@@ -75,6 +85,15 @@ router.get('/', async (req, res) => {
   const storyPages = pages.filter((p) => p.path.startsWith('/stories/'))
   const uniquePages = byPath.length
 
+  const sourceBreakdown = rawBySource.map((row) => ({
+    source: row.source || 'direct',
+    count: Number(row.total),
+  }))
+  // Ensure "direct" always appears even if no data yet
+  if (!sourceBreakdown.find((s) => s.source === 'direct')) {
+    sourceBreakdown.push({ source: 'direct', count: 0 })
+  }
+
   res.json({
     period: days,
     total: totalRow._sum.count ?? 0,
@@ -84,6 +103,7 @@ router.get('/', async (req, res) => {
     byDay: filledDays,
     topPages: pages.slice(0, 20),
     topStories: storyPages.slice(0, 10),
+    bySource: sourceBreakdown,
   })
 })
 

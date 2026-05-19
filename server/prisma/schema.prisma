@@ -370,13 +370,15 @@ model LinkedInPost {
 // --- Analytics ---
 
 model PageView {
-  id    String   @id @default(uuid())
-  path  String   @db.VarChar(500)
-  date  DateTime // stored as midnight UTC (day-level granularity)
-  count Int      @default(1)
+  id     String   @id @default(uuid())
+  path   String   @db.VarChar(500)
+  date   DateTime // stored as midnight UTC (day-level granularity)
+  source String   @default("") @db.VarChar(50) // "" = direct, "newsletter", "social"
+  count  Int      @default(1)
 
-  @@unique([path, date])
+  @@unique([path, date, source])
   @@index([date])
+  @@index([source])
   @@map("page_views")
 }
 

@@ -278,7 +278,8 @@ export async function generateContent(newsletterId: string) {
     const issueName = resolved.name
     const issueSlug = resolved.slug
     const publisher = story.feed?.displayTitle || story.feed?.title || 'Unknown'
-    const relevanceUrl = story.slug ? `https://impactoindigena.news/stories/${story.slug}` : ''
+    // ?_r=newsletter enables traffic attribution in the analytics dashboard
+    const relevanceUrl = story.slug ? `https://impactoindigena.news/stories/${story.slug}?_r=newsletter` : ''
 
     // Add issue section header when the group changes
     if (issueName !== currentIssue) {
