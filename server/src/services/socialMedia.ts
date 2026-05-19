@@ -11,7 +11,9 @@ const log = createLogger('social-media')
 
 /**
  * Find recently published stories that are candidates for social media posting.
- * Excludes stories already posted to ALL enabled channels.
+ * A story is a candidate if it hasn't been posted to ANY enabled channel yet.
+ * This ensures Instagram (and future channels) are not skipped just because
+ * Bluesky/Mastodon already posted.
  *
  * @returns Array of candidate story IDs
  */
@@ -34,23 +36,30 @@ export async function findAutoPostCandidates(lookbackHours: number): Promise<str
 
   const storyIds = publishedStories.map((s) => s.id)
 
-  // Find stories already posted to Bluesky
-  const blueskyPosted = await prisma.blueskyPost.findMany({
-    where: { storyId: { in: storyIds }, status: 'published' },
-    select: { storyId: true },
-  })
+  // Find stories already posted to each channel
+  const [blueskyPosted, mastodonPosted, instagramPosted] = await Promise.all([
+    prisma.blueskyPost.findMany({
+      where: { storyId: { in: storyIds }, status: 'published' },
+      select: { storyId: true },
+    }),
+    prisma.mastodonPost.findMany({
+      where: { storyId: { in: storyIds }, status: 'published' },
+      select: { storyId: true },
+    }),
+    prisma.instagramPost.findMany({
+      where: { storyId: { in: storyIds }, status: 'published' },
+      select: { storyId: true },
+    }),
+  ])
 
-  // Find stories already posted to Mastodon
-  const mastodonPosted = await prisma.mastodonPost.findMany({
-    where: { storyId: { in: storyIds }, status: 'published' },
-    select: { storyId: true },
-  })
+  const blueskySet   = new Set(blueskyPosted.map((p: { storyId: string }) => p.storyId))
+  const mastodonSet  = new Set(mastodonPosted.map((p: { storyId: string }) => p.storyId))
+  const instagramSet = new Set(instagramPosted.map((p: { storyId: string }) => p.storyId))
 
-  const blueskySet = new Set(blueskyPosted.map((p: { storyId: string }) => p.storyId))
-  const mastodonSet = new Set(mastodonPosted.map((p: { storyId: string }) => p.storyId))
-
-  // A story is a candidate if it hasn't been posted to at least one enabled channel
-  const candidates = storyIds.filter((id) => !blueskySet.has(id) || !mastodonSet.has(id))
+  // A story is a candidate if it hasn't been posted to at least one of the known channels
+  const candidates = storyIds.filter(
+    (id) => !blueskySet.has(id) || !mastodonSet.has(id) || !instagramSet.has(id)
+  )
 
   return candidates
 }
