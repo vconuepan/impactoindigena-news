@@ -175,10 +175,11 @@ async function drawEditorialFooter(
   ctx: any,
   slideNum: number,
   accentColor: string,
+  sepOffset: number = 360 * SCALE,  // px desde el fondo hasta la línea divisoria
 ): Promise<void> {
-  const sepY  = RENDER_H - 360 * SCALE       // línea divisoria
-  const logoY = sepY + 28 * SCALE
-  const logoH = 84 * SCALE                   // logo más grande: 168px render = 84px display
+  const sepY  = RENDER_H - sepOffset            // línea divisoria
+  const logoY = sepY + 24 * SCALE
+  const logoH = 80 * SCALE
   const urlBaseline = logoY + logoH * 0.7
 
   // Línea divisoria
@@ -336,17 +337,17 @@ async function generateSlide2(text: string): Promise<Buffer> {
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(contentX, 250 * SCALE, 80 * SCALE, 6 * SCALE)
 
-  // Titular grande y negro — fuente 50px para caber más texto; 4 líneas máx
+  // Titular — 44px con 5 líneas máx para caber títulos largos sin truncar
   ctx.fillStyle = BRAND.textMain
-  ctx.font = `bold ${50 * SCALE}px Arial`
+  ctx.font = `bold ${44 * SCALE}px Arial`
   const headlineBottom = drawWrappedText(
     ctx,
     headline,
     contentX,
     306 * SCALE,
     RENDER_W - contentX - MARGIN,
-    68 * SCALE,
-    4,
+    62 * SCALE,
+    5,
   )
 
   // Línea divisoria sutil
@@ -410,7 +411,8 @@ async function generateSlide3(text: string): Promise<Buffer> {
   const accentBarX = MARGIN
   const accentBarY = 195 * SCALE
   const accentBarW = 14 * SCALE
-  const accentBarH = 620 * SCALE
+  // Barra más corta porque el footer es compacto
+  const accentBarH = 560 * SCALE
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(accentBarX, accentBarY, accentBarW, accentBarH)
 
@@ -426,24 +428,21 @@ async function generateSlide3(text: string): Promise<Buffer> {
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(contentX, 250 * SCALE, 80 * SCALE, 6 * SCALE)
 
-  // Tamaño de fuente adaptado a la cantidad de bullets:
-  // ≤2 bullets → 44px grande y espacioso
-  //  3 bullets → 41px (estándar)
-  //  4 bullets → 37px compacto
-  const n = bullets.length
-  const bulletFont   = n <= 2 ? 44 * SCALE : n === 3 ? 41 * SCALE : 37 * SCALE
-  const bulletLineH  = n <= 2 ? 64 * SCALE : n === 3 ? 60 * SCALE : 54 * SCALE
-  const bulletMaxLn  = n <= 2 ? 4          : n === 3 ? 4          : 3
-  const bulletGap    = n <= 2 ? 36 * SCALE : n === 3 ? 28 * SCALE : 22 * SCALE
+  // Font fijo 36px — a esa escala ~50 chars/línea, bullets de ~150 chars = 3 líneas.
+  // 4 bullets × 4 líneas × 108px + 3 gaps × 20px = 1632+60 = 1692px disponibles (footer compacto)
+  const bulletFont  = 36 * SCALE
+  const bulletLineH = 54 * SCALE
+  const bulletMaxLn = 4
+  const bulletGap   = 20 * SCALE
 
   ctx.textAlign = 'left'
-  let bulletY = 296 * SCALE
+  let bulletY = 280 * SCALE  // empezar más arriba para aprovechar espacio
 
   for (const bullet of bullets) {
     // Punto decorativo terracota
     ctx.fillStyle = BRAND.accent
     ctx.beginPath()
-    ctx.arc(contentX + 10 * SCALE, bulletY - 12 * SCALE, 8 * SCALE, 0, Math.PI * 2)
+    ctx.arc(contentX + 10 * SCALE, bulletY - 10 * SCALE, 7 * SCALE, 0, Math.PI * 2)
     ctx.fill()
 
     // Texto del bullet
@@ -452,17 +451,17 @@ async function generateSlide3(text: string): Promise<Buffer> {
     bulletY = drawWrappedText(
       ctx,
       bullet,
-      contentX + 28 * SCALE,
+      contentX + 26 * SCALE,
       bulletY,
-      RENDER_W - contentX - 28 * SCALE - MARGIN,
+      RENDER_W - contentX - 26 * SCALE - MARGIN,
       bulletLineH,
       bulletMaxLn,
     )
     bulletY += bulletGap
   }
 
-  // Footer editorial
-  await drawEditorialFooter(ctx, 3, BRAND.accent)
+  // Footer compacto: sepOffset menor = más área de contenido
+  await drawEditorialFooter(ctx, 3, BRAND.accent, 220 * SCALE)
 
   return exportCanvas(canvas)
 }
