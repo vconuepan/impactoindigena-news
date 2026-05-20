@@ -48,7 +48,7 @@ export const config = {
   },
   assess: {
     contentMaxLength: 4000,
-    fullAssessmentThreshold: 4,
+    fullAssessmentThreshold: 5,
     modelTier: "medium" as const,
   },
   selection: {

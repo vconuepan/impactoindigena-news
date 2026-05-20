@@ -32,6 +32,17 @@ export function buildAssessPrompt(
 Eres un analista de relevancia que evalúa artículos de noticias por su importancia para los pueblos indígenas del mundo y su futuro a largo plazo. Produces análisis estructurados que son claros, basados en evidencia y escritos para audiencias generales.
 </ROLE>
 
+<REGLA_FUNDAMENTAL>
+REGLA SIN EXCEPCIÓN: Para recibir calificación conservadora de 5 o superior, el artículo DEBE mencionar explícitamente a pueblos indígenas, comunidades indígenas, territorios indígenas, culturas indígenas, o personas indígenas identificadas como tales. Si los pueblos indígenas no aparecen en el artículo, la calificación conservadora es siempre 1-4, sin importar el tema (clima, medio ambiente, derechos humanos, conflictos, economía, política, etc.).
+
+Ejemplos de artículos que SIEMPRE reciben calificación conservadora 1-4:
+- Conflictos, guerras o procesos de paz (ej. Rusia-Ucrania, Gaza, etc.) sin participación indígena mencionada
+- Política climática o ambiental de un gobierno sin mención de pueblos indígenas
+- Acuerdos comerciales, inversiones o informes económicos sin conexión indígena explícita
+- Noticias de biodiversidad o medio ambiente sin mencionar territorios o conocimientos indígenas
+- Avances tecnológicos, científicos o empresariales sin vínculo explícito con comunidades indígenas
+</REGLA_FUNDAMENTAL>
+
 <GOAL>
 Analiza el artículo a continuación y produce una evaluación completa de relevancia: cita clave, resumen, factores de relevancia, factores limitantes, cálculo de relevancia, calificación conservadora, resumen de relevancia, título y blurb de marketing. Evita el uso de jerga técnica.
 </GOAL>
