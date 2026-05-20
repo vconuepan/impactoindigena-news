@@ -74,27 +74,26 @@ Cinematic composition, high contrast, visually striking.
     quality: isGptImage ? config.imageGen.quality : 'standard',
   }
 
-  // gpt-image-2 no soporta response_format — devuelve URL directamente
-  if (!isGptImage) {
-    params.response_format = 'b64_json'
-  }
+  // Solicitar base64 explícitamente para evitar URLs temporales que expiran
+  params.response_format = 'b64_json'
 
   const response = await (client.images.generate as (p: any) => Promise<any>)(params)
 
   let imageBuffer: Buffer
 
-  if (isGptImage) {
-    // gpt-image-2 devuelve URL temporal — descargar y subir a R2
-    const imageUrl = response.data?.[0]?.url
-    if (!imageUrl) throw new Error('No image URL returned from gpt-image-2')
-    const fetchRes = await fetch(imageUrl)
+  const item = response.data?.[0]
+  if (!item) throw new Error('No image data in response')
+
+  if (item.b64_json) {
+    // Azure gpt-image-2 y DALL-E 3 devuelven base64
+    imageBuffer = Buffer.from(item.b64_json, 'base64')
+  } else if (item.url) {
+    // Algunos endpoints devuelven URL temporal — descargar
+    const fetchRes = await fetch(item.url)
     if (!fetchRes.ok) throw new Error(`Failed to download generated image: ${fetchRes.status}`)
-    const arrayBuffer = await fetchRes.arrayBuffer()
-    imageBuffer = Buffer.from(arrayBuffer)
+    imageBuffer = Buffer.from(await fetchRes.arrayBuffer())
   } else {
-    const b64 = response.data?.[0]?.b64_json
-    if (!b64) throw new Error('No image data returned from DALL-E')
-    imageBuffer = Buffer.from(b64, 'base64')
+    throw new Error('No image data (neither b64_json nor url) in response')
   }
   const filename = `${storyId}-${Date.now()}.png`
 
