@@ -391,7 +391,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
   // Extraer bullets; primero como titular, resto como cuerpo
   const bullets = extractBullets(text)
   const headline = bullets[0] || ''
-  const bodyBullets = bullets.slice(1, 4)  // máx 3 bullets adicionales
+  const bodyBullets = bullets.slice(1, 3)  // máx 2 bullets adicionales
 
   // ------- Barra vertical de acento terracota -------
   const accentBarX = MARGIN
@@ -460,7 +460,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
         bodyY,
         RENDER_W - contentX - 28 * SCALE - MARGIN,
         54 * SCALE,
-        2,
+        3,
       )
       bodyY += 18 * SCALE  // espacio entre bullets
     }
