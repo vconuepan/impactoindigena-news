@@ -55,12 +55,17 @@ export async function generateDraft(storyId: string) {
   const captionWithUrl = `${captionResult.caption}\n\n${storyUrl}`
   const trimmedCaption = captionWithUrl.length > 2200 ? captionWithUrl.slice(0, 2197) + '…' : captionWithUrl
 
-  // Reusar imagen de Twitter si existe
+  // Reusar imagen de Twitter si existe y no es el logo de fallback
+  const LOGO_FALLBACK_MARKERS = ['cropped-logo-impacto-indigena', '1-2.png']
   const twitterPost = await prisma.twitterPost.findFirst({
     where: { storyId, imageUrl: { not: null } },
   })
+  const twitterImageUrl = twitterPost?.imageUrl ?? null
+  const isLogoFallback = twitterImageUrl
+    ? LOGO_FALLBACK_MARKERS.some((m) => twitterImageUrl.includes(m))
+    : false
 
-  let aiImageUrl = twitterPost?.imageUrl ?? null
+  let aiImageUrl = isLogoFallback ? null : twitterImageUrl
 
   if (!aiImageUrl) {
     try {
