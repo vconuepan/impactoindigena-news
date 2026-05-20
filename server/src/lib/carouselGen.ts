@@ -428,7 +428,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(contentX, 250 * SCALE, 80 * SCALE, 6 * SCALE)
 
-  // Titular grande — 4 líneas máx para menos truncación
+  // Titular grande — 3 líneas máx (reservar espacio para bullets debajo)
   ctx.fillStyle = BRAND.textMain
   ctx.font = `bold ${57 * SCALE}px Arial`
   const headlineBottom = drawWrappedText(
@@ -438,7 +438,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
     306 * SCALE,
     RENDER_W - contentX - MARGIN,
     74 * SCALE,
-    4,
+    3,
   )
 
   // Línea divisoria
@@ -465,7 +465,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
       ctx.arc(contentX + 10 * SCALE, bodyY - 14 * SCALE, 8 * SCALE, 0, Math.PI * 2)
       ctx.fill()
 
-      // Texto del bullet — fuente más grande
+      // Texto del bullet — 2 líneas máx para que quepan ambos bullets
       ctx.fillStyle = BRAND.textMuted
       ctx.font = `${43 * SCALE}px Arial`
       bodyY = drawWrappedText(
@@ -475,7 +475,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
         bodyY,
         RENDER_W - contentX - 28 * SCALE - MARGIN,
         62 * SCALE,
-        3,
+        2,
       )
       bodyY += 20 * SCALE  // espacio entre bullets
     }
