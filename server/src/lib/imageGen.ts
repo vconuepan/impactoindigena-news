@@ -64,23 +64,38 @@ Cinematic composition, high contrast, visually striking.
 
   log.info({ storyId, title: title.slice(0, 50), model }, 'generating image')
 
-  const response = await (client.images.generate as (params: any) => Promise<any>)({
+  const params: Record<string, unknown> = {
     model,
     prompt,
     n: 1,
-    // gpt-image-2: tamaños soportados 1024x1024, 1536x1024, 1024x1536
-    // dall-e-3:    1024x1024, 1792x1024, 1024x1792
-    size:            isGptImage ? '1536x1024' : '1792x1024',
-    // gpt-image-2: 'low' | 'medium' | 'high'
-    // dall-e-3:    'standard' | 'hd'
-    quality:         isGptImage ? config.imageGen.quality : 'standard',
-    response_format: 'b64_json',
-  })
+    // gpt-image-2: 1536x1024  |  dall-e-3: 1792x1024
+    size: isGptImage ? '1536x1024' : '1792x1024',
+    // gpt-image-2: low/medium/high  |  dall-e-3: standard/hd
+    quality: isGptImage ? config.imageGen.quality : 'standard',
+  }
 
-  const b64 = response.data?.[0]?.b64_json
-  if (!b64) throw new Error('No image data returned from image generation API')
+  // gpt-image-2 no soporta response_format — devuelve URL directamente
+  if (!isGptImage) {
+    params.response_format = 'b64_json'
+  }
 
-  const imageBuffer = Buffer.from(b64, 'base64')
+  const response = await (client.images.generate as (p: any) => Promise<any>)(params)
+
+  let imageBuffer: Buffer
+
+  if (isGptImage) {
+    // gpt-image-2 devuelve URL temporal — descargar y subir a R2
+    const imageUrl = response.data?.[0]?.url
+    if (!imageUrl) throw new Error('No image URL returned from gpt-image-2')
+    const fetchRes = await fetch(imageUrl)
+    if (!fetchRes.ok) throw new Error(`Failed to download generated image: ${fetchRes.status}`)
+    const arrayBuffer = await fetchRes.arrayBuffer()
+    imageBuffer = Buffer.from(arrayBuffer)
+  } else {
+    const b64 = response.data?.[0]?.b64_json
+    if (!b64) throw new Error('No image data returned from DALL-E')
+    imageBuffer = Buffer.from(b64, 'base64')
+  }
   const filename = `${storyId}-${Date.now()}.png`
 
   const publicUrl = await uploadImageToR2(imageBuffer, filename)
