@@ -176,10 +176,10 @@ async function drawEditorialFooter(
   slideNum: number,
   accentColor: string,
 ): Promise<void> {
-  const sepY = RENDER_H - 340 * SCALE       // 2700 - 680 = 2020px render
-  const logoY = sepY + 24 * SCALE           // 2020 + 48 = 2068px render
-  const logoH = 60 * SCALE                  // 120px render
-  const urlBaseline = logoY + logoH * 0.72  // vertical center of logo
+  const sepY  = RENDER_H - 360 * SCALE       // línea divisoria
+  const logoY = sepY + 28 * SCALE
+  const logoH = 84 * SCALE                   // logo más grande: 168px render = 84px display
+  const urlBaseline = logoY + logoH * 0.7
 
   // Línea divisoria
   ctx.strokeStyle = BRAND.textMuted
@@ -191,18 +191,18 @@ async function drawEditorialFooter(
   ctx.stroke()
   ctx.globalAlpha = 1
 
-  // Logo negro
+  // Logo negro más grande
   await drawLogo(ctx, MARGIN, logoY, logoH, LOGO_BLACK)
 
   // URL
   ctx.fillStyle = BRAND.textMuted
-  ctx.font = `${20 * SCALE}px Arial`
+  ctx.font = `${22 * SCALE}px Arial`
   ctx.textAlign = 'right'
   ctx.fillText('IMPACTOINDIGENA.NEWS', RENDER_W - MARGIN, urlBaseline)
 
   // Número de slide
   ctx.fillStyle = accentColor
-  ctx.font = `bold ${20 * SCALE}px Arial`
+  ctx.font = `bold ${22 * SCALE}px Arial`
   ctx.textAlign = 'right'
   ctx.fillText(`${slideNum} / 4`, RENDER_W - MARGIN, RENDER_H - MARGIN)
 }
@@ -299,47 +299,54 @@ async function generateSlide2(text: string): Promise<Buffer> {
   ctx.fillStyle = BRAND.bgWarm
   ctx.fillRect(0, 0, RENDER_W, RENDER_H)
 
+  // Círculo decorativo sutil en esquina inferior derecha
+  ctx.globalAlpha = 0.04
+  ctx.fillStyle = BRAND.brand
+  ctx.beginPath()
+  ctx.arc(RENDER_W * 0.95, RENDER_H * 0.82, 480 * SCALE, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = 1
+
   // Barra arcoíris arriba
   drawRainbowBarTop(ctx)
 
   // Logo negro arriba izquierda
-  await drawLogo(ctx, MARGIN, MARGIN + 20 * SCALE, 70 * SCALE, LOGO_BLACK)
+  await drawLogo(ctx, MARGIN, MARGIN + 20 * SCALE, 74 * SCALE, LOGO_BLACK)
 
   // Extraer titular (primera oración) y cuerpo
   const { headline, body } = extractHeadlineAndBody(text)
 
   // ------- Barra vertical de acento verde corporativo -------
-  // Cubre desde la etiqueta "RESUMEN" hasta el final del titular (aprox.)
   const accentBarX = MARGIN
-  const accentBarY = 195 * SCALE   // 390px render — unos píxeles antes de la etiqueta
-  const accentBarW = 12 * SCALE    // 24px render = 12px display — trazo visible pero fino
-  const accentBarH = 500 * SCALE   // 1000px render — cubre etiqueta + titular completo
+  const accentBarY = 195 * SCALE
+  const accentBarW = 14 * SCALE    // ligeramente más gruesa
+  const accentBarH = 620 * SCALE   // cubre etiqueta + titular + parte del cuerpo
   ctx.fillStyle = BRAND.brand
   ctx.fillRect(accentBarX, accentBarY, accentBarW, accentBarH)
 
-  const contentX = MARGIN + accentBarW + 20 * SCALE  // 20px display de separación
+  const contentX = MARGIN + accentBarW + 22 * SCALE
 
   // Etiqueta de sección
   ctx.fillStyle = BRAND.brand
-  ctx.font = `bold ${22 * SCALE}px Arial`
+  ctx.font = `bold ${24 * SCALE}px Arial`
   ctx.textAlign = 'left'
   ctx.fillText('RESUMEN', contentX, 238 * SCALE)
 
   // Subrayado terracota corto
   ctx.fillStyle = BRAND.accent
-  ctx.fillRect(contentX, 248 * SCALE, 76 * SCALE, 5 * SCALE)
+  ctx.fillRect(contentX, 250 * SCALE, 80 * SCALE, 6 * SCALE)
 
-  // Titular grande y negro
+  // Titular grande y negro — 4 líneas máx para menos truncación
   ctx.fillStyle = BRAND.textMain
   ctx.font = `bold ${57 * SCALE}px Arial`
   const headlineBottom = drawWrappedText(
     ctx,
     headline,
     contentX,
-    300 * SCALE,
+    306 * SCALE,
     RENDER_W - contentX - MARGIN,
     74 * SCALE,
-    3,
+    4,
   )
 
   // Línea divisoria sutil
@@ -347,23 +354,23 @@ async function generateSlide2(text: string): Promise<Buffer> {
   ctx.globalAlpha = 0.2
   ctx.lineWidth = 2 * SCALE
   ctx.beginPath()
-  ctx.moveTo(contentX, headlineBottom + 20 * SCALE)
-  ctx.lineTo(RENDER_W - MARGIN, headlineBottom + 20 * SCALE)
+  ctx.moveTo(contentX, headlineBottom + 22 * SCALE)
+  ctx.lineTo(RENDER_W - MARGIN, headlineBottom + 22 * SCALE)
   ctx.stroke()
   ctx.globalAlpha = 1
 
-  // Cuerpo del texto en gris
+  // Cuerpo del texto en gris — fuente más grande
   if (body) {
     ctx.fillStyle = BRAND.textMuted
-    ctx.font = `${39 * SCALE}px Arial`
+    ctx.font = `${43 * SCALE}px Arial`
     drawWrappedText(
       ctx,
       body,
       contentX,
-      headlineBottom + 60 * SCALE,
+      headlineBottom + 64 * SCALE,
       RENDER_W - contentX - MARGIN,
-      56 * SCALE,
-      7,
+      62 * SCALE,
+      5,
     )
   }
 
@@ -384,9 +391,17 @@ async function generateSlide3(text: string): Promise<Buffer> {
   ctx.fillStyle = BRAND.bgWarm
   ctx.fillRect(0, 0, RENDER_W, RENDER_H)
 
+  // Círculo decorativo sutil en esquina inferior derecha
+  ctx.globalAlpha = 0.04
+  ctx.fillStyle = BRAND.accent
+  ctx.beginPath()
+  ctx.arc(RENDER_W * 0.95, RENDER_H * 0.82, 480 * SCALE, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.globalAlpha = 1
+
   drawRainbowBarTop(ctx)
 
-  await drawLogo(ctx, MARGIN, MARGIN + 20 * SCALE, 70 * SCALE, LOGO_BLACK)
+  await drawLogo(ctx, MARGIN, MARGIN + 20 * SCALE, 74 * SCALE, LOGO_BLACK)
 
   // Extraer bullets; primero como titular, resto como cuerpo
   const bullets = extractBullets(text)
@@ -396,34 +411,34 @@ async function generateSlide3(text: string): Promise<Buffer> {
   // ------- Barra vertical de acento terracota -------
   const accentBarX = MARGIN
   const accentBarY = 195 * SCALE
-  const accentBarW = 12 * SCALE
-  const accentBarH = 500 * SCALE
+  const accentBarW = 14 * SCALE
+  const accentBarH = 620 * SCALE
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(accentBarX, accentBarY, accentBarW, accentBarH)
 
-  const contentX = MARGIN + accentBarW + 20 * SCALE
+  const contentX = MARGIN + accentBarW + 22 * SCALE
 
   // Etiqueta de sección
   ctx.fillStyle = BRAND.brand
-  ctx.font = `bold ${22 * SCALE}px Arial`
+  ctx.font = `bold ${24 * SCALE}px Arial`
   ctx.textAlign = 'left'
   ctx.fillText('¿POR QUÉ IMPORTA?', contentX, 238 * SCALE)
 
   // Subrayado terracota
   ctx.fillStyle = BRAND.accent
-  ctx.fillRect(contentX, 248 * SCALE, 76 * SCALE, 5 * SCALE)
+  ctx.fillRect(contentX, 250 * SCALE, 80 * SCALE, 6 * SCALE)
 
-  // Titular grande
+  // Titular grande — 4 líneas máx para menos truncación
   ctx.fillStyle = BRAND.textMain
   ctx.font = `bold ${57 * SCALE}px Arial`
   const headlineBottom = drawWrappedText(
     ctx,
     headline,
     contentX,
-    300 * SCALE,
+    306 * SCALE,
     RENDER_W - contentX - MARGIN,
     74 * SCALE,
-    3,
+    4,
   )
 
   // Línea divisoria
@@ -431,15 +446,15 @@ async function generateSlide3(text: string): Promise<Buffer> {
   ctx.globalAlpha = 0.2
   ctx.lineWidth = 2 * SCALE
   ctx.beginPath()
-  ctx.moveTo(contentX, headlineBottom + 20 * SCALE)
-  ctx.lineTo(RENDER_W - MARGIN, headlineBottom + 20 * SCALE)
+  ctx.moveTo(contentX, headlineBottom + 22 * SCALE)
+  ctx.lineTo(RENDER_W - MARGIN, headlineBottom + 22 * SCALE)
   ctx.stroke()
   ctx.globalAlpha = 1
 
   // Bullets del cuerpo con punto decorativo terracota
   if (bodyBullets.length > 0) {
     ctx.textAlign = 'left'
-    let bodyY = headlineBottom + 62 * SCALE
+    let bodyY = headlineBottom + 66 * SCALE
 
     for (const bullet of bodyBullets) {
       if (!bullet.trim()) continue
@@ -450,19 +465,19 @@ async function generateSlide3(text: string): Promise<Buffer> {
       ctx.arc(contentX + 10 * SCALE, bodyY - 14 * SCALE, 8 * SCALE, 0, Math.PI * 2)
       ctx.fill()
 
-      // Texto del bullet
+      // Texto del bullet — fuente más grande
       ctx.fillStyle = BRAND.textMuted
-      ctx.font = `${39 * SCALE}px Arial`
+      ctx.font = `${43 * SCALE}px Arial`
       bodyY = drawWrappedText(
         ctx,
         bullet,
         contentX + 28 * SCALE,
         bodyY,
         RENDER_W - contentX - 28 * SCALE - MARGIN,
-        54 * SCALE,
+        62 * SCALE,
         3,
       )
-      bodyY += 18 * SCALE  // espacio entre bullets
+      bodyY += 20 * SCALE  // espacio entre bullets
     }
   }
 
