@@ -135,17 +135,40 @@ async function generateSlide1(title: string, aiImageUrl: string): Promise<Buffer
   ctx.fillRect(0, 0, RENDER_W, RENDER_H)
 
   // Imagen IA como fondo — crop centrado para rellenar canvas 4:5
-  try {
-    const bgImage = await loadImage(aiImageUrl)
-    const targetRatio = RENDER_W / RENDER_H   // 0.8 para 4:5
-    const srcW = Math.min(bgImage.width, bgImage.height * targetRatio)
-    const srcH = srcW / targetRatio
-    const srcX = (bgImage.width - srcW) / 2
-    const srcY = (bgImage.height - srcH) / 2
-    ctx.drawImage(bgImage, srcX, srcY, srcW, srcH, 0, 0, RENDER_W, RENDER_H)
-  } catch {
-    ctx.fillStyle = '#1a1a2e'
+  // Si la URL es el logo fallback, usar fondo oscuro decorativo en su lugar
+  const isLogoFallback = aiImageUrl.includes('cropped-logo-impacto-indigena') || aiImageUrl.includes('1-2.png')
+  if (!isLogoFallback) {
+    try {
+      const bgImage = await loadImage(aiImageUrl)
+      const targetRatio = RENDER_W / RENDER_H   // 0.8 para 4:5
+      const srcW = Math.min(bgImage.width, bgImage.height * targetRatio)
+      const srcH = srcW / targetRatio
+      const srcX = (bgImage.width - srcW) / 2
+      const srcY = (bgImage.height - srcH) / 2
+      ctx.drawImage(bgImage, srcX, srcY, srcW, srcH, 0, 0, RENDER_W, RENDER_H)
+    } catch {
+      ctx.fillStyle = '#1a1a2e'
+      ctx.fillRect(0, 0, RENDER_W, RENDER_H)
+    }
+  } else {
+    // Fondo oscuro con gradiente decorativo cuando no hay imagen IA
+    const bgGrad = ctx.createLinearGradient(0, 0, RENDER_W, RENDER_H)
+    bgGrad.addColorStop(0, '#0f1923')
+    bgGrad.addColorStop(0.5, '#1a2a1a')
+    bgGrad.addColorStop(1, '#0f1923')
+    ctx.fillStyle = bgGrad
     ctx.fillRect(0, 0, RENDER_W, RENDER_H)
+    // Acento geométrico decorativo
+    ctx.globalAlpha = 0.12
+    ctx.fillStyle = COLORS.green
+    ctx.beginPath()
+    ctx.arc(RENDER_W * 0.85, RENDER_H * 0.25, 400 * SCALE, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = COLORS.orange
+    ctx.beginPath()
+    ctx.arc(RENDER_W * 0.15, RENDER_H * 0.7, 300 * SCALE, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.globalAlpha = 1
   }
 
   // Gradient oscuro en parte inferior (comienza al 40% del alto)
@@ -229,7 +252,7 @@ async function generateSlide2(text: string): Promise<Buffer> {
     headerH + 110 * SCALE,
     RENDER_W - MARGIN * 2 - 36 * SCALE,
     76 * SCALE,
-    14,
+    10,
   )
 
   // Número de slide
@@ -278,7 +301,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
   const LINE_HEIGHT = 60 * SCALE
   const MAX_WIDTH = RENDER_W - MARGIN * 2 - 36 * SCALE
   const LEFT = MARGIN + 36 * SCALE
-  const MAX_LINES = 16   // fuentes más grandes, menos líneas
+  const MAX_LINES = 10   // limitar a 10 líneas para evitar desbordamiento
 
   // Parsear ANTES de limpiar para preservar el formato markdown
   const bullets = text
