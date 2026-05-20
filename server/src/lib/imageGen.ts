@@ -1,14 +1,27 @@
-import OpenAI from 'openai'
+import OpenAI, { AzureOpenAI } from 'openai'
+import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { uploadImageToR2 } from './imageStorage.js'
 
 const log = createLogger('image-gen')
 
-// DALL-E 3 usa siempre OpenAI directo (OPENAI_API_KEY).
-// Azure OpenAI tiene cuotas muy limitadas para DALL-E y no está disponible
-// en todas las regiones — el resto de los servicios (LLM, embeddings, TTS)
-// usan Azure vía LLM_PROVIDER=azure.
-const openai = new OpenAI()
+/**
+ * Devuelve el cliente OpenAI correcto según el proveedor configurado.
+ * - LLM_PROVIDER=azure  → AzureOpenAI (usa AZURE_OPENAI_* vars)
+ * - Cualquier otro      → OpenAI directo (usa OPENAI_API_KEY)
+ */
+function getImageClient(): { client: OpenAI | AzureOpenAI; model: string } {
+  if (config.llm.provider === 'azure') {
+    const client = new AzureOpenAI({
+      endpoint: config.llm.azure.endpoint,
+      apiKey: config.llm.azure.apiKey,
+      apiVersion: config.llm.azure.apiVersion,
+      deployment: config.llm.azure.deployments.dalle,
+    })
+    return { client, model: config.llm.azure.deployments.dalle }
+  }
+  return { client: new OpenAI(), model: 'dall-e-3' }
+}
 
 /**
  * Genera una imagen con DALL-E 3 para una historia y la sube a R2.
@@ -30,10 +43,12 @@ NO text, NO words, NO letters in the image.
 Cinematic composition, high contrast, visually striking.
 `.trim()
 
-  log.info({ storyId, title: title.slice(0, 50) }, 'generating DALL-E image')
+  log.info({ storyId, title: title.slice(0, 50), provider: config.llm.provider }, 'generating DALL-E image')
 
-  const response = await openai.images.generate({
-    model: 'dall-e-3',
+  const { client, model } = getImageClient()
+
+  const response = await client.images.generate({
+    model,
     prompt,
     n: 1,
     size: '1792x1024',
