@@ -74,8 +74,11 @@ Cinematic composition, high contrast, visually striking.
     quality: isGptImage ? config.imageGen.quality : 'standard',
   }
 
-  // Solicitar base64 explícitamente para evitar URLs temporales que expiran
-  params.response_format = 'b64_json'
+  // gpt-image-2 no acepta response_format — devuelve b64_json por defecto en Azure
+  // dall-e-3 sí lo acepta y requiere especificarlo para obtener base64
+  if (!isGptImage) {
+    params.response_format = 'b64_json'
+  }
 
   const response = await (client.images.generate as (p: any) => Promise<any>)(params)
 
