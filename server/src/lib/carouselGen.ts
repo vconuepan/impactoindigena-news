@@ -336,16 +336,16 @@ async function generateSlide2(text: string): Promise<Buffer> {
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(contentX, 250 * SCALE, 80 * SCALE, 6 * SCALE)
 
-  // Titular grande y negro — 4 líneas máx para menos truncación
+  // Titular grande y negro — fuente 50px para caber más texto; 4 líneas máx
   ctx.fillStyle = BRAND.textMain
-  ctx.font = `bold ${57 * SCALE}px Arial`
+  ctx.font = `bold ${50 * SCALE}px Arial`
   const headlineBottom = drawWrappedText(
     ctx,
     headline,
     contentX,
     306 * SCALE,
     RENDER_W - contentX - MARGIN,
-    74 * SCALE,
+    68 * SCALE,
     4,
   )
 
@@ -403,10 +403,8 @@ async function generateSlide3(text: string): Promise<Buffer> {
 
   await drawLogo(ctx, MARGIN, MARGIN + 20 * SCALE, 74 * SCALE, LOGO_BLACK)
 
-  // Extraer bullets; primero como titular, resto como cuerpo
-  const bullets = extractBullets(text)
-  const headline = bullets[0] || ''
-  const bodyBullets = bullets.slice(1, 3)  // máx 2 bullets adicionales
+  // Todos los bullets a tamaño uniforme para que aparezcan completos
+  const bullets = extractBullets(text).filter(Boolean).slice(0, 4)
 
   // ------- Barra vertical de acento terracota -------
   const accentBarX = MARGIN
@@ -428,57 +426,39 @@ async function generateSlide3(text: string): Promise<Buffer> {
   ctx.fillStyle = BRAND.accent
   ctx.fillRect(contentX, 250 * SCALE, 80 * SCALE, 6 * SCALE)
 
-  // Titular grande — 3 líneas máx (reservar espacio para bullets debajo)
-  ctx.fillStyle = BRAND.textMain
-  ctx.font = `bold ${57 * SCALE}px Arial`
-  const headlineBottom = drawWrappedText(
-    ctx,
-    headline,
-    contentX,
-    306 * SCALE,
-    RENDER_W - contentX - MARGIN,
-    74 * SCALE,
-    3,
-  )
+  // Tamaño de fuente adaptado a la cantidad de bullets:
+  // ≤2 bullets → 44px grande y espacioso
+  //  3 bullets → 41px (estándar)
+  //  4 bullets → 37px compacto
+  const n = bullets.length
+  const bulletFont   = n <= 2 ? 44 * SCALE : n === 3 ? 41 * SCALE : 37 * SCALE
+  const bulletLineH  = n <= 2 ? 64 * SCALE : n === 3 ? 60 * SCALE : 54 * SCALE
+  const bulletMaxLn  = n <= 2 ? 4          : n === 3 ? 4          : 3
+  const bulletGap    = n <= 2 ? 36 * SCALE : n === 3 ? 28 * SCALE : 22 * SCALE
 
-  // Línea divisoria
-  ctx.strokeStyle = BRAND.textMuted
-  ctx.globalAlpha = 0.2
-  ctx.lineWidth = 2 * SCALE
-  ctx.beginPath()
-  ctx.moveTo(contentX, headlineBottom + 22 * SCALE)
-  ctx.lineTo(RENDER_W - MARGIN, headlineBottom + 22 * SCALE)
-  ctx.stroke()
-  ctx.globalAlpha = 1
+  ctx.textAlign = 'left'
+  let bulletY = 296 * SCALE
 
-  // Bullets del cuerpo con punto decorativo terracota
-  if (bodyBullets.length > 0) {
-    ctx.textAlign = 'left'
-    let bodyY = headlineBottom + 66 * SCALE
+  for (const bullet of bullets) {
+    // Punto decorativo terracota
+    ctx.fillStyle = BRAND.accent
+    ctx.beginPath()
+    ctx.arc(contentX + 10 * SCALE, bulletY - 12 * SCALE, 8 * SCALE, 0, Math.PI * 2)
+    ctx.fill()
 
-    for (const bullet of bodyBullets) {
-      if (!bullet.trim()) continue
-
-      // Punto decorativo terracota
-      ctx.fillStyle = BRAND.accent
-      ctx.beginPath()
-      ctx.arc(contentX + 10 * SCALE, bodyY - 14 * SCALE, 8 * SCALE, 0, Math.PI * 2)
-      ctx.fill()
-
-      // Texto del bullet — 2 líneas máx para que quepan ambos bullets
-      ctx.fillStyle = BRAND.textMuted
-      ctx.font = `${43 * SCALE}px Arial`
-      bodyY = drawWrappedText(
-        ctx,
-        bullet,
-        contentX + 28 * SCALE,
-        bodyY,
-        RENDER_W - contentX - 28 * SCALE - MARGIN,
-        62 * SCALE,
-        2,
-      )
-      bodyY += 20 * SCALE  // espacio entre bullets
-    }
+    // Texto del bullet
+    ctx.fillStyle = BRAND.textMain
+    ctx.font = `${bulletFont}px Arial`
+    bulletY = drawWrappedText(
+      ctx,
+      bullet,
+      contentX + 28 * SCALE,
+      bulletY,
+      RENDER_W - contentX - 28 * SCALE - MARGIN,
+      bulletLineH,
+      bulletMaxLn,
+    )
+    bulletY += bulletGap
   }
 
   // Footer editorial
