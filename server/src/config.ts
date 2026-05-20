@@ -215,6 +215,15 @@ export const config = {
       maxAgeDays: parseInt(process.env.TWITTER_METRICS_MAX_AGE_DAYS || '7', 10),
     },
   },
+  imageGen: {
+    // Recurso Azure separado para generación de imágenes (Sweden Central — soporta gpt-image-2)
+    // Si no está configurado, usa el recurso LLM principal como fallback
+    endpoint:   process.env.AZURE_IMAGE_ENDPOINT   || '',
+    apiKey:     process.env.AZURE_IMAGE_API_KEY     || '',
+    apiVersion: process.env.AZURE_IMAGE_API_VERSION || '2025-04-01-preview',
+    deployment: process.env.AZURE_IMAGE_DEPLOYMENT  || 'gpt-image-2',
+    quality:    (process.env.AZURE_IMAGE_QUALITY    || 'high') as 'low' | 'medium' | 'high',
+  },
   r2: {
     endpoint: process.env.R2_ENDPOINT || '',
     accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
