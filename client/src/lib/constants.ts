@@ -26,14 +26,24 @@ export const JOB_DISPLAY_NAMES: Record<JobName, string> = {
   select_stories: 'Select Stories',
   publish_stories: 'Publish Stories',
   social_auto_post: 'Social Auto-Post',
-  bluesky_update_metrics: 'Bluesky Update Metrics',
-  mastodon_update_metrics: 'Mastodon Update Metrics',
+  bluesky_update_metrics: 'Bluesky Metrics',
+  mastodon_update_metrics: 'Mastodon Metrics',
+  instagram_update_metrics: 'Instagram Metrics',
+  linkedin_update_metrics: 'LinkedIn Metrics',
   generate_newsletter: 'Generate Newsletter',
+  send_newsletter: 'Send Newsletter',
+  send_private_newsletter: 'Send Private Newsletter',
+  scrape_docip: 'Scrape DOCIP',
+  send_community_digest: 'Send Community Digest',
+  send_alerts: 'Send Alerts',
+  generate_editorial: 'Generate Editorial',
+  google_news_discover: 'Google News Discover',
 }
 
 /** Pipeline execution order for sorting jobs in the UI. */
 export const JOB_PIPELINE_ORDER: JobName[] = [
   'crawl_feeds',
+  'google_news_discover',
   'preassess_stories',
   'assess_stories',
   'select_stories',
@@ -41,7 +51,15 @@ export const JOB_PIPELINE_ORDER: JobName[] = [
   'social_auto_post',
   'bluesky_update_metrics',
   'mastodon_update_metrics',
+  'instagram_update_metrics',
+  'linkedin_update_metrics',
   'generate_newsletter',
+  'send_newsletter',
+  'send_private_newsletter',
+  'scrape_docip',
+  'send_community_digest',
+  'send_alerts',
+  'generate_editorial',
 ]
 
 const STATUS_LABELS: Partial<Record<string, string>> = {

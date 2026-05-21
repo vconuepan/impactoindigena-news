@@ -47,7 +47,16 @@ export type JobName =
   | 'social_auto_post'
   | 'bluesky_update_metrics'
   | 'mastodon_update_metrics'
+  | 'instagram_update_metrics'
+  | 'linkedin_update_metrics'
   | 'generate_newsletter'
+  | 'send_newsletter'
+  | 'send_private_newsletter'
+  | 'scrape_docip'
+  | 'send_community_digest'
+  | 'send_alerts'
+  | 'generate_editorial'
+  | 'google_news_discover'
 
 export type JobStatus = 'idle' | 'running' | 'failed'
 
