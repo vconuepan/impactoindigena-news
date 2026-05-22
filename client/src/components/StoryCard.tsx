@@ -58,9 +58,19 @@ function CategoryPill({ name, hex }: { name: string; hex: string }) {
   )
 }
 
-function CardImage({ src, alt, className }: { src: string; alt: string; className?: string }) {
+function CardImage({
+  src,
+  alt,
+  className,
+  fallback,
+}: {
+  src: string
+  alt: string
+  className?: string
+  fallback?: React.ReactNode
+}) {
   const [error, setError] = useState(false)
-  if (error) return null
+  if (error) return <>{fallback ?? null}</>
   return (
     <img
       src={src}
@@ -111,6 +121,11 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
                 src={imageUrl}
                 alt={headlineText}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                fallback={
+                  <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
+                    {Pattern && <Pattern opacity={0.25} />}
+                  </div>
+                }
               />
             ) : (
               <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
@@ -151,6 +166,11 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
                 src={imageUrl}
                 alt={headlineText}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                fallback={
+                  <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
+                    {Pattern && <Pattern opacity={0.2} />}
+                  </div>
+                }
               />
             ) : (
               <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
@@ -210,6 +230,14 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
                   src={imageUrl}
                   alt={headlineText}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  fallback={
+                    <div
+                      className="w-full h-full"
+                      style={{ background: `linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})` }}
+                    >
+                      {Pattern && <Pattern opacity={0.22} />}
+                    </div>
+                  }
                 />
               ) : (
                 <div

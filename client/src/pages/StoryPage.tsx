@@ -275,19 +275,21 @@ export default function StoryPage() {
           </div>
         </header>
 
-        <div className="page-section !pt-0">
-          {/* Hero image */}
-          {story.imageUrl && (
-            <div className="mb-8 -mx-4 md:mx-0 rounded-none md:rounded-xl overflow-hidden">
-              <img
-                src={story.imageUrl}
-                alt={headline}
-                className="w-full max-h-[420px] object-cover"
-                fetchPriority="high"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-            </div>
-          )}
+        {/* Hero image — full-width, between header and article body */}
+        {story.imageUrl && (
+          <div className="overflow-hidden" style={{ maxHeight: '480px' }}>
+            <img
+              src={story.imageUrl}
+              alt={headline}
+              className="w-full object-cover"
+              style={{ maxHeight: '480px' }}
+              fetchPriority="high"
+              onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+            />
+          </div>
+        )}
+
+        <div className="page-section !pt-8">
 
           {/* Summary */}
           {loc.summary && (

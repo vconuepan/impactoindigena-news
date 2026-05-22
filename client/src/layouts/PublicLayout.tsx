@@ -316,6 +316,7 @@ function PublicLayoutInner() {
                 className="issue-nav-link"
                 data-active={location.pathname.startsWith('/comunidad')}
               >
+                <span className="w-2.5 h-2.5 rounded-full opacity-70" style={{ backgroundColor: '#0D5F3C' }} aria-hidden="true" />
                 Comunidades
               </Link>
             </li>
