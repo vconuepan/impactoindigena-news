@@ -10,6 +10,7 @@ import { runMastodonUpdateMetrics } from './mastodonUpdateMetrics.js'
 import { runInstagramUpdateMetrics } from './instagramUpdateMetrics.js'
 import { runLinkedInUpdateMetrics } from './linkedinUpdateMetrics.js'
 import { runSendNewsletter } from './sendNewsletter.js'
+import { runSendWeeklyNewsletter } from './sendWeeklyNewsletter.js'
 import { runSendPrivateNewsletter } from './sendPrivateNewsletter.js'
 import { runScrapeDOCIP } from './scrapeDOCIP.js'
 import { runSendCommunityDigest } from './sendCommunityDigest.js'
@@ -30,6 +31,7 @@ export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   instagram_update_metrics: runInstagramUpdateMetrics,
   linkedin_update_metrics: runLinkedInUpdateMetrics,
   send_newsletter: runSendNewsletter,
+  send_weekly_newsletter: runSendWeeklyNewsletter,
   send_private_newsletter: runSendPrivateNewsletter,
   scrape_docip: runScrapeDOCIP,
   send_community_digest: runSendCommunityDigest,

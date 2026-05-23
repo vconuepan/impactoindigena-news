@@ -25,6 +25,8 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   { jobName: 'send_newsletter',           cronExpression: '0 12 * * 1,4' },
   // send_private_newsletter: lunes y jueves 12:30 PM UTC (offset para no solapar)
   { jobName: 'send_private_newsletter',   cronExpression: '30 12 * * 1,4' },
+  // send_weekly_newsletter: lunes 9 AM UTC (~6 AM Chile) — resumen semana anterior
+  { jobName: 'send_weekly_newsletter',    cronExpression: '0 9 * * 1',  enabled: true },
   // send_community_digest: lunes 8 AM UTC (~5 AM Chile) — enabled by default
   { jobName: 'send_community_digest',     cronExpression: '0 8 * * 1',  enabled: true },
   // send_alerts: diario 9 AM UTC (~6 AM Chile) — enabled by default

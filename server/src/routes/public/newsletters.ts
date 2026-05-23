@@ -36,7 +36,11 @@ router.get('/', async (_req, res) => {
   try {
     const data = await cached(listCache, 'archive', async (): Promise<NewsletterListItem[]> => {
       const newsletters = await prisma.newsletter.findMany({
-        where: { status: 'published' },
+        where: {
+          status: 'published',
+          // Exclude specialty/private newsletters — show only main "Impacto Indígena" editions
+          title: { not: { startsWith: '[' } },
+        },
         select: {
           id: true,
           title: true,
