@@ -35,8 +35,10 @@ const rssParser = new Parser()
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2)
 const DRY_RUN = args.includes('--dry-run')
-const fromArg = args[args.indexOf('--from') + 1]
-const toArg   = args[args.indexOf('--to') + 1]
+const fromIdx = args.indexOf('--from')
+const toIdx   = args.indexOf('--to')
+const fromArg = fromIdx >= 0 ? args[fromIdx + 1] : undefined
+const toArg   = toIdx   >= 0 ? args[toIdx   + 1] : undefined
 
 // Default: enero 1 → marzo 7, 2026 (before our first story)
 const FROM_DATE = fromArg ?? '20260101'
@@ -206,7 +208,7 @@ async function main() {
           sourceTitle: extracted.title || item.title,
           sourceContent: extracted.content,
           feedId: feed.id,
-          sourceDatePublished: item.datePublished || undefined,
+          sourceDatePublished: item.datePublished ? item.datePublished.toISOString() : undefined,
           crawlMethod: extracted.method,
           imageUrl: item.imageUrl || null,
         })
