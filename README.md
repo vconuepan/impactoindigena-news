@@ -51,14 +51,14 @@ y desarrollo sostenible.
 
 4. Configure environment variables:
    ```bash
-   # Create server/.env with at minimum these required variables:
-   # DATABASE_URL, OPENAI_API_KEY, JWT_SECRET, FRONTEND_URL
-   # See server/src/config.ts for all available settings and their defaults.
+   cp server/.env.example server/.env
+   # Then fill in the required values: DATABASE_URL, OPENAI_API_KEY, JWT_SECRET, FRONTEND_URL
+   # All available settings and their defaults are documented in server/.env.example
    ```
 
 5. Run database migrations:
    ```bash
-   cd server && npx prisma migrate dev
+   npm run db:migrate --prefix server
    ```
 
 6. Start development servers:

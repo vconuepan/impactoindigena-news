@@ -21,6 +21,7 @@ import analyticsRouter from './analytics.js'
 import spotlightsRouter from './spotlights.js'
 import casesRouter from './cases.js'
 import editorialsRouter from './editorials.js'
+import integrationHealthRouter from './integration-health.js'
 
 const router = Router()
 
@@ -48,5 +49,6 @@ router.use('/analytics', analyticsRouter)
 router.use('/spotlights', spotlightsRouter)
 router.use('/cases', casesRouter)
 router.use('/editorials', editorialsRouter)
+router.use('/integration-health', integrationHealthRouter)
 
 export default router

@@ -147,6 +147,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | `database-migrations.md` | SQL-first migration workflow, allowed/banned commands |
 | `bluesky.md` | AT Protocol auth, post format, auto-post, metrics |
 | `mastodon.md` | Static token auth, shared social logic, post format |
+| `instagram.md` | Graph API auth, carousel vs single-image, R2 dependency, token rotation |
 | `client/.context/skeletons.md` | Skeleton components for loading states (prevents CLS) |
 
 ## Memory

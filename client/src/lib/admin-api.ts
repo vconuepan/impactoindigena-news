@@ -667,6 +667,11 @@ export const adminApi = {
       request<void>(`/cases/${id}`, { method: 'DELETE' }),
   },
 
+  // Integration health
+  integrationHealth: {
+    get: () => request<IntegrationHealth>('/integration-health'),
+  },
+
   // Users
   users: {
     list: () => request<User[]>('/users'),
@@ -682,6 +687,41 @@ export const adminApi = {
         body: JSON.stringify({ password }),
       }),
   },
+}
+
+// ─── Integration Health types ─────────────────────────────────────────────────
+
+export interface IntegrationHealthFeedError {
+  id: string
+  title: string
+  lastCrawlError: string | null
+  lastCrawlErrorAt: string | null
+}
+
+export interface IntegrationHealthSocialChannel {
+  status: string
+  lastAt: string | null
+}
+
+export interface IntegrationHealth {
+  feeds: {
+    totalActive: number
+    crawledIn24h: number
+    staleFeedsCount: number
+    lastCrawledAt: string | null
+    recentErrors: IntegrationHealthFeedError[]
+  }
+  social: {
+    bluesky: IntegrationHealthSocialChannel | null
+    mastodon: IntegrationHealthSocialChannel | null
+    instagram: IntegrationHealthSocialChannel | null
+    twitter: IntegrationHealthSocialChannel | null
+    linkedin: IntegrationHealthSocialChannel | null
+  }
+  newsletter: {
+    status: string
+    lastAt: string | null
+  } | null
 }
 
 // ─── Casos en curso types ─────────────────────────────────────────────────────

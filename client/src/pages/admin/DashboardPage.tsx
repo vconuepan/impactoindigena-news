@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { STORY_STATUSES } from '@shared/constants'
 import { useStoryStats } from '../../hooks/useStoryStats'
 import { useJobs, useRunJob } from '../../hooks/useJobs'
-import { adminApi } from '../../lib/admin-api'
+import { adminApi, type IntegrationHealth } from '../../lib/admin-api'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { Badge } from '../../components/ui/Badge'
@@ -76,10 +76,144 @@ function CommunityStats() {
   )
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function statusDot(status: string): string {
+  if (status === 'published' || status === 'sent') return 'bg-green-500'
+  if (status === 'failed') return 'bg-red-500'
+  if (status === 'draft') return 'bg-yellow-400'
+  return 'bg-neutral-300'
+}
+
+function statusLabel(status: string): string {
+  if (status === 'published') return 'Publicado'
+  if (status === 'sent') return 'Enviado'
+  if (status === 'failed') return 'Fallido'
+  if (status === 'draft') return 'Borrador'
+  return status
+}
+
+function relativeTime(dateStr: string | null | undefined): string {
+  if (!dateStr) return '—'
+  const d = new Date(dateStr)
+  const diffMs = Date.now() - d.getTime()
+  const diffH = Math.floor(diffMs / (1000 * 60 * 60))
+  if (diffH < 1) return 'hace menos de 1h'
+  if (diffH < 24) return `hace ${diffH}h`
+  const diffD = Math.floor(diffH / 24)
+  if (diffD === 1) return 'hace 1 día'
+  return `hace ${diffD} días`
+}
+
+// ── Integration Health Panel ──────────────────────────────────────────────────
+
+function IntegrationHealthPanel({ data }: { data: IntegrationHealth }) {
+  const { feeds, social, newsletter } = data
+
+  const feedsOk = feeds.staleFeedsCount === 0 && feeds.recentErrors.length === 0
+  const feedsWarn = !feedsOk
+
+  const socialChannels = [
+    { key: 'bluesky', label: 'Bluesky', data: social.bluesky },
+    { key: 'mastodon', label: 'Mastodon', data: social.mastodon },
+    { key: 'instagram', label: 'Instagram', data: social.instagram },
+    { key: 'twitter', label: 'Twitter / X', data: social.twitter },
+    { key: 'linkedin', label: 'LinkedIn', data: social.linkedin },
+  ].filter((c) => c.data !== null)
+
+  return (
+    <div className="space-y-4">
+      {/* Feeds */}
+      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-neutral-700">Feeds RSS</h3>
+          <span className={`inline-block w-2.5 h-2.5 rounded-full ${feedsWarn ? 'bg-amber-400' : 'bg-green-500'}`} aria-hidden="true" />
+        </div>
+        <div className="grid grid-cols-3 gap-3 text-center mb-3">
+          <div>
+            <p className="text-xl font-bold text-neutral-900">{feeds.totalActive}</p>
+            <p className="text-xs text-neutral-500">activos</p>
+          </div>
+          <div>
+            <p className={`text-xl font-bold ${feeds.crawledIn24h < feeds.totalActive ? 'text-amber-600' : 'text-green-700'}`}>{feeds.crawledIn24h}</p>
+            <p className="text-xs text-neutral-500">crawleados (24h)</p>
+          </div>
+          <div>
+            <p className={`text-xl font-bold ${feeds.staleFeedsCount > 0 ? 'text-amber-600' : 'text-neutral-400'}`}>{feeds.staleFeedsCount}</p>
+            <p className="text-xs text-neutral-500">sin crawl</p>
+          </div>
+        </div>
+        {feeds.lastCrawledAt && (
+          <p className="text-xs text-neutral-400">Último crawl exitoso: {relativeTime(feeds.lastCrawledAt)}</p>
+        )}
+        {feeds.recentErrors.length > 0 && (
+          <details className="mt-2">
+            <summary className="text-xs text-amber-700 cursor-pointer font-medium">
+              {feeds.recentErrors.length} error{feeds.recentErrors.length > 1 ? 'es' : ''} reciente{feeds.recentErrors.length > 1 ? 's' : ''}
+            </summary>
+            <ul className="mt-1 space-y-1">
+              {feeds.recentErrors.map((f) => (
+                <li key={f.id} className="text-xs text-neutral-600 truncate">
+                  <span className="font-medium">{f.title}:</span>{' '}
+                  <span className="text-red-600">{f.lastCrawlError}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+      </div>
+
+      {/* Social channels */}
+      {socialChannels.length > 0 && (
+        <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
+          <h3 className="text-sm font-semibold text-neutral-700 mb-3">Redes sociales</h3>
+          <div className="space-y-2">
+            {socialChannels.map(({ key, label, data: ch }) => (
+              <div key={key} className="flex items-center justify-between text-sm">
+                <span className="text-neutral-700">{label}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-neutral-400">{relativeTime(ch!.lastAt)}</span>
+                  <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full ${ch!.status === 'published' ? 'bg-green-50 text-green-700' : ch!.status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-neutral-100 text-neutral-500'}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${statusDot(ch!.status)}`} aria-hidden="true" />
+                    {statusLabel(ch!.status)}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Newsletter */}
+      {newsletter && (
+        <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-neutral-700">Newsletter</h3>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-neutral-400">{relativeTime(newsletter.lastAt)}</span>
+              <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-full ${newsletter.status === 'sent' ? 'bg-green-50 text-green-700' : newsletter.status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-neutral-100 text-neutral-500'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${statusDot(newsletter.status)}`} aria-hidden="true" />
+                {statusLabel(newsletter.status)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function DashboardPage() {
   const statsQuery = useStoryStats()
   const jobsQuery = useJobs()
   const runJob = useRunJob()
+  const healthQuery = useQuery({
+    queryKey: ['admin', 'integration-health'],
+    queryFn: () => adminApi.integrationHealth.get(),
+    refetchInterval: 5 * 60 * 1000, // refresh every 5 minutes
+  })
 
   return (
     <>
@@ -105,6 +239,18 @@ export default function DashboardPage() {
           <ErrorState message="Error al cargar estadísticas" onRetry={() => statsQuery.refetch()} />
         )}
         {statsQuery.data && <StatsGrid stats={statsQuery.data} />}
+      </section>
+
+      {/* Integration Health */}
+      <section className="mb-8">
+        <h2 className="text-lg font-semibold text-neutral-900 mb-3">Estado de integraciones</h2>
+        {healthQuery.isLoading && (
+          <div className="flex justify-center py-4"><LoadingSpinner /></div>
+        )}
+        {healthQuery.error && (
+          <ErrorState message="Error al cargar estado de integraciones" onRetry={() => healthQuery.refetch()} />
+        )}
+        {healthQuery.data && <IntegrationHealthPanel data={healthQuery.data} />}
       </section>
 
       {/* Jobs */}
