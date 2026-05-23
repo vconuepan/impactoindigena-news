@@ -399,11 +399,48 @@ function extractFlashStories(contentSections: string[]): Array<{ title: string; 
   return results
 }
 
-/** Format newsletter.createdAt as "Semana del DD de MMMM de YYYY" in Spanish */
+/** Format newsletter.createdAt as "Semana N° XX — Del DD al DD de MMMM de YYYY" in Spanish */
 function formatEditionDate(date: Date): string {
   const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
-  return `Semana del ${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`
+
+  // ISO week number
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const dayNum = d.getUTCDay() || 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+
+  // Monday and Sunday of the week containing `date`
+  const dow = date.getDay() || 7 // Mon=1 … Sun=7
+  const monday = new Date(date)
+  monday.setDate(date.getDate() - (dow - 1))
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+
+  const fromDay = monday.getDate()
+  const toDay = sunday.getDate()
+  const fromMonth = months[monday.getMonth()]
+  const toMonth = months[sunday.getMonth()]
+  const year = sunday.getFullYear()
+
+  const range = monday.getMonth() === sunday.getMonth()
+    ? `Del ${fromDay} al ${toDay} de ${toMonth} de ${year}`
+    : `Del ${fromDay} de ${fromMonth} al ${toDay} de ${toMonth} de ${year}`
+
+  return `Semana N° ${weekNo} — ${range}`
+}
+
+/** Capitalize the first letter of a string (email-safe, pure JS). */
+function capitalizeFirst(text: string): string {
+  if (!text) return text
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** Estimate reading time in minutes based on word count (200 wpm for Spanish). */
+function estimateReadingTime(content: string): number {
+  const words = content.trim().split(/\s+/).length
+  return Math.max(1, Math.round(words / 200))
 }
 
 export async function generateHtmlContent(newsletterId: string): Promise<string> {
@@ -467,15 +504,16 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
         <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto;"><tr>
           <td style="vertical-align: middle; padding-right: 14px;"><div style="width: 48px; border-top: 1px solid #d4d4d4;"></div></td>
           <td style="vertical-align: middle; padding-right: 10px; line-height: 0;"><div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${dotColor};"></div></td>
-          <td style="vertical-align: middle; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #404040; white-space: nowrap;">${escapeHtml(issueHeader)}</td>
+          <td style="vertical-align: middle; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: #1B3A2D; white-space: nowrap;">${escapeHtml(issueHeader)}</td>
           <td style="vertical-align: middle; padding-left: 14px;"><div style="width: 48px; border-top: 1px solid #d4d4d4;"></div></td>
         </tr></table>
       </td>
     </tr>`)
     }
 
-    // Individual story blocks
-    for (const storyLines of storyChunks) {
+    // Individual story blocks — max 3 per category
+    const cappedChunks = storyChunks.slice(0, 3)
+    for (const storyLines of cappedChunks) {
       let title = ''
       let metaLine = ''
       const summaryLines: string[] = []
@@ -508,8 +546,8 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
       const { originalUrl, relevanceUrl, publisherName, feedId } = parseMetaLine(metaLine)
 
       const titleHtml = originalUrl
-        ? `<a href="${escapeHtml(originalUrl)}" style="color: #1B3A2D; text-decoration: none;">${escapeHtml(title)}</a>`
-        : escapeHtml(title)
+        ? `<a href="${escapeHtml(originalUrl)}" style="color: #1B3A2D; text-decoration: none;">${escapeHtml(capitalizeFirst(title))}</a>`
+        : escapeHtml(capitalizeFirst(title))
 
       // Publisher meta row
       let metaHtml = ''
@@ -528,13 +566,13 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
       let bodyHtml = ''
       if (summaryLines.length > 0) {
         const summaryContent = summaryLines
-          .map(l => `<p style="margin: 0 0 8px; font-size: 14px; color: #374151; line-height: 1.65;">${escapeHtml(l)}</p>`)
+          .map(l => `<p style="margin: 0 0 8px; font-size: 14px; color: #374151; line-height: 1.65;">${escapeHtml(capitalizeFirst(l))}</p>`)
           .join('\n            ')
         bodyHtml = `
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
           <tr>
             <td style="border-left: 3px solid #16a34a; padding: 10px 14px; background-color: #f0fdf4; border-radius: 0 4px 4px 0;">
-              <p style="margin: 0 0 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #16a34a;">Lo que importa para RRCC</p>
+              <p style="margin: 0 0 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #16a34a;">&iquest;Por qu&eacute; es importante?</p>
               ${summaryContent}
             </td>
           </tr>
@@ -565,19 +603,41 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
 
   // ── Build complete HTML ──────────────────────────────────────────────────
   const editionDate = formatEditionDate(newsletter.createdAt)
+  const readingMinutes = estimateReadingTime(newsletter.content)
 
-  // Intro section
-  const introSection = introText
+  // Intro section — only render if we have introText and it looks Spanish
+  // (skip if the LLM returned English, which happens with old prompts)
+  const looksEnglish = (text: string) => /\b(the|and|for|with|this|that|from|have|been)\b/i.test(text)
+  const introSection = introText && !looksEnglish(introText)
     ? `
           <!-- Intro -->
           <tr>
             <td style="padding: 20px 32px 4px;">
               ${introText.split('\n').filter(l => l.trim()).map(l =>
-                `<p style="margin: 0 0 10px; font-size: 15px; color: #4b5563; line-height: 1.7;">${escapeHtml(l.trim())}</p>`
+                `<p style="margin: 0 0 10px; font-size: 15px; color: #4b5563; line-height: 1.7;">${escapeHtml(capitalizeFirst(l.trim()))}</p>`
               ).join('\n              ')}
             </td>
           </tr>`
     : ''
+
+  // Editor byline
+  const editorSection = `
+          <!-- Editor byline -->
+          <tr>
+            <td style="padding: 16px 32px 20px; border-bottom: 1px solid #f3f4f6;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding-right: 12px; vertical-align: middle;">
+                    <img src="https://impactoindigena.com/wp-content/uploads/2025/05/vc-vertical.webp" alt="Venancio Co&ntilde;uepan" width="40" height="40" style="display: block; width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
+                  </td>
+                  <td style="vertical-align: middle;">
+                    <p style="margin: 0; font-size: 13px; font-weight: 700; color: #111827;">Venancio Co&ntilde;uepan</p>
+                    <p style="margin: 2px 0 0; font-size: 12px; color: #6b7280;">Editor &bull; ${escapeHtml(editionDate)} &bull; ${readingMinutes} min de lectura</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`
 
   // Flash section (quick-scan bullets)
   const flashSection = flashStories.length > 0
@@ -589,7 +649,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
                 <tr>
                   <td style="background-color: #fefce8; border-left: 4px solid #d97706; border-radius: 0 6px 6px 0; padding: 14px 18px;">
                     <p style="margin: 0 0 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #92400e;">&#9889; Flash &mdash; Lo urgente de esta edici&oacute;n</p>
-                    ${flashStories.map(s => `<p style="margin: 0 0 7px; font-size: 14px; color: #1c1917; line-height: 1.5;">&#8227;&nbsp; <a href="${escapeHtml(s.url)}" style="color: #1B3A2D; text-decoration: none; font-weight: 600;">${escapeHtml(s.title)}</a></p>`).join('\n                    ')}
+                    ${flashStories.map(s => `<p style="margin: 0 0 7px; font-size: 14px; color: #1c1917; line-height: 1.5;">&#8227;&nbsp; <a href="${escapeHtml(s.url)}" style="color: #1B3A2D; text-decoration: none; font-weight: 600;">${escapeHtml(capitalizeFirst(s.title))}</a></p>`).join('\n                    ')}
                   </td>
                 </tr>
               </table>
@@ -614,7 +674,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
           <tr>
             <td style="background-color: #1B3A2D; padding: 28px 32px 20px; text-align: center;">
               <a href="https://impactoindigena.news" style="text-decoration: none;">
-                <img src="https://impactoindigena.news/images/logo-horizontal.png" alt="Impacto Ind&iacute;gena" width="190" style="display: inline-block; max-width: 190px; height: auto; filter: brightness(0) invert(1);" />
+                <img src="https://impactoindigena.com/wp-content/uploads/2025/04/cropped-logo-impacto-indigena_letras_blancas-1-scaled-1.png" alt="Impacto Ind&iacute;gena" width="220" style="display: inline-block; max-width: 220px; height: auto;" />
               </a>
               <p style="margin: 10px 0 0; font-size: 13px; color: #86efac; letter-spacing: 0.02em;">Noticias de impacto para pueblos ind&iacute;genas</p>
             </td>
@@ -634,10 +694,11 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
 
           <!-- Edition date -->
           <tr>
-            <td style="padding: 16px 32px 8px; text-align: center; background-color: #fafaf9;">
+            <td style="padding: 12px 32px 0; text-align: center; background-color: #fafaf9;">
               <p style="margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.13em; color: #78716c;">${escapeHtml(editionDate)}</p>
             </td>
           </tr>
+${editorSection}
 ${introSection}
 ${flashSection}
 
@@ -674,8 +735,8 @@ ${flashSection}
                 <a href="https://impactoindigena.news" style="color: #86efac; text-decoration: none;">impactoindigena.news</a>
               </p>
               <p style="margin: 0 0 14px; font-size: 12px; color: #6ee7b7;">
-                <a href="https://bsky.app/profile/impactoindigena.bsky.social" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Bluesky</a>
-                <a href="https://mastodon.social/@impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Mastodon</a>
+                <a href="https://x.com/impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Twitter / X</a>
+                <a href="https://www.instagram.com/impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Instagram</a>
                 <a href="https://impactoindigena.news/feedback" style="color: #6ee7b7; text-decoration: none;">Feedback</a>
               </p>
               <p style="margin: 0; font-size: 11px; color: #4ade80; opacity: 0.6;">

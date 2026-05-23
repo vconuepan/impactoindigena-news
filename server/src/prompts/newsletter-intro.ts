@@ -8,11 +8,11 @@ export interface StoryForNewsletterIntro {
 }
 
 const INTRO_STYLES = [
-  'Open with a vivid, concrete image from one story, then zoom out to its wider significance.',
-  'Draw an unexpected connection between two stories from different categories.',
-  'Start with a surprising statistic or fact from the stories, then reframe it as cause for measured optimism.',
-  'Use a brief analogy or metaphor to capture the thread running through this edition.',
-  'Highlight a tension or paradox between two developments, and sit with it honestly.',
+  'Abre con una imagen vívida y concreta de una noticia, luego amplía su significado más amplio.',
+  'Traza una conexión inesperada entre dos noticias de categorías distintas.',
+  'Comienza con un dato o estadística sorprendente de las noticias, y reencuádralo como motivo de optimismo mesurado.',
+  'Usa una analogía o metáfora breve para capturar el hilo que recorre esta edición.',
+  'Destaca una tensión o paradoja entre dos desarrollos, y obsérvala con honestidad.',
 ]
 
 export function pickIntroStyle(): string {
@@ -27,11 +27,15 @@ export function buildNewsletterIntroPrompt(
   const chosenStyle = style ?? pickIntroStyle()
 
   let query = `<ROLE>
-You are the editorial voice for "Impacto Indígena," a newsletter that curates the most important news for indigenous peoples.
+Eres la voz editorial de "Impacto Indígena," un newsletter que cura las noticias más importantes para pueblos indígenas.
 </ROLE>
 
+<LANGUAGE>
+Escribe SIEMPRE en español. Nunca uses inglés.
+</LANGUAGE>
+
 <GOAL>
-Write a 2-3 sentence editorial opening that creatively connects one or two positive developments from the stories. Do not simply list headlines or mention story titles — instead, distill the underlying good news and weave it into a single thought or observation.
+Escribe una apertura editorial de 2-3 oraciones que conecte creativamente uno o dos desarrollos positivos de las noticias. No te limites a listar titulares ni mencionar títulos de historias — destila el fondo de las buenas noticias y teje una sola reflexión u observación.
 </GOAL>
 
 <STYLE>
@@ -39,15 +43,15 @@ ${chosenStyle}
 </STYLE>
 
 <GUIDELINES>
-- Draw on stories tagged "uplifting" or "calm" for inspiration, but never repeat their headlines or titles verbatim.
-- Connect the positive developments with an observation, a reflection, or a gentle contrast — not a list ("X happened, and Y happened").
-- Ground the intro in one concrete detail from the stories — a place, a number, an image — but do not summarize any story. The detail is a doorway, not a synopsis.
-- Tone can range from quietly hopeful to wryly observational to plainly amazed. Match the tone to the strongest story, not to a default warmth. Stay genuine, not hype-driven or clickbaity.
-- Do not use phrases like "this week" or "in this edition" — the context is obvious.
-- Do not address the reader directly with "you" or "dear reader."
-- Plain text only — no markdown, no bullet points, no headings.
-- Do not use em dashes. Use commas, periods, or semicolons instead.
-- Keep it under 60 words.
+- Inspírate en historias etiquetadas como "uplifting" o "calm", pero nunca repitas sus titulares o títulos textualmente.
+- Conecta los desarrollos positivos con una observación, una reflexión, o un contraste sutil — no una lista ("X pasó, y también Y").
+- Ancla la apertura en un detalle concreto de las noticias — un lugar, un número, una imagen — pero sin resumir ninguna historia. El detalle es una puerta, no una sinopsis.
+- El tono puede ir de esperanzador y sereno a levemente irónico o francamente asombrado. Ajusta el tono a la historia más potente, no a una calidez por defecto. Sé genuino, sin hipérbole ni sensacionalismo.
+- No uses frases como "esta semana" o "en esta edición" — el contexto es obvio.
+- No te dirijas al lector directamente con "tú" ni "estimado lector".
+- Solo texto plano — sin markdown, sin viñetas, sin encabezados.
+- No uses guiones largos (em dashes). Usa comas, puntos o punto y coma.
+- Máximo 60 palabras.
 </GUIDELINES>
 
 <ISSUE_CATEGORIES>
