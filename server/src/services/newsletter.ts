@@ -352,6 +352,60 @@ function escapeHtml(text: string): string {
     .replace(/"/g, '&quot;')
 }
 
+/** Parse story metadata from a meta line like:
+ *  `{feed:abc} Publisher · [artículo original](url) · [análisis de relevancia](url)`
+ */
+function parseMetaLine(metaLine: string) {
+  let originalUrl = ''
+  let relevanceUrl = ''
+  let publisherName = ''
+  let feedId = ''
+
+  if (!metaLine) return { originalUrl, relevanceUrl, publisherName, feedId }
+
+  const links = [...metaLine.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g)]
+  for (const link of links) {
+    if (link[1] === 'artículo original') originalUrl = link[2]
+    else if (link[1] === 'análisis de relevancia') relevanceUrl = link[2]
+  }
+  const feedMatch = metaLine.match(/\{feed:([^}]+)\}/)
+  if (feedMatch) feedId = feedMatch[1]
+  const firstBracket = metaLine.indexOf('[')
+  if (firstBracket > 0) {
+    publisherName = metaLine.slice(0, firstBracket).replace(/\{feed:[^}]+\}\s*/, '').replace(/·\s*$/, '').trim()
+  }
+  return { originalUrl, relevanceUrl, publisherName, feedId }
+}
+
+/** Extract top story titles + URLs for the Flash quick-scan section. */
+function extractFlashStories(contentSections: string[]): Array<{ title: string; url: string }> {
+  const results: Array<{ title: string; url: string }> = []
+  for (const section of contentSections) {
+    const lines = section.split('\n').filter(l => l.trim())
+    let currentTitle = ''
+    for (const line of lines) {
+      const trimmed = line.trim()
+      if (trimmed.startsWith('## ')) {
+        currentTitle = trimmed.slice(3)
+      } else if (currentTitle && !trimmed.startsWith('#') && trimmed.match(/\[.*\]\(https?:\/\//)) {
+        const { originalUrl } = parseMetaLine(trimmed)
+        if (originalUrl) {
+          results.push({ title: currentTitle, url: originalUrl })
+          currentTitle = ''
+        }
+      }
+    }
+  }
+  return results
+}
+
+/** Format newsletter.createdAt as "Semana del DD de MMMM de YYYY" in Spanish */
+function formatEditionDate(date: Date): string {
+  const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+    'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+  return `Semana del ${date.getDate()} de ${months[date.getMonth()]} de ${date.getFullYear()}`
+}
+
 export async function generateHtmlContent(newsletterId: string): Promise<string> {
   const newsletter = await prisma.newsletter.findUnique({ where: { id: newsletterId } })
   if (!newsletter) throw new Error('Newsletter not found')
@@ -359,22 +413,22 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
 
   const sections = newsletter.content.split(/\n---\n/).filter(s => s.trim())
 
-  let introHtml = ''
+  let introText = ''
   const contentSections: string[] = []
 
   for (const section of sections) {
     const trimmed = section.trim()
-    if (!introHtml && !trimmed.startsWith('#')) {
-      introHtml = trimmed
-        .split('\n')
-        .filter(l => l.trim())
-        .map(l => `<p style="margin: 0 0 8px; font-size: 15px; color: #525252; line-height: 1.6;">${escapeHtml(l.trim())}</p>`)
-        .join('\n              ')
+    if (!introText && !trimmed.startsWith('#')) {
+      introText = trimmed
     } else {
       contentSections.push(trimmed)
     }
   }
 
+  // ── Flash stories (top 3 titles for quick-scan section) ─────────────────
+  const flashStories = extractFlashStories(contentSections).slice(0, 3)
+
+  // ── Parse stories into HTML blocks ──────────────────────────────────────
   const htmlBlocks: string[] = []
 
   for (const section of contentSections) {
@@ -404,97 +458,141 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
     }
     if (currentChunk.length > 0) storyChunks.push(currentChunk)
 
+    // Issue section header
     if (issueHeader) {
       const dotColor = getIssueDotColor(issueSlug)
       htmlBlocks.push(`
     <tr>
-      <td style="padding: 32px 0 12px; text-align: center;">
+      <td style="padding: 36px 0 16px; text-align: center;">
         <table role="presentation" cellpadding="0" cellspacing="0" align="center" style="margin: 0 auto;"><tr>
-          <td style="vertical-align: middle; padding-right: 12px;"><div style="width: 40px; border-top: 1px solid #e5e5e5;"></div></td>
-          <td style="vertical-align: middle; padding-right: 8px; line-height: 0;"><div style="width: 10px; height: 10px; border-radius: 50%; background-color: ${dotColor};"></div></td>
-          <td style="vertical-align: middle; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #404040; white-space: nowrap;">${escapeHtml(issueHeader)}</td>
-          <td style="vertical-align: middle; padding-left: 12px;"><div style="width: 40px; border-top: 1px solid #e5e5e5;"></div></td>
+          <td style="vertical-align: middle; padding-right: 14px;"><div style="width: 48px; border-top: 1px solid #d4d4d4;"></div></td>
+          <td style="vertical-align: middle; padding-right: 10px; line-height: 0;"><div style="width: 12px; height: 12px; border-radius: 50%; background-color: ${dotColor};"></div></td>
+          <td style="vertical-align: middle; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #404040; white-space: nowrap;">${escapeHtml(issueHeader)}</td>
+          <td style="vertical-align: middle; padding-left: 14px;"><div style="width: 48px; border-top: 1px solid #d4d4d4;"></div></td>
         </tr></table>
       </td>
     </tr>`)
     }
 
+    // Individual story blocks
     for (const storyLines of storyChunks) {
       let title = ''
       let metaLine = ''
-      const bodyParts: string[] = []
+      const summaryLines: string[] = []
+      const quoteParts: string[] = []
+      let inQuote = false
 
       for (const trimmed of storyLines) {
         if (trimmed.startsWith('## ')) {
           title = trimmed.slice(3)
+          inQuote = false
         } else if (!title) {
           continue
         } else if (!metaLine && trimmed.match(/\[.*\]\(https?:\/\//)) {
           metaLine = trimmed
-        } else if (trimmed.startsWith('> "') || trimmed.startsWith('> \u201C')) {
-          const quoteText = trimmed.slice(2).replace(/^[""\u201C]|[""\u201D]$/g, '').trim()
-          bodyParts.push(`<p style="margin: 0 0 4px; font-size: 15px; font-style: italic; color: #525252; line-height: 1.6;">\u201C${escapeHtml(quoteText)}\u201D</p>`)
-        } else if (trimmed.startsWith('> \u2014') || trimmed.startsWith('> —')) {
-          const attribution = trimmed.replace(/^> [—\u2014]\s*/, '').trim()
-          bodyParts.push(`<p style="margin: 0 0 10px; font-size: 13px; color: #737373;">\u2014 ${escapeHtml(attribution)}</p>`)
-        } else if (trimmed) {
-          bodyParts.push(`<p style="margin: 0 0 10px; font-size: 15px; color: #525252; line-height: 1.6;">${escapeHtml(trimmed)}</p>`)
+          inQuote = false
+        } else if (trimmed.startsWith('> "') || trimmed.startsWith('> “')) {
+          inQuote = true
+          const quoteText = trimmed.slice(2).replace(/^["“]|["”]$/g, '').trim()
+          quoteParts.push(`quote:${quoteText}`)
+        } else if (trimmed.startsWith('> —') || trimmed.startsWith('> –') || trimmed.startsWith('> —')) {
+          const attribution = trimmed.replace(/^> [—–—]\s*/, '').trim()
+          quoteParts.push(`attr:${attribution}`)
+        } else if (trimmed && !inQuote) {
+          summaryLines.push(trimmed)
         }
       }
 
-      if (title) {
-        let originalUrl = ''
-        let relevanceUrl = ''
-        let publisherName = ''
-        let feedId = ''
-        if (metaLine) {
-          const links = [...metaLine.matchAll(/\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g)]
-          for (const link of links) {
-            if (link[1] === 'artículo original') originalUrl = link[2]
-            else if (link[1] === 'análisis de relevancia') relevanceUrl = link[2]
-          }
-          const feedMatch = metaLine.match(/\{feed:([^}]+)\}/)
-          if (feedMatch) feedId = feedMatch[1]
-          const firstBracket = metaLine.indexOf('[')
-          if (firstBracket > 0) {
-            publisherName = metaLine.slice(0, firstBracket).replace(/\{feed:[^}]+\}\s*/, '').replace(/·\s*$/, '').trim()
-          }
+      if (!title) continue
+
+      const { originalUrl, relevanceUrl, publisherName, feedId } = parseMetaLine(metaLine)
+
+      const titleHtml = originalUrl
+        ? `<a href="${escapeHtml(originalUrl)}" style="color: #1B3A2D; text-decoration: none;">${escapeHtml(title)}</a>`
+        : escapeHtml(title)
+
+      // Publisher meta row
+      let metaHtml = ''
+      if (publisherName || originalUrl) {
+        const parts: string[] = []
+        const faviconHtml = feedId
+          ? `<img src="https://impactoindigena.news/images/feeds/${feedId}.png" alt="" width="13" height="13" style="display: inline-block; width: 13px; height: 13px; vertical-align: middle; border-radius: 2px; margin-right: 4px;">`
+          : ''
+        if (publisherName) parts.push(`${faviconHtml}<span style="vertical-align: middle;">${escapeHtml(publisherName)}</span>`)
+        if (originalUrl) parts.push(`<a href="${escapeHtml(originalUrl)}" style="color: #2563eb; text-decoration: none; vertical-align: middle;">artículo original ↗</a>`)
+        if (relevanceUrl) parts.push(`<a href="${escapeHtml(relevanceUrl)}" style="color: #059669; text-decoration: none; vertical-align: middle;">análisis de relevancia</a>`)
+        metaHtml = `<p style="margin: 0 0 14px; font-size: 12px; color: #737373; line-height: 18px;">${parts.join(' <span style="color: #d4d4d4; vertical-align: middle;">&middot;</span> ')}</p>`
+      }
+
+      // Summary in callout box — "Lo que importa para RRCC"
+      let bodyHtml = ''
+      if (summaryLines.length > 0) {
+        const summaryContent = summaryLines
+          .map(l => `<p style="margin: 0 0 8px; font-size: 14px; color: #374151; line-height: 1.65;">${escapeHtml(l)}</p>`)
+          .join('\n            ')
+        bodyHtml = `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
+          <tr>
+            <td style="border-left: 3px solid #16a34a; padding: 10px 14px; background-color: #f0fdf4; border-radius: 0 4px 4px 0;">
+              <p style="margin: 0 0 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #16a34a;">Lo que importa para RRCC</p>
+              ${summaryContent}
+            </td>
+          </tr>
+        </table>`
+      }
+
+      // Quote block
+      let quoteHtml = ''
+      for (const part of quoteParts) {
+        if (part.startsWith('quote:')) {
+          quoteHtml += `<p style="margin: 0 0 4px; font-size: 15px; font-style: italic; color: #4b5563; line-height: 1.6;">“${escapeHtml(part.slice(6))}”</p>`
+        } else if (part.startsWith('attr:')) {
+          quoteHtml += `<p style="margin: 0 0 12px; font-size: 12px; color: #9ca3af;">— ${escapeHtml(part.slice(5))}</p>`
         }
+      }
 
-        const titleHtml = originalUrl
-          ? `<a href="${escapeHtml(originalUrl)}" style="color: #171717; text-decoration: none;">${escapeHtml(title)}</a>`
-          : escapeHtml(title)
-
-        let metaHtml = ''
-        if (publisherName || originalUrl) {
-          const parts: string[] = []
-          const faviconHtml = feedId
-            ? `<img src="https://impactoindigena.news/images/feeds/${feedId}.png" alt="" width="14" height="14" style="display: inline-block; width: 14px; height: 14px; vertical-align: middle; border-radius: 2px; margin-right: 4px;">`
-            : ''
-          if (publisherName) parts.push(`${faviconHtml}<span style="vertical-align: middle;">${escapeHtml(publisherName)}</span>`)
-          if (originalUrl) parts.push(`<a href="${escapeHtml(originalUrl)}" style="color: #2563eb; text-decoration: none; vertical-align: middle;">artículo original</a>`)
-          if (relevanceUrl) parts.push(`<a href="${escapeHtml(relevanceUrl)}" style="color: #2563eb; text-decoration: none; vertical-align: middle;">análisis de relevancia</a>`)
-          metaHtml = `<p style="margin: 0 0 12px; font-size: 13px; color: #737373; line-height: 20px;">${parts.join(' <span style="vertical-align: middle;">&middot;</span> ')}</p>`
-        }
-
-        htmlBlocks.push(`
+      htmlBlocks.push(`
     <tr>
-      <td style="padding: 20px 0 4px;">
-        <h2 style="margin: 0 0 6px; font-size: 20px; font-weight: 700; color: #171717; line-height: 1.3;">${titleHtml}</h2>
+      <td style="padding: 20px 0 8px; border-bottom: 1px solid #f3f4f6;">
+        <h2 style="margin: 0 0 8px; font-size: 21px; font-weight: 800; color: #111827; line-height: 1.3;">${titleHtml}</h2>
         ${metaHtml}
-        ${bodyParts.join('\n        ')}
+        ${bodyHtml}
+        ${quoteHtml}
       </td>
     </tr>`)
-      }
     }
   }
 
-  const introSection = introHtml
+  // ── Build complete HTML ──────────────────────────────────────────────────
+  const editionDate = formatEditionDate(newsletter.createdAt)
+
+  // Intro section
+  const introSection = introText
     ? `
           <!-- Intro -->
           <tr>
-            <td style="padding: 12px 32px 8px;">
-              ${introHtml}
+            <td style="padding: 20px 32px 4px;">
+              ${introText.split('\n').filter(l => l.trim()).map(l =>
+                `<p style="margin: 0 0 10px; font-size: 15px; color: #4b5563; line-height: 1.7;">${escapeHtml(l.trim())}</p>`
+              ).join('\n              ')}
+            </td>
+          </tr>`
+    : ''
+
+  // Flash section (quick-scan bullets)
+  const flashSection = flashStories.length > 0
+    ? `
+          <!-- Flash -->
+          <tr>
+            <td style="padding: 0 24px 24px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="background-color: #fefce8; border-left: 4px solid #d97706; border-radius: 0 6px 6px 0; padding: 14px 18px;">
+                    <p style="margin: 0 0 10px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: #92400e;">&#9889; Flash &mdash; Lo urgente de esta edici&oacute;n</p>
+                    ${flashStories.map(s => `<p style="margin: 0 0 7px; font-size: 14px; color: #1c1917; line-height: 1.5;">&#8227;&nbsp; <a href="${escapeHtml(s.url)}" style="color: #1B3A2D; text-decoration: none; font-weight: 600;">${escapeHtml(s.title)}</a></p>`).join('\n                    ')}
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>`
     : ''
@@ -506,40 +604,46 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(newsletter.title)}</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+<body style="margin: 0; padding: 0; background-color: #e7e5e4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #e7e5e4;">
     <tr>
       <td align="center" style="padding: 32px 16px;">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
-          <!-- Header -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+
+          <!-- Header: dark green brand bar -->
           <tr>
-            <td style="padding: 20px 32px 12px; text-align: center;">
+            <td style="background-color: #1B3A2D; padding: 28px 32px 20px; text-align: center;">
               <a href="https://impactoindigena.news" style="text-decoration: none;">
-                <img src="https://impactoindigena.news/images/logo-horizontal.png" alt="Impacto Indígena" width="200" style="display: inline-block; max-width: 200px; height: auto;" />
+                <img src="https://impactoindigena.news/images/logo-horizontal.png" alt="Impacto Ind&iacute;gena" width="190" style="display: inline-block; max-width: 190px; height: auto; filter: brightness(0) invert(1);" />
               </a>
-              <p style="margin: -2px 0 0; font-size: 15px; font-style: italic; color: #a3a3a3;">Noticias de impacto indígena que están transformando el mundo</p>
+              <p style="margin: 10px 0 0; font-size: 13px; color: #86efac; letter-spacing: 0.02em;">Noticias de impacto para pueblos ind&iacute;genas</p>
             </td>
           </tr>
-          <!-- Color strip -->
+
+          <!-- Color strip (6px, 4 issue colors) -->
           <tr>
-            <td style="padding: 16px 0 0; font-size: 0; line-height: 0;">
+            <td style="font-size: 0; line-height: 0;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
-                <td style="width: 25%; height: 4px; background-color: #fbbf24;"></td>
-                <td style="width: 25%; height: 4px; background-color: #2dd4bf;"></td>
-                <td style="width: 25%; height: 4px; background-color: #f87171;"></td>
-                <td style="width: 25%; height: 4px; background-color: #818cf8;"></td>
+                <td style="width: 25%; height: 6px; background-color: #fbbf24;"></td>
+                <td style="width: 25%; height: 6px; background-color: #2dd4bf;"></td>
+                <td style="width: 25%; height: 6px; background-color: #f87171;"></td>
+                <td style="width: 25%; height: 6px; background-color: #818cf8;"></td>
               </tr></table>
             </td>
           </tr>
+
+          <!-- Edition date -->
           <tr>
-            <td style="padding: 14px 32px 12px; text-align: center;">
-              <p style="margin: 0; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #404040;">${escapeHtml(newsletter.title)}</p>
+            <td style="padding: 16px 32px 8px; text-align: center; background-color: #fafaf9;">
+              <p style="margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.13em; color: #78716c;">${escapeHtml(editionDate)}</p>
             </td>
           </tr>
 ${introSection}
+${flashSection}
+
           <!-- Stories -->
           <tr>
-            <td style="padding: 8px 32px;">
+            <td style="padding: 4px 32px 16px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                 ${htmlBlocks.join('\n')}
               </table>
@@ -548,34 +652,38 @@ ${introSection}
 
           <!-- Support -->
           <tr>
-            <td style="padding: 28px 32px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0 0 14px; font-size: 14px; color: #525252;">Gratuito. Independiente. Sin publicidad. Ayúdanos a seguir así.</p>
-              <a href="https://ko-fi.com/impactoindigena" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 10px 24px; font-size: 14px; font-weight: 600; color: #ffffff; background-color: #171717; border-radius: 8px; text-decoration: none;">&#10084; Apóyanos</a>
+            <td style="padding: 28px 32px; text-align: center; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
+              <p style="margin: 0 0 4px; font-size: 15px; font-weight: 700; color: #111827;">Gratuito. Independiente. Sin publicidad.</p>
+              <p style="margin: 0 0 18px; font-size: 14px; color: #6b7280;">Si este newsletter es &uacute;til para tu trabajo, ay&uacute;danos a seguir.</p>
+              <a href="https://ko-fi.com/impactoindigena" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 11px 28px; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #1B3A2D; border-radius: 8px; text-decoration: none;">&#10084;&#65039; Apoyar Impacto Ind&iacute;gena</a>
             </td>
           </tr>
 
           <!-- AI disclosure -->
           <tr>
-            <td style="padding: 28px 32px 16px; text-align: center; border-top: 1px solid #e5e5e5;">
-              <p style="margin: 0; font-size: 16px; font-style: italic; color: #737373;">Curado y redactado con cuidado por IA</p>
-              <p style="margin: 12px 0 0; font-size: 13px; color: #a3a3a3; line-height: 1.5;">Nuestra app puede tener errores. La IA puede equivocarse.<br>Si algo parece incorrecto, responde este correo y avísanos.</p>
+            <td style="padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 4px; font-size: 13px; font-style: italic; color: #9ca3af;">Curado y redactado con cuidado por IA</p>
+              <p style="margin: 0; font-size: 12px; color: #d1d5db; line-height: 1.5;">La IA puede equivocarse. Si algo parece incorrecto, <a href="mailto:contacto@impactoindigena.news" style="color: #6b7280; text-decoration: underline;">av&iacute;sanos</a>.</p>
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Footer: dark green brand bar -->
           <tr>
-            <td style="padding: 20px 32px 24px; text-align: center; background-color: #fafafa; border-top: 1px solid #e5e5e5; margin-top: 16px;">
-              <p style="margin: 0 0 10px; font-size: 12px; color: #a3a3a3;">
-                <a href="https://impactoindigena.news" style="color: #2563eb; text-decoration: none;">impactoindigena.news</a>
+            <td style="padding: 20px 32px 28px; text-align: center; background-color: #1B3A2D; border-radius: 0 0 10px 10px;">
+              <p style="margin: 0 0 12px; font-size: 13px; color: #86efac; font-weight: 600;">
+                <a href="https://impactoindigena.news" style="color: #86efac; text-decoration: none;">impactoindigena.news</a>
               </p>
-              <p style="margin: 0 0 10px; font-size: 12px; color: #a3a3a3;">
-                <a href="https://bsky.app/profile/impactoindigena.bsky.social" style="color: #737373; text-decoration: none; vertical-align: middle;"><img src="https://impactoindigena.news/images/social/bluesky.png" alt="Bluesky" width="14" height="14" style="display: inline-block; width: 14px; height: 14px; vertical-align: middle; margin-right: 3px;">Bluesky</a>
+              <p style="margin: 0 0 14px; font-size: 12px; color: #6ee7b7;">
+                <a href="https://bsky.app/profile/impactoindigena.bsky.social" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Bluesky</a>
+                <a href="https://mastodon.social/@impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Mastodon</a>
+                <a href="https://impactoindigena.news/feedback" style="color: #6ee7b7; text-decoration: none;">Feedback</a>
               </p>
-              <p style="margin: 0; font-size: 12px; color: #a3a3a3;">
-                ¿Algo que mejorar? <a href="https://impactoindigena.news/feedback" style="color: #2563eb; text-decoration: none;">Envíanos tu feedback</a>
+              <p style="margin: 0; font-size: 11px; color: #4ade80; opacity: 0.6;">
+                Impacto Ind&iacute;gena &bull; Chile &bull; <a href="{{unsubscribe}}" style="color: #4ade80; text-decoration: underline;">Cancelar suscripci&oacute;n</a>
               </p>
             </td>
           </tr>
+
         </table>
       </td>
     </tr>
