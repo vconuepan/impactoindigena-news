@@ -619,10 +619,7 @@ function PublicLayoutInner() {
                   );
                 })}
               </ul>
-            </div>
-
-            <div className="col-span-2 md:col-span-1">
-              <Link to="/guia" className="text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-200 mb-3 leading-none inline-block focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
+              <Link to="/guia" className="text-xs font-bold uppercase tracking-widest text-neutral-400 hover:text-neutral-200 mt-5 mb-3 leading-none inline-block focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
                 {t('footer.guides')}
               </Link>
               <ul className="space-y-2">
