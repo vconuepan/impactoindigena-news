@@ -11,8 +11,9 @@ import { AUSTRAL_FEED_URL, scrapeAustral } from './australScraper.js'
 import { ELMOSTRADOR_FEED_URL, scrapeElMostrador } from './elMostradorScraper.js'
 import { DESCONCIERTO_FEED_URL, scrapeElDesconcierto } from './elDesconciertoScraper.js'
 import { BIOBIO_FEED_URL, scrapeBioBio } from './biobioScraper.js'
+import { CONADI_FEED_URL, scrapeConadi } from './conadiScraper.js'
 
-const SCRAPED_FEED_URLS = new Set([...DISD_SCRAPED_URLS, AUSTRAL_FEED_URL, ELMOSTRADOR_FEED_URL, DESCONCIERTO_FEED_URL, BIOBIO_FEED_URL])
+const SCRAPED_FEED_URLS = new Set([...DISD_SCRAPED_URLS, AUSTRAL_FEED_URL, ELMOSTRADOR_FEED_URL, DESCONCIERTO_FEED_URL, BIOBIO_FEED_URL, CONADI_FEED_URL])
 
 const log = createLogger('rssParser')
 
@@ -43,6 +44,7 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
   if (feedUrl === ELMOSTRADOR_FEED_URL) return scrapeElMostrador(feedUrl)
   if (feedUrl === DESCONCIERTO_FEED_URL) return scrapeElDesconcierto(feedUrl)
   if (feedUrl === BIOBIO_FEED_URL) return scrapeBioBio(feedUrl)
+  if (feedUrl === CONADI_FEED_URL) return scrapeConadi(feedUrl)
   if (SCRAPED_FEED_URLS.has(feedUrl)) return scrapeDISD(feedUrl)
 
   try {
