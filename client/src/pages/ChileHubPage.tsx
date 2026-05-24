@@ -291,7 +291,7 @@ export default function ChileHubPage() {
               to="/issues/chile-indigena"
               className="inline-block text-sm font-medium text-brand-800 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
             >
-              Ver últimas noticias sobre Chile Indígena →
+              Ver últimas noticias sobre Chile Intercultural →
             </Link>
           </div>
 

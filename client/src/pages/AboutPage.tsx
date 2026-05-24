@@ -266,7 +266,7 @@ export default function AboutPage() {
             </a>
             , creado originalmente por{" "}
             <a href="https://www.linkedin.com/in/odinmuehlenbein/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
-              Odin Mühlebein
+              Odin Mühlenbein
             </a>
             . Mientras Actually Relevant cura noticias relevantes para la humanidad en general,
             Impacto Indígena News adapta esa misma tecnología y pipeline de inteligencia

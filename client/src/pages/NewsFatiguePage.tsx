@@ -135,8 +135,8 @@ const ISSUE_CARDS = [
   },
   {
     slug: 'chile-indigena',
-    title: 'Chile Indígena',
-    description: 'Conflicto mapuche, pueblos originarios de Chile, política indígena nacional',
+    title: 'Chile Intercultural',
+    description: 'Pueblos originarios de Chile, política pública indígena, consultas indígenas, liderazgo indígena chileno',
   },
 ]
 
