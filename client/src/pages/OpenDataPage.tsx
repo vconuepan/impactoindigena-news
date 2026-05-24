@@ -60,7 +60,7 @@ export default function OpenDataPage() {
                 <tr className="border-b border-neutral-100">
                   <td className="py-2 pr-4 font-mono text-xs">topic</td>
                   <td className="py-2 pr-4">string</td>
-                  <td className="py-2">Slug del tema. Valores: <code>derechos-indigenas</code>, <code>cambio-climatico</code>, <code>chile-indigena</code>, <code>desarrollo-sostenible-y-autodeterminado</code>, <code>reconciliacion-y-paz</code></td>
+                  <td className="py-2">Slug del tema. Valores: <code>derechos-indigenas</code>, <code>cambio-climatico</code>, <code>chile-indigena</code>, <code>desarrollo-sostenible-y-autodeterminado</code></td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="py-2 pr-4 font-mono text-xs">community</td>

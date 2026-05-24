@@ -17,7 +17,6 @@ const HOMEPAGE_ISSUE_SLUGS = [
   'cambio-climatico',
   'derechos-indigenas',
   'desarrollo-sostenible-y-autodeterminado',
-  'reconciliacion-y-paz',
   'chile-indigena',
 ]
 

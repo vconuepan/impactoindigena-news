@@ -31,10 +31,6 @@ const STORY_GUIDES: Record<string, { label: string; href: string }[]> = {
   'derechos-indigenas': [
     { label: 'Consulta Previa y CLPI', href: '/guia/consulta-previa-fpic' },
   ],
-  'reconciliacion-y-paz': [
-    { label: 'Pueblo Mapuche', href: '/guia/pueblo-mapuche' },
-    { label: 'Consulta Previa y CLPI', href: '/guia/consulta-previa-fpic' },
-  ],
 }
 
 // Issues where corporate territorial impact is high — show IRI widget

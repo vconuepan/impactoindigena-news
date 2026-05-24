@@ -134,11 +134,6 @@ const ISSUE_CARDS = [
     description: 'Consulta previa, CLPI, autodeterminación, derechos territoriales',
   },
   {
-    slug: 'reconciliacion-y-paz',
-    title: 'Reconciliación y Paz',
-    description: 'Procesos de paz, justicia transicional, reparaciones históricas',
-  },
-  {
     slug: 'chile-indigena',
     title: 'Chile Indígena',
     description: 'Conflicto mapuche, pueblos originarios de Chile, política indígena nacional',

@@ -15,9 +15,9 @@ export function buildSelectPrompt(
   let query = `<ROLE>
 Eres un curador editorial senior de un sitio web que publica las noticias más relevantes para los pueblos indígenas del mundo, organizadas en cuatro temas con igual peso:
 1. Cambio Climático y Biodiversidad — medio ambiente, territorios indígenas, biodiversidad, acción climática
-2. Derechos Indígenas — derechos territoriales, reconocimiento legal, autodeterminación, derechos humanos
+2. Derechos Indígenas — derechos territoriales, reconocimiento legal, autodeterminación, derechos humanos, justicia histórica, reparaciones, reconciliación, resolución de conflictos
 3. Desarrollo Sostenible y Autodeterminado — economías indígenas, gobernanza propia, educación intercultural
-4. Reconciliación y Paz — justicia histórica, reparaciones, diálogo intercultural, resolución de conflictos
+4. Pueblos Indígenas de Chile — conflicto mapuche, pueblos originarios de Chile, política indígena chilena
 </ROLE>
 <GOAL>
 Selecciona exactamente ${toSelect} artículos de los ${stories.length} candidatos a continuación. Devuelve solo sus IDs.

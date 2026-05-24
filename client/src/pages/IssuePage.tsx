@@ -483,8 +483,4 @@ const ISSUE_GUIDES: Record<string, { label: string; href: string }[]> = {
     { label: 'Consulta Previa y CLPI', href: '/guia/consulta-previa-fpic' },
     { label: 'Pueblo Mapuche', href: '/guia/pueblo-mapuche' },
   ],
-  'reconciliacion-y-paz': [
-    { label: 'Pueblo Mapuche', href: '/guia/pueblo-mapuche' },
-    { label: 'Consulta Previa y CLPI', href: '/guia/consulta-previa-fpic' },
-  ],
 }

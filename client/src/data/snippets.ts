@@ -36,12 +36,6 @@ export const SNIPPETS_BY_ISSUE: Record<string, Snippet[]> = {
     { text: 'La autonomía económica y la identidad cultural no son excluyentes: las comunidades indígenas que controlan sus territorios suelen tener mejores indicadores de bienestar.' },
     { text: 'La gestión comunitaria del agua, el bosque y la tierra por parte de pueblos indígenas produce resultados ambientales superiores a los modelos industriales en la misma área.', source: 'Rights and Resources Initiative' },
   ],
-  'reconciliacion-y-paz': [
-    { text: 'La reconciliación requiere reconocimiento, reparación y garantías de no repetición.' },
-    { text: 'Los procesos de paz más duraderos son aquellos que incluyen a las comunidades más afectadas.' },
-    { text: 'Sin verdad no hay reconciliación. Sin reconciliación no hay paz sostenible.' },
-    { text: 'Las comisiones de verdad que incluyen perspectivas indígenas producen recomendaciones más integrales y con mayor legitimidad social.' },
-  ],
   'chile-indigena': [
     { text: 'Chile tiene diez pueblos indígenas reconocidos oficialmente, que representan cerca del 13% de la población.', source: 'Censo 2017, INE' },
     { text: 'El mapudungun, idioma del pueblo mapuche, es hablado por más de 200.000 personas en Chile y Argentina.' },

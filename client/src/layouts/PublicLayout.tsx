@@ -38,11 +38,6 @@ const ISSUE_LINKS = [
     href: "/issues/desarrollo-sostenible-y-autodeterminado",
   },
   {
-    labelKey: "issues.reconciliacionPaz",
-    slug: "reconciliacion-y-paz",
-    href: "/issues/reconciliacion-y-paz",
-  },
-  {
     labelKey: "issues.chileIndigena",
     slug: "chile-indigena",
     href: "/issues/chile-indigena",

@@ -38,7 +38,7 @@ Califica con 5 o más cualquier artículo que mencione explícitamente a pueblos
 - Derechos indígenas, autodeterminación, reconocimiento legal o políticas públicas
 - Colaboración entre pueblos indígenas, sociedad civil, empresas responsables o gobiernos
 - Cambio climático, biodiversidad o medio ambiente desde perspectiva o impacto indígena explícito
-- Reconciliación, justicia histórica o diálogo intercultural con pueblos indígenas
+- Reconciliación, justicia histórica, reparaciones o diálogo intercultural con pueblos indígenas
 - Logros, contribuciones y liderazgo de personas o comunidades indígenas
 - Historia precolombina, arqueología o patrimonio cultural indígena
 

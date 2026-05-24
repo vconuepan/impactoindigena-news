@@ -57,15 +57,6 @@ const CATEGORY_COLORS: Record<string, CategoryColor> = {
     hex: '#fbbf24',
     bgTint: 'bg-amber-50/60',
   },
-  'reconciliacion-y-paz': {
-    border: 'border-sky-400',
-    borderThick: 'border-l-[6px] border-sky-400',
-    dot: 'text-sky-500',
-    bg: 'bg-sky-50',
-    dotBg: 'bg-sky-400',
-    hex: '#38bdf8',
-    bgTint: 'bg-sky-50/60',
-  },
   'chile-indigena': {
     border: 'border-violet-400',
     borderThick: 'border-l-[6px] border-violet-400',

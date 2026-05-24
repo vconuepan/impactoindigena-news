@@ -135,7 +135,6 @@ const ISSUE_ORDER = [
   'cambio-climatico',
   'derechos-indigenas',
   'desarrollo-sostenible-y-autodeterminado',
-  'reconciliacion-y-paz',
   'chile-indigena',
 ]
 

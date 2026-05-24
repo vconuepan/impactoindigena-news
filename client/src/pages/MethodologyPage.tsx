@@ -161,7 +161,6 @@ export default function MethodologyPage() {
             { slug: 'cambio-climatico', title: 'Cambio Climático y Biodiversidad', description: 'Territorios indígenas, medio ambiente, biodiversidad, acción climática' },
             { slug: 'derechos-indigenas', title: 'Derechos de los Pueblos Indígenas', description: 'Derechos territoriales, autodeterminación, reconocimiento legal, derechos humanos' },
             { slug: 'desarrollo-sostenible-y-autodeterminado', title: 'Empresas Indígenas', description: 'Economías indígenas, emprendimiento, gobernanza propia, educación intercultural' },
-            { slug: 'reconciliacion-y-paz', title: 'Reconciliación y Paz', description: 'Justicia histórica, reparaciones, diálogo intercultural, consolidación de la paz' },
           ].map((card) => {
             const colors = getCategoryColor(card.slug)
             return (
