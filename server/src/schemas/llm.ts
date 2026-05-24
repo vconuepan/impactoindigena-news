@@ -15,10 +15,10 @@ export const preAssessItemSchema = z.object({
   rating: z
     .number()
     .int()
-    .min(1)
+    .min(0)
     .max(10)
     .describe(
-      "Conservative relevance rating 1-10 as per the <RATING GUIDELINES>."
+      "Conservative relevance rating 1-10 as per the <RATING GUIDELINES>. Minimum value is 1 — never use 0."
     ),
   emotionTag: EMOTION_TAG_SCHEMA,
 });

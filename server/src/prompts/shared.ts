@@ -32,10 +32,11 @@ export function containsChineseCharacters(str: string): boolean {
  * Include in any prompt that asks the LLM to assign emotion tags.
  */
 export const EMOTION_TAGS_PROMPT_BLOCK = `<EMOTION TAGS>
-- alentador: Claramente positivo o inspirador para los pueblos indígenas. La positividad debe ser obvia y no depender de un punto de vista particular. Si existe debate real sobre si es una buena noticia, usa tranquilo.
-- frustrante: Negativo, decepcionante o que genera indignación.
-- alarmante: Inquietante o amenazante (p. ej., violencia contra líderes indígenas, amenazas a territorios o derechos fundamentales).
-- tranquilo: Neutral, mixto o ambiguamente positivo. Úsalo como opción predeterminada cuando el tono emocional sea debatible o dependa de una perspectiva específica.
+Use EXACTLY these English values (the valid enum values are: uplifting, frustrating, scary, calm):
+- uplifting: Claramente positivo o inspirador para los pueblos indígenas. La positividad debe ser obvia y no depender de un punto de vista particular. Si existe debate real sobre si es una buena noticia, usa calm.
+- frustrating: Negativo, decepcionante o que genera indignación.
+- scary: Inquietante o amenazante (p. ej., violencia contra líderes indígenas, amenazas a territorios o derechos fundamentales).
+- calm: Neutral, mixto o ambiguamente positivo. Úsalo como opción predeterminada cuando el tono emocional sea debatible o dependa de una perspectiva específica.
 </EMOTION TAGS>`
 
 /**
@@ -43,11 +44,11 @@ export const EMOTION_TAGS_PROMPT_BLOCK = `<EMOTION TAGS>
  * Keeps structured output guidance consistent with prompt blocks.
  */
 export const EMOTION_TAG_SCHEMA_DESCRIPTION =
-  'Etiqueta emocional basada en cómo el artículo afecta a los lectores. ' +
-  'alentador: claramente positivo o inspirador para pueblos indígenas. Cuando haya duda, usar tranquilo. ' +
-  'frustrante: negativo, decepcionante o que genera indignación. ' +
-  'alarmante: inquietante o amenazante (p. ej., violencia contra líderes, amenazas a territorios indígenas). ' +
-  'tranquilo: neutral, mixto o ambiguamente positivo — usar como opción predeterminada.'
+  'Emotion tag — must be EXACTLY one of the enum values: uplifting, frustrating, scary, calm. ' +
+  'uplifting: claramente positivo o inspirador para pueblos indígenas. Cuando haya duda, usar calm. ' +
+  'frustrating: negativo, decepcionante o que genera indignación. ' +
+  'scary: inquietante o amenazante (p. ej., violencia contra líderes, amenazas a territorios indígenas). ' +
+  'calm: neutral, mixto o ambiguamente positivo — usar como opción predeterminada.'
 
 // ---------------------------------------------------------------------------
 // Shared prompt building blocks

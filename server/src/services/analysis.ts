@@ -183,7 +183,7 @@ export async function preAssessStories(
     buildPrompt: buildPreassessPrompt,
     buildUpdate: (item, issueId) => ({
       issueId,
-      relevancePre: item.rating,
+      relevancePre: Math.max(1, item.rating), // clamp: model may return 0 for very low relevance
       emotionTag: item.emotionTag as EmotionTag,
       status: 'pre_analyzed',
     }),
