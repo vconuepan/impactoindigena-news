@@ -7,7 +7,7 @@ import { usePublicIssue } from '../hooks/usePublicIssues'
 import { usePublicStories } from '../hooks/usePublicStories'
 import { getCategoryColor } from '../lib/category-colors'
 import StoryCard from '../components/StoryCard'
-import PullQuote, { getQuoteVariant } from '../components/PullQuote'
+import PullQuote from '../components/PullQuote'
 import Pagination from '../components/Pagination'
 import { IssuePageSkeleton } from '../components/skeletons'
 import { SEO, CommonOgTags } from '../lib/seo'
@@ -92,11 +92,11 @@ function StoryGroup({
 // Quote divider using the PullQuote component
 // ---------------------------------------------------------------------------
 
-function QuoteDivider({ stories, variantIndex }: { stories: PublicStory[]; variantIndex: number }) {
+function QuoteDivider({ stories }: { stories: PublicStory[] }) {
   const storyWithQuote = stories.find((s) => s.quote)
   if (!storyWithQuote) return null
 
-  return <PullQuote story={storyWithQuote} variant={getQuoteVariant(variantIndex)} />
+  return <PullQuote story={storyWithQuote} />
 }
 
 // ---------------------------------------------------------------------------
@@ -270,7 +270,7 @@ export default function IssuePage() {
                   {/* Divider between groups */}
                   {!isLast && (
                     useQuote
-                      ? <QuoteDivider stories={group} variantIndex={idx} />
+                      ? <QuoteDivider stories={group} />
                       : <hr className="section-divider" />
                   )}
                 </div>

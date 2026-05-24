@@ -43,12 +43,11 @@ export default function SpotlightBand() {
     if (total <= 1) return
 
     timerRef.current = setInterval(() => {
-      // Fade out
       setVisible(false)
       setTimeout(() => {
         setActiveIdx((prev) => (prev + 1) % total)
         setVisible(true)
-      }, 350) // match CSS transition
+      }, 350)
     }, ROTATION_INTERVAL)
 
     return () => {
@@ -74,41 +73,52 @@ export default function SpotlightBand() {
 
   return (
     <div
-      className="w-full bg-neutral-900 border-b border-neutral-700/50"
+      className="w-full border-b border-neutral-800/60"
+      style={{
+        background: 'linear-gradient(180deg, #0f0f0e 0%, #1a1917 100%)',
+      }}
       role="region"
       aria-label={`${t('spotlight.label')}: ${spotlight.label}`}
     >
-      <div className="max-w-5xl mx-auto px-4 py-3 md:py-4">
-        <div className="flex items-start gap-3 md:gap-4 min-h-[3rem]">
-          {/* Label pill — fixed width so headline doesn't jump */}
+      <div className="max-w-5xl mx-auto px-4 py-4 md:py-5">
+        <div className="flex items-start gap-4 md:gap-5 min-h-[3.5rem]">
+          {/* Label pill */}
           <div className="shrink-0 pt-0.5">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-brand-400 whitespace-nowrap">
-              <span
-                className="inline-block w-1.5 h-1.5 rounded-full animate-pulse"
-                style={{ backgroundColor: '#4ade80' }}
-                aria-hidden="true"
-              />
+            <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] whitespace-nowrap font-dm-sans"
+              style={{ color: '#4ade80' }}
+            >
+              <span className="relative flex h-2 w-2" aria-hidden="true">
+                <span className="absolute inset-0 rounded-full bg-green-400 opacity-60 animate-ping" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+              </span>
               {t('spotlight.label')}
             </span>
-            <p className="text-xs text-neutral-400 font-medium mt-0.5 leading-tight max-w-[130px] md:max-w-none">
+            <p className="text-xs text-neutral-500 font-medium mt-1 leading-tight max-w-[130px] md:max-w-none font-dm-sans">
               {spotlight.label}
             </p>
           </div>
 
           {/* Divider */}
-          <div className="w-px self-stretch bg-neutral-700 shrink-0 mt-0.5" aria-hidden="true" />
+          <div
+            className="w-px self-stretch shrink-0 mt-0.5"
+            style={{ background: 'linear-gradient(180deg, transparent, #3d3836 30%, #3d3836 70%, transparent)' }}
+            aria-hidden="true"
+          />
 
           {/* Rotating headline */}
           <div className="flex-1 min-w-0">
             <div
-              className="transition-opacity duration-300"
-              style={{ opacity: visible ? 1 : 0 }}
+              className="transition-all duration-300 ease-out"
+              style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(4px)',
+              }}
               aria-live="polite"
               aria-atomic="true"
             >
               {story.issue && (
                 <span
-                  className="block text-[10px] font-bold uppercase tracking-widest mb-0.5"
+                  className="block text-[10px] font-bold uppercase tracking-[0.14em] mb-1 font-dm-sans"
                   style={{ color: issueColor?.hex ?? '#a1a1aa' }}
                 >
                   {story.issue.name}
@@ -117,34 +127,44 @@ export default function SpotlightBand() {
               {story.slug ? (
                 <Link
                   to={`/stories/${story.slug}`}
-                  className="block text-sm md:text-base font-semibold text-white leading-snug hover:text-brand-200 transition-colors line-clamp-2"
+                  className="block text-[15px] md:text-base font-semibold leading-snug line-clamp-2 transition-colors duration-150 font-fraunces"
+                  style={{ color: '#FAFAF8' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#86cd9e' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = '#FAFAF8' }}
                 >
                   {story.title}
                 </Link>
               ) : (
-                <p className="text-sm md:text-base font-semibold text-white leading-snug line-clamp-2">
+                <p className="text-[15px] md:text-base font-semibold leading-snug line-clamp-2 font-fraunces" style={{ color: '#FAFAF8' }}>
                   {story.title}
                 </p>
               )}
             </div>
           </div>
 
-          {/* Dot navigation */}
+          {/* Dot navigation — 44px touch targets */}
           {total > 1 && (
-            <div className="shrink-0 flex items-center gap-1.5 pt-1 self-start">
+            <nav className="shrink-0 flex items-center gap-0.5 self-start pt-1" aria-label="Navegación de titulares">
               {stories.map((_, idx) => (
                 <button
                   key={idx}
                   onClick={() => goTo(idx)}
                   aria-label={t('spotlight.dotNavLabel', { current: idx + 1, total })}
-                  className={`w-1.5 h-1.5 rounded-full transition-all duration-200 focus-visible:ring-2 focus-visible:ring-brand-400 ${
-                    idx === activeIdx
-                      ? 'bg-brand-400 scale-125'
-                      : 'bg-neutral-600 hover:bg-neutral-400'
-                  }`}
-                />
+                  aria-current={idx === activeIdx ? 'step' : undefined}
+                  className="relative flex items-center justify-center w-7 h-7 focus-visible:ring-2 focus-visible:ring-brand-400 rounded-full"
+                >
+                  <span
+                    className="block rounded-full transition-all duration-200"
+                    style={{
+                      width: idx === activeIdx ? 8 : 5,
+                      height: idx === activeIdx ? 8 : 5,
+                      backgroundColor: idx === activeIdx ? '#4ade80' : '#525252',
+                      boxShadow: idx === activeIdx ? '0 0 8px rgba(74, 222, 128, 0.4)' : 'none',
+                    }}
+                  />
+                </button>
               ))}
-            </div>
+            </nav>
           )}
         </div>
       </div>

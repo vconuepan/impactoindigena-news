@@ -2,20 +2,17 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { PublicStory } from '@shared/types'
 
-type PullQuoteVariant = 'centered' | 'highlight'
-
 interface PullQuoteProps {
   story: PublicStory
-  variant?: PullQuoteVariant
 }
 
 /**
- * Displays a pull-quote from a story in one of two visual styles.
+ * Displays an editorial pull-quote from a story.
  *
- * - **centered**: Large centered text with oversized decorative quotation marks.
- * - **highlight**: Full-width category-tinted strip with centered quote.
+ * Large centered text with oversized decorative quotation marks,
+ * separated from sections by a vertical diamond divider.
  */
-export default function PullQuote({ story, variant = 'centered' }: PullQuoteProps) {
+export default function PullQuote({ story }: PullQuoteProps) {
   const { i18n } = useTranslation()
   const isEn = i18n.language === 'en'
   const displayQuote = (isEn && story.quoteEn) ? story.quoteEn : story.quote
@@ -25,65 +22,65 @@ export default function PullQuote({ story, variant = 'centered' }: PullQuoteProp
 
   const hasPersonAttribution = story.quoteAttribution && story.quoteAttribution !== 'Original article'
 
-  const attribution = (
-    <footer className="mt-3 text-sm text-neutral-500">
-      &mdash;{' '}
-      {hasPersonAttribution ? (
-        <>
-          {story.quoteAttribution}, via{' '}
-          <Link
-            to={`/stories/${story.slug}`}
-            className="text-brand-800 hover:text-brand-700 underline decoration-brand-300 hover:decoration-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
-          >
-            {displayTitle || story.sourceTitle}
-          </Link>
-        </>
-      ) : (
-        <>
-          from{' '}
-          <Link
-            to={`/stories/${story.slug}`}
-            className="text-brand-800 hover:text-brand-700 underline decoration-brand-300 hover:decoration-brand-500 focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
-          >
-            {displayTitle || story.sourceTitle}
-          </Link>
-        </>
-      )}
-    </footer>
-  )
-
-  // === CENTERED variant (editorial) ===
-  if (variant === 'centered') {
-    return (
-      <div className="py-8 md:py-10 text-center max-w-2xl mx-auto">
-        <div className="relative">
-          {/* Large decorative open-quote */}
-          <span
-            aria-hidden="true"
-            className="block text-brand-200 leading-none select-none pointer-events-none"
-            style={{ fontSize: '6rem', fontFamily: 'Georgia, "Times New Roman", serif' }}
-          >
-            &ldquo;
-          </span>
-          <blockquote className="-mt-8">
-            <p className="text-xl md:text-2xl text-neutral-700 leading-relaxed px-4 italic">
-              {displayQuote}
-            </p>
-          </blockquote>
-          {attribution}
-        </div>
+  return (
+    <figure className="py-10 md:py-14 text-center max-w-2xl mx-auto px-4">
+      {/* Top rule with diamond */}
+      <div className="flex items-center gap-4 mb-8" aria-hidden="true">
+        <span className="flex-1 border-t border-neutral-200" />
+        <span className="text-brand-300 text-[10px] leading-none">◆</span>
+        <span className="flex-1 border-t border-neutral-200" />
       </div>
-    )
-  }
 
-  // Only centered variant is used — always the big decorative quotation mark style.
-  return null
+      {/* Decorative open-quote */}
+      <span
+        aria-hidden="true"
+        className="block leading-none select-none pointer-events-none"
+        style={{
+          fontSize: '5.5rem',
+          fontFamily: 'Fraunces, Georgia, serif',
+          fontWeight: 300,
+          color: '#0D5F3C',
+          opacity: 0.18,
+          marginBottom: '-2rem',
+        }}
+      >
+        &ldquo;
+      </span>
+
+      <blockquote>
+        <p className="text-xl md:text-2xl leading-relaxed px-2 md:px-6 italic font-fraunces" style={{ color: '#44403c' }}>
+          {displayQuote}
+        </p>
+      </blockquote>
+
+      <figcaption className="mt-5 text-sm font-dm-sans" style={{ color: '#78716C' }}>
+        {hasPersonAttribution ? (
+          <>
+            {story.quoteAttribution}, via{' '}
+            <Link
+              to={`/stories/${story.slug}`}
+              className="text-brand-800 hover:text-brand-600 underline decoration-brand-200 hover:decoration-brand-400 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
+            >
+              {displayTitle || story.sourceTitle}
+            </Link>
+          </>
+        ) : (
+          <Link
+            to={`/stories/${story.slug}`}
+            className="text-brand-800 hover:text-brand-600 underline decoration-brand-200 hover:decoration-brand-400 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
+          >
+            {displayTitle || story.sourceTitle}
+          </Link>
+        )}
+      </figcaption>
+
+      {/* Bottom rule */}
+      <div className="flex items-center gap-4 mt-8" aria-hidden="true">
+        <span className="flex-1 border-t border-neutral-200" />
+        <span className="text-brand-300 text-[10px] leading-none">◆</span>
+        <span className="flex-1 border-t border-neutral-200" />
+      </div>
+    </figure>
+  )
 }
 
-/**
- * Select a pull-quote variant based on section index for visual rotation.
- * Currently always returns 'centered' (large decorative quotation mark).
- */
-export function getQuoteVariant(_index: number): PullQuoteVariant {
-  return 'centered'
-}

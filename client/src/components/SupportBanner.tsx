@@ -25,57 +25,107 @@ export default function SupportBanner() {
 
   return (
     <div
-      className="-mx-4 md:-mx-8 px-4 md:px-8 py-14 md:py-20 my-12 relative overflow-hidden"
-      style={{ backgroundColor: '#0D5F3C' }}
+      className="-mx-4 md:-mx-8 px-4 md:px-8 my-16 relative overflow-hidden"
+      style={{
+        background: 'linear-gradient(160deg, #0a4a30 0%, #0D5F3C 40%, #156040 100%)',
+        paddingTop: 'clamp(3.5rem, 5vw, 5rem)',
+        paddingBottom: 'clamp(3.5rem, 5vw, 5rem)',
+      }}
     >
-      {/* Decorative watermark */}
+      {/* Subtle noise texture for depth */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        aria-hidden="true"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'repeat',
+          backgroundSize: '128px 128px',
+        }}
+      />
+
+      {/* Decorative diamond watermark */}
       <div
         className="absolute right-8 top-1/2 -translate-y-1/2 pointer-events-none select-none hidden md:block"
         aria-hidden="true"
-        style={{ opacity: 0.05, fontSize: '18rem', fontFamily: 'Fraunces, Georgia, serif', fontWeight: 700, lineHeight: 1, color: '#fff' }}
+        style={{
+          opacity: 0.04,
+          fontSize: '18rem',
+          fontFamily: 'Fraunces, Georgia, serif',
+          fontWeight: 700,
+          lineHeight: 1,
+          color: '#fff',
+        }}
       >
         ◆
       </div>
 
       <div className="relative z-10 max-w-2xl mx-auto text-center">
         {/* Eyebrow */}
-        <p className="text-xs font-bold uppercase tracking-widest mb-5 font-dm-sans" style={{ color: 'rgba(255,255,255,0.55)' }}>
+        <p
+          className="text-[10px] font-bold uppercase tracking-[0.16em] mb-6 font-dm-sans"
+          style={{ color: 'rgba(255,255,255,0.45)' }}
+        >
           {t('support.eyebrow', 'Periodismo indígena independiente')}
         </p>
 
-        <h2
-          className="text-2xl md:text-3xl font-bold mb-5 leading-tight"
-          style={{ color: '#fff', fontFamily: 'Fraunces, Georgia, serif' }}
-        >
+        <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight font-fraunces text-white">
           {t('support.heading', 'Voces que el mainstream ignora. Las cubrimos nosotros.')}
         </h2>
 
-        <p className="text-base md:text-lg mb-8 leading-relaxed" style={{ color: 'rgba(255,255,255,0.75)' }}>
+        <p
+          className="text-base md:text-lg mb-10 leading-relaxed max-w-xl mx-auto font-lora"
+          style={{ color: 'rgba(255,255,255,0.70)' }}
+        >
           {t('support.message')}
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          {/* Primary: subscribe (white filled) */}
+          {/* Primary: subscribe */}
           <button
             onClick={() => openSubscribe()}
-            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700"
-            style={{ backgroundColor: '#fff', color: '#0D5F3C' }}
+            className="group inline-flex items-center gap-2.5 px-7 py-3.5 text-sm font-bold rounded-full transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800 font-dm-sans"
+            style={{
+              backgroundColor: '#C8473A',
+              color: '#fff',
+              boxShadow: '0 2px 8px rgba(200, 71, 58, 0.35)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#b03d31'
+              e.currentTarget.style.transform = 'translateY(-1px)'
+              e.currentTarget.style.boxShadow = '0 4px 16px rgba(200, 71, 58, 0.45)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#C8473A'
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(200, 71, 58, 0.35)'
+            }}
           >
-            <NewsletterIcon className="w-4 h-4 shrink-0" />
+            <NewsletterIcon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
             {t('nav.subscribe')}
           </button>
 
-          {/* Secondary: ko-fi (ghost white outline) */}
+          {/* Secondary: ko-fi */}
           <a
             href={KOFI_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 text-sm font-bold rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700"
-            style={{ border: '1px solid rgba(255,255,255,0.45)', color: '#fff' }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.8)' }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.45)' }}
+            className="group inline-flex items-center gap-2.5 px-7 py-3.5 text-sm font-bold rounded-full transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800 font-dm-sans"
+            style={{
+              border: '1px solid rgba(255,255,255,0.25)',
+              color: 'rgba(255,255,255,0.90)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.55)'
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'
+              e.currentTarget.style.transform = 'translateY(-1px)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.transform = 'translateY(0)'
+            }}
           >
-            <HeartIcon className="w-4 h-4 shrink-0" />
+            <HeartIcon className="w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110" />
             {t('support.button')}
             <span className="sr-only">{t('support.opensInNewTab')}</span>
           </a>

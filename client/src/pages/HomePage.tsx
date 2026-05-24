@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useHomepageData } from '../hooks/useHomepageData'
 import StoryCard from '../components/StoryCard'
-import PullQuote, { getQuoteVariant } from '../components/PullQuote'
+import PullQuote from '../components/PullQuote'
 import { HeroSkeleton, IssueSectionSkeleton } from '../components/skeletons'
 import type { PublicIssue } from '../lib/api'
 import type { PublicStory } from '@shared/types'
@@ -158,14 +158,12 @@ function IssueSection({
   heroStoryId,
   layout,
   divider,
-  quoteVariantIndex,
 }: {
   issue: PublicIssue
   allStories: PublicStory[]
   heroStoryId: string | null
   layout: LayoutVariant
   divider?: 'quote' | 'snippet' | 'diamond' | 'none'
-  quoteVariantIndex?: number
 }) {
   // Exclude the hero story from this section
   const stories = heroStoryId
@@ -239,7 +237,7 @@ function IssueSection({
 
       {/* Section divider */}
       {divider === 'quote' && (
-        <QuoteDivider stories={allStories} variantIndex={quoteVariantIndex ?? 0} />
+        <QuoteDivider stories={allStories} />
       )}
       {divider === 'snippet' && <DailySnippet issueSlug={issue.slug} />}
       {divider === 'diamond' && <hr className="section-divider" />}
@@ -251,11 +249,11 @@ function IssueSection({
 // Quote divider using the new PullQuote component
 // ---------------------------------------------------------------------------
 
-function QuoteDivider({ stories, variantIndex }: { stories: PublicStory[]; variantIndex: number }) {
+function QuoteDivider({ stories }: { stories: PublicStory[] }) {
   const storyWithQuote = stories.find((s) => s.quote)
   if (!storyWithQuote) return null
 
-  return <PullQuote story={storyWithQuote} variant={getQuoteVariant(variantIndex)} />
+  return <PullQuote story={storyWithQuote} />
 }
 
 // ---------------------------------------------------------------------------
@@ -288,8 +286,6 @@ export default function HomePage() {
   const sortedIssues = [...issues]
     .filter((i) => ISSUE_ORDER.includes(i.slug))
     .sort((a, b) => ISSUE_ORDER.indexOf(a.slug) - ISSUE_ORDER.indexOf(b.slug))
-
-  let quoteIdx = 0
 
   return (
     <>
@@ -339,8 +335,6 @@ export default function HomePage() {
                 ? 'quote'
                 : 'snippet'
 
-            const currentQuoteIdx = divider === 'quote' ? quoteIdx++ : 0
-
             const buckets = storiesByIssueBuckets[issue.slug]
             const mixed = buckets
               ? mixHomepageStories(buckets, 7, positivity)
@@ -354,7 +348,6 @@ export default function HomePage() {
                 heroStoryId={heroStory?.id ?? null}
                 layout={layout}
                 divider={divider}
-                quoteVariantIndex={currentQuoteIdx}
               />
             )
           }).reduce<React.ReactNode[]>((acc, section, idx) => {
