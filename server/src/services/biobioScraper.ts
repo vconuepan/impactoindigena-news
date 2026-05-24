@@ -33,10 +33,16 @@ export const BIOBIO_FEED_URL = `${HOMEPAGE_URL}scraper`
 export const SCRAPED_FEED_URLS = new Set([BIOBIO_FEED_URL])
 
 // Sections relevant to indigenous / rights coverage
+// /noticias/nacional/ already includes all regional subsections
+// (e.g. /noticias/nacional/region-de-la-araucania/)
 const RELEVANT_SECTIONS = [
   '/noticias/nacional/',
   '/noticias/sociedad/',
   '/noticias/opinion/',
+  '/noticias/economia/',
+  '/noticias/reportajes/',
+  '/noticias/entrevistas/',
+  '/noticias/artes-y-cultura/',
 ]
 
 // Only include articles from the last 2 days to avoid reprocessing old content
