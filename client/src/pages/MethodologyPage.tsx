@@ -9,18 +9,18 @@ import { useSources } from '../hooks/useSources'
 import { getCategoryColor } from '../lib/category-colors'
 
 const META = {
-  title: 'Metodologia \u2014 Como la IA cura las noticias | Impacto Indigena',
+  title: 'Metodolog\u00eda \u2014 C\u00f3mo la IA cura las noticias | Impacto Ind\u00edgena',
   description:
-    'Fuentes especializadas, un pipeline de IA en multiples etapas y total transparencia. Aprende exactamente como Impacto Indigena selecciona las noticias mas relevantes para los pueblos indigenas.',
+    'Fuentes especializadas, un pipeline de IA en m\u00faltiples etapas y total transparencia. Aprende exactamente c\u00f3mo Impacto Ind\u00edgena selecciona las noticias m\u00e1s relevantes para los pueblos ind\u00edgenas.',
   url: `${SEO.siteUrl}/methodology`,
 }
 
 const techArticleSchema = {
   '@context': 'https://schema.org',
   '@type': 'TechArticle',
-  headline: 'Metodologia \u2014 Como la IA cura las noticias',
+  headline: 'Metodolog\u00eda \u2014 C\u00f3mo la IA cura las noticias',
   description:
-    'Explicacion detallada del pipeline de curation de noticias con IA de Impacto Indigena, cubriendo fuentes especializadas en pueblos indigenas de todo el mundo.',
+    'Explicaci\u00f3n detallada del pipeline de curaci\u00f3n de noticias con IA de Impacto Ind\u00edgena, cubriendo fuentes especializadas en pueblos ind\u00edgenas de todo el mundo.',
   url: META.url,
   author: {
     '@type': 'Organization',
@@ -78,17 +78,19 @@ export default function MethodologyPage() {
 
       <div className="page-section">
         <div className="prose max-w-none">
-          <h2 className="section-heading mt-8">Que significa "impacto" para nosotros?</h2>
+          <h2 className="section-heading mt-8">¿Qué significa "impacto" para nosotros?</h2>
           <p>
-            Solo publicamos noticias que tienen importancia real para los pueblos indigenas del mundo
-            y su futuro a largo plazo. La mayoria de los medios enfocan las noticias sobre pueblos
-            indigenas desde una perspectiva de vulnerabilidad. Nosotros filtramos por noticias que
-            documentan contribuciones, avances, derechos, conocimiento ancestral y colaboracion
-            entre lo indigena y lo moderno.
+            Solo publicamos noticias que tienen importancia real para los pueblos indígenas del mundo
+            y su futuro a largo plazo. No vemos a los pueblos indígenas como grupos vulnerables que
+            necesitan ser defendidos, sino como innovadores sociales, guardianes del conocimiento
+            ancestral y protagonistas activos en la solución de los desafíos globales. Filtramos por
+            noticias que construyen puentes entre pueblos indígenas, sociedad civil, empresas
+            responsables y Estados, integrando el conocimiento ancestral con el desarrollo económico,
+            la acción climática y la consolidación de la paz.
           </p>
 
           <h2 className="section-heading mt-8">Nuestro Proceso</h2>
-          <p>Usamos inteligencia artificial para encontrar las noticias mas relevantes:</p>
+          <p>Usamos inteligencia artificial para encontrar las noticias más relevantes:</p>
 
           <div className="my-6">
             <div className="flex items-center gap-1.5 justify-end mb-4 text-xs text-neutral-400">
@@ -99,30 +101,30 @@ export default function MethodologyPage() {
             <div>
               {[
                 {
-                  label: 'Recoleccion',
+                  label: 'Recolección',
                   desc: sources
-                    ? `Monitoreamos ${sources.totalCount} fuentes de noticias especializadas en pueblos indigenas de todo el mundo, en multiples idiomas y cuatro areas tematicas. El contenido se extrae automaticamente desde feeds RSS y sitios web especializados.`
-                    : 'Monitoreamos fuentes especializadas en pueblos indigenas de todo el mundo, en multiples idiomas y cuatro areas tematicas. El contenido se extrae automaticamente desde feeds RSS y sitios web especializados.',
+                    ? `Monitoreamos ${sources.totalCount} fuentes de noticias especializadas en pueblos indígenas de todo el mundo, en múltiples idiomas y cuatro áreas temáticas. El contenido se extrae automáticamente desde feeds RSS y sitios web especializados.`
+                    : 'Monitoreamos fuentes especializadas en pueblos indígenas de todo el mundo, en múltiples idiomas y cuatro áreas temáticas. El contenido se extrae automáticamente desde feeds RSS y sitios web especializados.',
                   dots: 20,
                 },
                 {
-                  label: 'Pre-evaluacion',
-                  desc: 'Un modelo de lenguaje lee cada articulo y hace una primera evaluacion: tiene relevancia directa para los pueblos indigenas, su historia, cultura, territorio o derechos? Los articulos que no superan el umbral son filtrados automaticamente.',
+                  label: 'Pre-evaluación',
+                  desc: 'Un modelo de lenguaje lee cada artículo y hace una primera evaluación: ¿tiene relevancia directa para los pueblos indígenas, su historia, cultura, territorio o derechos? Los artículos que no superan el umbral son filtrados automáticamente.',
                   dots: 10,
                 },
                 {
-                  label: 'Analisis completo',
-                  desc: 'Identificamos el tema al que pertenece la noticia, evaluamos su relevancia para los pueblos indigenas, asignamos una calificacion y generamos un resumen. Las calificaciones consideran factores como escala de impacto, implicaciones legales o politicas, y contribuciones al conocimiento indigena.',
+                  label: 'Análisis completo',
+                  desc: 'Identificamos el tema al que pertenece la noticia, evaluamos su relevancia para los pueblos indígenas, asignamos una calificación y generamos un resumen. Las calificaciones consideran factores como escala de impacto, implicaciones legales o políticas, y contribuciones al conocimiento indígena.',
                   dots: 4,
                 },
                 {
-                  label: 'Comparacion y seleccion',
-                  desc: 'Comparamos las noticias entre si y seleccionamos las mas relevantes para publicacion, priorizando diversidad tematica y geografica.',
+                  label: 'Comparación y selección',
+                  desc: 'Comparamos las noticias entre sí y seleccionamos las más relevantes para publicación, priorizando diversidad temática y geográfica.',
                   dots: 2,
                 },
                 {
-                  label: 'Publicacion',
-                  desc: 'Las noticias seleccionadas se publican en el sitio con su analisis completo, cita clave y resumen de relevancia.',
+                  label: 'Publicación',
+                  desc: 'Las noticias seleccionadas se publican en el sitio con su análisis completo, cita clave y resumen de relevancia.',
                   dots: 1,
                 },
               ].map((step) => (
@@ -152,15 +154,16 @@ export default function MethodologyPage() {
 
           <h2 className="section-heading mt-8">Cuatro Temas Principales</h2>
           <p>
-            Cubrimos cuatro areas tematicas, cada una con criterios de evaluacion adaptados al
-            contexto indigena especifico.
+            Cubrimos cuatro áreas temáticas, cada una con criterios de evaluación adaptados al
+            contexto indígena específico.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
           {[
             { slug: 'cambio-climatico', title: 'Cambio Climático y Biodiversidad', description: 'Territorios indígenas, medio ambiente, biodiversidad, acción climática' },
             { slug: 'derechos-indigenas', title: 'Derechos de los Pueblos Indígenas', description: 'Derechos territoriales, autodeterminación, reconocimiento legal, derechos humanos' },
-            { slug: 'desarrollo-sostenible-y-autodeterminado', title: 'Empresas Indígenas', description: 'Economías indígenas, emprendimiento, gobernanza propia, educación intercultural' },
+            { slug: 'desarrollo-sostenible-y-autodeterminado', title: 'Desarrollo Sostenible y Autodeterminado', description: 'Economías indígenas, emprendimiento, gobernanza propia, educación intercultural' },
+            { slug: 'chile-indigena', title: 'Chile Intercultural', description: 'Pueblos originarios de Chile, política pública indígena, consultas indígenas, instituciones y liderazgo indígena chileno' },
           ].map((card) => {
             const colors = getCategoryColor(card.slug)
             return (
@@ -182,7 +185,7 @@ export default function MethodologyPage() {
           <p>
             Monitoreamos{sources ? ` ${sources.totalCount}` : ''} publicaciones especializadas. Cada
             fuente es seleccionada por su calidad editorial, cobertura regional o experiencia en
-            asuntos indigenas, no por volumen de trafico.
+            asuntos indígenas, no por volumen de tráfico.
           </p>
 
           {sourcesLoading ? (
@@ -230,16 +233,16 @@ export default function MethodologyPage() {
               filtro.
             </li>
             <li>
-              <strong>No optimizamos para clics.</strong> Ningun metrica de engagement influye en la
-              seleccion.
+              <strong>No optimizamos para clics.</strong> Ninguna métrica de engagement influye en la
+              selección.
             </li>
             <li>
-              <strong>No hacemos reporteria original.</strong> Cada noticia enlaza al articulo
-              original. Los resumenes y analisis son generados por IA y claramente etiquetados como
+              <strong>No hacemos reportería original.</strong> Cada noticia enlaza al artículo
+              original. Los resúmenes y análisis son generados por IA y claramente etiquetados como
               tal.
             </li>
             <li>
-              <strong>No vendemos datos.</strong> Sin rastreo, sin perfiles de analitica, sin
+              <strong>No vendemos datos.</strong> Sin rastreo, sin perfiles de analítica, sin
               publicidad.
             </li>
           </ul>
@@ -247,63 +250,63 @@ export default function MethodologyPage() {
           <h2 className="section-heading mt-10">El Filtro Emocional</h2>
           <p>
             Los lectores pueden ajustar un control de 5 posiciones que filtra las noticias por tono
-            emocional. Esto no cambia lo que seleccionamos — te permite controlar cuanta noticias
-            dificiles ves en una sesion. Es una herramienta para manejar la fatiga informativa, no
+            emocional. Esto no cambia lo que seleccionamos — te permite controlar cuántas noticias
+            difíciles ves en una sesión. Es una herramienta para manejar la fatiga informativa, no
             un filtro editorial.
           </p>
 
           <h2 className="section-heading mt-10">Transparencia</h2>
           <p>
-            Para cada noticia publicada, mostramos el analisis generado por IA: por que importa la
-            noticia, que factores contribuyeron a su calificacion y posibles consideraciones.
-            Creemos que los lectores merecen entender no solo <em>que</em> es relevante, sino
-            <em> por que</em>.
+            Para cada noticia publicada, mostramos el análisis generado por IA: por qué importa la
+            noticia, qué factores contribuyeron a su calificación y posibles consideraciones.
+            Creemos que los lectores merecen entender no solo <em>qué</em> es relevante, sino
+            <em> por qué</em>.
           </p>
           <p className="mt-4">
-            La curation con IA solo es confiable si puedes verificarla. Nombramos nuestras fuentes
+            La curación con IA solo es confiable si puedes verificarla. Nombramos nuestras fuentes
             y explicamos nuestro pipeline con total transparencia.
           </p>
         </div>
 
           <h2 className="section-heading mt-10">Sobre este proyecto</h2>
           <p>
-            Impacto Indigena News es una iniciativa de{' '}
+            Impacto Indígena News es una iniciativa de{' '}
             <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
               Venancio Conuepan Mesias
             </a>
             , fundador de{' '}
             <a href="https://www.impactoindigena.com" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
-              Impacto Indigena SpA
+              Impacto Indígena SpA
             </a>
             , la empresa matriz de esta plataforma. El prototipo fue desarrollado en el marco de la
             cohorte <strong>LatAm AI 2025</strong> de{' '}
             <a href="https://changemakerxchange.ai" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
               Changemakerxchange.ai
             </a>
-            , una organizacion global que conecta y apoya a agentes de cambio que usan inteligencia
+            , una organización global que conecta y apoya a agentes de cambio que usan inteligencia
             artificial para resolver problemas sociales complejos.
           </p>
           <p className="mt-4">
-            El desarrollo del prototipo fue acompanado por{' '}
+            El desarrollo del prototipo fue acompañado por{' '}
             <a href="https://www.linkedin.com/in/odinmuehlenbein/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
-              Odin Muhlebein
+              Odin Mühlenbein
             </a>
             , mentor de la cohorte LatAm AI 2025 de Changemakerxchange.ai y experto en inteligencia
-            artificial del <strong>Ashoka AI Lab</strong>. A traves del Taller de Prototipos de IA,
-            Odin acompaño a Venancio en transformar una vision clara — crear una plataforma que
-            analice grandes volumenes de informacion y simplifique el acceso al conocimiento para
-            lideres y comunidades indigenas — en una herramienta tangible y funcional.
+            artificial del <strong>Ashoka AI Lab</strong>. A través del Taller de Prototipos de IA,
+            Odin acompañó a Venancio en transformar una visión clara — crear una plataforma que
+            analice grandes volúmenes de información y simplifique el acceso al conocimiento para
+            líderes y comunidades indígenas — en una herramienta tangible y funcional.
           </p>
           <p className="mt-4">
-            Este proyecto nace de la conviccion de que los pueblos indigenas son los primeros
+            Este proyecto nace de la convicción de que los pueblos indígenas son los primeros
             innovadores sociales de la humanidad, y que la inteligencia artificial puede ser un
-            puente para amplificar su voz, su conocimiento y su liderazgo en la solucion de los
-            desafios globales que nos afectan a todos.
+            puente para amplificar su voz, su conocimiento y su liderazgo en la solución de los
+            desafíos globales que nos afectan a todos.
           </p>
 
         <LandingCta
-          heading="Miralo en accion."
-          description="Visita impactoindigena.news para leer las noticias curadas de hoy, o suscribete al boletin semanal."
+          heading="Míralo en acción."
+          description="Visita impactoindigena.news para leer las noticias curadas de hoy, o suscríbete al boletín semanal."
         />
       </div>
     </>
