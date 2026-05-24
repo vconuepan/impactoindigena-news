@@ -88,7 +88,7 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
       <img
         src="/images/logo-horizontal.png"
         alt="Impacto Indígena"
-        className="h-11 md:h-14 w-auto"
+        className="h-14 md:h-[4.5rem] w-auto"
       />
     </Link>
   );

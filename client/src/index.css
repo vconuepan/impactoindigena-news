@@ -228,7 +228,7 @@
   }
 
   .issue-nav-link {
-    @apply inline-flex items-center gap-2 px-3 py-3 text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-colors;
+    @apply inline-flex items-center gap-2 px-3 py-3 text-sm font-bold uppercase tracking-wide whitespace-nowrap transition-colors;
     @apply focus-visible:ring-2 focus-visible:ring-brand-500 border-b-2 border-transparent text-neutral-400;
     font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   }
