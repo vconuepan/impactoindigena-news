@@ -14,10 +14,10 @@ const homepageCache = new TTLCache<unknown>(HOMEPAGE_TTL)
 
 // Issue slugs in display order for homepage
 const HOMEPAGE_ISSUE_SLUGS = [
+  'chile-indigena',
   'cambio-climatico',
   'derechos-indigenas',
   'desarrollo-sostenible-y-autodeterminado',
-  'chile-indigena',
 ]
 
 router.get('/', async (req, res) => {
