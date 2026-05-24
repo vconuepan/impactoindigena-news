@@ -176,7 +176,7 @@ function IssueSection({
 
   return (
     <>
-      <section className="relative mb-8 mt-16 md:mt-32">
+      <section className={`relative mb-8 mt-16 md:mt-32 ${layout === 'B' ? '-mx-4 md:-mx-8 px-4 md:px-8 py-8 md:py-12 bg-neutral-50/70 rounded-none' : ''}`}>
         {/* Pre-rendered PNG to avoid Chromium inline-SVG compositing bug */}
         <div className="absolute -left-12 top-0 -translate-y-[40%] z-10 pointer-events-none select-none hidden md:block w-[200px] h-[200px]">
           <img src={`/illustrations/${issue.slug}.png`} alt="" className="opacity-[0.18] w-full h-full" />

@@ -23,7 +23,7 @@ export default function PullQuote({ story }: PullQuoteProps) {
   const hasPersonAttribution = story.quoteAttribution && story.quoteAttribution !== 'Original article'
 
   return (
-    <figure className="py-10 md:py-14 text-center max-w-2xl mx-auto px-4">
+    <figure className="py-10 md:py-14 text-center max-w-2xl mx-auto px-4 border-l-4 border-r-4 border-brand-200/40">
       {/* Top rule with diamond */}
       <div className="flex items-center gap-4 mb-8" aria-hidden="true">
         <span className="flex-1 border-t border-neutral-200" />

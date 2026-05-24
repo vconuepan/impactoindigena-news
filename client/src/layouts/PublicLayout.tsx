@@ -96,7 +96,7 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
 
 function CategoryColorStrip({ className }: { className?: string }) {
   return (
-    <div className={`flex h-1 ${className ?? ""}`} aria-hidden="true">
+    <div className={`flex h-[3px] ${className ?? ""}`} aria-hidden="true">
       <div className="flex-1" style={{ backgroundColor: '#34d399' }} />
       <div className="flex-1" style={{ backgroundColor: '#fb923c' }} />
       <div className="flex-1" style={{ backgroundColor: '#fbbf24' }} />
@@ -299,7 +299,7 @@ function PublicLayoutInner() {
               return (
                 <li key={link.href}>
                   <Link to={link.href} className="issue-nav-link" data-active={active} style={{ "--issue-color": colors.hex } as React.CSSProperties}>
-                    <span className={`w-2.5 h-2.5 rounded-full ${active ? "opacity-100" : "opacity-70"}`} style={{ backgroundColor: colors.hex }} aria-hidden="true" />
+                    <span className={`w-3 h-3 rounded-full ${active ? "opacity-100" : "opacity-70"}`} style={{ backgroundColor: colors.hex }} aria-hidden="true" />
                     {t(link.labelKey)}
                   </Link>
                 </li>
@@ -566,17 +566,6 @@ function PublicLayoutInner() {
                     {t('footer.rssFeed')}
                   </a>
                 </li>
-                {ISSUE_LINKS.map((issue) => (
-                  <li key={issue.slug} className="flex items-center">
-                    <a
-                      href={`${API_BASE}/feed/${issue.slug}`}
-                      className="inline-flex items-center gap-1.5 text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
-                    >
-                      <span className={`w-1 h-1 rounded-full ${getCategoryColor(issue.slug).dotBg} opacity-70 shrink-0`} aria-hidden="true" />
-                      {t(issue.labelKey)}
-                    </a>
-                  </li>
-                ))}
                 <li className="flex items-center">
                   <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
                     {t('footer.support')}
