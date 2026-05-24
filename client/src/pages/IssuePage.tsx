@@ -475,7 +475,7 @@ export default function IssuePage() {
 // ---------------------------------------------------------------------------
 const ISSUE_GUIDES: Record<string, { label: string; href: string }[]> = {
   'chile-indigena': [
-    { label: 'Pueblos Indígenas de Chile', href: '/guia/pueblos-indigenas-chile' },
+    { label: 'Chile Intercultural', href: '/guia/pueblos-indigenas-chile' },
     { label: 'Pueblo Mapuche', href: '/guia/pueblo-mapuche' },
     { label: 'Consulta Previa y CLPI', href: '/guia/consulta-previa-fpic' },
   ],

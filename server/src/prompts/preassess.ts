@@ -34,6 +34,9 @@ Ejemplos de artículos que SIEMPRE reciben 1-2:
 Califica con 5 o más cualquier artículo que mencione explícitamente a pueblos indígenas Y toque uno o más de estos temas:
 - Historia, cultura, arte, literatura, lenguas o conocimiento ancestral indígena
 - Comunidades indígenas y sus territorios, aunque sea a pequeña escala
+- Política pública indígena, consultas indígenas, sentencias judiciales que afecten a pueblos indígenas
+- Instituciones indígenas (CONADI, Consejo de Ancianos Rapa Nui, Consejo de Pueblos Atacameños, etc.)
+- Parlamentarios, escritores, poetas o profesionales indígenas en ejercicio de su rol
 - Soluciones basadas en la naturaleza, innovación o conocimiento tradicional indígena aplicado a desafíos globales
 - Derechos indígenas, autodeterminación, reconocimiento legal o políticas públicas
 - Colaboración entre pueblos indígenas, sociedad civil, empresas responsables o gobiernos

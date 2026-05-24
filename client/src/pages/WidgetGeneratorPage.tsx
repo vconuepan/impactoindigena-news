@@ -8,7 +8,7 @@ const ISSUES = [
   { label: "Cambio Climático y Biodiversidad", value: "cambio-climatico" },
   { label: "Derechos de los Pueblos Indígenas", value: "derechos-indigenas" },
   { label: "Empresas Indígenas", value: "desarrollo-sostenible-y-autodeterminado" },
-  { label: "Pueblos Indígenas de Chile", value: "chile-indigena" },
+  { label: "Chile Intercultural", value: "chile-indigena" },
 ];
 
 const WIDGET_URL = "https://impactoindigena.news/widget.js";

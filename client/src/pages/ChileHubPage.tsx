@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Pueblos Indígenas de Chile: guía completa | Impacto Indígena',
+  title: 'Chile Intercultural: guía completa | Impacto Indígena',
   description:
     'Chile tiene diez pueblos indígenas reconocidos por ley. Conoce quiénes son, dónde viven, cuántos son y cuáles son sus principales demandas: mapuche, aymara, rapanui, atacameño y más.',
   url: `${SEO.siteUrl}/guia/pueblos-indigenas-chile`,
@@ -123,7 +123,7 @@ export default function ChileHubPage() {
           {
             '@context': 'https://schema.org',
             '@type': 'Article',
-            headline: 'Pueblos Indígenas de Chile: guía completa',
+            headline: 'Chile Intercultural: guía completa',
             description: META.description,
             url: META.url,
             author: { '@type': 'Organization', name: SEO.siteName, url: SEO.siteUrl },
@@ -138,7 +138,7 @@ export default function ChileHubPage() {
           buildBreadcrumbSchema([
             { name: 'Inicio', url: SEO.siteUrl },
             { name: 'Guías', url: `${SEO.siteUrl}/guia` },
-            { name: 'Pueblos Indígenas de Chile' },
+            { name: 'Chile Intercultural' },
           ]),
           {
             '@context': 'https://schema.org',
@@ -178,7 +178,7 @@ export default function ChileHubPage() {
         <div className="max-w-2xl mx-auto text-center">
           <span className="inline-block text-xs font-bold uppercase tracking-widest text-brand-400 mb-4">Guía</span>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-6">
-            Pueblos Indígenas de Chile
+            Chile Intercultural
           </h1>
           <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto">
             Diez pueblos. Un país. Sus territorios, sus lenguas y sus derechos.

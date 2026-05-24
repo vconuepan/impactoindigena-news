@@ -92,7 +92,7 @@ Inter, Roboto, Arial, Helvetica, Montserrat, Poppins, Raleway — no usar como d
 | Derechos de los Pueblos Indígenas | `#EA580C` | orange-600 |
 | Empresas Indígenas | `#CA8A04` | yellow-600 |
 | Reconciliación y Paz | `#2563EB` | blue-600 |
-| Pueblos Indígenas de Chile | `#9333EA` | purple-600 |
+| Chile Intercultural | `#9333EA` | purple-600 |
 | Comunidades | `#DC2626` | red-600 |
 
 Estos colores se usan en: dots de categoría en nav, tags en cards, borders activos en `.issue-nav-link`, `.ruled-heading`.

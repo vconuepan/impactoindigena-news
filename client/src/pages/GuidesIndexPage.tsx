@@ -27,7 +27,7 @@ const GUIDES = [
     label: 'Derechos internacionales',
   },
   {
-    title: 'Pueblos Indígenas de Chile',
+    title: 'Chile Intercultural',
     description:
       'Los diez pueblos reconocidos por la ley chilena: mapuche, aymara, rapanui, atacameño, quechua, colla, diaguita, kawésqar, yagán y lamas. Sus territorios y demandas.',
     href: '/guia/pueblos-indigenas-chile',

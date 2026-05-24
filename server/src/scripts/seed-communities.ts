@@ -30,7 +30,7 @@ const communities: CommunityData[] = [
   // ── PUEBLOS ─────────────────────────────────────────────────────────
   {
     slug: 'chile-indigena',
-    name: 'Pueblos Indígenas de Chile',
+    name: 'Chile Intercultural',
     description: 'Noticias sobre los pueblos originarios de Chile: derechos, territorio, cultura y autonomía.',
     type: 'PUEBLO',
     region: 'Chile',
