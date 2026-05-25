@@ -87,10 +87,7 @@ export default function SpotlightBand() {
             <span className="inline-flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] whitespace-nowrap font-dm-sans"
               style={{ color: '#4ade80' }}
             >
-              <span className="relative flex h-2 w-2" aria-hidden="true">
-                <span className="absolute inset-0 rounded-full bg-green-400 opacity-60 animate-ping" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
-              </span>
+              <span className="inline-flex rounded-full h-2 w-2 bg-green-400 shrink-0" aria-hidden="true" />
               {t('spotlight.label')}
             </span>
             <p className="text-xs text-neutral-500 font-medium mt-1 leading-tight max-w-[130px] md:max-w-none font-dm-sans">
@@ -127,10 +124,7 @@ export default function SpotlightBand() {
               {story.slug ? (
                 <Link
                   to={`/stories/${story.slug}`}
-                  className="block text-[15px] md:text-base font-semibold leading-snug line-clamp-2 transition-colors duration-150 font-fraunces"
-                  style={{ color: '#FAFAF8' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = '#86cd9e' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = '#FAFAF8' }}
+                  className="block text-[15px] md:text-base font-semibold leading-snug line-clamp-2 transition-colors duration-150 font-fraunces text-[#FAFAF8] hover:text-brand-300"
                 >
                   {story.title}
                 </Link>

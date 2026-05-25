@@ -112,7 +112,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
   // === FEATURED variant — full-bleed image, meta flush inside card ===
   if (variant === 'featured') {
     return (
-      <article className={`group relative overflow-hidden rounded-xl shadow-sm hover:shadow-xl transition-shadow duration-300 ${readClass}`}>
+      <article className={`group relative overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 ${readClass}`}>
         <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-xl">
           {/* Image area — extended gradient covers the meta row below */}
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
@@ -120,7 +120,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
               <CardImage
                 src={imageUrl}
                 alt={headlineText}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover transition-transform duration-500"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
                     {Pattern && <Pattern opacity={0.25} />}
@@ -158,14 +158,14 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
   // === EQUAL variant — image top, text below (Ladera Sur style) ===
   if (variant === 'equal') {
     return (
-      <article className={`group relative overflow-hidden rounded-xl border border-neutral-100 bg-white hover:shadow-lg transition-shadow duration-300 h-full ${readClass}`}>
+      <article className={`group relative overflow-hidden rounded-xl border border-neutral-100 bg-white hover:shadow-md transition-shadow duration-300 h-full ${readClass}`}>
         <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-xl overflow-hidden">
           <div className="aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <CardImage
                 src={imageUrl}
                 alt={headlineText}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-full object-cover transition-transform duration-500"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
                     {Pattern && <Pattern opacity={0.2} />}
@@ -201,7 +201,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
   // === HORIZONTAL variant — text left, image right ===
   if (variant === 'horizontal') {
     return (
-      <article className={`group relative overflow-hidden rounded-xl border border-neutral-100 bg-white hover:shadow-lg transition-shadow duration-300 ${readClass}`}>
+      <article className={`group relative overflow-hidden rounded-xl border border-neutral-100 bg-white hover:shadow-md transition-shadow duration-300 ${readClass}`}>
         <div className="flex flex-col md:flex-row">
           {/* Text left */}
           <div className="flex-1 p-6 md:p-7">
@@ -229,7 +229,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
                 <CardImage
                   src={imageUrl}
                   alt={headlineText}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover transition-transform duration-500"
                   fallback={
                     <div
                       className="w-full h-full"
