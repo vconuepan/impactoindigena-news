@@ -23,6 +23,11 @@ const GITHUB_URL = GITHUB_REPO_URL;
 
 const ISSUE_LINKS = [
   {
+    labelKey: "issues.chileIndigena",
+    slug: "chile-indigena",
+    href: "/issues/chile-indigena",
+  },
+  {
     labelKey: "issues.climaBiodiversidad",
     slug: "cambio-climatico",
     href: "/issues/cambio-climatico",
@@ -36,11 +41,6 @@ const ISSUE_LINKS = [
     labelKey: "issues.desarrolloSostenible",
     slug: "desarrollo-sostenible-y-autodeterminado",
     href: "/issues/desarrollo-sostenible-y-autodeterminado",
-  },
-  {
-    labelKey: "issues.chileIndigena",
-    slug: "chile-indigena",
-    href: "/issues/chile-indigena",
   },
 ];
 
