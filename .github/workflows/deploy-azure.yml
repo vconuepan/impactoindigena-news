@@ -26,7 +26,8 @@ jobs:
         run: npm ci --prefix server
 
       - name: Generate Prisma client
-        run: npx prisma generate --schema=server/prisma/schema.prisma
+        working-directory: server
+        run: npx prisma generate
         env:
           DATABASE_URL: 'postgresql://placeholder:placeholder@localhost:5432/db'
 
