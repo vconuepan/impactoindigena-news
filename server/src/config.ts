@@ -67,6 +67,8 @@ export const config = {
   },
   crawl: {
     rssItemLimit: parseInt(process.env.RSS_ITEM_LIMIT || "30", 10),
+    /** Reject articles whose RSS pubDate is older than this many days (Google News resurfacing). 0 = no limit. */
+    maxArticleAgeDays: parseInt(process.env.MAX_ARTICLE_AGE_DAYS || "60", 10),
     httpTimeoutMs: parseInt(process.env.HTTP_TIMEOUT_MS || "10000", 10),
     minContentLength: parseInt(process.env.MIN_CONTENT_LENGTH || "300", 10),
     staleAfterEmptyCrawls: parseInt(

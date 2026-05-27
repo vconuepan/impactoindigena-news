@@ -1,0 +1,44 @@
+name: Deploy Backend to Azure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'shared/**'
+      - '.github/workflows/deploy-azure.yml'
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix server
+
+      - name: Generate Prisma client
+        run: npx prisma generate --schema=server/prisma/schema.prisma
+        env:
+          DATABASE_URL: 'postgresql://placeholder:placeholder@localhost:5432/db'
+
+      - name: Build
+        run: npm run build --prefix server
+
+      - name: Prune dev dependencies
+        run: npm prune --prefix server --production
+
+      - name: Deploy to Azure App Service
+        uses: azure/webapps-deploy@2fdd5c3ebb4e540834b57a93fabf14bcc5740e56  # v3.0.2
+        with:
+          app-name: impactoindigena-news-api
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: server/

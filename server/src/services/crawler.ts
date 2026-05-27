@@ -120,12 +120,25 @@ export async function crawlFeed(feedId: string): Promise<CrawlResult> {
         }
         if (localFailCount >= config.crawl.localFailThreshold) skipLocal = true
 
+        // Reject articles with a publication date older than the configured max age.
+        // Google News frequently resurfaces articles from months or years ago.
+        const pubDateStr = item.datePublished || extracted.datePublished
+        if (pubDateStr && config.crawl.maxArticleAgeDays > 0) {
+          const pubDate = new Date(pubDateStr)
+          const ageDays = (Date.now() - pubDate.getTime()) / (1000 * 60 * 60 * 24)
+          if (!isNaN(pubDate.getTime()) && ageDays > config.crawl.maxArticleAgeDays) {
+            log.info({ url: item.url, pubDate: pubDateStr, ageDays: Math.round(ageDays) }, 'skipping old article')
+            result.skipped++
+            return
+          }
+        }
+
         await createStory({
         sourceUrl: item.url,
         sourceTitle: extracted.title || item.title,
         sourceContent: extracted.content,
         feedId,
-        sourceDatePublished: item.datePublished || undefined,
+        sourceDatePublished: pubDateStr || undefined,
         crawlMethod: extracted.method,
         imageUrl: item.imageUrl || null,
         })

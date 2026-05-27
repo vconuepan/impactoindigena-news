@@ -16,9 +16,12 @@ interface StoryCardProps {
 }
 
 function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | 'xs' }) {
-  const dateStr = formatDate(story.sourceDatePublished || story.datePublished || '')
+  const sourceDate = story.sourceDatePublished ? formatDate(story.sourceDatePublished) : null
+  const publishDate = story.datePublished ? formatDate(story.datePublished) : null
   const ageMonths = story.sourceDatePublished ? storyAgeMonths(story.sourceDatePublished) : 0
   const isOld = ageMonths >= 3
+  // Show both dates only when they differ (different day)
+  const showBothDates = sourceDate && publishDate && sourceDate !== publishDate
   return (
     <div className={`flex flex-wrap items-center gap-x-2 text-neutral-500 font-dm-sans ${size === 'xs' ? 'text-xs' : 'text-sm'}`}>
       <span className="inline-flex items-center gap-1.5">
@@ -32,8 +35,13 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
           {story.feed.displayTitle || story.feed.title}
           <span className="sr-only"> (opens in new tab)</span>
         </a>
-        {dateStr && <> · {dateStr}</>}
+        {sourceDate && <> · {sourceDate}</>}
       </span>
+      {showBothDates && (
+        <span className="text-neutral-400">
+          · Publicado {publishDate}
+        </span>
+      )}
       {isOld && (
         <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
           Noticia antigua
