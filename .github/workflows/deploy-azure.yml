@@ -37,7 +37,7 @@ jobs:
         run: npm prune --prefix server --production
 
       - name: Deploy to Azure App Service
-        uses: azure/webapps-deploy@2fdd5c3ebb4e540834b57a93fabf14bcc5740e56  # v3.0.2
+        uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383  # v3.0.8
         with:
           app-name: impactoindigena-news-api
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
