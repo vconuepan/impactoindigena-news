@@ -106,6 +106,7 @@ app.use('/api/auth', authPublicRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api', publicRouter)
 app.use('/og', ogRouter)
+app.use('/api/og', ogRouter) // alias for Azure Static Web Apps linked backend proxy
 
 
 // 404 handler for unmatched routes

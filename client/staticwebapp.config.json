@@ -1,0 +1,24 @@
+{
+  "routes": [
+    {
+      "route": "/sitemap.xml",
+      "rewrite": "/api/sitemap.xml"
+    },
+    {
+      "route": "/podcast/feed.xml",
+      "rewrite": "/api/podcast/feed.xml"
+    },
+    {
+      "route": "/stories/*",
+      "rewrite": "/api/og/stories/*"
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "/images/*", "/*.png", "/*.ico", "/*.xml", "/*.txt"]
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN"
+  }
+}
