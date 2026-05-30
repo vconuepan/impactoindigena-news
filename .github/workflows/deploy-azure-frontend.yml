@@ -16,14 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      # Build in the runner (not Oryx) so the prerender plugin's bundled
+      # Chrome has the system libraries it needs. Oryx's build container
+      # lacks libnspr4.so and fails the prerender step.
+      - name: Install dependencies
+        run: npm ci --prefix client
+
+      # VITE_API_URL points to the Azure backend so (1) the prerender step can
+      # fetch story slugs at build time and (2) runtime API calls reach the
+      # backend directly. Auth cookies already use SameSite=None for the
+      # cross-origin frontend/backend split, so this is safe. The SWA linked
+      # backend still proxies /api/* for the sitemap/podcast/OG rewrites.
+      - name: Build (with prerendering)
+        run: npm run build --prefix client
+        env:
+          VITE_API_URL: "https://impactoindigena-news-api.azurewebsites.net"
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: client
-          output_location: dist
-          app_build_command: npm install && npm run build
-        env:
-          VITE_API_URL: ""
+          app_location: client/dist
+          output_location: ""
+          skip_app_build: true
