@@ -44,6 +44,21 @@ const PRERENDER_API_URL = process.env.PRERENDER_API_URL || process.env.VITE_API_
 // reach PRERENDER_STORY_LIMIT or run out of stories.
 const STORY_PAGE_SIZE = 100
 
+interface StoryMeta {
+  title: string | null
+  titleLabel: string | null
+  summary: string | null
+  imageUrl: string | null
+  datePublished: string | null
+}
+
+// Map of route path → story metadata, populated during fetchStorySlugs and
+// consumed in postProcess to bake real OG tags into each prerendered story
+// page. The React app's render-complete event fires at a fixed 100ms (before
+// async story data loads), so the rendered HTML carries generic OG tags;
+// injecting here guarantees crawlers see story-specific title/image/desc.
+const storyMetaByRoute = new Map<string, StoryMeta>()
+
 async function fetchStorySlugs(): Promise<string[]> {
   const apiUrl = PRERENDER_API_URL
   if (!apiUrl) return []
@@ -55,11 +70,19 @@ async function fetchStorySlugs(): Promise<string[]> {
     for (let page = 1; page <= pages; page++) {
       const res = await fetch(`${apiUrl}/api/stories?page=${page}&pageSize=${STORY_PAGE_SIZE}`)
       if (!res.ok) break
-      const data = await res.json() as { data: { slug: string | null }[] }
+      const data = await res.json() as { data: (StoryMeta & { slug: string | null })[] }
       if (!data.data.length) break
       for (const story of data.data) {
         if (story.slug && slugs.length < PRERENDER_STORY_LIMIT) {
-          slugs.push(`/stories/${story.slug}`)
+          const route = `/stories/${story.slug}`
+          slugs.push(route)
+          storyMetaByRoute.set(route, {
+            title: story.title,
+            titleLabel: story.titleLabel,
+            summary: story.summary,
+            imageUrl: story.imageUrl,
+            datePublished: story.datePublished,
+          })
         }
       }
       if (data.data.length < STORY_PAGE_SIZE) break
@@ -70,6 +93,54 @@ async function fetchStorySlugs(): Promise<string[]> {
   }
 
   return slugs
+}
+
+const SITE_URL = 'https://impactoindigena.news'
+const FALLBACK_OG_IMAGE = `${SITE_URL}/images/og-image.png`
+
+function escapeAttr(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+// Inject story-specific OG/Twitter tags into a prerendered story page, removing
+// any generic ones the React shell rendered first.
+function injectStoryOgTags(html: string, route: string): string {
+  const meta = storyMetaByRoute.get(route)
+  if (!meta) return html
+
+  const slug = route.replace('/stories/', '')
+  const title = meta.title || slug
+  const fullTitle = meta.titleLabel ? `${meta.titleLabel}: ${title}` : title
+  const description = (meta.summary || fullTitle).slice(0, 200)
+  const image = meta.imageUrl || FALLBACK_OG_IMAGE
+  const url = `${SITE_URL}/stories/${slug}`
+
+  const t = escapeAttr(fullTitle)
+  const d = escapeAttr(description)
+  // og:image URLs must not HTML-escape & — many parsers use the raw value.
+  const img = image.replace(/"/g, '%22').replace(/</g, '%3C').replace(/>/g, '%3E')
+
+  const ogTags = `
+  <title>${t} - Impacto Indígena</title>
+  <meta name="description" content="${d}" />
+  <meta property="og:title" content="${t}" />
+  <meta property="og:description" content="${d}" />
+  <meta property="og:image" content="${img}" />
+  <meta property="og:url" content="${url}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Impacto Indígena" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${t}" />
+  <meta name="twitter:description" content="${d}" />
+  <meta name="twitter:image" content="${img}" />`
+
+  // Strip the generic title and og/twitter tags the shell rendered, then inject.
+  const cleaned = html
+    .replace(/<title>[^<]*<\/title>/i, '')
+    .replace(/<meta[^>]+(property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*\/?>/gi, '')
+    .replace(/<meta[^>]+name=["']description["'][^>]*\/?>/gi, '')
+
+  return cleaned.replace('<head>', `<head>${ogTags}`)
 }
 
 async function fetchIssueSlugs(): Promise<string[]> {
@@ -144,6 +215,11 @@ export default defineConfig(async () => {
         postProcess(renderedRoute) {
           if (!renderedRoute.html.startsWith('<!DOCTYPE')) {
             renderedRoute.html = '<!DOCTYPE html>' + renderedRoute.html
+          }
+
+          // Bake story-specific OG tags into prerendered story pages.
+          if (renderedRoute.route.startsWith('/stories/')) {
+            renderedRoute.html = injectStoryOgTags(renderedRoute.html, renderedRoute.route)
           }
 
           // Preload homepage API data to avoid JS→API chain
