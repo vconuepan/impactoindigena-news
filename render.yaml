@@ -131,20 +131,20 @@ services:
       - render.yaml
     envVars:
       - key: VITE_API_URL
-        value: https://vocesindigenas-backend.onrender.com
+        value: https://impactoindigena-news-api.azurewebsites.net
     routes:
       - type: rewrite
         source: /sitemap.xml
-        destination: https://vocesindigenas-backend.onrender.com/api/sitemap.xml
+        destination: https://impactoindigena-news-api.azurewebsites.net/api/sitemap.xml
       - type: rewrite
         source: /podcast/feed.xml
-        destination: https://vocesindigenas-backend.onrender.com/api/podcast/feed.xml
+        destination: https://impactoindigena-news-api.azurewebsites.net/api/podcast/feed.xml
       - type: rewrite
         source: /api/*
-        destination: https://vocesindigenas-backend.onrender.com/api/*
+        destination: https://impactoindigena-news-api.azurewebsites.net/api/*
       - type: rewrite
         source: /stories/*
-        destination: https://vocesindigenas-backend.onrender.com/og/stories/*
+        destination: https://impactoindigena-news-api.azurewebsites.net/og/stories/*
       - type: rewrite
         source: /*
         destination: /index.html
