@@ -40,6 +40,10 @@ const PRERENDER_STORY_LIMIT = 300
 // PRERENDER_API_URL. Falls back to VITE_API_URL for local/other deploys.
 const PRERENDER_API_URL = process.env.PRERENDER_API_URL || process.env.VITE_API_URL
 
+// The /api/stories endpoint caps pageSize at 100, so fetch in pages until we
+// reach PRERENDER_STORY_LIMIT or run out of stories.
+const STORY_PAGE_SIZE = 100
+
 async function fetchStorySlugs(): Promise<string[]> {
   const apiUrl = PRERENDER_API_URL
   if (!apiUrl) return []
@@ -47,12 +51,18 @@ async function fetchStorySlugs(): Promise<string[]> {
   const slugs: string[] = []
 
   try {
-    const res = await fetch(`${apiUrl}/api/stories?page=1&pageSize=${PRERENDER_STORY_LIMIT}`)
-    if (res.ok) {
+    const pages = Math.ceil(PRERENDER_STORY_LIMIT / STORY_PAGE_SIZE)
+    for (let page = 1; page <= pages; page++) {
+      const res = await fetch(`${apiUrl}/api/stories?page=${page}&pageSize=${STORY_PAGE_SIZE}`)
+      if (!res.ok) break
       const data = await res.json() as { data: { slug: string | null }[] }
+      if (!data.data.length) break
       for (const story of data.data) {
-        if (story.slug) slugs.push(`/stories/${story.slug}`)
+        if (story.slug && slugs.length < PRERENDER_STORY_LIMIT) {
+          slugs.push(`/stories/${story.slug}`)
+        }
       }
+      if (data.data.length < STORY_PAGE_SIZE) break
     }
     console.log(`[prerender] fetched ${slugs.length} story slugs (capped at ${PRERENDER_STORY_LIMIT})`)
   } catch (err) {
