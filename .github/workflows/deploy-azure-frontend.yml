@@ -28,15 +28,17 @@ jobs:
       - name: Install dependencies
         run: npm ci --prefix client
 
-      # VITE_API_URL points to the Azure backend so (1) the prerender step can
-      # fetch story slugs at build time and (2) runtime API calls reach the
-      # backend directly. Auth cookies already use SameSite=None for the
-      # cross-origin frontend/backend split, so this is safe. The SWA linked
-      # backend still proxies /api/* for the sitemap/podcast/OG rewrites.
+      # The backend is locked behind the SWA linked-backend proxy (Easy Auth),
+      # so it only accepts traffic through the SWA. Runtime calls therefore use
+      # VITE_API_URL="" (same-origin /api → proxied), which also keeps auth
+      # cookies same-origin. The prerender step can't reach the backend
+      # directly, so it fetches slugs through the SWA public proxy URL via
+      # PRERENDER_API_URL.
       - name: Build (with prerendering)
         run: npm run build --prefix client
         env:
-          VITE_API_URL: "https://impactoindigena-news-api.azurewebsites.net"
+          VITE_API_URL: ""
+          PRERENDER_API_URL: "https://calm-pebble-039bfb80f.7.azurestaticapps.net"
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1

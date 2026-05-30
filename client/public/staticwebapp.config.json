@@ -7,10 +7,6 @@
     {
       "route": "/podcast/feed.xml",
       "rewrite": "/api/podcast/feed.xml"
-    },
-    {
-      "route": "/stories/*",
-      "rewrite": "/api/og/stories/*"
     }
   ],
   "navigationFallback": {

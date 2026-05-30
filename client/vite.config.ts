@@ -34,8 +34,14 @@ function htmlTransformPlugin(): Plugin {
 // other scrapers can read OG tags for any recently-shared story.
 const PRERENDER_STORY_LIMIT = 300
 
+// Build-time API URL for prerender fetches. When the backend is locked behind
+// the Azure SWA linked-backend proxy (Easy Auth), it can't be reached directly,
+// so the build fetches slugs through the SWA public proxy URL via
+// PRERENDER_API_URL. Falls back to VITE_API_URL for local/other deploys.
+const PRERENDER_API_URL = process.env.PRERENDER_API_URL || process.env.VITE_API_URL
+
 async function fetchStorySlugs(): Promise<string[]> {
-  const apiUrl = process.env.VITE_API_URL
+  const apiUrl = PRERENDER_API_URL
   if (!apiUrl) return []
 
   const slugs: string[] = []
@@ -57,7 +63,7 @@ async function fetchStorySlugs(): Promise<string[]> {
 }
 
 async function fetchIssueSlugs(): Promise<string[]> {
-  const apiUrl = process.env.VITE_API_URL
+  const apiUrl = PRERENDER_API_URL
   if (!apiUrl) return []
 
   try {
@@ -73,7 +79,7 @@ async function fetchIssueSlugs(): Promise<string[]> {
 }
 
 async function fetchCommunitySlugs(): Promise<string[]> {
-  const apiUrl = process.env.VITE_API_URL
+  const apiUrl = PRERENDER_API_URL
   if (!apiUrl) return []
 
   try {
