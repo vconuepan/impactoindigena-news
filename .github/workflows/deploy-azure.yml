@@ -1,31 +1,42 @@
 name: Deploy Backend to Azure
 
-# Source-only deploy: Azure (Oryx) runs `npm install` + `npm run build` in its
-# own Linux container with SCM_DO_BUILD_DURING_DEPLOYMENT=true. Building on
-# Azure (not the GitHub runner) installs the native modules — @napi-rs/canvas
-# (Instagram carousel) and the Prisma query engine — with binaries that match
-# Azure's runtime. The previous approach built on GitHub and shipped
-# node_modules, which Oryx then compressed and silently dropped @napi-rs/canvas.
-# `npm run build` runs `prisma generate && tsc`. Startup command (set on the
-# App Service): `node dist/index.js`, with heap from NODE_OPTIONS.
 on:
   push:
     branches: [main]
     paths:
       - 'server/**'
+      - 'shared/**'
       - '.github/workflows/deploy-azure.yml'
-  workflow_dispatch: {}
 
 jobs:
   deploy:
-    name: Deploy (Azure builds)
+    name: Build & Deploy
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      # Deploy source only (no node_modules, no dist — both gitignored). Oryx
-      # installs and builds on Azure.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020  # v4.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix server
+
+      - name: Generate Prisma client
+        working-directory: server
+        run: npx prisma generate
+        env:
+          DATABASE_URL: 'postgresql://placeholder:placeholder@localhost:5432/db'
+
+      - name: Build
+        run: npm run build --prefix server
+
+      - name: Prune dev dependencies
+        run: npm prune --prefix server --production
+
       - name: Deploy to Azure App Service
         uses: azure/webapps-deploy@02a81bead70021f5284939794bcec79c271ab383  # v3.0.8
         with:
