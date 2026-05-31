@@ -353,6 +353,7 @@ model LinkedInPost {
   postUrl          String?   @map("post_url")
   status           String    @default("draft")
   postText         String    @map("post_text")
+  slideUrls        String[]  @default([]) @map("slide_urls")
   error            String?
   publishedAt      DateTime? @map("published_at")
   likeCount        Int       @default(0) @map("like_count")

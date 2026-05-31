@@ -167,19 +167,22 @@ export async function createUgcPost(
   articleUrl: string,
   articleTitle: string,
   articleDescription: string,
-  imageUrl?: string | null,
+  imageUrls?: string | string[] | null,
 ): Promise<{ id: string; permalink: string }> {
-  // Try to upload image directly so LinkedIn doesn't need to scrape OG tags.
-  let assetUrn: string | null = null
-  if (imageUrl) {
-    assetUrn = await uploadImageAsset(imageUrl)
+  // Normalize to an array. Upload each image; LinkedIn renders multiple
+  // images in one UGC post as a swipeable multi-image gallery (up to 9).
+  const urls = (Array.isArray(imageUrls) ? imageUrls : imageUrls ? [imageUrls] : []).slice(0, 9)
+  const assetUrns: string[] = []
+  for (const url of urls) {
+    const urn = await uploadImageAsset(url)
+    if (urn) assetUrns.push(urn)
   }
 
   let shareContent: object
 
-  if (assetUrn) {
-    // IMAGE mode: image uploaded directly — always shows. Append article URL
-    // to post text so readers can click through to the story.
+  if (assetUrns.length > 0) {
+    // IMAGE mode: images uploaded directly — always show, no OG scrape needed.
+    // Append article URL to post text so readers can click through.
     const finalText = text.includes(articleUrl)
       ? text
       : `${text}\n\n${articleUrl}`
@@ -187,13 +190,13 @@ export async function createUgcPost(
     shareContent = {
       shareCommentary: { text: finalText },
       shareMediaCategory: 'IMAGE',
-      media: [
-        {
-          status: 'READY',
-          media: assetUrn,
-          title: { text: articleTitle },
-        },
-      ],
+      media: assetUrns.map((urn, i) => ({
+        status: 'READY',
+        media: urn,
+        title: { text: articleTitle },
+        // First image carries the description; LinkedIn ignores it on the rest.
+        ...(i === 0 ? { description: { text: articleDescription } } : {}),
+      })),
     }
   } else {
     // ARTICLE mode: fallback — LinkedIn scrapes originalUrl for thumbnail.
