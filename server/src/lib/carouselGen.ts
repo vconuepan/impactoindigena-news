@@ -307,13 +307,15 @@ async function generateRelevanceSlide(
   for (const b of bullets) {
     ctx.fillStyle = C.accent
     ctx.beginPath()
-    ctx.arc(M + 9 * SCALE, y - 12 * SCALE, 8 * SCALE, 0, Math.PI * 2)
+    ctx.arc(M + 9 * SCALE, y - 14 * SCALE, 8 * SCALE, 0, Math.PI * 2)
     ctx.fill()
     ctx.fillStyle = C.white
-    ctx.font = `500 ${40 * SCALE}px '${FONT}'`
-    // Up to 5 lines per bullet; with ≤2 bullets per slide this fits without cutting.
-    y = wrapText(ctx, b, M + 34 * SCALE, y, RW - M * 2 - 34 * SCALE, 54 * SCALE, 5)
-    y += 36 * SCALE
+    ctx.font = `500 ${36 * SCALE}px '${FONT}'`
+    // Up to 6 lines per bullet at a slightly smaller size. With ≤2 bullets per
+    // slide this fits the full reason without truncating, and the worst case
+    // (2×6 lines) still ends well above the footer (~2352 < 2560 render px).
+    y = wrapText(ctx, b, M + 34 * SCALE, y, RW - M * 2 - 34 * SCALE, 50 * SCALE, 6)
+    y += 40 * SCALE
   }
 
   footerUrl(ctx, slideNum, total)
