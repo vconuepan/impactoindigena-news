@@ -33,6 +33,33 @@ export async function generateDraft(storyId: string) {
   })
   if (existingPost) throw new Error('Story already has an Instagram post')
 
+  // Create the record immediately in a 'generating' state and return it right
+  // away. The heavy work (LLM caption, AI cover ~3 min, carousel render, R2
+  // upload) runs in the background and flips the record to 'draft' when done.
+  // This keeps the HTTP request fast so the admin panel never hits a
+  // proxy/browser timeout — it polls the post until status becomes 'draft'.
+  // Creating the row now also reserves the unique storyId, so a double-click
+  // fails fast on the constraint instead of after a 3-minute generation.
+  const post = await prisma.instagramPost.create({
+    data: { storyId, caption: '', imageUrl: '', slideUrls: [], status: 'generating' },
+    include: { story: { include: { feed: true, issue: true } } },
+  })
+
+  void runGeneration(post.id, story).catch(async (err) => {
+    log.error({ err, storyId, postId: post.id }, 'background Instagram generation failed')
+    await prisma.instagramPost
+      .update({ where: { id: post.id }, data: { status: 'failed', error: err instanceof Error ? err.message : 'Generation failed' } })
+      .catch(() => {})
+  })
+
+  return post
+}
+
+// Heavy generation work — runs in the background after generateDraft returns
+// the 'generating' record. Builds the caption, AI cover, carousel + R2 uploads,
+// then updates the record to 'draft'.
+async function runGeneration(postId: string, story: any): Promise<void> {
+  const storyId: string = story.id
   const storyUrl = `https://impactoindigena.news/stories/${story.slug}`
 
   // Caption para Instagram generada con LLM
@@ -77,28 +104,22 @@ export async function generateDraft(storyId: string) {
       log.info({ storyId, aiImageUrl }, 'AI image generated for Instagram')
     } catch (err) {
       log.error({ err, storyId }, 'failed to generate AI image, using fallback')
-      // Usar imagen genérica de fallback de Impacto Indígena
       aiImageUrl = 'https://impactoindigena.com/wp-content/uploads/2025/04/cropped-logo-impacto-indigena_letras_blancas-1-scaled-1.png'
     }
   }
 
-  // Determinar si R2 está configurado para poder generar el carrusel
   const r2Configured = Boolean(
     config.r2.endpoint && config.r2.accessKeyId && config.r2.secretAccessKey && config.r2.publicUrl,
   )
 
   let imageUrls: string[]
-
   if (r2Configured) {
-    // Carrusel completo de 4 slides
-    const slide2Text = story.summary || ''
-    const slide3Text = story.relevanceReasons || ''
     const category = story.titleLabel || story.issue?.name || ''
     const slides = await generateCarousel(
       storyId,
       story.title,
-      slide2Text,
-      slide3Text,
+      story.summary || '',
+      story.relevanceReasons || '',
       storyUrl,
       aiImageUrl,
       category,
@@ -106,24 +127,15 @@ export async function generateDraft(storyId: string) {
     imageUrls = slides.sort((a, b) => a.order - b.order).map((s) => s.imageUrl)
     log.info({ storyId, slideCount: imageUrls.length }, 'carousel generated via R2')
   } else {
-    // Sin R2: publicación de imagen sencilla con la imagen de portada
     log.info({ storyId }, 'R2 not configured — using single-image post')
     imageUrls = [aiImageUrl]
   }
 
-  const post = await prisma.instagramPost.create({
-    data: {
-      storyId,
-      caption: trimmedCaption,
-      imageUrl: imageUrls[0],
-      slideUrls: imageUrls,
-      status: 'draft',
-    },
-    include: { story: { include: { feed: true, issue: true } } },
+  await prisma.instagramPost.update({
+    where: { id: postId },
+    data: { caption: trimmedCaption, imageUrl: imageUrls[0], slideUrls: imageUrls, status: 'draft' },
   })
-
-  log.info({ postId: post.id, storyId, slideCount: imageUrls.length }, 'Instagram draft generated')
-  return post
+  log.info({ postId, storyId, slideCount: imageUrls.length }, 'Instagram draft generated')
 }
 
 // ---------------------------------------------------------------------------

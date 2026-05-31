@@ -51,9 +51,26 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
     onClose()
   }
 
+  const isGenerating = draft?.status === 'generating'
+
   return (
     <EditPanel open={open} onClose={handleClose} title="Post to Instagram" loading={!draft && open}>
-      {draft && (
+      {draft && isGenerating && (
+        <div className="flex flex-col h-full">
+          <div className={`${PANEL_BODY} flex flex-col items-center justify-center text-center gap-4 pt-16`}>
+            <LoadingSpinner />
+            <p className="text-sm font-medium text-neutral-800">Generando carrusel…</p>
+            <p className="text-xs text-neutral-500 max-w-xs">
+              La portada se crea con IA (gpt-image-2) y puede tardar ~3 minutos.
+              Puedes dejar este panel abierto; se actualizará solo al terminar.
+            </p>
+          </div>
+          <div className={PANEL_FOOTER}>
+            <Button variant="secondary" onClick={handleClose}>Cerrar</Button>
+          </div>
+        </div>
+      )}
+      {draft && !isGenerating && (
         <div className="flex flex-col h-full">
           <div className={PANEL_BODY}>
             {/* Story context */}

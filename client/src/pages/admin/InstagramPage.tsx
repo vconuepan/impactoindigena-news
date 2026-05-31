@@ -14,12 +14,14 @@ import { useToast } from '../../components/ui/Toast'
 import { formatRelativeTime } from '../../lib/constants'
 
 const STATUS_COLORS: Record<InstagramPostStatus, string> = {
+  generating: 'bg-blue-100 text-blue-800',
   draft: 'bg-amber-100 text-amber-800',
   published: 'bg-green-100 text-green-800',
   failed: 'bg-red-100 text-red-800',
 }
 
 const STATUS_LABELS: Record<InstagramPostStatus, string> = {
+  generating: 'Generando…',
   draft: 'Borrador',
   published: 'Publicado',
   failed: 'Fallido',

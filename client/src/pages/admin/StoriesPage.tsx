@@ -53,6 +53,7 @@ export default function StoriesPage() {
 
   // Default to "published" filter on first visit (no status param in URL)
   const didDefaultRef = useRef(false)
+  const igPollId = useRef<string | null>(null)
   useEffect(() => {
     if (!didDefaultRef.current && !searchParams.has('status')) {
       didDefaultRef.current = true
@@ -395,12 +396,33 @@ export default function StoriesPage() {
   const handleInstagramGenerate = useCallback(async (storyId: string) => {
     setInstagramPanelOpen(true)
     setInstagramDraft(null)
-    adminApi.instagram.generateDraft(storyId)
-      .then((draft) => setInstagramDraft(draft as InstagramPost))
-      .catch((err) => {
-        toast('error', err instanceof Error ? err.message : 'Error al generar borrador de Instagram')
-        setInstagramPanelOpen(false)
-      })
+    try {
+      // Backend returns a 'generating' record immediately; the AI cover + carousel
+      // take ~3 min in the background. Poll until the status flips to draft/failed
+      // so the request never times out.
+      const draft = await adminApi.instagram.generateDraft(storyId) as InstagramPost
+      igPollId.current = draft.id
+      setInstagramDraft(draft)
+      if (draft.status === 'generating') {
+        const poll = async (attempt = 0): Promise<void> => {
+          if (igPollId.current !== draft.id) return // panel closed / superseded
+          if (attempt > 72) { toast('error', 'La generación tardó demasiado. Reintenta.'); return }
+          await new Promise((r) => setTimeout(r, 5000))
+          if (igPollId.current !== draft.id) return
+          try {
+            const updated = await adminApi.instagram.getPost(draft.id) as InstagramPost
+            if (igPollId.current !== draft.id) return
+            setInstagramDraft(updated)
+            if (updated.status === 'generating') return poll(attempt + 1)
+            if (updated.status === 'failed') toast('error', updated.error || 'Falló la generación del carrusel')
+          } catch { return poll(attempt + 1) }
+        }
+        void poll()
+      }
+    } catch (err) {
+      toast('error', err instanceof Error ? err.message : 'Error al generar borrador de Instagram')
+      setInstagramPanelOpen(false)
+    }
   }, [toast])
 
   const handleLinkedInGenerate = useCallback(async (storyId: string) => {
@@ -551,7 +573,7 @@ export default function StoriesPage() {
 
       <InstagramDraftPanel
         open={instagramPanelOpen}
-        onClose={() => { setInstagramPanelOpen(false); setInstagramDraft(null) }}
+        onClose={() => { igPollId.current = null; setInstagramPanelOpen(false); setInstagramDraft(null) }}
         draft={instagramDraft}
         publishing={instagramPublishing}
         onPublish={async (postId) => {
