@@ -1,8 +1,24 @@
-import { createCanvas, loadImage } from '@napi-rs/canvas'
+import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import { uploadImageToR2 } from './imageStorage.js'
 import { createLogger } from './logger.js'
 
 const log = createLogger('carousel-gen')
+
+// Brand font (DM Sans, DESIGN.md). The Azure App Service Linux container ships
+// no system fonts, so without a registered bundled font @napi-rs/canvas draws
+// shapes but NO text. The .ttf is deployed at <wwwroot>/assets/fonts next to
+// dist/. DM Sans is a variable font covering regular + bold weights.
+const FONT_FAMILY = 'DM Sans'
+try {
+  const here = path.dirname(fileURLToPath(import.meta.url)) // dist/lib
+  const fontPath = path.resolve(here, '../../assets/fonts/DMSans.ttf')
+  const ok = GlobalFonts.registerFromPath(fontPath, FONT_FAMILY)
+  log.info({ fontPath, ok }, ok ? 'brand font registered' : 'brand font registration returned false')
+} catch (err) {
+  log.error({ err }, 'failed to register brand font - carousel text may not render')
+}
 
 // Colores de marca — DESIGN.md
 const BRAND = {
@@ -105,7 +121,7 @@ async function drawLogo(
     const width = (logo.width / logo.height) * height
     ctx.drawImage(logo, x, y, width, height)
   } catch {
-    ctx.font = `bold ${28 * SCALE}px Arial`
+    ctx.font = `bold ${28 * SCALE}px 'DM Sans'`
     ctx.fillText('IMPACTO INDÍGENA', x, y + height * 0.7)
   }
 }
@@ -197,13 +213,13 @@ async function drawEditorialFooter(
 
   // URL
   ctx.fillStyle = BRAND.textMuted
-  ctx.font = `${22 * SCALE}px Arial`
+  ctx.font = `${22 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'right'
   ctx.fillText('IMPACTOINDIGENA.NEWS', RENDER_W - MARGIN, urlBaseline)
 
   // Número de slide
   ctx.fillStyle = accentColor
-  ctx.font = `bold ${22 * SCALE}px Arial`
+  ctx.font = `bold ${22 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'right'
   ctx.fillText(`${slideNum} / 4`, RENDER_W - MARGIN, RENDER_H - MARGIN)
 }
@@ -269,18 +285,18 @@ async function generateSlide1(title: string, aiImageUrl: string): Promise<Buffer
 
   // Etiqueta terracota
   ctx.fillStyle = BRAND.accent
-  ctx.font = `bold ${24 * SCALE}px Arial`
+  ctx.font = `bold ${24 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'left'
   ctx.fillText('IMPACTO INDÍGENA', MARGIN, RENDER_H * 0.63)
 
   // Título blanco grande
   ctx.fillStyle = BRAND.white
-  ctx.font = `bold ${54 * SCALE}px Arial`
+  ctx.font = `bold ${54 * SCALE}px 'DM Sans'`
   drawWrappedText(ctx, cleanText(title), MARGIN, RENDER_H * 0.68, RENDER_W - MARGIN * 2, 70 * SCALE, 3)
 
   // Número de slide
   ctx.fillStyle = 'rgba(255,255,255,0.6)'
-  ctx.font = `${22 * SCALE}px Arial`
+  ctx.font = `${22 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'right'
   ctx.fillText('1 / 4', RENDER_W - MARGIN, RENDER_H - MARGIN)
 
@@ -329,7 +345,7 @@ async function generateSlide2(text: string): Promise<Buffer> {
 
   // Etiqueta de sección
   ctx.fillStyle = BRAND.brand
-  ctx.font = `bold ${24 * SCALE}px Arial`
+  ctx.font = `bold ${24 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'left'
   ctx.fillText('RESUMEN', contentX, 238 * SCALE)
 
@@ -339,7 +355,7 @@ async function generateSlide2(text: string): Promise<Buffer> {
 
   // Titular — 44px con 5 líneas máx para caber títulos largos sin truncar
   ctx.fillStyle = BRAND.textMain
-  ctx.font = `bold ${44 * SCALE}px Arial`
+  ctx.font = `bold ${44 * SCALE}px 'DM Sans'`
   const headlineBottom = drawWrappedText(
     ctx,
     headline,
@@ -363,7 +379,7 @@ async function generateSlide2(text: string): Promise<Buffer> {
   // Cuerpo del texto en gris — fuente más grande
   if (body) {
     ctx.fillStyle = BRAND.textMuted
-    ctx.font = `${43 * SCALE}px Arial`
+    ctx.font = `${43 * SCALE}px 'DM Sans'`
     drawWrappedText(
       ctx,
       body,
@@ -420,7 +436,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
 
   // Etiqueta de sección
   ctx.fillStyle = BRAND.brand
-  ctx.font = `bold ${24 * SCALE}px Arial`
+  ctx.font = `bold ${24 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'left'
   ctx.fillText('¿POR QUÉ IMPORTA?', contentX, 238 * SCALE)
 
@@ -447,7 +463,7 @@ async function generateSlide3(text: string): Promise<Buffer> {
 
     // Texto del bullet
     ctx.fillStyle = BRAND.textMain
-    ctx.font = `${bulletFont}px Arial`
+    ctx.font = `${bulletFont}px 'DM Sans'`
     bulletY = drawWrappedText(
       ctx,
       bullet,
@@ -501,13 +517,13 @@ async function generateSlide4(): Promise<Buffer> {
 
   // Texto principal blanco
   ctx.fillStyle = BRAND.white
-  ctx.font = `bold ${60 * SCALE}px Arial`
+  ctx.font = `bold ${60 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'center'
   ctx.fillText('Lee la noticia completa', cx, offY + 310 * SCALE)
 
   // URL en terracota
   ctx.fillStyle = BRAND.accent
-  ctx.font = `${44 * SCALE}px Arial`
+  ctx.font = `${44 * SCALE}px 'DM Sans'`
   ctx.fillText('impactoindigena.news', cx, offY + 400 * SCALE)
 
   // Separador verde corporativo
@@ -520,18 +536,18 @@ async function generateSlide4(): Promise<Buffer> {
 
   // Tagline
   ctx.fillStyle = BRAND.textMuted
-  ctx.font = `${38 * SCALE}px Arial`
+  ctx.font = `${38 * SCALE}px 'DM Sans'`
   ctx.fillText('Noticias sobre pueblos indígenas', cx, offY + 580 * SCALE)
   ctx.fillText('curadas con IA por Impacto Indígena', cx, offY + 658 * SCALE)
 
   // Hashtags en verde corporativo
   ctx.fillStyle = BRAND.brand
-  ctx.font = `bold ${36 * SCALE}px Arial`
+  ctx.font = `bold ${36 * SCALE}px 'DM Sans'`
   ctx.fillText('#PueblosIndígenas  #ImpactoIndígena', cx, offY + 780 * SCALE)
 
   // Número de slide
   ctx.fillStyle = 'rgba(255,255,255,0.35)'
-  ctx.font = `${22 * SCALE}px Arial`
+  ctx.font = `${22 * SCALE}px 'DM Sans'`
   ctx.textAlign = 'right'
   ctx.fillText('4 / 4', RENDER_W - MARGIN, RENDER_H - MARGIN)
 
