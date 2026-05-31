@@ -18,6 +18,7 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
   const [editedCaption, setEditedCaption] = useState('')
   const [hasEdited, setHasEdited] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [zoomIndex, setZoomIndex] = useState<number | null>(null)
 
   const currentCaption = hasEdited ? editedCaption : (draft?.caption ?? '')
   const charCount = currentCaption.length
@@ -54,6 +55,7 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
   const isGenerating = draft?.status === 'generating'
 
   return (
+    <>
     <EditPanel open={open} onClose={handleClose} title="Post to Instagram" loading={!draft && open}>
       {draft && isGenerating && (
         <div className="flex flex-col h-full">
@@ -96,14 +98,18 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
                 </p>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {draft.slideUrls.map((url, i) => (
-                    <img
+                    <button
                       key={i}
-                      src={url}
-                      alt={`Slide ${i + 1}`}
-                      className="h-20 w-20 object-cover rounded border border-neutral-200 shrink-0"
-                    />
+                      type="button"
+                      onClick={() => setZoomIndex(i)}
+                      className="shrink-0 rounded border border-neutral-200 overflow-hidden focus-visible:ring-2 focus-visible:ring-brand-500 hover:opacity-90 transition-opacity"
+                      title={`Ampliar slide ${i + 1}`}
+                    >
+                      <img src={url} alt={`Slide ${i + 1}`} className="h-28 w-[5.6rem] object-cover block" />
+                    </button>
                   ))}
                 </div>
+                <p className="text-xs text-neutral-400 mt-1">Toca una slide para verla en grande.</p>
               </div>
             )}
 
@@ -147,5 +153,44 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
         </div>
       )}
     </EditPanel>
+
+    {zoomIndex !== null && draft?.slideUrls?.[zoomIndex] && (
+      <div
+        className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4"
+        onClick={() => setZoomIndex(null)}
+        role="dialog"
+        aria-modal="true"
+      >
+        <button
+          onClick={() => setZoomIndex(null)}
+          className="absolute top-4 right-5 text-white/80 hover:text-white text-4xl leading-none"
+          aria-label="Cerrar"
+        >×</button>
+        {zoomIndex > 0 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setZoomIndex(zoomIndex - 1) }}
+            className="absolute left-3 md:left-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl leading-none px-2"
+            aria-label="Slide anterior"
+          >‹</button>
+        )}
+        <img
+          src={draft.slideUrls[zoomIndex]}
+          alt={`Slide ${zoomIndex + 1}`}
+          className="max-h-[88vh] max-w-[92vw] rounded-lg shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
+        />
+        {zoomIndex < draft.slideUrls.length - 1 && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setZoomIndex(zoomIndex + 1) }}
+            className="absolute right-3 md:right-8 top-1/2 -translate-y-1/2 text-white/70 hover:text-white text-5xl leading-none px-2"
+            aria-label="Slide siguiente"
+          >›</button>
+        )}
+        <span className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/70 text-sm">
+          {zoomIndex + 1} / {draft.slideUrls.length}
+        </span>
+      </div>
+    )}
+    </>
   )
 }
