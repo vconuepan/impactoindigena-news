@@ -1,5 +1,12 @@
 name: Deploy Backend to Azure
 
+# GitHub builds the server (devDeps + tsc work here) and ships node_modules.
+# The App Service runs with WEBSITE_RUN_FROM_PACKAGE=1 so Azure mounts the
+# deployed zip read-only and uses the exact built node_modules — including the
+# native @napi-rs/canvas (Instagram carousel) and Prisma engine — instead of
+# letting Oryx compress node_modules (which silently dropped @napi-rs/canvas).
+# Logs go to LOG_DIR=/home/LogFiles/app (writable) since wwwroot is read-only
+# under run-from-package.
 on:
   push:
     branches: [main]
@@ -7,6 +14,7 @@ on:
       - 'server/**'
       - 'shared/**'
       - '.github/workflows/deploy-azure.yml'
+  workflow_dispatch: {}
 
 jobs:
   deploy:
