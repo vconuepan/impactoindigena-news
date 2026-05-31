@@ -431,6 +431,12 @@ function PublicLayoutInner() {
               <Link to="/" className="inline-block mb-3 font-fraunces text-xl font-bold text-white hover:text-brand-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                 Impacto Indígena
               </Link>
+              <p className="font-fraunces text-lg font-semibold text-white leading-snug mb-1.5 max-w-xs">
+                El primer medio indígena <span className="text-brand-400">AI-native</span>.
+              </p>
+              <p className="text-xs text-neutral-400 leading-relaxed max-w-xs mb-3">
+                Curado por pueblos indígenas. Operado con inteligencia artificial. Sin publicidad.
+              </p>
               <p className="text-sm text-neutral-400 leading-relaxed max-w-xs">
                 {t('footer.description')}
               </p>

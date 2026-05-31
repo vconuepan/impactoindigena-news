@@ -168,7 +168,7 @@ function bottomGradient(ctx: any): void {
   ctx.fillRect(0, 0, RW, RH)
 }
 
-function footerUrl(ctx: any, slideNum: number): void {
+function footerUrl(ctx: any, slideNum: number, total: number): void {
   ctx.textAlign = 'left'
   ctx.fillStyle = C.mute
   ctx.font = `500 ${26 * SCALE}px '${FONT}'`
@@ -176,7 +176,7 @@ function footerUrl(ctx: any, slideNum: number): void {
   ctx.textAlign = 'right'
   ctx.fillStyle = C.accent
   ctx.font = `700 ${24 * SCALE}px '${FONT}'`
-  ctx.fillText(`${slideNum} / 4`, RW - M, RH - M)
+  ctx.fillText(`${slideNum} / ${total}`, RW - M, RH - M)
   ctx.textAlign = 'left'
 }
 
@@ -187,7 +187,7 @@ function exportCanvas(canvas: any): Buffer {
 // ---------------------------------------------------------------------------
 // Slide 1 — Cover: full-bleed photo + headline (accent last line)
 // ---------------------------------------------------------------------------
-async function generateSlide1(title: string, category: string, aiImageUrl: string): Promise<Buffer> {
+async function generateSlide1(title: string, category: string, aiImageUrl: string, slideNum: number, total: number): Promise<Buffer> {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
   await drawBgPhoto(ctx, aiImageUrl, 0)
@@ -200,14 +200,14 @@ async function generateSlide1(title: string, category: string, aiImageUrl: strin
   ctx.font = `700 ${70 * SCALE}px '${FONT}'`
   drawTitle(ctx, title, M, RH - 420 * SCALE, RW - M * 2, 84 * SCALE, 4)
 
-  footerUrl(ctx, 1)
+  footerUrl(ctx, slideNum, total)
   return exportCanvas(canvas)
 }
 
 // ---------------------------------------------------------------------------
 // Slide 2 — Resumen: framed photo + editorial body
 // ---------------------------------------------------------------------------
-async function generateSlide2(summary: string, category: string, aiImageUrl: string): Promise<Buffer> {
+async function generateSlide2(summary: string, category: string, aiImageUrl: string, slideNum: number, total: number): Promise<Buffer> {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
   ctx.fillStyle = C.ink
@@ -242,7 +242,7 @@ async function generateSlide2(summary: string, category: string, aiImageUrl: str
   ctx.font = `500 ${38 * SCALE}px '${FONT}'`
   wrapText(ctx, summary, M, fy + fh + 128 * SCALE, RW - M * 2, 52 * SCALE, 7)
 
-  footerUrl(ctx, 2)
+  footerUrl(ctx, slideNum, total)
   return exportCanvas(canvas)
 }
 
@@ -256,24 +256,33 @@ function extractBullets(text: string): string[] {
   return lines.length ? lines : [cleanText(text)]
 }
 
-async function generateSlide3(reasons: string, aiImageUrl: string): Promise<Buffer> {
+// Renders a "¿Por qué importa?" slide with a pre-chunked set of bullets
+// (≤2 per slide so nothing truncates). `isFirst` shows the quote mark + label;
+// continuation slides show "(cont.)".
+async function generateRelevanceSlide(
+  bullets: string[],
+  aiImageUrl: string,
+  isFirst: boolean,
+  slideNum: number,
+  total: number,
+): Promise<Buffer> {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
   await drawBgPhoto(ctx, aiImageUrl, 0.80)
 
   await drawLogo(ctx, M, M, 72 * SCALE)
 
-  // Big accent quote mark
-  ctx.fillStyle = C.accent
-  ctx.font = `700 ${190 * SCALE}px '${FONT}'`
-  ctx.fillText('“', M - 8 * SCALE, 360 * SCALE)
+  if (isFirst) {
+    ctx.fillStyle = C.accent
+    ctx.font = `700 ${190 * SCALE}px '${FONT}'`
+    ctx.fillText('“', M - 8 * SCALE, 360 * SCALE)
+  }
 
   ctx.fillStyle = C.accent
   ctx.font = `700 ${24 * SCALE}px '${FONT}'`
-  ctx.fillText('POR QUÉ IMPORTA', M, 440 * SCALE)
+  ctx.fillText(isFirst ? 'POR QUÉ IMPORTA' : 'POR QUÉ IMPORTA (CONT.)', M, 440 * SCALE)
 
-  const bullets = extractBullets(reasons).slice(0, 4)
-  let y = 530 * SCALE
+  let y = 540 * SCALE
   for (const b of bullets) {
     ctx.fillStyle = C.accent
     ctx.beginPath()
@@ -281,11 +290,12 @@ async function generateSlide3(reasons: string, aiImageUrl: string): Promise<Buff
     ctx.fill()
     ctx.fillStyle = C.white
     ctx.font = `500 ${40 * SCALE}px '${FONT}'`
-    y = wrapText(ctx, b, M + 34 * SCALE, y, RW - M * 2 - 34 * SCALE, 54 * SCALE, 4)
-    y += 28 * SCALE
+    // Up to 5 lines per bullet; with ≤2 bullets per slide this fits without cutting.
+    y = wrapText(ctx, b, M + 34 * SCALE, y, RW - M * 2 - 34 * SCALE, 54 * SCALE, 5)
+    y += 36 * SCALE
   }
 
-  footerUrl(ctx, 3)
+  footerUrl(ctx, slideNum, total)
   return exportCanvas(canvas)
 }
 
@@ -368,26 +378,37 @@ export async function generateCarousel(
 
   const timestamp = Date.now()
 
-  const [slide1, slide2, slide3, slide4] = await Promise.all([
-    generateSlide1(title, category, aiImageUrl),
-    generateSlide2(summary, category, aiImageUrl),
-    generateSlide3(relevanceReasons, aiImageUrl),
-    generateSlide4(),
-  ])
+  // Paginate the relevance bullets at most 2 per slide so long reasons never
+  // get truncated — the carousel grows to 5 slides instead of cutting text.
+  const allBullets = extractBullets(relevanceReasons).slice(0, 6)
+  const BULLETS_PER_SLIDE = 2
+  const bulletGroups: string[][] = []
+  for (let i = 0; i < allBullets.length; i += BULLETS_PER_SLIDE) {
+    bulletGroups.push(allBullets.slice(i, i + BULLETS_PER_SLIDE))
+  }
+  if (bulletGroups.length === 0) bulletGroups.push([cleanText(relevanceReasons)])
 
-  const slides = [
-    { buffer: slide1, order: 1 },
-    { buffer: slide2, order: 2 },
-    { buffer: slide3, order: 3 },
-    { buffer: slide4, order: 4 },
+  // cover + resumen + N relevance slides + CTA
+  const total = 2 + bulletGroups.length + 1
+
+  const builders: Array<Promise<Buffer>> = [
+    generateSlide1(title, category, aiImageUrl, 1, total),
+    generateSlide2(summary, category, aiImageUrl, 2, total),
+    ...bulletGroups.map((group, i) =>
+      generateRelevanceSlide(group, aiImageUrl, i === 0, 3 + i, total),
+    ),
+    generateSlide4(),
   ]
 
+  const buffers = await Promise.all(builders)
+
   const uploaded: CarouselSlide[] = []
-  for (const slide of slides) {
-    const filename = `${storyId}-slide${slide.order}-${timestamp}.jpg`
-    const url = await uploadImageToR2(slide.buffer, filename, 'image/jpeg')
-    uploaded.push({ imageUrl: url, order: slide.order })
-    log.info({ storyId, order: slide.order, url }, 'slide uploaded')
+  for (let i = 0; i < buffers.length; i++) {
+    const order = i + 1
+    const filename = `${storyId}-slide${order}-${timestamp}.jpg`
+    const url = await uploadImageToR2(buffers[i], filename, 'image/jpeg')
+    uploaded.push({ imageUrl: url, order })
+    log.info({ storyId, order, url }, 'slide uploaded')
   }
 
   log.info({ storyId, slideCount: uploaded.length }, 'carousel generated')
