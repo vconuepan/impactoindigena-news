@@ -55,10 +55,15 @@ function getJobActions(story: Story) {
       actions.push({ label: 'Assess', icon: SparklesIcon, handler: 'assess' })
       break
     case 'analyzed':
+      actions.push({ label: 'Re-analyze', icon: SparklesIcon, handler: 'assess' })
       actions.push({ label: 'Publish', icon: GlobeAltIcon, handler: 'publish' })
       break
     case 'selected':
+      actions.push({ label: 'Re-analyze', icon: SparklesIcon, handler: 'assess' })
       actions.push({ label: 'Publish', icon: GlobeAltIcon, handler: 'publish' })
+      break
+    case 'published':
+      actions.push({ label: 'Re-analyze', icon: SparklesIcon, handler: 'assess' })
       break
   }
 
