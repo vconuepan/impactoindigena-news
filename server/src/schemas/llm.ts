@@ -63,9 +63,9 @@ export const assessResultSchema = z.object({
     .describe(
       "4 viñetas Markdown que explican por qué el artículo es relevante para los pueblos indígenas, en español. " +
         "Usa lenguaje claro y concreto — explica los mecanismos en términos cotidianos. " +
-        'Cada viñeta: "- **[Nombre del factor según el contexto del artículo]:** [1 oración: evaluación.] ' +
-        "[solo para las dos primeras viñetas: 1 oración adicional, ej. cuantificación o detalle extra.] " +
-        '[solo para la primera viñeta: 1 oración adicional, ej. sobre el mecanismo o contexto del impacto.]" ' +
+        'Cada viñeta: "- **[Nombre del factor según el contexto del artículo]:** [evaluación en 1-2 oraciones]." ' +
+        "Límite estricto: máximo ~30 palabras por viñeta (incluida la etiqueta en negrita). " +
+        "Cada viñeta debe ser breve y autocontenida para caber en pocas líneas sin cortarse. " +
         "Ordena por importancia, con el factor clave primero."
     ),
   limitingFactors: z

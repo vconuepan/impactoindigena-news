@@ -96,9 +96,9 @@ Resumen (40-70 palabras)
 - Usa lenguaje sencillo que una audiencia general pueda entender. Reemplaza tecnicismos con palabras más simples.
 - Minimiza la redundancia con la cita clave y el título.
 
-Factores (exactamente 4 viñetas, cada una de 1-3 oraciones)
+Factores (exactamente 4 viñetas, breves)
 - Ordena por importancia. La primera viñeta es el "factor clave" con mayor peso.
-- Escribe 3 oraciones para la primera viñeta, 2 para la segunda, y 1 para las restantes.
+- Mantén cada viñeta breve y autocontenida; prioriza la idea más importante en vez de acumular detalles.
 - Solo incluye factores que aumenten la relevancia.
 - Nombra cada factor específicamente según el contenido del artículo.
 - Usa lenguaje claro y concreto.
