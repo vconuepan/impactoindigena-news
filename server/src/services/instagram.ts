@@ -93,6 +93,7 @@ export async function generateDraft(storyId: string) {
     // Carrusel completo de 4 slides
     const slide2Text = story.summary || ''
     const slide3Text = story.relevanceReasons || ''
+    const category = story.titleLabel || story.issue?.name || ''
     const slides = await generateCarousel(
       storyId,
       story.title,
@@ -100,6 +101,7 @@ export async function generateDraft(storyId: string) {
       slide3Text,
       storyUrl,
       aiImageUrl,
+      category,
     )
     imageUrls = slides.sort((a, b) => a.order - b.order).map((s) => s.imageUrl)
     log.info({ storyId, slideCount: imageUrls.length }, 'carousel generated via R2')
