@@ -1,5 +1,10 @@
 name: Deploy Backend to Azure
 
+# The app runs with WEBSITE_RUN_FROM_PACKAGE=1 so Azure mounts the deployed
+# zip read-only instead of letting Oryx compress/extract node_modules. Oryx's
+# node_modules compression silently dropped the native @napi-rs/canvas module
+# (Instagram carousel rendering), so run-from-package preserves the exact
+# node_modules built here.
 on:
   push:
     branches: [main]
@@ -7,6 +12,7 @@ on:
       - 'server/**'
       - 'shared/**'
       - '.github/workflows/deploy-azure.yml'
+  workflow_dispatch: {}
 
 jobs:
   deploy:
