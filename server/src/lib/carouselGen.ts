@@ -192,7 +192,7 @@ async function generateSlide1(title: string, category: string, aiImageUrl: strin
   const ctx = canvas.getContext('2d')
   await drawBgPhoto(ctx, aiImageUrl, 0)
   bottomGradient(ctx)
-  await drawLogo(ctx, M, M, 70 * SCALE)
+  await drawLogo(ctx, M, M, 100 * SCALE)
 
   const cat = (category || 'IMPACTO INDÍGENA').toUpperCase()
   drawPill(ctx, cat, M, RH - 560 * SCALE, 24 * SCALE, C.accent, C.white)
@@ -213,7 +213,7 @@ async function generateSlide2(summary: string, category: string, aiImageUrl: str
   ctx.fillStyle = C.ink
   ctx.fillRect(0, 0, RW, RH)
 
-  await drawLogo(ctx, 0, M, 64 * SCALE, 'center')
+  await drawLogo(ctx, 0, M, 80 * SCALE, 'center')
 
   // Framed photo (rounded corners). Height kept moderate so the body text
   // below always fits above the footer (no overflow on long summaries).
@@ -261,7 +261,7 @@ async function generateSlide3(reasons: string, aiImageUrl: string): Promise<Buff
   const ctx = canvas.getContext('2d')
   await drawBgPhoto(ctx, aiImageUrl, 0.80)
 
-  await drawLogo(ctx, M, M, 60 * SCALE)
+  await drawLogo(ctx, M, M, 72 * SCALE)
 
   // Big accent quote mark
   ctx.fillStyle = C.accent
@@ -303,23 +303,39 @@ async function generateSlide4(): Promise<Buffer> {
   ctx.fillStyle = rg
   ctx.fillRect(0, 0, RW, RH)
 
-  await drawLogo(ctx, 0, 300 * SCALE, 90 * SCALE, 'center')
+  await drawLogo(ctx, 0, 300 * SCALE, 120 * SCALE, 'center')
 
   ctx.textAlign = 'center'
+
+  // Headline: "El primer medio indígena AI-native." with AI-native in accent
+  ctx.font = `700 ${52 * SCALE}px '${FONT}'`
+  const pre = 'El primer medio indígena '
+  const hi = 'AI-native.'
+  const preW = ctx.measureText(pre).width
+  const hiW = ctx.measureText(hi).width
+  // wrap to two centered lines for balance
+  ctx.fillStyle = C.white
+  ctx.fillText('El primer medio indígena', RW / 2, 720 * SCALE)
+  const x2 = RW / 2 - hiW / 2
+  ctx.textAlign = 'left'
+  ctx.fillStyle = C.accent
+  ctx.fillText('AI-native.', x2, 800 * SCALE)
+  ctx.textAlign = 'center'
+  void preW
+
+  // Three value lines
   ctx.fillStyle = C.mute
   ctx.font = `500 ${30 * SCALE}px '${FONT}'`
-  ctx.fillText('Cobertura que importa a los pueblos indígenas', RW / 2, 760 * SCALE)
-
-  ctx.fillStyle = C.white
-  ctx.font = `700 ${60 * SCALE}px '${FONT}'`
-  ctx.fillText('Lee la nota completa', RW / 2, 920 * SCALE)
+  ctx.fillText('Curado por pueblos indígenas.', RW / 2, 940 * SCALE)
+  ctx.fillText('Operado con inteligencia artificial.', RW / 2, 1000 * SCALE)
+  ctx.fillText('Sin publicidad.', RW / 2, 1060 * SCALE)
 
   // url pill centered
   const t = 'impactoindigena.news'
   ctx.font = `700 ${30 * SCALE}px '${FONT}'`
   const tw = ctx.measureText(t).width
   const padX = 36 * SCALE, h = 84 * SCALE
-  const px = (RW - (tw + padX * 2)) / 2, py = 1050 * SCALE
+  const px = (RW - (tw + padX * 2)) / 2, py = 1170 * SCALE
   ctx.fillStyle = C.accent
   roundRect(ctx, px, py, tw + padX * 2, h, h / 2)
   ctx.fill()
