@@ -68,8 +68,10 @@ Cinematic composition, high contrast, visually striking.
     model,
     prompt,
     n: 1,
-    // gpt-image-2: 1536x1024  |  dall-e-3: 1792x1024
-    size: isGptImage ? '1536x1024' : '1792x1024',
+    // Portrait — fills the 4:5 Instagram carousel with minimal upscaling/crop
+    // (a landscape source had to be stretched ~2.6x vertically → blurry).
+    // gpt-image-2: 1024x1536  |  dall-e-3: 1024x1792
+    size: isGptImage ? '1024x1536' : '1024x1792',
     // gpt-image-2: low/medium/high  |  dall-e-3: standard/hd
     quality: isGptImage ? config.imageGen.quality : 'standard',
   }

@@ -159,6 +159,19 @@ async function drawBgPhoto(ctx: any, aiImageUrl: string, darken: number): Promis
   ctx.fillRect(0, 0, RW, RH)
 }
 
+/** Clean branded dark background: warm ink + a soft green glow. Used on the
+ *  text slides so the AI photo doesn't repeat on every slide (it appears only
+ *  on the cover, full-bleed, and the resumen, framed). */
+function drawCleanBg(ctx: any): void {
+  ctx.fillStyle = C.ink
+  ctx.fillRect(0, 0, RW, RH)
+  const rg = ctx.createRadialGradient(RW * 0.5, RH * 0.30, 0, RW * 0.5, RH * 0.30, RW * 0.85)
+  rg.addColorStop(0, 'rgba(13,95,60,0.42)')
+  rg.addColorStop(1, 'rgba(20,17,15,0)')
+  ctx.fillStyle = rg
+  ctx.fillRect(0, 0, RW, RH)
+}
+
 function bottomGradient(ctx: any): void {
   const g = ctx.createLinearGradient(0, RH * 0.32, 0, RH)
   g.addColorStop(0, 'rgba(20,17,15,0)')
@@ -180,8 +193,16 @@ function footerUrl(ctx: any, slideNum: number, total: number): void {
   ctx.textAlign = 'left'
 }
 
+// Supersample: every slide renders at 2× (2160×2700) for crisp text, then we
+// downscale to Instagram's native 1080×1350 before export. Uploading the full
+// 2× image made Instagram re-compress it on its own downscale, softening both
+// text and photos. Exporting at native size keeps it sharp and the AI photo
+// (≤1536px source) is downscaled — not upscaled — into the final frame.
 function exportCanvas(canvas: any): Buffer {
-  return canvas.toBuffer('image/jpeg', { quality: 92 })
+  const out: any = createCanvas(W, H)
+  const octx = out.getContext('2d')
+  octx.drawImage(canvas, 0, 0, W, H)
+  return out.toBuffer('image/jpeg', 92)
 }
 
 // ---------------------------------------------------------------------------
@@ -261,14 +282,14 @@ function extractBullets(text: string): string[] {
 // continuation slides show "(cont.)".
 async function generateRelevanceSlide(
   bullets: string[],
-  aiImageUrl: string,
+  _aiImageUrl: string,
   isFirst: boolean,
   slideNum: number,
   total: number,
 ): Promise<Buffer> {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
-  await drawBgPhoto(ctx, aiImageUrl, 0.80)
+  drawCleanBg(ctx)
 
   await drawLogo(ctx, M, M, 72 * SCALE)
 
