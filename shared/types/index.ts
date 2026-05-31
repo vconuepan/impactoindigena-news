@@ -380,7 +380,7 @@ export interface MastodonFeedResponse {
 
 // --- Instagram Types ---
 
-export type InstagramPostStatus = 'generating' | 'draft' | 'published' | 'failed'
+export type InstagramPostStatus = 'generating' | 'draft' | 'publishing' | 'published' | 'failed'
 
 export interface InstagramPost {
   id: string
@@ -418,6 +418,7 @@ export interface LinkedInPost {
   postUrl: string | null
   status: LinkedInPostStatus
   postText: string
+  slideUrls: string[]
   error: string | null
   publishedAt: string | null
   likeCount: number

@@ -578,11 +578,33 @@ export default function StoriesPage() {
         publishing={instagramPublishing}
         onPublish={async (postId) => {
           setInstagramPublishing(true)
+          igPollId.current = postId
           try {
+            // Backend flips to 'publishing' and uploads slides in the background
+            // (~50s). Poll for the final status so the request never times out
+            // through the Azure proxy (which used to show a false "failed").
             await adminApi.instagram.publishPost(postId)
-            toast('success', 'Publicado en Instagram')
-            setInstagramPanelOpen(false)
-            setInstagramDraft(null)
+            const poll = async (attempt = 0): Promise<'published' | 'failed' | 'timeout'> => {
+              if (igPollId.current !== postId) return 'timeout'
+              await new Promise((r) => setTimeout(r, 4000))
+              if (igPollId.current !== postId) return 'timeout'
+              try {
+                const updated = await adminApi.instagram.getPost(postId) as InstagramPost
+                if (updated.status === 'publishing') return attempt > 30 ? 'timeout' : poll(attempt + 1)
+                return updated.status === 'published' ? 'published' : 'failed'
+              } catch { return attempt > 30 ? 'timeout' : poll(attempt + 1) }
+            }
+            const outcome = await poll()
+            if (outcome === 'published') {
+              toast('success', 'Publicado en Instagram')
+              setInstagramPanelOpen(false)
+              setInstagramDraft(null)
+            } else if (outcome === 'failed') {
+              const p = await adminApi.instagram.getPost(postId).catch(() => null) as InstagramPost | null
+              toast('error', p?.error || 'Error al publicar en Instagram')
+            } else {
+              toast('error', 'La publicación sigue en curso. Revisa el estado en unos segundos.')
+            }
             invalidateStories()
           } catch (err) {
             toast('error', err instanceof Error ? err.message : 'Error al publicar')

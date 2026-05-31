@@ -209,13 +209,36 @@ export async function publishPost(postId: string) {
   const slideUrls: string[] = post.slideUrls?.length ? post.slideUrls : (post.imageUrl ? [post.imageUrl] : [])
   if (slideUrls.length === 0) throw new Error('No images available for this post')
 
+  // Publishing a carousel uploads each slide to Instagram one by one (~50s for
+  // 5 slides), which exceeds the Azure Static Web Apps proxy timeout (~45s) and
+  // made the client show a false "failed" while the server actually published.
+  // Flip to 'publishing' and return immediately; do the upload in the
+  // background, then mark 'published' / 'failed'. The client polls for status.
+  const publishing = await prisma.instagramPost.update({
+    where: { id: postId },
+    data: { status: 'publishing', error: null },
+    include: { story: { include: { feed: true, issue: true } } },
+  })
+
+  void runPublish(postId, slideUrls, post.caption).catch(async (err) => {
+    log.error({ err, postId }, 'background Instagram publish crashed')
+    await prisma.instagramPost
+      .update({ where: { id: postId }, data: { status: 'failed', error: err instanceof Error ? err.message : 'Publish failed' } })
+      .catch(() => {})
+  })
+
+  return publishing
+}
+
+/** Background worker: upload slides to Instagram and finalize the post status. */
+async function runPublish(postId: string, slideUrls: string[], caption: string): Promise<void> {
   try {
     // Use carousel for multiple slides, single-image for one
     const result = slideUrls.length > 1
-      ? await createCarouselPost(slideUrls, post.caption)
-      : await createSingleImagePost(slideUrls[0], post.caption)
+      ? await createCarouselPost(slideUrls, caption)
+      : await createSingleImagePost(slideUrls[0], caption)
 
-    const updated = await prisma.instagramPost.update({
+    await prisma.instagramPost.update({
       where: { id: postId },
       data: {
         status: 'published',
@@ -223,11 +246,9 @@ export async function publishPost(postId: string) {
         permalink: result.permalink,
         publishedAt: new Date(),
       },
-      include: { story: { include: { feed: true, issue: true } } },
     })
 
     log.info({ postId, instagramPostId: result.id, slideCount: slideUrls.length }, 'Instagram post published')
-    return updated
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : 'Unknown error'
     await prisma.instagramPost.update({
@@ -235,7 +256,6 @@ export async function publishPost(postId: string) {
       data: { status: 'failed', error: errorMessage },
     })
     log.error({ err, postId }, 'failed to publish Instagram post')
-    throw err
   }
 }
 
