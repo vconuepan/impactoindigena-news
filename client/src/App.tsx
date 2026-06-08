@@ -15,6 +15,8 @@ const MethodologyPage = lazy(() => import('./pages/MethodologyPage'))
 const AboutPage = lazy(() => import('./pages/AboutPage'))
 const ImprintPage = lazy(() => import('./pages/ImprintPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
+const TermsPage = lazy(() => import('./pages/TermsPage'))
+const CookiesPage = lazy(() => import('./pages/CookiesPage'))
 const SearchPage = lazy(() => import('./pages/SearchPage'))
 const SubscribedPage = lazy(() => import('./pages/SubscribedPage'))
 const DevelopersPage = lazy(() => import('./pages/DevelopersPage'))
@@ -123,6 +125,8 @@ export default function App() {
         <Route path="/about" element={<LazyPage><AboutPage /></LazyPage>} />
         <Route path="/imprint" element={<LazyPage><ImprintPage /></LazyPage>} />
         <Route path="/privacy" element={<LazyPage><PrivacyPage /></LazyPage>} />
+        <Route path="/terminos" element={<LazyPage><TermsPage /></LazyPage>} />
+        <Route path="/cookies" element={<LazyPage><CookiesPage /></LazyPage>} />
         <Route path="/search" element={<LazyPage><SearchPage /></LazyPage>} />
         <Route path="/subscribed" element={<LazyPage><SubscribedPage /></LazyPage>} />
         {/* DevelopersPage moved outside PublicLayout — Scalar styles clash with site theme */}

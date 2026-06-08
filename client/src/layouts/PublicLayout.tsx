@@ -68,6 +68,8 @@ const FOOTER_GUIDES = [
 const FOOTER_LEGAL = [
   { labelKey: "footer.imprint", href: "/imprint" },
   { labelKey: "footer.privacy", href: "/privacy" },
+  { labelKey: "footer.terms", href: "/terminos" },
+  { labelKey: "footer.cookies", href: "/cookies" },
   { labelKey: "footer.noTracking", href: "/no-ads-no-tracking" },
 ];
 

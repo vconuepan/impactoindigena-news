@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { Link } from "react-router-dom";
 import ObfuscatedEmail from "../components/ObfuscatedEmail";
 import { SEO, CommonOgTags } from "../lib/seo";
 
@@ -9,7 +10,7 @@ export default function PrivacyPage() {
         <title>Política de Privacidad - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Impacto Indígena respeta tu privacidad. Sin cookies, sin rastreo, sin analítica invasiva. Conoce los datos mínimos que recopilamos."
+          content="Política de privacidad de Impacto Indígena, conforme a la Ley 21.719 de Chile. Analítica sin cookies, datos mínimos y tus derechos ARCO+."
         />
         <meta
           property="og:title"
@@ -17,7 +18,7 @@ export default function PrivacyPage() {
         />
         <meta
           property="og:description"
-          content="Impacto Indígena respeta tu privacidad. Sin cookies, sin rastreo, sin analítica invasiva."
+          content="Política de privacidad de Impacto Indígena, conforme a la Ley 21.719 de Chile."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/privacy`} />
@@ -33,238 +34,164 @@ export default function PrivacyPage() {
             Sin cookies.<br className="hidden md:block" /> Sin rastreo.
           </h1>
           <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto">
-            Nada se almacena en tu dispositivo cuando visitas este sitio como lector.
+            Para los lectores, nada se almacena en tu dispositivo. Solo tratamos los datos mínimos que nos das voluntariamente.
           </p>
         </div>
       </div>
 
       <div className="page-section">
         <div className="prose max-w-none">
+          {/* 1. Responsable */}
+          <h2 className="section-heading mt-4">Responsable del tratamiento</h2>
           <p>
-            No usamos cookies, pixels de rastreo, Google Analytics, scripts
-            publicitarios ni ningún otro método invasivo de recopilación de
-            datos. Cuando visitas este sitio como lector, nada se almacena en
-            tu dispositivo.
+            El responsable del tratamiento de datos personales de este sitio es{" "}
+            <strong>Impacto Indígena SpA</strong>, RUT 76.707.746-7, con domicilio
+            en Chile, titular del medio de noticias{" "}
+            <strong>impactoindigena.news</strong>. Para el ejercicio de tus
+            derechos o cualquier consulta de privacidad, escríbenos a{" "}
+            <ObfuscatedEmail className="text-brand-800 hover:text-brand-700" />.
           </p>
 
-          <h2 className="section-heading mt-10">Qué recopilamos</h2>
-
-          <h3 className="text-lg font-normal mt-6 mb-2">Analítica del sitio</h3>
+          {/* 2. Marco legal */}
+          <h2 className="section-heading mt-10">Marco legal</h2>
           <p>
-            Usamos{" "}
-            <a
-              href="https://www.simpleanalytics.com/"
-              className="text-brand-800 hover:text-brand-700"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Simple Analytics
-            </a>
-            , un servicio de analítica enfocado en privacidad que:
+            Tratamos tus datos conforme a la legislación chilena vigente, en
+            particular la <strong>Ley N° 21.719</strong> (que regula la
+            protección de los datos personales y crea la Agencia de Protección
+            de Datos Personales) y la <strong>Ley N° 19.628</strong> sobre
+            Protección de la Vida Privada en lo aplicable. Como medio dedicado a
+            pueblos indígenas, adherimos a los principios del Convenio 169 de la
+            OIT y de la Declaración de las Naciones Unidas sobre los Derechos de
+            los Pueblos Indígenas (UNDRIP).
+          </p>
+
+          {/* 3. Qué recopilamos */}
+          <h2 className="section-heading mt-10">Qué datos recopilamos</h2>
+          <p>
+            Impacto Indígena es un medio de acceso público. <strong>No
+            requerimos registro para leer.</strong> Los datos personales que
+            tratamos se limitan a:
           </p>
           <ul className="list-disc pl-6 space-y-1 mt-2">
-            <li>
-              <strong>No</strong> usa cookies
-            </li>
-            <li>
-              <strong>No</strong> rastrea visitantes individuales
-            </li>
-            <li>
-              <strong>No</strong> recopila datos personales
-            </li>
-            <li>
-              <strong>No</strong> almacena tu dirección IP
-            </li>
-            <li>Respeta la configuración Do Not Track</li>
-            <li>Cumple con GDPR, CCPA y PECR</li>
+            <li><strong>Boletín:</strong> tu correo y, opcionalmente, tu nombre, cuando te suscribes voluntariamente.</li>
+            <li><strong>Alertas por tema:</strong> tu correo y los temas que selecciones.</li>
+            <li><strong>Acceso de miembros:</strong> tu correo, si inicias sesión con enlace mágico.</li>
+            <li><strong>Feedback:</strong> tu mensaje y, opcionalmente, tu correo; de la IP solo guardamos un hash no reversible.</li>
+            <li><strong>Métricas de uso:</strong> páginas vistas y fuente de tráfico, siempre de forma agregada y sin identificación personal.</li>
           </ul>
           <p className="mt-3">
-            Simple Analytics recopila únicamente datos agregados y anónimos
-            como vistas de página y fuentes de referencia. Ninguna información
-            se vincula a ti como individuo. Puedes consultar su política de
-            privacidad en{" "}
-            <a
-              href="https://simpleanalytics.com/privacy"
-              className="text-brand-800 hover:text-brand-700"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              simpleanalytics.com/privacy
-            </a>
-            .
+            No recopilamos geolocalización individual, ni IP en bruto persistente,
+            ni datos sensibles de comunidades o territorios a través de este sitio.
           </p>
 
-          <h3 className="text-lg font-normal mt-6 mb-2">
-            Boletín de noticias (opcional)
-          </h3>
-          <p>Si decides suscribirte a nuestro boletín, recopilamos:</p>
+          {/* 4. Finalidades */}
+          <h2 className="section-heading mt-10">Finalidades y base de licitud</h2>
           <ul className="list-disc pl-6 space-y-1 mt-2">
-            <li>
-              Tu <strong>correo electrónico</strong> (proporcionado voluntariamente por ti)
-            </li>
-            <li>
-              Tu <strong>dirección IP</strong> (registrada por nuestro proveedor de boletín,{" "}
-              <a
-                href="https://www.useplunk.com/"
-                className="text-brand-800 hover:text-brand-700"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Plunk
-              </a>
-              , para prevenir spam y abuso)
-            </li>
+            <li>Enviarte el boletín o las alertas que solicitaste — <strong>consentimiento</strong>.</li>
+            <li>Operar y asegurar el sitio (sesiones de miembros/administración) — <strong>interés legítimo</strong>.</li>
+            <li>Medir audiencia de forma agregada — <strong>interés legítimo</strong> (sin datos personales).</li>
+            <li>Cumplir obligaciones legales — <strong>obligación legal</strong>.</li>
           </ul>
           <p className="mt-3">
-            Estos datos se usan únicamente para enviarte actualizaciones de
-            Impacto Indígena y para prevenir el abuso del servicio. Nunca
-            compartiremos, venderemos ni distribuiremos tu correo electrónico
-            a terceros.
-          </p>
-          <p className="mt-3">
-            Nuestro proveedor de boletín, Plunk, registra automáticamente las
-            aperturas de correo y clics en enlaces como parte de su
-            infraestructura de entrega. No podemos desactivar esta
-            funcionalidad. No usamos estos datos para perfilamiento,
-            publicidad ni ningún otro propósito más allá del monitoreo básico
-            de entrega.
-          </p>
-          <p>
-            Puedes cancelar tu suscripción en cualquier momento usando el
-            enlace de cancelación incluido en cada correo.
+            No realizamos decisiones automatizadas con efectos jurídicos sobre
+            las personas, ni elaboramos perfiles individuales de los lectores.
           </p>
 
-          <h3 className="text-lg font-normal mt-6 mb-2">Registros del servidor</h3>
-          <p>
-            Nuestro servidor registra metadatos básicos de las solicitudes
-            (ruta URL, estado HTTP, tiempo de respuesta) para monitoreo
-            operacional. Estos registros se conservan durante 14 días y luego
-            se eliminan automáticamente. La información sensible como
-            encabezados de autenticación y cookies se oculta en todos los
-            registros.
-          </p>
-
-          <h2 className="section-heading mt-10">
-            Qué almacenamos en tu dispositivo
-          </h2>
-          <p>
-            No usamos cookies, ni sessionStorage, IndexedDB ni ningún otro
-            mecanismo de almacenamiento del navegador para visitantes públicos.
-          </p>
-          <p>
-            El único dato almacenado en tu dispositivo es tu{" "}
-            <strong>preferencia del filtro emocional</strong> (un número entre
-            0 y 100), guardado en localStorage para que el control permanezca
-            donde lo dejaste entre visitas. Este valor nunca sale de tu
-            navegador y no se envía a nuestros servidores.
-          </p>
-          <p>
-            Nuestra interfaz de administración, que no es accesible al público,
-            usa cookies de autenticación seguras y httpOnly.
-          </p>
-
-          <h2 className="section-heading mt-10">Servicios de terceros</h2>
+          {/* 5. Encargados */}
+          <h2 className="section-heading mt-10">Encargados de tratamiento</h2>
+          <p>Para operar el sitio recurrimos a los siguientes proveedores, que tratan datos por cuenta nuestra:</p>
           <div className="overflow-x-auto mt-4">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b border-neutral-200">
-                  <th scope="col" className="text-left align-top py-2 pr-4 font-normal">
-                    Servicio
-                  </th>
-                  <th scope="col" className="text-left align-top py-2 pr-4 font-normal">
-                    Propósito
-                  </th>
-                  <th scope="col" className="text-left align-top py-2 font-normal">
-                    Datos compartidos
-                  </th>
+                  <th scope="col" className="text-left align-top py-2 pr-4 font-normal">Proveedor</th>
+                  <th scope="col" className="text-left align-top py-2 pr-4 font-normal">Función</th>
+                  <th scope="col" className="text-left align-top py-2 font-normal">Datos involucrados</th>
                 </tr>
               </thead>
               <tbody className="text-neutral-600">
                 <tr className="border-b border-neutral-100">
-                  <td className="align-top py-2 pr-4">
-                    <a
-                      href="https://www.simpleanalytics.com/"
-                      className="text-brand-800 hover:text-brand-700"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Simple Analytics
-                    </a>
-                  </td>
-                  <td className="align-top py-2 pr-4">Analítica con privacidad</td>
-                  <td className="align-top py-2">
-                    Solo vistas de página anónimas. Sin cookies, sin datos personales.
-                  </td>
+                  <td className="align-top py-2 pr-4">Microsoft Azure</td>
+                  <td className="align-top py-2 pr-4">Hospedaje y base de datos</td>
+                  <td className="align-top py-2">Toda la base, incluidos correos de suscriptores</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
-                  <td className="align-top py-2 pr-4">
-                    <a
-                      href="https://www.useplunk.com/"
-                      className="text-brand-800 hover:text-brand-700"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Plunk
-                    </a>
-                  </td>
-                  <td className="align-top py-2 pr-4">Envío del boletín</td>
-                  <td className="align-top py-2">
-                    Correo electrónico y dirección IP (si te suscribes). Ver su{" "}
-                    <a
-                      href="https://www.useplunk.com/privacy"
-                      className="text-brand-800 hover:text-brand-700"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      política de privacidad
-                    </a>
-                    .
-                  </td>
+                  <td className="align-top py-2 pr-4">Brevo</td>
+                  <td className="align-top py-2 pr-4">Envío de boletines y correos; verificación de correo</td>
+                  <td className="align-top py-2">Correo y nombre de suscriptores; métricas de apertura/clic</td>
+                </tr>
+                <tr className="border-b border-neutral-100">
+                  <td className="align-top py-2 pr-4">Simple Analytics</td>
+                  <td className="align-top py-2 pr-4">Métricas de audiencia (sin cookies)</td>
+                  <td className="align-top py-2">Datos agregados, sin identificación personal</td>
+                </tr>
+                <tr className="border-b border-neutral-100">
+                  <td className="align-top py-2 pr-4">OpenAI / Azure OpenAI</td>
+                  <td className="align-top py-2 pr-4">Análisis y resúmenes con IA</td>
+                  <td className="align-top py-2">Contenido de noticias de fuentes públicas (no datos de lectores)</td>
                 </tr>
                 <tr>
-                  <td className="align-top py-2 pr-4">
-                    <a
-                      href="https://render.com/"
-                      className="text-brand-800 hover:text-brand-700"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Render
-                    </a>
-                  </td>
-                  <td className="align-top py-2 pr-4">Alojamiento web</td>
-                  <td className="align-top py-2">
-                    Datos HTTP estándar (dirección IP, agente de usuario) como
-                    parte de la infraestructura de alojamiento. No tenemos
-                    acceso a los registros de infraestructura de Render.
-                  </td>
+                  <td className="align-top py-2 pr-4">Cloudflare R2</td>
+                  <td className="align-top py-2 pr-4">Almacenamiento de imágenes</td>
+                  <td className="align-top py-2">Imágenes editoriales (sin datos de lectores)</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <p className="mt-4">
-            Todas las fuentes tipográficas usadas en este sitio son
-            auto-alojadas. No cargamos fuentes, scripts ni otros recursos
-            desde CDNs externos como Google, lo que significa que tu dirección
-            IP no se comparte con terceros cuando visitas el sitio.
+
+          {/* 6. Transferencias */}
+          <h2 className="section-heading mt-10">Transferencias internacionales</h2>
+          <p>
+            Parte de la infraestructura puede operar fuera de Chile. En esos
+            casos exigimos a los proveedores resguardos equivalentes (cláusulas
+            contractuales y estándares de seguridad reconocidos) y no
+            autorizamos transferencias ulteriores sin base legal.
           </p>
 
-          <h2 className="section-heading mt-10">Tus derechos</h2>
-          <p>Bajo el GDPR (y regulaciones similares), tienes derecho a:</p>
+          {/* 7. Conservación */}
+          <h2 className="section-heading mt-10">Conservación</h2>
           <ul className="list-disc pl-6 space-y-1 mt-2">
-            <li>Solicitar acceso a cualquier dato personal que tengamos sobre ti</li>
-            <li>Solicitar la corrección o eliminación de tus datos</li>
-            <li>Oponerte al procesamiento de datos</li>
-            <li>Presentar una queja ante una autoridad supervisora</li>
+            <li>Suscriptores del boletín o alertas: mientras la suscripción esté activa; se eliminan o anonimizan tras la baja.</li>
+            <li>Registros del servidor: hasta 14 días, luego se eliminan automáticamente.</li>
+            <li>Tokens de sesión y enlaces mágicos: se purgan automáticamente al expirar.</li>
+            <li>Feedback: hasta su procesamiento y por el plazo legal aplicable.</li>
           </ul>
-          <p className="mt-3">
-            Dado que recopilamos casi ningún dato personal, generalmente hay
-            muy poco (o nada) que proporcionar. Si te has suscrito a nuestro
-            boletín, podemos eliminar tu correo electrónico a petición.
-          </p>
+
+          {/* 8. Derechos */}
+          <h2 className="section-heading mt-10">Tus derechos (ARCO+)</h2>
           <p>
-            Para cualquier consulta relacionada con privacidad, contáctanos en{" "}
+            Puedes ejercer en cualquier momento tus derechos de acceso,
+            rectificación, cancelación (supresión), oposición, portabilidad y
+            bloqueo escribiéndonos a{" "}
             <ObfuscatedEmail className="text-brand-800 hover:text-brand-700" />.
+            Responderemos en los plazos legales y puedes reclamar ante la
+            Agencia de Protección de Datos Personales. La baja del boletín es
+            inmediata desde el enlace al pie de cada correo.
+          </p>
+
+          {/* 9. Seguridad */}
+          <h2 className="section-heading mt-10">Seguridad</h2>
+          <p>
+            Aplicamos medidas técnicas y organizativas razonables: cifrado en
+            tránsito, contraseñas con hashing (bcrypt), control de acceso,
+            rotación de tokens y registro de actividad. Ante un incidente que
+            afecte datos personales, notificaremos conforme a la Ley 21.719.
+          </p>
+
+          {/* 10. Cookies / Términos */}
+          <h2 className="section-heading mt-10">Cookies y términos</h2>
+          <p>
+            El uso de cookies se detalla en nuestra{" "}
+            <Link to="/cookies" className="text-brand-800 hover:text-brand-700">Política de Cookies</Link>.
+            El uso del sitio se rige por nuestros{" "}
+            <Link to="/terminos" className="text-brand-800 hover:text-brand-700">Términos y Condiciones</Link>.
+          </p>
+
+          <h2 className="section-heading mt-10">Cambios</h2>
+          <p>
+            Podemos actualizar esta política. Publicaremos la versión vigente en
+            esta página. Los cambios sustanciales se informarán por los canales
+            del sitio.
           </p>
         </div>
       </div>
