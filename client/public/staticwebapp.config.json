@@ -1,6 +1,10 @@
 {
   "routes": [
     {
+      "route": "/stories/*",
+      "rewrite": "/api/og/story-html"
+    },
+    {
       "route": "/sitemap.xml",
       "rewrite": "/api/sitemap.xml"
     },

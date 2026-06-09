@@ -271,18 +271,27 @@ export default function StoryPage() {
           </div>
         </header>
 
-        {/* Hero image — full-width, between header and article body */}
+        {/* Hero image — full-width, between header and article body.
+            Images hosted on our R2 bucket are AI-generated editorial
+            illustrations and must be labeled as such (Términos §5). */}
         {story.imageUrl && (
-          <div className="overflow-hidden" style={{ maxHeight: '480px' }}>
-            <img
-              src={story.imageUrl}
-              alt={headline}
-              className="w-full object-cover"
-              style={{ maxHeight: '480px' }}
-              fetchPriority="high"
-              onError={(e) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
-            />
-          </div>
+          <figure className="m-0">
+            <div className="overflow-hidden" style={{ maxHeight: '480px' }}>
+              <img
+                src={story.imageUrl}
+                alt={headline}
+                className="w-full object-cover"
+                style={{ maxHeight: '480px' }}
+                fetchPriority="high"
+                onError={(e) => { (e.target as HTMLImageElement).closest('figure')!.style.display = 'none' }}
+              />
+            </div>
+            {/\.r2\.dev\//.test(story.imageUrl) && (
+              <figcaption className="px-4 mt-1.5 text-right text-[11px] uppercase tracking-wider text-neutral-400">
+                {t('storyPage.aiImage')}
+              </figcaption>
+            )}
+          </figure>
         )}
 
         <div className="page-section !pt-8">

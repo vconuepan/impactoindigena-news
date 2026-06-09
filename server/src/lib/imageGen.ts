@@ -48,7 +48,10 @@ export async function generateStoryImage(
   storyId: string,
   title: string,
   summary: string,
+  options: { orientation?: 'portrait' | 'landscape' } = {},
 ): Promise<string> {
+  // portrait (default): Instagram 4:5 carousel. landscape: website story hero.
+  const orientation = options.orientation ?? 'portrait'
   const prompt = `
 Create a powerful, respectful editorial illustration for an indigenous news story.
 Title: "${title}"
@@ -68,10 +71,13 @@ Cinematic composition, high contrast, visually striking.
     model,
     prompt,
     n: 1,
-    // Portrait — fills the 4:5 Instagram carousel with minimal upscaling/crop
+    // Portrait fills the 4:5 Instagram carousel with minimal upscaling/crop
     // (a landscape source had to be stretched ~2.6x vertically → blurry).
-    // gpt-image-2: 1024x1536  |  dall-e-3: 1024x1792
-    size: isGptImage ? '1024x1536' : '1024x1792',
+    // Landscape suits the website's wide story hero (max-height 480px).
+    // gpt-image-2: 1024x1536 / 1536x1024  |  dall-e-3: 1024x1792 / 1792x1024
+    size: orientation === 'portrait'
+      ? (isGptImage ? '1024x1536' : '1024x1792')
+      : (isGptImage ? '1536x1024' : '1792x1024'),
     // gpt-image-2: low/medium/high  |  dall-e-3: standard/hd
     quality: isGptImage ? config.imageGen.quality : 'standard',
   }

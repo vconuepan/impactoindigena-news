@@ -85,7 +85,7 @@ export default function TermsPage() {
               <Link to="/methodology" className="text-brand-800 hover:text-brand-700">Metodología</Link>).
             </li>
             <li>El contenido de IA puede ser inexacto, incompleto, estar desactualizado o contener sesgos. No constituye asesoría profesional, legal ni de inversión.</li>
-            <li>Las imágenes que acompañan las publicaciones en redes sociales pueden ser generadas con IA y son ilustraciones editoriales, no fotografías reales de personas o hechos específicos.</li>
+            <li>Las imágenes que acompañan las noticias en el Sitio y las publicaciones en redes sociales pueden ser generadas con IA y están etiquetadas como tales; son ilustraciones editoriales, no fotografías reales de personas o hechos específicos.</li>
             <li>Para información definitiva, consulta siempre la fuente original enlazada.</li>
           </ul>
 

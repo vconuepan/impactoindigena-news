@@ -30,6 +30,144 @@ function escapeAttrUrl(url: string): string {
   return url.replace(/"/g, '%22').replace(/</g, '%3C').replace(/>/g, '%3E')
 }
 
+// ---------------------------------------------------------------------------
+// /story-html — primary serving path for /stories/* on Azure SWA.
+// staticwebapp.config.json rewrites /stories/* here; SWA forwards the original
+// URL in the x-ms-original-url header (rewrites can't carry path params).
+// Serves the React shell with story-specific OG tags, canonical, and JSON-LD
+// to EVERY request (humans hydrate the app normally; crawlers read the meta).
+// This covers all stories — including ones published minutes ago — unlike
+// build-time prerendering, which went stale on every new publish.
+// ---------------------------------------------------------------------------
+
+let shellCache: { html: string; fetchedAt: number } | null = null
+const SHELL_TTL_MS = 10 * 60 * 1000
+
+async function getShell(): Promise<string> {
+  if (shellCache && Date.now() - shellCache.fetchedAt < SHELL_TTL_MS) {
+    return shellCache.html
+  }
+  try {
+    const res = await fetch(`${SITE_URL}/`)
+    const html = await res.text()
+    if (res.ok && html.includes('<div id="root">')) {
+      shellCache = { html, fetchedAt: Date.now() }
+      return html
+    }
+  } catch {
+    /* fall through */
+  }
+  return shellCache?.html || ''
+}
+
+function slugFromRequest(req: import('express').Request): string | null {
+  // Azure SWA sends the original URL of the rewritten request in this header.
+  const original = req.headers['x-ms-original-url']
+  const raw = typeof original === 'string' ? original : (req.query.slug as string | undefined)
+  if (!raw) return null
+  if (!raw.includes('/stories/')) return typeof req.query.slug === 'string' ? req.query.slug : null
+  try {
+    const path = raw.startsWith('http') ? new URL(raw).pathname : raw
+    const match = path.match(/\/stories\/([^/?#]+)/)
+    return match ? decodeURIComponent(match[1]) : null
+  } catch {
+    return null
+  }
+}
+
+router.get('/story-html', async (req, res) => {
+  const slug = slugFromRequest(req)
+  const shell = await getShell()
+
+  const sendShell = (status: number) => {
+    res.status(status)
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.setHeader('Cache-Control', 'public, max-age=60')
+    res.send(shell || '<!DOCTYPE html><html lang="es"><head><meta http-equiv="refresh" content="0;url=/" /></head><body></body></html>')
+  }
+
+  if (!slug) {
+    sendShell(200)
+    return
+  }
+
+  try {
+    const story = await prisma.story.findUnique({
+      where: { slug },
+      select: {
+        slug: true,
+        title: true,
+        titleLabel: true,
+        summary: true,
+        imageUrl: true,
+        datePublished: true,
+        status: true,
+      },
+    })
+
+    if (!story || story.status !== 'published' || !shell) {
+      // Unknown/unpublished story: the React app renders its own not-found state.
+      sendShell(story ? 200 : 404)
+      return
+    }
+
+    const title = escapeHtml(story.title || story.slug || '')
+    const titleLabel = story.titleLabel ? escapeHtml(story.titleLabel) : null
+    const fullTitle = titleLabel ? `${titleLabel}: ${title}` : title
+    const description = escapeHtml(story.summary?.slice(0, 200) || fullTitle)
+    const image = escapeAttrUrl(story.imageUrl || FALLBACK_IMAGE)
+    const storyUrl = `${SITE_URL}/stories/${story.slug}`
+
+    const jsonLd = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'NewsArticle',
+      headline: story.title || story.slug,
+      description: story.summary?.slice(0, 200) || undefined,
+      image: story.imageUrl ? [story.imageUrl] : undefined,
+      datePublished: story.datePublished?.toISOString(),
+      mainEntityOfPage: storyUrl,
+      publisher: {
+        '@type': 'Organization',
+        name: 'Impacto Indígena',
+        url: SITE_URL,
+      },
+    })
+
+    const headTags = `
+  <title>${fullTitle} - Impacto Indígena</title>
+  <meta name="description" content="${description}" />
+  <link rel="canonical" href="${storyUrl}" />
+  <meta property="og:title" content="${fullTitle}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:image" content="${image}" />
+  <meta property="og:url" content="${storyUrl}" />
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="Impacto Indígena" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${fullTitle}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${image}" />
+  <script type="application/ld+json">${jsonLd}</script>`
+
+    // Strip the shell's own title/meta (the home may be prerendered with full
+    // content), clear the prerendered root so React mounts cleanly, then inject.
+    const html = shell
+      .replace(/<title>[^<]*<\/title>/gi, '')
+      .replace(/<meta[^>]+(property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*\/?>/gi, '')
+      .replace(/<meta[^>]+name=["']description["'][^>]*\/?>/gi, '')
+      .replace(/<link[^>]+rel=["']canonical["'][^>]*\/?>/gi, '')
+      .replace('<head>', `<head>${headTags}`)
+      .replace(/<div id="root">[\s\S]*?<\/div>(?=\s*<script)/, '<div id="root"></div>')
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8')
+    res.setHeader('Cache-Control', 'public, max-age=300')
+    res.send(html)
+  } catch (err) {
+    log.error({ err, slug }, 'story-html error')
+    sendShell(200)
+  }
+})
+
 router.get('/stories/:slug', async (req, res) => {
   const { slug } = req.params
 

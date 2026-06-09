@@ -30,7 +30,41 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-// Signal to prerenderer that rendering is complete
-setTimeout(() => {
-  document.dispatchEvent(new Event('render-complete'))
-}, 100)
+// Signal to the prerenderer that rendering is complete. The old fixed 100ms
+// timer fired before any data loaded, so prerendered pages shipped in their
+// skeleton state ("Loading stories"). Under the prerenderer (Puppeteer sets
+// navigator.webdriver) we instead track in-flight fetches and dispatch once
+// the network has been quiet for two consecutive checks, capped at 15s so a
+// stuck request can never hang the build. Real browsers keep the cheap timer
+// (the event has no listeners outside prerendering).
+if (navigator.webdriver) {
+  let inflight = 0
+  const origFetch = window.fetch.bind(window)
+  window.fetch = (...args: Parameters<typeof fetch>) => {
+    inflight++
+    return origFetch(...args).finally(() => { inflight-- })
+  }
+
+  const start = Date.now()
+  let quietChecks = 0
+  const settle = () => {
+    if (inflight === 0) quietChecks++
+    else quietChecks = 0
+    if (quietChecks >= 2 || Date.now() - start > 15000) {
+      window.fetch = origFetch
+      // A short timer (not requestAnimationFrame — headless Chrome with
+      // --disable-gpu may never fire rAF) lets React commit the fetched
+      // data before the snapshot.
+      setTimeout(() => {
+        document.dispatchEvent(new Event('render-complete'))
+      }, 100)
+      return
+    }
+    setTimeout(settle, 300)
+  }
+  setTimeout(settle, 500)
+} else {
+  setTimeout(() => {
+    document.dispatchEvent(new Event('render-complete'))
+  }, 100)
+}
