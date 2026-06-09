@@ -106,6 +106,9 @@ export default defineConfig(async () => {
           renderAfterDocumentEvent: 'render-complete',
           launchOptions: {
             args: [
+              // Prerender in Spanish: without this, headless Chrome reports
+              // English and i18next bakes mixed-language content into the HTML.
+              '--lang=es-CL',
               '--no-sandbox',
               '--disable-setuid-sandbox',
               '--disable-dev-shm-usage',
