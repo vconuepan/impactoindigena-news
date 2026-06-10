@@ -35,6 +35,28 @@
 
 ## Implementation Tasks
 
+> **Eng review 2026-06-10:** alcance reorganizado en 4 OLAS shippeables (D1).
+> T1, T2, T3 ya fueron implementados y verificados en producción (commits af1e0fa, 0765b81).
+>
+> **OLA 1 (próxima)** = T4, T5, T8, T10, B1, B2, B3, B5, B6 — especificaciones refinadas abajo.
+> **OLA 2** = N1 (About 3 actos + Methodology + footer) + T6 + T7 + N2 (keywords vertical jurídico).
+> **OLA 3** = N3 (3 páginas evergreen). **OLA 4** = N4 (clasificador + migración) + B4 + T9.
+>
+> **Decisiones del eng review (todas resueltas):**
+> - 1A/5A: medio real derivado del hostname de `sourceUrl`, helper en **`shared/`** usado por web (StoryPage/StoryCard) Y servidor (emails alerts.ts:211, newsletter.ts:279/336, podcast). Fallback = hostname limpio (sin `www.`); `news.google.com` = caso especial (fallback al hostname, nunca "Google News"); mapa dominio→nombre solo para embellecer. Atender favicon del feed junto al nombre real.
+> - 2A: baja de alertas = **enlace por token** (ignorar `expiresAt` para la baja — es token de confirmación 48h, la baja debe funcionar siempre) + **DELETE real de la fila**. Mantener el path legado `?unsubscribe=<email>` funcionando (transición: emails ya enviados) — también borra, no soft-delete. Columna `active` queda muerta → documentar; remover en migración futura (Ola 4).
+> - 3A: tope de cita = instrucción en prompt + `.describe()` + **truncado defensivo en `analysis.ts`** (≤300 chars, soltando oraciones finales completas — JAMÁS cortar a mitad de oración; sin "…" si el corte es en frontera limpia). Aplicar TAMBIÉN a `quoteEn` en `translation.ts:72`. Backfill de citas largas existentes: opcional, fuera de Ola 1.
+> - 4A: ARRAffinity → **desactivar afinidad** (`az webapp update --client-affinity-enabled false`) en vez de declararla. Verificar con curl que desaparece el Set-Cookie. Nota: si algún día se escala a 2+ instancias, el rate-limit en memoria pasa a ser por-instancia (aceptable, documentado aquí).
+> - B6 ampliado (hallazgo crítico voz externa): verificar en Azure **`API_URL`** además de `LLM_PROVIDER` — el código defaultea a `*.onrender.com` en `alerts.ts:16`, `subscribe.ts:10`, `auth-public.ts:13`, `openapi.ts:109`; si Azure no lo setea, los emails de confirmación apuntan al backend muerto de Render HOY. Cambiar defaults del código a impactoindigena.news. **Secuencia obligatoria: B6 (verificar) → B3 (textos de política)**.
+> - B3 reducido: declarar solo búsqueda→proveedor de embeddings (según lo que B6 verifique; `embedding.ts` usa AzureOpenAI si `LLM_PROVIDER=azure`); commitear primero la edición pendiente de CookiesPage; con 4A la frase "no instala cookies" queda verdadera.
+> - T8: la detección de idioma se cachea en localStorage (`i18n.ts:20`) — versionar la clave o documentar que solo afecta visitantes nuevos.
+> - T10: el service worker ya cachea /assets/* — shippear el header igual (primeras visitas), sin esperar gran ganancia.
+> - B4 (Ola 4) re-especificado: NO httpOnly+/api/me (rompe el cliente y contradice la decisión stateless registrada) → cookie booleana opaca (`member_session=1`) + eliminar `member_email`.
+>
+> **Tests obligatorios Ola 1 (regla de regresión):** `alerts.test.ts` NUEVO (borrado real por token, idempotencia, token inválido, path legado por email borra, link builder sin email en URL); `llm.test.ts`/`prompts.test.ts` extendidos (truncado ≤300, frontera de oración, quoteEn); tests unitarios de `publisherFromUrl` en shared (google-news→hostname, mapa, URL inválida, feed normal intacto); verificación T4 por grep (0 fonts.googleapis).
+>
+> **Paralelización Ola 1:** Lane A (server): B1, B2, B6-código → secuencial mismo módulo services/. Lane B (client): T4, T8, B3, B5 → secuencial client/. Lane C (shared+ambos): T5. Lanes A y B paralelizables; T5 después de definir el helper (toca ambos). T10+4A son config/ops, van al final con el deploy.
+
 Workstream A — Rendimiento y experiencia:
 
 - [ ] **T1 (P1, CC: ~45min)** — CI/prerender — Diagnosticar por qué el output del prerender no llega al artefacto desplegado y arreglarlo
@@ -87,11 +109,13 @@ Workstream B — Cumplimiento (de la auditoría de políticas, pendiente de orde
 
 | Review | Trigger | Why | Runs | Status | Findings |
 |--------|---------|-----|------|--------|----------|
-| CEO Review | `/plan-ceo-review` | Scope & strategy | 0 | — | — |
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 1 (abr) | issues_open | 7 proposals, 6 accepted, 1 deferred |
 | Codex Review | `/codex review` | Independent 2nd opinion | 0 | — | — |
-| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 0 | — | — |
-| Design Review | `/plan-design-review` | UI/UX gaps | 1 | issues_open | score: 6.5/10 → 8/10, 4 decisions |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | issues_open | 5 issues (todas decididas), 1 critical gap (verificar API_URL en Azure) |
+| Design Review | `/plan-design-review` | UI/UX gaps | 1 | issues_open | score: 6.5/10 → 8/10, 4 decisions (T1-T3 ya implementadas) |
 | DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | — |
 
-- **UNRESOLVED:** 0 (las 4 decisiones del review quedaron resueltas; T/B tasks pendientes de ejecución)
-- **VERDICT:** DESIGN REVIEWED — listo para implementar T1-T3 (P1); eng review opcional antes de T1-T2 por tocar CI/routing
+- **CROSS-MODEL:** voz externa (subagente Claude, contexto fresco) aportó 12 hallazgos verificados en código; 2 revirtieron decisiones del review (4A desactivar ARRAffinity en vez de declararla; 5A helper en shared/ para todas las superficies) — ambos aceptados por el usuario; 8 incorporados como refinamientos de spec; hallazgo crítico nuevo: defaults `*.onrender.com` en código (B6 ampliado).
+- **VERDICT:** ENG REVIEWED — Ola 1 lista para implementar; PRIMER paso obligatorio: verificar `API_URL` y `LLM_PROVIDER` en Azure (posible bug vivo en emails de confirmación).
+
+NO UNRESOLVED DECISIONS

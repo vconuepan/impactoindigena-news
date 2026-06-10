@@ -81,7 +81,16 @@ export default function CookiesPage() {
           <h2 className="section-heading mt-8">Cookies y almacenamiento que sí usamos</h2>
           <ul className="list-disc pl-6 space-y-1 mt-2">
             <li><strong>Sesión de miembros y administración</strong> (estrictamente necesarias): cookies de autenticación para quienes inician sesión. No se instalan al navegar como lector público.</li>
-            <li><strong>Preferencia del control de positividad</strong>: un valor guardado en el almacenamiento local de tu navegador (localStorage) para recordar tu filtro de noticias. Nunca sale de tu navegador.</li>
+            <li>
+              <strong>Preferencias guardadas en tu navegador</strong> (almacenamiento local, <em>localStorage</em>): valores técnicos que recuerdan cómo prefieres usar el Sitio. No son cookies, no contienen datos personales y nunca salen de tu navegador. Incluyen:
+              <ul className="list-disc pl-6 space-y-1 mt-2">
+                <li>el nivel del control de positividad con el que filtras las noticias;</li>
+                <li>el idioma en el que eliges ver el Sitio;</li>
+                <li>los temas o secciones que marcas como preferidos;</li>
+                <li>las noticias que guardas para leer más tarde;</li>
+                <li>el historial de noticias que ya abriste, para señalar las leídas.</li>
+              </ul>
+            </li>
           </ul>
           <p className="mt-3">
             Para los lectores que no inician sesión, el Sitio no instala cookies.
@@ -99,6 +108,12 @@ export default function CookiesPage() {
             Puedes bloquear o borrar cookies desde la configuración de tu
             navegador. Bloquear las estrictamente necesarias puede impedir el
             acceso a las áreas con sesión.
+          </p>
+          <p className="mt-3">
+            Desde esa misma configuración también puedes borrar el
+            almacenamiento local (localStorage); al hacerlo se eliminarán las
+            preferencias descritas más arriba y el Sitio volverá a sus valores
+            por defecto.
           </p>
 
           <h2 className="section-heading mt-8">Más información</h2>
