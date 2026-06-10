@@ -106,7 +106,7 @@ export function getOpenAPIDocument(): any {
       },
     },
     servers: [
-      { url: process.env.API_URL || 'https://vocesindigenas-backend.onrender.com', description: 'Production' },
+      { url: process.env.API_URL || 'https://impactoindigena.news', description: 'Production' },
     ],
     paths: {
       '/api/homepage': {

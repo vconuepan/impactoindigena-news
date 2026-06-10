@@ -86,6 +86,7 @@ Cita clave
 - La cita exacta más importante.
 - Si no hay cita, usa una oración llamativa del artículo.
 - Traduce al español si es necesario.
+- Máximo ~40 palabras (300 caracteres): si la cita natural es más larga, elige solo su oración más potente.
 
 Atribución de la cita
 - Si se cita a una persona: su nombre completo y título/rol (ej. "María Helena Semedo, Directora General Adjunta de la FAO").

@@ -34,7 +34,7 @@ export default function PrivacyPage() {
             Sin cookies.<br className="hidden md:block" /> Sin rastreo.
           </h1>
           <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto">
-            Para los lectores, nada se almacena en tu dispositivo. Solo tratamos los datos mínimos que nos das voluntariamente.
+            Para los lectores no usamos cookies ni rastreo; solo preferencias técnicas en tu navegador. Tratamos los datos mínimos que nos das voluntariamente.
           </p>
         </div>
       </div>
@@ -78,6 +78,7 @@ export default function PrivacyPage() {
             <li><strong>Acceso de miembros:</strong> tu correo, si inicias sesión con enlace mágico.</li>
             <li><strong>Feedback:</strong> tu mensaje y, opcionalmente, tu correo; de la IP solo guardamos un hash no reversible.</li>
             <li><strong>Métricas de uso:</strong> páginas vistas y fuente de tráfico, siempre de forma agregada y sin identificación personal.</li>
+            <li><strong>Búsqueda:</strong> el texto que escribes en el buscador se procesa con nuestro proveedor de IA (OpenAI/Azure OpenAI) para la búsqueda semántica; no se asocia a tu identidad ni se utiliza para entrenar modelos.</li>
           </ul>
           <p className="mt-3">
             No recopilamos geolocalización individual, ni IP en bruto persistente,
@@ -127,8 +128,8 @@ export default function PrivacyPage() {
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">OpenAI / Azure OpenAI</td>
-                  <td className="align-top py-2 pr-4">Análisis y resúmenes con IA</td>
-                  <td className="align-top py-2">Contenido de noticias de fuentes públicas (no datos de lectores)</td>
+                  <td className="align-top py-2 pr-4">Análisis y resúmenes con IA; búsqueda semántica</td>
+                  <td className="align-top py-2">Contenido de noticias de fuentes públicas y consultas del buscador (sin asociar a identidad)</td>
                 </tr>
                 <tr>
                   <td className="align-top py-2 pr-4">Cloudflare R2</td>

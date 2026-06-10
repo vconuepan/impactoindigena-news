@@ -270,11 +270,11 @@ export const publicApi = {
       body: JSON.stringify({ email, topics }),
     }),
 
-  unsubscribeAlerts: (email: string) =>
+  unsubscribeAlerts: (params: { email?: string; token?: string }) =>
     request<{ success: boolean }>('/alerts/unsubscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify(params),
     }),
 
   editorials: {

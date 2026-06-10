@@ -3,6 +3,7 @@ import { HumanMessage } from '@langchain/core/messages'
 import { createLogger } from '../lib/logger.js'
 import { getSmallLLM, rateLimitDelay } from './llm.js'
 import prisma from '../lib/prisma.js'
+import { truncateQuote } from '../lib/truncateQuote.js'
 
 const log = createLogger('translation')
 
@@ -69,7 +70,7 @@ export async function translateStory(storyId: string): Promise<void> {
       titleEn: result.title || null,
       titleLabelEn: result.titleLabel || null,
       summaryEn: result.summary || null,
-      quoteEn: result.quote || null,
+      quoteEn: truncateQuote(result.quote),
       marketingBlurbEn: result.marketingBlurb || null,
       relevanceSummaryEn: result.relevanceSummary || null,
     },

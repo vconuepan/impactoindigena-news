@@ -39,6 +39,7 @@ export const assessResultSchema = z.object({
     .string()
     .describe(
       "Cita clave del artículo, traducida al español si es necesario. " +
+        "Máximo ~40 palabras (300 caracteres): elige la oración más potente. " +
         "Sin nombre del hablante ni de la publicación — la atribución es un campo separado. " +
         "Sin comillas al inicio o al final — la interfaz las agrega. " +
         "Usa comillas simples (' ') para cualquier cita anidada dentro del texto."

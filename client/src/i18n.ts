@@ -16,7 +16,13 @@ i18n
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
     detection: {
-      order: ['localStorage', 'navigator'],
+      // Spanish-first: the UI language follows an explicit choice only (the
+      // header toggle). Browser auto-detection produced a mixed experience
+      // (English chrome over Spanish content) and cached itself as if the
+      // reader had chosen it. New storage key so previously auto-detected
+      // values reset once; the toggle keeps persisting choices from here on.
+      order: ['localStorage'],
+      lookupLocalStorage: 'ii_lng',
       caches: ['localStorage'],
     },
     interpolation: {

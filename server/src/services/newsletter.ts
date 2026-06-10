@@ -12,6 +12,7 @@ import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { withRetry } from '../lib/retry.js'
 import { buildNewsletterSelectPrompt, buildNewsletterIntroPrompt } from '../prompts/index.js'
 import { newsletterSelectResultSchema, newsletterIntroSchema } from '../schemas/llm.js'
+import { publisherFromUrl } from '../lib/publisher.js'
 
 const log = createLogger('newsletter')
 
@@ -276,7 +277,7 @@ export async function generateContent(newsletterId: string) {
     const resolved = resolveIssue(story)
     const issueName = resolved.name
     const issueSlug = resolved.slug
-    const publisher = story.feed?.displayTitle || story.feed?.title || 'Unknown'
+    const publisher = publisherFromUrl(story.sourceUrl, story.feed?.displayTitle || story.feed?.title) || 'Unknown'
     // ?_r=newsletter enables traffic attribution in the analytics dashboard
     const relevanceUrl = story.slug ? `https://impactoindigena.news/stories/${story.slug}?_r=newsletter` : ''
 
@@ -333,7 +334,7 @@ export async function generateCarouselForNewsletter(newsletterId: string): Promi
     title: s.title || s.sourceTitle,
     category: s.issue?.name || s.feed?.issue?.name || 'General',
     summary: s.summary || '',
-    publisher: s.feed?.title || 'Unknown',
+    publisher: publisherFromUrl(s.sourceUrl, s.feed?.displayTitle || s.feed?.title) || 'Unknown',
     date: s.sourceDatePublished?.toISOString() || null,
   }))
 

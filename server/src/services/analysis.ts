@@ -10,6 +10,7 @@ import { createLogger } from '../lib/logger.js'
 import { taskRegistry } from '../lib/taskRegistry.js'
 import { getSmallLLM, getMediumLLM, getLLMByTier, rateLimitDelay } from './llm.js'
 import { withRetry } from '../lib/retry.js'
+import { truncateQuote } from '../lib/truncateQuote.js'
 import { buildPreassessPrompt, buildReclassifyPrompt, buildEmotionTagPrompt, buildAssessPrompt, buildSelectPrompt } from '../prompts/index.js'
 import type { StoryForPreassess, IssueForPreassess } from '../prompts/index.js'
 import { preAssessResultSchema, reclassifyResultSchema, assessResultSchema, selectResultSchema } from '../schemas/llm.js'
@@ -311,7 +312,7 @@ export async function assessStory(storyId: string): Promise<void> {
     titleLabel: parsed.titleLabel || null,
     title: parsed.relevanceTitle || null,
     summary: parsed.summary || null,
-    quote: parsed.quote || null,
+    quote: truncateQuote(parsed.quote),
     quoteAttribution: parsed.quoteAttribution || null,
     marketingBlurb: parsed.marketingBlurb || null,
     relevanceSummary: parsed.relevanceSummary || null,

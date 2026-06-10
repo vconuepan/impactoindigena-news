@@ -9,6 +9,7 @@ import { getTitleLabel, getHeadline } from '../lib/title-label'
 import { isRead } from '../lib/reading-history'
 import FeedFavicon from './FeedFavicon'
 import BookmarkButton from './BookmarkButton'
+import { publisherFromUrl } from '@shared/utils/publisher'
 
 interface StoryCardProps {
   story: PublicStory
@@ -25,14 +26,18 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
   return (
     <div className={`flex flex-wrap items-center gap-x-2 text-neutral-500 font-dm-sans ${size === 'xs' ? 'text-xs' : 'text-sm'}`}>
       <span className="inline-flex items-center gap-1.5">
-        <FeedFavicon feedId={story.feed.id} size={size === 'xs' ? 14 : 16} />
+        {/* Real outlet derived from sourceUrl; favicon only when the shown
+            name IS the feed (discovery feeds say "Google News"). */}
+        {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title) === (story.feed.displayTitle || story.feed.title) && (
+          <FeedFavicon feedId={story.feed.id} size={size === 'xs' ? 14 : 16} />
+        )}
         <a
           href={story.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-neutral-500 hover:text-neutral-700 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
         >
-          {story.feed.displayTitle || story.feed.title}
+          {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title)}
           <span className="sr-only"> (opens in new tab)</span>
         </a>
         {sourceDate && <> · {sourceDate}</>}

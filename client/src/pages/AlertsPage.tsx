@@ -29,7 +29,8 @@ type Status = 'idle' | 'submitting' | 'success' | 'error'
 export default function AlertsPage() {
   const [searchParams] = useSearchParams()
   const confirmed  = searchParams.get('confirmed')
-  const unsubEmail = searchParams.get('unsubscribe')
+  const unsubEmail = searchParams.get('unsubscribe') // legacy links already in inboxes
+  const unsubToken = searchParams.get('unsubscribe_token')
 
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set())
   const [email, setEmail]     = useState('')
@@ -61,9 +62,9 @@ export default function AlertsPage() {
   }
 
   async function handleUnsubscribe() {
-    if (!unsubEmail) return
+    if (!unsubEmail && !unsubToken) return
     try {
-      await publicApi.unsubscribeAlerts(unsubEmail)
+      await publicApi.unsubscribeAlerts(unsubToken ? { token: unsubToken } : { email: unsubEmail! })
       setMessage('Tus alertas han sido desactivadas.')
     } catch {
       setMessage('No se pudo desactivar. Escríbenos a contacto@impactoindigena.news.')
@@ -99,14 +100,16 @@ export default function AlertsPage() {
         )}
 
         {/* Unsubscribe state */}
-        {unsubEmail && (
+        {(unsubEmail || unsubToken) && (
           <div className="mb-8 bg-neutral-50 border border-neutral-200 rounded-xl p-6 text-center">
             {message ? (
               <p className="text-neutral-700 text-sm">{message}</p>
             ) : (
               <>
                 <p className="text-neutral-800 text-sm mb-3">
-                  ¿Desactivar todas las alertas para <strong>{unsubEmail}</strong>?
+                  {unsubEmail
+                    ? <>¿Desactivar todas las alertas para <strong>{unsubEmail}</strong>?</>
+                    : <>¿Desactivar todas tus alertas de territorio?</>}
                 </p>
                 <button
                   onClick={handleUnsubscribe}

@@ -8,12 +8,16 @@ import { randomUUID } from 'crypto'
 import prisma from '../lib/prisma.js'
 import { config } from '../config.js'
 import * as brevo from './brevo.js'
+import { publisherFromUrl } from '../lib/publisher.js'
 import { createLogger } from '../lib/logger.js'
 
 const log = createLogger('alerts')
 
 const CLIENT_URL = process.env.CLIENT_URL || 'https://impactoindigena.news'
-const API_URL    = process.env.API_URL    || 'https://vocesindigenas-backend.onrender.com'
+// Default points at the Azure SWA domain (the linked-backend proxy serves
+// /api/*). The old default was the decommissioned Render backend — emails
+// built with it linked to a dead host when API_URL wasn't set.
+const API_URL    = process.env.API_URL    || 'https://impactoindigena.news'
 
 // Token expiry: 48 hours
 const TOKEN_EXPIRY_HOURS = 48
@@ -78,12 +82,30 @@ export async function confirmAlert(token: string, email: string): Promise<void> 
 // Unsubscribe
 // ---------------------------------------------------------------------------
 
+// Unsubscribe HARD-DELETES the rows: the privacy policy promises subscriber
+// data is removed after opt-out (Ley 21.719 audit, B1). The `active` column
+// is now dead schema — kept until a future migration drops it.
+
+/** Legacy path — links already delivered in inboxes carry ?unsubscribe=<email>. */
 export async function unsubscribeFromAlerts(email: string): Promise<void> {
-  await prisma.alertSubscription.updateMany({
-    where: { email, active: true },
-    data: { active: false },
-  })
-  log.info({ email }, 'alert subscription deactivated')
+  const { count } = await prisma.alertSubscription.deleteMany({ where: { email } })
+  log.info({ count }, 'alert subscriptions deleted (legacy email link)')
+}
+
+/**
+ * Token-based unsubscribe — the link embedded in every alert email from now
+ * on, so the reader's email never travels in a URL. The token's expiresAt
+ * applies only to CONFIRMATION; an unsubscribe link must work forever, so
+ * expiry is deliberately ignored here. Deletes every subscription for the
+ * reader (opt-out means full removal). Idempotent: an unknown/already-used
+ * token is a no-op.
+ */
+export async function unsubscribeByToken(token: string): Promise<boolean> {
+  const sub = await prisma.alertSubscription.findUnique({ where: { token } })
+  if (!sub) return false
+  const { count } = await prisma.alertSubscription.deleteMany({ where: { email: sub.email } })
+  log.info({ count }, 'alert subscriptions deleted (token link)')
+  return true
 }
 
 // ---------------------------------------------------------------------------
@@ -106,6 +128,7 @@ export async function sendDailyAlerts(): Promise<void> {
       slug: true,
       summary: true,
       imageUrl: true,
+      sourceUrl: true,
       datePublished: true,
       issue: { select: { name: true, slug: true } },
       feed: { select: { title: true, displayTitle: true } },
@@ -139,7 +162,7 @@ export async function sendDailyAlerts(): Promise<void> {
     if (matched.length === 0) { skipped++; continue }
 
     try {
-      await sendAlertEmail(sub.email, sub.topics, matched)
+      await sendAlertEmail(sub.email, sub.token, sub.topics, matched)
       sent++
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
@@ -196,19 +219,23 @@ type StorySnippet = {
   title: string | null
   slug:  string | null
   imageUrl: string | null
+  sourceUrl: string
   datePublished: Date | null
   issue: { name: string; slug: string } | null
   feed: { title: string; displayTitle: string | null } | null
 }
 
-async function sendAlertEmail(email: string, topics: string[], stories: StorySnippet[]): Promise<void> {
-  const unsubUrl  = `${CLIENT_URL}/alertas?unsubscribe=${encodeURIComponent(email)}`
+async function sendAlertEmail(email: string, token: string, topics: string[], stories: StorySnippet[]): Promise<void> {
+  // Token-based link: the reader's email must not travel in URLs (it leaks
+  // into logs and referrers). The legacy ?unsubscribe=<email> path stays
+  // supported server-side for links already delivered.
+  const unsubUrl  = `${CLIENT_URL}/alertas?unsubscribe_token=${token}`
   const topicList = topics.join(', ')
 
   const storyItems = stories.map((s) => {
     const url   = `${CLIENT_URL}/stories/${s.slug}`
     const date  = s.datePublished ? new Date(s.datePublished).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }) : ''
-    const src   = s.feed?.displayTitle ?? s.feed?.title ?? ''
+    const src   = publisherFromUrl(s.sourceUrl, s.feed?.displayTitle ?? s.feed?.title)
     return `
       <tr><td style="padding:12px 0;border-bottom:1px solid #f5f5f5;">
         <a href="${url}" style="font-size:14px;font-weight:600;color:#171717;text-decoration:none;display:block;margin-bottom:4px;">${s.title ?? ''}</a>

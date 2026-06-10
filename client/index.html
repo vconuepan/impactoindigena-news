@@ -41,10 +41,10 @@
     }
     </script>
     <!-- Google Fonts: Fraunces (display) + DM Sans (UI) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap" as="style" />
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap" rel="stylesheet" />
+    <!-- Fraunces + DM Sans are self-hosted (@font-face in index.css) — no
+         third-party font CDNs: reader IPs stay private (Ley 21.719 posture). -->
+    <link rel="preload" href="/fonts/Fraunces/fraunces-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/DMSans/dmsans-normal-latin.woff2" as="font" type="font/woff2" crossorigin />
     <!-- Preload critical self-hosted fonts -->
     <link
       rel="preload"

@@ -27,9 +27,14 @@ const subscribeSchema = z.object({
   topics: z.array(z.string().min(1).max(100)).min(1).max(20),
 })
 
-const unsubscribeSchema = z.object({
-  email: z.string().email().max(255),
-})
+// Token is the current unsubscribe mechanism (no email in URLs); the email
+// variant remains for legacy links already delivered in inboxes.
+const unsubscribeSchema = z
+  .object({
+    email: z.string().email().max(255).optional(),
+    token: z.string().uuid().optional(),
+  })
+  .refine((d) => Boolean(d.email || d.token), { message: 'email or token required' })
 
 router.post('/subscribe', alertLimiter, validateBody(subscribeSchema), async (req, res) => {
   try {
@@ -67,7 +72,13 @@ router.get('/confirm', async (req, res) => {
 
 router.post('/unsubscribe', validateBody(unsubscribeSchema), async (req, res) => {
   try {
-    await alertsService.unsubscribeFromAlerts(req.body.email)
+    if (req.body.token) {
+      // Idempotent: an unknown or already-used token still answers success —
+      // no oracle for probing tokens, and double-clicks just work.
+      await alertsService.unsubscribeByToken(req.body.token)
+    } else {
+      await alertsService.unsubscribeFromAlerts(req.body.email)
+    }
     res.json({ success: true })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)

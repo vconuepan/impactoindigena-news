@@ -1,6 +1,18 @@
 {
   "routes": [
     {
+      "route": "/assets/*",
+      "headers": {
+        "Cache-Control": "public, max-age=31536000, immutable"
+      }
+    },
+    {
+      "route": "/fonts/*",
+      "headers": {
+        "Cache-Control": "public, max-age=2592000"
+      }
+    },
+    {
       "route": "/stories/*",
       "rewrite": "/api/og/story-html"
     },
@@ -15,7 +27,14 @@
   ],
   "navigationFallback": {
     "rewrite": "/index.html",
-    "exclude": ["/assets/*", "/images/*", "/*.png", "/*.ico", "/*.xml", "/*.txt"]
+    "exclude": [
+      "/assets/*",
+      "/images/*",
+      "/*.png",
+      "/*.ico",
+      "/*.xml",
+      "/*.txt"
+    ]
   },
   "globalHeaders": {
     "X-Content-Type-Options": "nosniff",

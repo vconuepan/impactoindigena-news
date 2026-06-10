@@ -10,7 +10,7 @@
  */
 import axios from 'axios'
 
-const API = 'https://vocesindigenas-backend.onrender.com'
+const API = 'https://impactoindigena.news'
 const JOBS = ['preassess_stories', 'assess_stories', 'publish_stories']
 
 const [, , email, password] = process.argv

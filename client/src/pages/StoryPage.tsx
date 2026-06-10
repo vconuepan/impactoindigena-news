@@ -19,6 +19,7 @@ import ReadingProgress from '../components/ReadingProgress'
 import { SEO, CommonOgTags } from '../lib/seo'
 import { buildArticleSchema, buildBreadcrumbSchema } from '../lib/structured-data'
 import { ECOSYSTEM_AI_URL } from '../config'
+import { publisherFromUrl } from '@shared/utils/publisher'
 
 // ---------------------------------------------------------------------------
 // Guide links shown below related stories for specific issue areas
@@ -229,9 +230,14 @@ export default function StoryPage() {
                 <time dateTime={displayDate}>{dateStr}</time>
                 <span className="text-neutral-300" aria-hidden="true">·</span>
                 <span className="inline-flex items-center gap-1.5">
-                  <FeedFavicon feedId={story.feed.id} />
+                  {/* Real outlet derived from sourceUrl (discovery feeds say
+                      "Google News"); the feed favicon only makes sense when
+                      the shown name IS the feed. */}
+                  {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title) === (story.feed.displayTitle || story.feed.title) && (
+                    <FeedFavicon feedId={story.feed.id} />
+                  )}
                   <span className="text-neutral-600">
-                    {story.feed.displayTitle || story.feed.title}
+                    {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title)}
                   </span>
                 </span>
                 <span className="text-neutral-300" aria-hidden="true">·</span>
