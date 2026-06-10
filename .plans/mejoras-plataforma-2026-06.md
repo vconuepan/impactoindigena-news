@@ -38,7 +38,7 @@
 > **Eng review 2026-06-10:** alcance reorganizado en 4 OLAS shippeables (D1).
 > T1, T2, T3 ya fueron implementados y verificados en producción (commits af1e0fa, 0765b81).
 >
-> **OLA 1 (próxima)** = T4, T5, T8, T10, B1, B2, B3, B5, B6 — especificaciones refinadas abajo.
+> **OLA 1 ✅ COMPLETADA (2026-06-10, commit 2dbc008)** = T4, T5, T8, T10, B1, B2, B3, B5, B6 + E1 — verificada en producción: 0 fonts.googleapis, 0 cookies para lectores anónimos (afinidad ARR desactivada), assets immutable, medio real visible (globalnews.ca), hero de privacidad exacto, API_URL seteada en Azure + defaults corregidos (el bug de emails→Render muerto ERA real), LLM_PROVIDER=azure verificado, render.yaml eliminado, 72 tests verdes (12 nuevos).
 > **OLA 2** = N1 (About 3 actos + Methodology + footer) + T6 + T7 + N2 (keywords vertical jurídico).
 > **OLA 3** = N3 (3 páginas evergreen). **OLA 4** = N4 (clasificador + migración) + B4 + T9.
 >
@@ -70,25 +70,25 @@ Workstream A — Rendimiento y experiencia:
   - Surfaced by: Pass 7 + auditoría legal (hotlink = flanco copyright)
   - Files: `server/src/jobs/publishStories.ts`, `client/src/pages/StoryPage.tsx`, `client/src/components/StoryCard.tsx`, Términos §5
   - Verify: img src apunta a R2 propio; etiqueta visible
-- [ ] **T4 (P2, CC: ~30min)** — fuentes — Self-hostear Fraunces + DM Sans; quitar fonts.googleapis.com; actualizar DESIGN.md
+- [x] **T4 (P2, CC: ~30min)** — fuentes — Self-hostear Fraunces + DM Sans; quitar fonts.googleapis.com; actualizar DESIGN.md
   - Verify: `curl -s https://impactoindigena.news/ | grep -c fonts.googleapis` == 0
-- [ ] **T5 (P2, CC: ~30min)** — atribución — Mostrar medio real (dominio de sourceUrl) en noticias descubiertas vía Google News
+- [x] **T5 (P2, CC: ~30min)** — atribución — Mostrar medio real (dominio de sourceUrl) en noticias descubiertas vía Google News
   - Files: `server/src/jobs/googleNewsDiscover.ts`, componentes de fuente en client
 - [ ] **T6 (P2, CC: ~30min)** — conversión — Bloque de suscripción al final del artículo (estilo DESIGN.md, acento terracota)
   - Surfaced by: Pass 3 — CTA fuera del flujo de lectura
 - [ ] **T7 (P3, CC: ~20min)** — footer — Podar ~25 enlaces a grupos curados (principio de sustracción)
-- [ ] **T8 (P3, CC: ~15min)** — i18n — Default de UI en español (contenido es es; UI en inglés solo con toggle explícito)
+- [x] **T8 (P3, CC: ~15min)** — i18n — Default de UI en español (contenido es es; UI en inglés solo con toggle explícito)
 - [ ] **T9 (P3, CC: ~30min)** — estados — Auditar/diseñar estados de error y vacío de home y noticia (API caída)
-- [ ] **T10 (P3, CC: ~15min)** — caching — Revisar cache-control (hoy max-age=30) tras arreglar prerender
+- [x] **T10 (P3, CC: ~15min)** — caching — Revisar cache-control (hoy max-age=30) tras arreglar prerender
 
 Workstream B — Cumplimiento (de la auditoría de políticas, pendiente de orden de ejecución):
 
-- [ ] **B1 (P1)** — Borrado/anonimización real del email al darse de baja de alertas (hoy soft-delete) — `server/src/services/alerts.ts`
-- [ ] **B2 (P1)** — Tope técnico de longitud a la cita (schema `.max()` + prompt) — `server/src/schemas/llm.ts`, `server/src/prompts/assess.ts`
-- [ ] **B3 (P2)** — Declarar cookies técnicas de Azure (ARRAffinity) en /cookies y la consulta de búsqueda enviada a OpenAI en /privacy
+- [x] **B1 (P1)** — Borrado/anonimización real del email al darse de baja de alertas (hoy soft-delete) — `server/src/services/alerts.ts`
+- [x] **B2 (P1)** — Tope técnico de longitud a la cita (schema `.max()` + prompt) — `server/src/schemas/llm.ts`, `server/src/prompts/assess.ts`
+- [x] **B3 (P2)** — Declarar cookies técnicas de Azure (ARRAffinity) en /cookies y la consulta de búsqueda enviada a OpenAI en /privacy
 - [ ] **B4 (P2)** — `member_email` → httpOnly o eliminarla — `server/src/routes/auth-public.ts`
-- [ ] **B5 (P2)** — Alinear hero de /privacy («nada se almacena») con la realidad de localStorage
-- [ ] **B6 (P2)** — Verificar proveedor LLM real en Azure y alinear tabla de encargados; limpiar `render.yaml` legado
+- [x] **B5 (P2)** — Alinear hero de /privacy («nada se almacena») con la realidad de localStorage
+- [x] **B6 (P2)** — Verificar proveedor LLM real en Azure y alinear tabla de encargados; limpiar `render.yaml` legado
 
 ## NOT in scope (diferido con razón)
 
