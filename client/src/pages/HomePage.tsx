@@ -273,7 +273,7 @@ export default function HomePage() {
   const { t } = useTranslation()
   const { positivity } = usePositivity()
   // Single API call — both emotion buckets per issue, mixed client-side
-  const { data, isLoading } = useHomepageData()
+  const { data, isLoading, isError } = useHomepageData()
 
   const issues = data?.issues ?? []
   const storiesByIssueBuckets = data?.storiesByIssue ?? {}
@@ -313,6 +313,16 @@ export default function HomePage() {
 
       {/* Casos en curso — editorial case groupings (renders only when active cases exist) */}
       <CasosSection cases={activeCases} />
+
+      {/* API error banner — visible when the data fetch fails */}
+      {!isLoading && isError && (
+        <div role="alert" className="page-section">
+          <div className="max-w-lg mx-auto text-center py-12">
+            <p className="text-lg font-semibold text-neutral-800 mb-2">{t('home.apiError')}</p>
+            <p className="text-neutral-500">{t('home.apiErrorDesc')}</p>
+          </div>
+        </div>
+      )}
 
       {/* Issue sections with rotating layouts */}
       <div className="page-section-wide md:-mt-14 min-h-screen">

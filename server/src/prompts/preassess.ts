@@ -1,4 +1,4 @@
-import { EMOTION_TAGS_PROMPT_BLOCK, formatIssuesBlock, formatArticlesBlock } from './shared.js'
+import { EMOTION_TAGS_PROMPT_BLOCK, NARRATIVE_FRAME_PROMPT_BLOCK, formatIssuesBlock, formatArticlesBlock } from './shared.js'
 import type { StoryForPrompt, IssueForPrompt } from './shared.js'
 
 // Re-export with legacy names for backwards compatibility
@@ -14,7 +14,7 @@ Eres un evaluador de relevancia que analiza artículos de noticias por su import
 </ROLE>
 
 <GOAL>
-Para cada artículo: clasíficalo en el tema más relevante, califica su relevancia en una escala del 1 al 10, y asígnale una etiqueta emocional.
+Para cada artículo: clasíficalo en el tema más relevante, califica su relevancia en una escala del 1 al 10, asígnale una etiqueta emocional y un encuadre narrativo.
 </GOAL>
 
 ${formatIssuesBlock(issues)}
@@ -54,6 +54,8 @@ Escala de calificación:
 </CRITERIOS DE CALIFICACION>
 
 ${EMOTION_TAGS_PROMPT_BLOCK}
+
+${NARRATIVE_FRAME_PROMPT_BLOCK}
 
 ${formatArticlesBlock(stories)}`
 }

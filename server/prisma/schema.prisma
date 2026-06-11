@@ -45,6 +45,12 @@ enum ContentStatus {
   published
 }
 
+enum NarrativeFrame {
+  confrontacion
+  resiliencia
+  protagonismo
+  alianza
+}
 
 // --- Core Tables ---
 
@@ -63,7 +69,8 @@ model Story {
   datePublished          DateTime?    @map("date_published")
   relevancePre           Int?         @map("relevance_pre")
   relevance              Int?
-  emotionTag             EmotionTag?  @map("emotion_tag")
+  emotionTag             EmotionTag?      @map("emotion_tag")
+  narrativeFrame         NarrativeFrame?  @map("narrative_frame")
   slug                   String?      @unique
   title                  String?
   titleLabel             String?      @map("title_label")

@@ -149,10 +149,10 @@ describe('Magic Link Auth', () => {
       const tokenCookie = cookies.find((c: string) => c.startsWith('member_token='))
       expect(tokenCookie).toBeTruthy()
       expect(tokenCookie).toContain('HttpOnly')
-      // member_email indicator cookie should also be set
-      const emailCookie = cookies.find((c: string) => c.startsWith('member_email='))
-      expect(emailCookie).toBeTruthy()
-      expect(emailCookie).not.toContain('HttpOnly')
+      // member_session opaque indicator cookie should also be set (non-httpOnly, value "1")
+      const sessionCookie = cookies.find((c: string) => c.startsWith('member_session='))
+      expect(sessionCookie).toBeTruthy()
+      expect(sessionCookie).not.toContain('HttpOnly')
     })
 
     it('marks magic link as used', async () => {

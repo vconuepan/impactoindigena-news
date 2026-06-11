@@ -63,7 +63,9 @@
     "newsFatigue": "Cansancio informativo"
   },
   "home": {
-    "noStories": "Aún no hay noticias publicadas. Vuelve pronto."
+    "noStories": "Aún no hay noticias publicadas. Vuelve pronto.",
+    "apiError": "El servicio está temporalmente no disponible",
+    "apiErrorDesc": "No podemos mostrar las noticias en este momento. Por favor recarga la página o intenta más tarde."
   },
   "issuePage": {
     "notFound": "Categoría no encontrada",
@@ -84,6 +86,8 @@
   "storyPage": {
     "notFound": "Noticia no encontrada",
     "notFoundDesc": "Esta noticia puede haber sido eliminada o aún no está publicada.",
+    "apiError": "No se pudo cargar la noticia",
+    "apiErrorDesc": "El servicio está temporalmente no disponible. Por favor recarga la página o intenta más tarde.",
     "backToHome": "← Volver al inicio",
     "originalArticle": "Artículo original",
     "generatedByAI": "Generado por IA",

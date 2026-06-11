@@ -51,6 +51,33 @@ export const EMOTION_TAG_SCHEMA_DESCRIPTION =
   'calm: neutral, mixto o ambiguamente positivo — usar como opción predeterminada.'
 
 // ---------------------------------------------------------------------------
+// Narrative frame definitions (single source of truth)
+// ---------------------------------------------------------------------------
+
+/**
+ * Prompt block for narrative frame guidance.
+ * Include in any prompt that asks the LLM to assign a narrative frame.
+ */
+export const NARRATIVE_FRAME_PROMPT_BLOCK = `<NARRATIVE FRAME>
+Use EXACTLY these Spanish values (the valid enum values are: confrontacion, resiliencia, protagonismo, alianza):
+- confrontacion: El artículo muestra a un pueblo o comunidad indígena en conflicto, disputa o resistencia frente al Estado, empresas u otros actores externos.
+- resiliencia: El artículo muestra cómo un pueblo o comunidad indígena supera adversidades, se recupera de traumas o preserva su cultura frente a presiones externas.
+- protagonismo: El artículo muestra a un pueblo o comunidad indígena como agente activo que lidera, innova, negocia o decide su propio futuro.
+- alianza: El artículo muestra cooperación, acuerdos, alianzas o diálogos entre pueblos indígenas y otros actores (Estado, empresas, sociedad civil, academia).
+If the story scores 1-2 (not about indigenous peoples), use the frame that best approximates the article's content.
+</NARRATIVE FRAME>`
+
+/**
+ * Compact description for Zod schema .describe() calls.
+ */
+export const NARRATIVE_FRAME_SCHEMA_DESCRIPTION =
+  'Narrative frame — must be EXACTLY one of: confrontacion, resiliencia, protagonismo, alianza. ' +
+  'confrontacion: conflicto o resistencia frente a actores externos. ' +
+  'resiliencia: superación de adversidades o preservación cultural. ' +
+  'protagonismo: liderazgo activo, innovación o autodeterminación. ' +
+  'alianza: cooperación, acuerdos o diálogos con actores externos.'
+
+// ---------------------------------------------------------------------------
 // Shared prompt building blocks
 // ---------------------------------------------------------------------------
 

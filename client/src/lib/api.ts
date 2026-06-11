@@ -98,8 +98,8 @@ export interface HomepageData {
 
 // --- Member auth helpers ---
 // Auth is cookie-based: the httpOnly `member_token` cookie carries the JWT (set by the
-// magic-link verify endpoint). The non-httpOnly `member_email` cookie is an indicator
-// that JS can read to know whether a session exists — it contains no sensitive data.
+// magic-link verify endpoint). The non-httpOnly `member_session=1` cookie is an opaque
+// boolean indicator that JS can read to know whether a session exists.
 
 function getCookieValue(name: string): string | null {
   if (typeof document === 'undefined') return null
@@ -108,25 +108,21 @@ function getCookieValue(name: string): string | null {
 }
 
 export const memberAuth = {
-  /** Email of the authenticated member, or null if not authenticated */
+  /** @deprecated Email is no longer stored in cookies — always returns null */
   getEmail(): string | null {
-    try {
-      return getCookieValue('member_email')
-    } catch {
-      return null
-    }
+    return null
   },
   isAuthenticated(): boolean {
     try {
-      return !!getCookieValue('member_email')
+      return !!getCookieValue('member_session')
     } catch {
       return false
     }
   },
-  /** Clear the indicator cookie client-side and call the logout endpoint to clear httpOnly cookie */
+  /** Clear the session indicator cookie client-side and call the logout endpoint to clear httpOnly cookie */
   async logout(): Promise<void> {
     try {
-      document.cookie = 'member_email=; Max-Age=0; path=/; SameSite=None; Secure'
+      document.cookie = 'member_session=; Max-Age=0; path=/; SameSite=None; Secure'
       await fetch(`${API_BASE}/auth/magic/logout`, { method: 'POST', credentials: 'include' })
     } catch {
       // best-effort

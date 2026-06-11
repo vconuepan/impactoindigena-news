@@ -21,6 +21,7 @@ import { SEO, CommonOgTags } from '../lib/seo'
 import { buildArticleSchema, buildBreadcrumbSchema } from '../lib/structured-data'
 import { ECOSYSTEM_AI_URL } from '../config'
 import { publisherFromUrl } from '@shared/utils/publisher'
+import { ApiError } from '../lib/api'
 
 // ---------------------------------------------------------------------------
 // Newsletter CTA — shown after article body, before related stories
@@ -143,11 +144,14 @@ export default function StoryPage() {
   }
 
   if (error || !story) {
+    const is404 = !story || (error instanceof ApiError && error.status === 404)
     return (
-      <div className="page-section text-center">
-        <h1 className="page-title">{t('storyPage.notFound')}</h1>
+      <div className="page-section text-center max-w-lg mx-auto">
+        <h1 className="page-title">
+          {is404 ? t('storyPage.notFound') : t('storyPage.apiError')}
+        </h1>
         <p className="text-neutral-500 mb-6">
-          {t('storyPage.notFoundDesc')}
+          {is404 ? t('storyPage.notFoundDesc') : t('storyPage.apiErrorDesc')}
         </p>
         <Link
           to="/"

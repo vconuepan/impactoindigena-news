@@ -2,7 +2,7 @@ import { HumanMessage } from '@langchain/core/messages'
 import type { ChatOpenAI } from '@langchain/openai'
 import type { z } from 'zod'
 import prisma from '../lib/prisma.js'
-import { EmotionTag, Prisma } from '@prisma/client'
+import { EmotionTag, NarrativeFrame, Prisma } from '@prisma/client'
 import { config } from '../config.js'
 import { Semaphore } from '../lib/semaphore.js'
 import { splitIntoGroups } from '../lib/utils.js'
@@ -35,7 +35,7 @@ function getGuidelines(issue: { promptFactors: string; promptAntifactors: string
 
 // --- Shared batch classification helper ---
 
-interface BatchClassificationOptions<T extends { articleId: string; issueSlug: string; emotionTag: string }> {
+interface BatchClassificationOptions<T extends { articleId: string; issueSlug: string; emotionTag: string; narrativeFrame: string }> {
   storyIds: string[]
   llm: ChatOpenAI
   schema: z.ZodType<{ articles: T[] }>
@@ -49,7 +49,7 @@ interface BatchClassificationOptions<T extends { articleId: string; issueSlug: s
   label: string
 }
 
-async function runBatchClassification<T extends { articleId: string; issueSlug: string; emotionTag: string }>(
+async function runBatchClassification<T extends { articleId: string; issueSlug: string; emotionTag: string; narrativeFrame: string }>(
   options: BatchClassificationOptions<T>,
 ): Promise<{ storyId: string; item: T }[]> {
   const { storyIds, llm, schema, buildPrompt, buildUpdate, fallbackToFeedIssue = true, onProgress, batchSize, concurrency, label } = options
@@ -176,7 +176,7 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
 export async function preAssessStories(
   storyIds: string[],
   onProgress?: ProgressCallback,
-): Promise<{ storyId: string; rating: number; emotionTag: string }[]> {
+): Promise<{ storyId: string; rating: number; emotionTag: string; narrativeFrame: string }[]> {
   const results = await runBatchClassification({
     storyIds,
     llm: getMediumLLM(),
@@ -186,6 +186,7 @@ export async function preAssessStories(
       issueId,
       relevancePre: Math.max(1, item.rating), // clamp: model may return 0 for very low relevance
       emotionTag: item.emotionTag as EmotionTag,
+      narrativeFrame: item.narrativeFrame as NarrativeFrame,
       status: 'pre_analyzed',
     }),
     onProgress,
@@ -198,6 +199,7 @@ export async function preAssessStories(
     storyId: r.storyId,
     rating: r.item.rating,
     emotionTag: r.item.emotionTag,
+    narrativeFrame: r.item.narrativeFrame,
   }))
 }
 
@@ -206,7 +208,7 @@ export async function preAssessStories(
 export async function reclassifyStories(
   storyIds: string[],
   onProgress?: ProgressCallback,
-): Promise<{ storyId: string; emotionTag: string }[]> {
+): Promise<{ storyId: string; emotionTag: string; narrativeFrame: string }[]> {
   const results = await runBatchClassification({
     storyIds,
     llm: getSmallLLM(),
@@ -215,6 +217,7 @@ export async function reclassifyStories(
     buildUpdate: (item, issueId) => ({
       issueId,
       emotionTag: item.emotionTag as EmotionTag,
+      narrativeFrame: item.narrativeFrame as NarrativeFrame,
     }),
     fallbackToFeedIssue: false,
     onProgress,
@@ -226,6 +229,7 @@ export async function reclassifyStories(
   return results.map(r => ({
     storyId: r.storyId,
     emotionTag: r.item.emotionTag,
+    narrativeFrame: r.item.narrativeFrame,
   }))
 }
 
@@ -234,7 +238,7 @@ export async function reclassifyStories(
 export async function tagEmotionOnly(
   storyIds: string[],
   onProgress?: ProgressCallback,
-): Promise<{ storyId: string; emotionTag: string }[]> {
+): Promise<{ storyId: string; emotionTag: string; narrativeFrame: string }[]> {
   const results = await runBatchClassification({
     storyIds,
     llm: getSmallLLM(),
@@ -242,6 +246,7 @@ export async function tagEmotionOnly(
     buildPrompt: buildEmotionTagPrompt,
     buildUpdate: (item) => ({
       emotionTag: item.emotionTag as EmotionTag,
+      narrativeFrame: item.narrativeFrame as NarrativeFrame,
     }),
     fallbackToFeedIssue: false,
     onProgress,
@@ -253,6 +258,7 @@ export async function tagEmotionOnly(
   return results.map(r => ({
     storyId: r.storyId,
     emotionTag: r.item.emotionTag,
+    narrativeFrame: r.item.narrativeFrame,
   }))
 }
 

@@ -1,9 +1,13 @@
 import { z } from "zod";
-import { EMOTION_TAG_SCHEMA_DESCRIPTION } from "../prompts/shared.js";
+import { EMOTION_TAG_SCHEMA_DESCRIPTION, NARRATIVE_FRAME_SCHEMA_DESCRIPTION } from "../prompts/shared.js";
 
 const EMOTION_TAG_SCHEMA = z
   .enum(["uplifting", "frustrating", "scary", "calm"])
   .describe(EMOTION_TAG_SCHEMA_DESCRIPTION);
+
+const NARRATIVE_FRAME_SCHEMA = z
+  .enum(["confrontacion", "resiliencia", "protagonismo", "alianza"])
+  .describe(NARRATIVE_FRAME_SCHEMA_DESCRIPTION);
 
 export const preAssessItemSchema = z.object({
   articleId: z
@@ -21,6 +25,7 @@ export const preAssessItemSchema = z.object({
       "Conservative relevance rating 1-10 as per the <RATING GUIDELINES>. Minimum value is 1 — never use 0."
     ),
   emotionTag: EMOTION_TAG_SCHEMA,
+  narrativeFrame: NARRATIVE_FRAME_SCHEMA,
 });
 
 export const preAssessResultSchema = z.object({
@@ -169,6 +174,7 @@ export const reclassifyItemSchema = z.object({
     .string()
     .describe("The slug of the most relevant issue from the <ISSUES> list"),
   emotionTag: EMOTION_TAG_SCHEMA,
+  narrativeFrame: NARRATIVE_FRAME_SCHEMA,
 });
 
 export const reclassifyResultSchema = z.object({

@@ -22,7 +22,7 @@ export async function runPreassessStories(): Promise<void> {
     log.info({ completed: results.length, total: ids.length, pass }, 'pre-assessment pass finished')
 
     for (const r of results) {
-      log.info({ storyId: r.storyId, rating: r.rating, emotionTag: r.emotionTag }, 'pre-assessed')
+      log.info({ storyId: r.storyId, rating: r.rating, emotionTag: r.emotionTag, narrativeFrame: r.narrativeFrame }, 'pre-assessed')
     }
 
     // If this pass made no progress, stop to avoid a tight loop on persistent failures

@@ -22,8 +22,8 @@ const MEMBER_TOKEN_COOKIE_OPTS = {
   path: '/',
 }
 
-/** Cookie options for the readable indicator (email only — not sensitive) */
-const MEMBER_EMAIL_COOKIE_OPTS = {
+/** Cookie options for the opaque session indicator (value is always "1") */
+const MEMBER_SESSION_COOKIE_OPTS = {
   httpOnly: false,
   secure: process.env.NODE_ENV !== 'development',
   sameSite: 'none' as const,
@@ -177,8 +177,8 @@ router.get('/magic/verify', async (req, res) => {
     // Issue long-lived member token as httpOnly cookie (never exposed in URL)
     const memberToken = generateMemberToken(user)
     res.cookie('member_token', memberToken, MEMBER_TOKEN_COOKIE_OPTS)
-    // Non-httpOnly indicator so the frontend can detect auth state without an API call
-    res.cookie('member_email', user.email, MEMBER_EMAIL_COOKIE_OPTS)
+    // Non-httpOnly opaque indicator so the frontend can detect auth state without an API call
+    res.cookie('member_session', '1', MEMBER_SESSION_COOKIE_OPTS)
 
     // Strip header-injection characters (CR, LF, NUL) before building the redirect URL.
     // CLIENT_URL prefix already prevents cross-origin open redirect.
@@ -240,7 +240,7 @@ router.post('/magic/resend', magicLinkLimiter, async (req, res) => {
 // POST /api/auth/magic/logout — clear member cookies
 router.post('/magic/logout', (req, res) => {
   res.clearCookie('member_token', { ...MEMBER_TOKEN_COOKIE_OPTS, maxAge: 0 })
-  res.clearCookie('member_email', { ...MEMBER_EMAIL_COOKIE_OPTS, maxAge: 0 })
+  res.clearCookie('member_session', { ...MEMBER_SESSION_COOKIE_OPTS, maxAge: 0 })
   res.status(204).end()
 })
 

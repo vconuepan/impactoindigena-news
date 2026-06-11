@@ -1,4 +1,4 @@
-import { EMOTION_TAGS_PROMPT_BLOCK, formatArticlesBlock } from './shared.js'
+import { EMOTION_TAGS_PROMPT_BLOCK, NARRATIVE_FRAME_PROMPT_BLOCK, formatArticlesBlock } from './shared.js'
 import type { StoryForPreassess, IssueForPreassess } from './preassess.js'
 
 /**
@@ -17,16 +17,18 @@ export function buildEmotionTagPrompt(
   const fallbackSlug = issues[0]?.slug ?? 'unknown'
 
   return `<ROLE>
-You are an emotion classifier analyzing news articles.
+You are a classifier analyzing news articles.
 </ROLE>
 
 <GOAL>
-For each article: assign an emotion tag based on how the article affects readers.
+For each article: assign an emotion tag and a narrative frame.
 Use issue slug "${fallbackSlug}" for all articles (issue classification is not needed).
 Do not rate the articles.
 </GOAL>
 
 ${EMOTION_TAGS_PROMPT_BLOCK}
+
+${NARRATIVE_FRAME_PROMPT_BLOCK}
 
 ${formatArticlesBlock(stories)}`
 }
