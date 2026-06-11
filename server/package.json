@@ -27,6 +27,8 @@
     "migration:backfill-relevance-summary:test": "tsx src/scripts/migrations/backfill-relevance-summary.ts --test",
     "migration:backfill-emotion-tag": "tsx src/scripts/migrations/backfill-emotion-tag.ts",
     "migration:backfill-emotion-tag:test": "tsx src/scripts/migrations/backfill-emotion-tag.ts --test",
+    "migration:backfill-narrative-frame": "tsx src/scripts/migrations/backfill-narrative-frame.ts",
+    "migration:backfill-narrative-frame:test": "tsx src/scripts/migrations/backfill-narrative-frame.ts --test",
     "migration:backfill-embeddings": "tsx src/scripts/migrations/backfill-embeddings.ts",
     "migration:backfill-embeddings:test": "tsx src/scripts/migrations/backfill-embeddings.ts --test",
     "migration:backfill-old-story-titles": "tsx src/scripts/migrations/backfill-old-story-titles.ts",
