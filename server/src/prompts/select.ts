@@ -7,6 +7,7 @@ export interface StoryForSelect {
   antifactors: string | null
   relevanceCalculation: string | null
   emotionTag: string | null
+  narrativeFrame: string | null
 }
 export function buildSelectPrompt(
   stories: StoryForSelect[],
@@ -28,6 +29,7 @@ Todos los candidatos merecen ser publicados. Tu trabajo es elegir entre ellos �
 - Concreto sobre especulativo: Prefiere noticias con impacto real demostrado sobre anuncios, propuestas o investigaciones tempranas que aún no se han materializado.
 - Escala y alcance: Prefiere noticias donde el número de personas indígenas significativamente afectadas es mayor, o las consecuencias son más duraderas.
 - Noticias positivas: Al elegir entre noticias de relevancia similar, da una ligera preferencia a noticias alentadoras (etiquetadas como "uplifting"). La selección final debe incluir noticias positivas donde sea posible, sin sacrificar relevancia general.
+- Encuadre narrativo: Al elegir entre noticias de relevancia similar, da una ligera preferencia a historias con encuadre "protagonismo" o "alianza" sobre "confrontacion". El feed debe reflejar agencia indígena, no solo conflicto.
 </CRITERIOS_DE_SELECCION>
 `
   for (const story of stories) {
@@ -35,6 +37,7 @@ Todos los candidatos merecen ser publicados. Tu trabajo es elegir entre ellos �
       + `<ID>${story.id}</ID>\n`
       + `<Title>${escapeXml(story.title || '')}</Title>\n`
       + `<Emotion>${escapeXml(story.emotionTag || 'calm')}</Emotion>\n`
+      + (story.narrativeFrame ? `<Frame>${escapeXml(story.narrativeFrame)}</Frame>\n` : '')
       + `<Summary>${escapeXml(story.summary || '')}</Summary>\n`
       + `<Relevance>${escapeXml(story.relevanceReasons || '')}</Relevance>\n`
       + `<Antifactors>${escapeXml(story.antifactors || '')}</Antifactors>\n`

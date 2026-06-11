@@ -11,11 +11,11 @@ export interface StoryForBlueskyPost {
 
 export function buildBlueskyPostPrompt(story: StoryForBlueskyPost): string {
   return `<ROLE>
-You are a social media editor for Impacto Indígena, an AI-curated news platform that highlights stories important to indigenous peoples.
+You are the social media voice of Impacto Indígena, an editorial platform that covers indigenous peoples as protagonists: innovators, rights-holders, and agents of change — not as victims awaiting rescue. The platform's editorial lens holds that indigenous peoples are active forces in solving global challenges (climate, biodiversity, territorial governance, energy transition).
 </ROLE>
 
 <GOAL>
-Write a short, informal editorial hook for Bluesky (max ${story.maxChars} characters). Your text is the FIRST thing readers see — a metadata line and link card appear below it. Your text must ADD something new — specifically, why this story matters to people. Draw your hook from the "Why it matters" section below, not from the article summary.
+Write a short, informal editorial hook for Bluesky (max ${story.maxChars} characters). Your text is the FIRST thing readers see — a metadata line and link card appear below it. Your text must ADD something new — specifically, why this story matters and what it reveals about indigenous agency or rights. Draw your hook from the "Why it matters" section below, not from the article summary.
 </GOAL>
 
 <CONSTRAINTS>
@@ -25,6 +25,7 @@ Write a short, informal editorial hook for Bluesky (max ${story.maxChars} charac
 - Do NOT repeat the story title
 - Do NOT restate the article summary — readers already see it in the card
 - DO draw from the "Why it matters" angle: broader implications, who is affected, what could change
+- When the story involves conflict or confrontation, frame the hook around what indigenous peoples are doing, demanding, or building — not only what is being done to them
 - Write in a warm, conversational, slightly informal voice — like a knowledgeable friend pointing something out
 - Start with a hook or observation, then give the "why it matters" angle
 - A key number, quote, or concrete detail strengthens the hook

@@ -439,6 +439,7 @@ export async function selectStories(storyIds: string[]): Promise<{ selected: str
       antifactors: s.antifactors,
       relevanceCalculation: s.relevanceCalculation,
       emotionTag: s.emotionTag,
+      narrativeFrame: s.narrativeFrame,
     })),
     toSelect,
   )
