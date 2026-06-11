@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
-import { ArrowTopRightOnSquareIcon, TrashIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import { ArrowTopRightOnSquareIcon, TrashIcon, ArrowPathIcon, PencilIcon } from '@heroicons/react/24/outline'
 import { HeartIcon, ChatBubbleOvalLeftIcon } from '@heroicons/react/24/outline'
 import type { InstagramPost, InstagramPostStatus } from '@shared/types'
 import { adminApi } from '../../lib/admin-api'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorState } from '../../components/ui/ErrorState'
+import { InstagramDraftPanel } from '../../components/admin/InstagramDraftPanel'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { ActionIconButton } from '../../components/ui/ActionIconButton'
 import { useToast } from '../../components/ui/Toast'
@@ -38,6 +39,33 @@ export default function InstagramPage() {
   const [page, setPage] = useState(1)
   const queryClient = useQueryClient()
   const { toast } = useToast()
+
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [selectedDraft, setSelectedDraft] = useState<InstagramPost | null>(null)
+  const [publishing, setPublishing] = useState(false)
+  const igPollId = useRef<string | null>(null)
+
+  const handleOpenDraft = useCallback(async (post: InstagramPost) => {
+    setSelectedDraft(post)
+    setPanelOpen(true)
+    if (post.status === 'generating') {
+      igPollId.current = post.id
+      const poll = async (attempt = 0): Promise<void> => {
+        if (igPollId.current !== post.id) return
+        if (attempt > 72) { toast('error', 'La generación tardó demasiado. Reintenta.'); return }
+        await new Promise((r) => setTimeout(r, 5000))
+        if (igPollId.current !== post.id) return
+        try {
+          const updated = await adminApi.instagram.getPost(post.id) as InstagramPost
+          if (igPollId.current !== post.id) return
+          setSelectedDraft(updated)
+          if (updated.status === 'generating') return poll(attempt + 1)
+          if (updated.status === 'failed') toast('error', updated.error || 'Falló la generación del carrusel')
+        } catch { return poll(attempt + 1) }
+      }
+      void poll()
+    }
+  }, [toast])
 
   const query = useQuery({
     queryKey: ['instagramPosts', filter, page],
@@ -101,6 +129,55 @@ export default function InstagramPage() {
       <Helmet>
         <title>Instagram — Admin — Impacto Indígena</title>
       </Helmet>
+
+      <InstagramDraftPanel
+        open={panelOpen}
+        onClose={() => { igPollId.current = null; setPanelOpen(false); setSelectedDraft(null) }}
+        draft={selectedDraft}
+        publishing={publishing}
+        onPublish={async (postId) => {
+          setPublishing(true)
+          igPollId.current = postId
+          try {
+            await adminApi.instagram.publishPost(postId)
+            const poll = async (attempt = 0): Promise<'published' | 'failed' | 'timeout'> => {
+              if (igPollId.current !== postId) return 'timeout'
+              await new Promise((r) => setTimeout(r, 4000))
+              if (igPollId.current !== postId) return 'timeout'
+              try {
+                const updated = await adminApi.instagram.getPost(postId) as InstagramPost
+                if (updated.status === 'publishing') return attempt > 30 ? 'timeout' : poll(attempt + 1)
+                return updated.status === 'published' ? 'published' : 'failed'
+              } catch { return attempt > 30 ? 'timeout' : poll(attempt + 1) }
+            }
+            const outcome = await poll()
+            if (outcome === 'published') {
+              toast('success', 'Publicado en Instagram')
+              setPanelOpen(false)
+              setSelectedDraft(null)
+              queryClient.invalidateQueries({ queryKey: ['instagramPosts'] })
+            } else if (outcome === 'failed') {
+              const p = await adminApi.instagram.getPost(postId).catch(() => null) as InstagramPost | null
+              toast('error', p?.error || 'Error al publicar en Instagram')
+            } else {
+              toast('error', 'La publicación sigue en curso. Revisa el estado en unos segundos.')
+            }
+          } catch (err) {
+            toast('error', err instanceof Error ? err.message : 'Error al publicar')
+          } finally {
+            setPublishing(false)
+          }
+        }}
+        onUpdate={async (postId, caption) => {
+          await adminApi.instagram.updateDraft(postId, caption)
+        }}
+        onDelete={async (postId) => {
+          await adminApi.instagram.deletePost(postId)
+          setPanelOpen(false)
+          setSelectedDraft(null)
+          queryClient.invalidateQueries({ queryKey: ['instagramPosts'] })
+        }}
+      />
 
       <PageHeader
         title="Instagram"
@@ -198,6 +275,7 @@ export default function InstagramPage() {
                     key={post.id}
                     post={post}
                     onDelete={handleDelete}
+                    onOpen={handleOpenDraft}
                     isDeleting={deleteMutation.isPending && deleteMutation.variables === post.id}
                   />
                 ))}
@@ -238,10 +316,12 @@ export default function InstagramPage() {
 function PostRow({
   post,
   onDelete,
+  onOpen,
   isDeleting,
 }: {
   post: InstagramPost
   onDelete: (post: InstagramPost) => void
+  onOpen: (post: InstagramPost) => void
   isDeleting: boolean
 }) {
   const storyTitle = post.story?.title ?? post.story?.titleLabel ?? '—'
@@ -321,6 +401,13 @@ function PostRow({
       {/* Actions */}
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
+          {(post.status === 'draft' || post.status === 'generating' || post.status === 'failed') && (
+            <ActionIconButton
+              icon={PencilIcon}
+              label="Editar/Publicar"
+              onClick={() => onOpen(post)}
+            />
+          )}
           {post.permalink && (
             <a
               href={post.permalink}

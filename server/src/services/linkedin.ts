@@ -27,11 +27,20 @@ export async function generateDraft(storyId: string) {
   if (!story) throw new Error('Story not found')
   if (!story.title) throw new Error('Story must be fully analyzed')
 
-  // Prevent duplicate posts
+  // If a draft already exists, return it so the panel reopens seamlessly.
+  // If it failed, delete it and regenerate. Published posts block re-generation.
   const existingPost = await prisma.linkedInPost.findFirst({
     where: { storyId },
+    include: { story: { include: { feed: true, issue: true } } },
   })
-  if (existingPost) throw new Error('Story already has a LinkedIn post')
+  if (existingPost) {
+    if (existingPost.status === 'draft') return existingPost
+    if (existingPost.status === 'failed') {
+      await prisma.linkedInPost.delete({ where: { id: existingPost.id } })
+    } else {
+      throw new Error('Story already has a LinkedIn post')
+    }
+  }
 
   await rateLimitDelay()
   const llm = getMediumLLM()
@@ -188,7 +197,7 @@ export async function publishPost(postId: string) {
   })
 
   if (!post) throw new Error('Post not found')
-  if (post.status !== 'draft') throw new Error('Can only publish draft posts')
+  if (post.status !== 'draft' && post.status !== 'failed') throw new Error('Can only publish draft posts')
 
   const story = post.story
   const storyUrl = `https://impactoindigena.news/stories/${story.slug}`

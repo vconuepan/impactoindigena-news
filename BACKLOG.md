@@ -6,7 +6,6 @@
 
 ## Infraestructura
 
-- Render services cleanup: eliminar `vocesindigenas-frontend` y `vocesindigenas-backend` de Render (migración a Azure completada 2026-05)
 - AZURE_IMAGE_API_KEY: rotar (fue expuesta en output de CLI)
 - LinkedIn Community Management API: formulario enviado, esperando aprobación de Microsoft Vetting
 

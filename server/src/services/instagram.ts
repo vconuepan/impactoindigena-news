@@ -27,11 +27,20 @@ export async function generateDraft(storyId: string) {
   if (!story) throw new Error('Story not found')
   if (!story.title) throw new Error('Story must be fully analyzed')
 
-  // Prevenir posts duplicados
+  // If a draft (or still-generating) post exists, return it so the panel
+  // reopens seamlessly. If it failed, delete and regenerate. Published blocks.
   const existingPost = await prisma.instagramPost.findFirst({
     where: { storyId },
+    include: { story: { include: { feed: true, issue: true } } },
   })
-  if (existingPost) throw new Error('Story already has an Instagram post')
+  if (existingPost) {
+    if (existingPost.status === 'draft' || existingPost.status === 'generating') return existingPost
+    if (existingPost.status === 'failed') {
+      await prisma.instagramPost.delete({ where: { id: existingPost.id } })
+    } else {
+      throw new Error('Story already has an Instagram post')
+    }
+  }
 
   // Create the record immediately in a 'generating' state and return it right
   // away. The heavy work (LLM caption, AI cover ~3 min, carousel render, R2
@@ -204,7 +213,7 @@ export async function publishPost(postId: string) {
   })
 
   if (!post) throw new Error('Post not found')
-  if (post.status !== 'draft') throw new Error('Can only publish draft posts')
+  if (post.status !== 'draft' && post.status !== 'failed') throw new Error('Can only publish draft posts')
 
   const slideUrls: string[] = post.slideUrls?.length ? post.slideUrls : (post.imageUrl ? [post.imageUrl] : [])
   if (slideUrls.length === 0) throw new Error('No images available for this post')
