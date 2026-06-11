@@ -33,6 +33,27 @@ const GUIDES = [
     href: '/guia/pueblos-indigenas-chile',
     label: 'Chile',
   },
+  {
+    title: 'C169 OIT: estado por país',
+    description:
+      'Los 24 países que han ratificado el Convenio 169 de la OIT, el único tratado vinculante de derechos indígenas. Organizado por región con fechas de ratificación.',
+    href: '/guia/c169-pais-por-pais',
+    label: 'Vertical jurídico',
+  },
+  {
+    title: 'Jurisprudencia de la Corte IDH',
+    description:
+      'Índice de los fallos más importantes de la Corte Interamericana sobre pueblos indígenas: territorio, consulta, recursos naturales y reparaciones.',
+    href: '/guia/jurisprudencia-interamericana',
+    label: 'Vertical jurídico',
+  },
+  {
+    title: 'Declaración ONU (UNDRIP)',
+    description:
+      'Guía completa sobre la DNUDPI/UNDRIP: qué derechos reconoce, quiénes la adoptaron, cómo se diferencia del C169 y qué fuerza jurídica tiene en América Latina.',
+    href: '/guia/declaracion-onu-undrip',
+    label: 'Vertical jurídico',
+  },
 ]
 
 export default function GuidesIndexPage() {

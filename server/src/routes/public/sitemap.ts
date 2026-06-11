@@ -36,6 +36,9 @@ const STATIC_ROUTES: { path: string; priority: number; changefreq: ChangeFreq }[
   { path: '/guia/pueblo-mapuche', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/consulta-previa-fpic', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/pueblos-indigenas-chile', priority: 0.8, changefreq: 'monthly' },
+  { path: '/guia/c169-pais-por-pais', priority: 0.8, changefreq: 'yearly' },
+  { path: '/guia/jurisprudencia-interamericana', priority: 0.8, changefreq: 'monthly' },
+  { path: '/guia/declaracion-onu-undrip', priority: 0.8, changefreq: 'yearly' },
   { path: '/glosario', priority: 0.7, changefreq: 'monthly' },
   { path: '/mapa', priority: 0.6, changefreq: 'monthly' },
   // Open Data API docs — for researchers and institutional users

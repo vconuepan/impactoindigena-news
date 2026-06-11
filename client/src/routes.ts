@@ -40,6 +40,9 @@ export const routes: RouteConfig[] = [
   { path: '/guia/pueblo-mapuche', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/consulta-previa-fpic', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/pueblos-indigenas-chile', priority: 0.8, changefreq: 'monthly' },
+  { path: '/guia/c169-pais-por-pais', priority: 0.8, changefreq: 'yearly' },
+  { path: '/guia/jurisprudencia-interamericana', priority: 0.8, changefreq: 'monthly' },
+  { path: '/guia/declaracion-onu-undrip', priority: 0.8, changefreq: 'yearly' },
   // Voces Indígenas editorial
   { path: '/voces-indigenas', priority: 0.9, changefreq: 'weekly' },
   // Dynamic routes (issues, communities, stories) added at build time

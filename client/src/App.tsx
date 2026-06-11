@@ -42,6 +42,9 @@ const MapPage = lazy(() => import('./pages/MapPage'))
 const MapuchePage = lazy(() => import('./pages/MapuchePage'))
 const FpicPage = lazy(() => import('./pages/FpicPage'))
 const ChileHubPage = lazy(() => import('./pages/ChileHubPage'))
+const C169Page = lazy(() => import('./pages/C169Page'))
+const IAJurisprudencePage = lazy(() => import('./pages/IAJurisprudencePage'))
+const UnidripPage = lazy(() => import('./pages/UnidripPage'))
 const OpenDataPage = lazy(() => import('./pages/OpenDataPage'))
 const NewsletterArchivePage = lazy(() => import('./pages/NewsletterArchivePage'))
 const NewsletterDetailPagePublic = lazy(() => import('./pages/NewsletterDetailPage'))
@@ -152,6 +155,9 @@ export default function App() {
         <Route path="/guia/pueblo-mapuche" element={<LazyPage><MapuchePage /></LazyPage>} />
         <Route path="/guia/consulta-previa-fpic" element={<LazyPage><FpicPage /></LazyPage>} />
         <Route path="/guia/pueblos-indigenas-chile" element={<LazyPage><ChileHubPage /></LazyPage>} />
+        <Route path="/guia/c169-pais-por-pais" element={<LazyPage><C169Page /></LazyPage>} />
+        <Route path="/guia/jurisprudencia-interamericana" element={<LazyPage><IAJurisprudencePage /></LazyPage>} />
+        <Route path="/guia/declaracion-onu-undrip" element={<LazyPage><UnidripPage /></LazyPage>} />
         <Route path="/opendata" element={<LazyPage><OpenDataPage /></LazyPage>} />
         <Route path="/archivo" element={<LazyPage><NewsletterArchivePage /></LazyPage>} />
         <Route path="/archivo/:id" element={<LazyPage><NewsletterDetailPagePublic /></LazyPage>} />
