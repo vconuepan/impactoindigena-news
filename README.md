@@ -3,176 +3,150 @@
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Looking for Maintainer](https://img.shields.io/badge/looking%20for-maintainer-orange)](https://impactoindigena.news/stewardship)
 
-Noticias, iniciativas y tendencias relevantes para los pueblos indígenas, 
-seleccionadas con apoyo de inteligencia artificial.
+Plataforma editorial que cubre a los pueblos indígenas como protagonistas activos: innovadores, titulares de derechos y constructores de futuro. Rastrea más de 200 fuentes de noticias, evalúa su relevancia mediante inteligencia artificial y publica historias que importan a pueblos indígenas, territorios, liderazgo y desarrollo sostenible.
 
-Impacto Indígena es una plataforma editorial que rastrea fuentes de noticias, 
-evalúa su relevancia mediante inteligencia artificial y publica historias 
-que impactan a pueblos indígenas, territorios, liderazgo, empresas indígenas 
-y desarrollo sostenible.
+**Sitio en vivo:** [impactoindigena.news](https://impactoindigena.news)
 
 ## Tech Stack
 
-- **Frontend:** Vite + React 18 + TypeScript + Tailwind CSS
-- **Backend:** Express + TypeScript + LangChain + OpenAI
-- **Database:** PostgreSQL + pgvector (Prisma ORM)
-- **Deployment:** Render.com
+- **Frontend:** Vite + React 18 + TypeScript + Tailwind CSS + react-helmet-async
+- **Backend:** Express + TypeScript + LangChain + Azure OpenAI (configurable: OpenAI / OpenRouter)
+- **Database:** Azure PostgreSQL + pgvector (Prisma ORM)
+- **Deployment:** Azure App Service (backend) + Azure Static Web Apps (frontend)
+- **Storage:** Cloudflare R2 (images, podcast audio)
+- **Email:** Brevo
+- **CI/CD:** GitHub Actions
 
 ## Local Development
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- PostgreSQL 15+ (with pgvector extension)
-- OpenAI API key
+- Node.js 22+
+- PostgreSQL 15+ con extensión pgvector
+- Cuenta de Azure OpenAI, OpenAI, u OpenRouter (configurable vía `LLM_PROVIDER`)
 
 ### Setup
 
-1. Clone the repository:
+1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/vconuepan/vocesindigenas.git
-   cd vocesindigenas
+   git clone https://github.com/vconuepan/impactoindigena-news.git
+   cd impactoindigena-news
    ```
 
-2. Install dependencies:
+2. Instalar dependencias:
    ```bash
-   cd client && npm install
-   cd ../server && npm install
+   npm install --prefix client
+   npm install --prefix server
    ```
 
-3. Set up the database:
+3. Configurar base de datos:
    ```bash
-   # Create the database
-   createdb impactoindigena_news
-
-   # Enable pgvector extension (connect to DB first)
-   psql impactoindigena_news -c 'CREATE EXTENSION IF NOT EXISTS vector;'
+   createdb impactoindigena_ai
+   psql impactoindigena_ai -c 'CREATE EXTENSION IF NOT EXISTS vector;'
    ```
 
-4. Configure environment variables:
+4. Configurar variables de entorno:
    ```bash
-   cp server/.env.example server/.env
-   # Then fill in the required values: DATABASE_URL, OPENAI_API_KEY, JWT_SECRET, FRONTEND_URL
-   # All available settings and their defaults are documented in server/.env.example
+   cp server/.env.sample server/.env
+   # Editar server/.env con DATABASE_URL, credenciales LLM, JWT_SECRET, etc.
    ```
 
-5. Run database migrations:
+5. Aplicar migraciones:
    ```bash
    npm run db:migrate --prefix server
    ```
 
-6. Start development servers:
+6. Iniciar servidores de desarrollo:
    ```bash
    # Terminal 1 — Frontend (localhost:5173)
-   cd client && npm run dev
+   npm run dev --prefix client
 
    # Terminal 2 — Backend (localhost:3001)
-   cd server && npm run dev
+   npm run dev --prefix server
    ```
 
-## Deploying to Render.com
+### Proveedor LLM
 
-This project requires **three services** on Render: a managed PostgreSQL database, an Express backend (web service), and a React frontend (static site). The backend and frontend run on separate origins.
+Configura `LLM_PROVIDER` en `server/.env`:
 
-### 1. PostgreSQL Database
+| Valor | Variables requeridas |
+|-------|---------------------|
+| `azure` (recomendado) | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT_*` |
+| `openai` | `OPENAI_API_KEY` |
+| `openrouter` | `OPENROUTER_API_KEY` |
 
-1. Create a new PostgreSQL instance on Render
-2. Note the **Internal Database URL** (used by the backend service)
-3. Enable pgvector — connect to the database and run:
-   ```sql
-   CREATE EXTENSION IF NOT EXISTS vector;
-   ```
+Ver `server/.env.sample` para la lista completa de variables.
 
-### 2. Backend (Web Service)
+## Deployment (Azure)
 
-| Field | Value |
-|-------|-------|
-| **Root Directory** | `server` |
-| **Build Command** | `npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build` |
-| **Start Command** | `npm start` |
-| **Health Check Path** | `/health` |
+El deploy es completamente automático vía GitHub Actions al hacer push a `main`.
 
-The build generates the Prisma client, applies any pending database migrations, and compiles TypeScript. Migrations run automatically on every deploy via `prisma migrate deploy`, which is a no-op when there are no pending migrations.
+### Infraestructura requerida
 
-**Environment Variables:**
+| Servicio | Tipo | Workflow |
+|----------|------|---------|
+| Backend API | Azure App Service | `deploy-azure.yml` |
+| Frontend | Azure Static Web Apps | `deploy-azure-frontend.yml` |
+| Base de datos | Azure PostgreSQL Flexible Server | Manual (con pgvector) |
+| LLM | Azure OpenAI Service | Configurado vía env vars |
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | Internal PostgreSQL connection string from step 1 |
-| `OPENAI_API_KEY` | Yes | OpenAI API key for LLM analysis |
-| `FRONTEND_URL` | Yes | Frontend URL for CORS (e.g. `https://impactoindigena.news`) |
-| `JWT_SECRET` | Yes | Random string (32+ chars) for signing auth tokens |
-| `NODE_ENV` | Yes | Set to `production` (enables secure cross-origin cookies) |
-| `PORT` | No | Render sets this automatically (defaults to 10000) |
-| `PUBLIC_API_KEY` | No | Static API key for public consumers (mobile apps, etc.) |
-| `LOG_LEVEL` | No | Logging verbosity (default: `info`) |
+### Variables de entorno del backend (Azure App Service)
 
-**Architecture notes:**
+| Variable | Descripción |
+|----------|-------------|
+| `DATABASE_URL` | Cadena de conexión PostgreSQL de Azure |
+| `API_URL` | URL pública del backend (para links en emails) |
+| `FRONTEND_URL` | URL del frontend para CORS |
+| `JWT_SECRET` | String aleatorio de 32+ caracteres |
+| `LLM_PROVIDER` | `azure` |
+| `AZURE_OPENAI_ENDPOINT` | Endpoint del recurso Azure OpenAI |
+| `AZURE_OPENAI_API_KEY` | Clave del recurso Azure OpenAI |
+| `AZURE_OPENAI_DEPLOYMENT_*` | Nombres de deployments por tier (SMALL, MEDIUM, LARGE, EMBEDDING, TTS, DALLE) |
+| `R2_ENDPOINT` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | Cloudflare R2 para imágenes |
+| `BREVO_API_KEY` | Email transaccional |
+| `BLUESKY_HANDLE` / `BLUESKY_APP_PASSWORD` | Auto-post Bluesky |
+| `MASTODON_URL` / `MASTODON_TOKEN` | Auto-post Mastodon |
 
-- **Cron jobs** run in-process via node-cron — no separate worker service is needed. Job configuration lives in the `job_runs` database table and is managed from the admin dashboard.
-- **Graceful shutdown** handles `SIGTERM` (sent by Render on deploy) by draining in-flight LLM tasks before disconnecting from the database.
-- **Reverse proxy** trust is configured (`trust proxy: 1`) for correct client IP detection behind Render's load balancer.
-- **Cross-origin cookies** use `sameSite: 'none'` + `secure: true` in production, which is required because the frontend and backend are on different Render origins. This is why `NODE_ENV=production` is mandatory.
+### Notas de arquitectura
 
-### 3. Frontend (Static Site)
+- **Migraciones:** El workflow CI **no** corre `prisma migrate deploy`. Las migraciones deben aplicarse manualmente a la DB de producción antes de cada deploy que las requiera.
+- **Jobs cron:** Corren in-process vía node-cron. No se necesita un worker separado.
+- **Shutdown graceful:** Maneja `SIGTERM` drenando tareas LLM en vuelo antes de desconectarse.
+- **Prerendering:** El build del frontend usa `@prerenderer/rollup-plugin` con Chrome headless (corre en el runner de GitHub, no en el build container de Azure).
 
-| Field | Value |
-|-------|-------|
-| **Root Directory** | `client` |
-| **Build Command** | `npm install && npm run build` |
-| **Publish Directory** | `dist` |
+### Primer deploy
 
-The build type-checks, bundles with Vite, and prerenders public routes using Puppeteer. Render's build environment includes Chromium, so prerendering works without extra setup.
+Después de configurar la infraestructura:
 
-**Rewrite rules:** Add these rewrites in the Render dashboard **in this exact order** (Render evaluates rules top-to-bottom, first match wins):
+```bash
+# 1. Aplicar migraciones iniciales a la DB de producción
+psql $DATABASE_URL -f server/prisma/migrations/.../migration.sql
 
-| Source | Destination | Action |
-|--------|-------------|--------|
-| `/sitemap.xml` | `https://<backend-service>.onrender.com/api/sitemap.xml` | Rewrite |
-| `/*` | `/index.html` | Rewrite |
+# 2. Crear el primer usuario admin
+# Conectar al App Service via SSH o Kudu console:
+node dist/scripts/create-admin.js
 
-**Order is critical:** The `/sitemap.xml` rule must appear *before* the catch-all `/*` rule. If reversed, the catch-all matches first and serves the SPA shell, resulting in a 404.
-
-The sitemap rewrite proxies requests to the backend, which generates the sitemap dynamically from published stories. No static `sitemap.xml` file should exist in `client/public/` — Render serves static files before applying rewrite rules.
-
-**Environment Variables:**
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `VITE_API_URL` | Yes | Backend URL (e.g. `https://api.impactoindigena.news`) |
-
-### Post-deploy Steps
-
-1. Set backend `FRONTEND_URL` to match the frontend URL (and vice versa for `VITE_API_URL`)
-2. Database migrations run automatically during the build step — no manual action needed
-3. Create the first admin user from the Render shell:
-   ```bash
-   npx tsx src/scripts/create-admin.ts
-   ```
-4. Add the `/sitemap.xml` rewrite rule to the static site (see Frontend section above)
-5. Verify the health endpoint: `curl https://<backend-url>/health`
-6. Verify the sitemap: `curl https://<frontend-url>/sitemap.xml`
+# 3. Verificar health check
+curl https://api.impactoindigena.news/health
+# Respuesta esperada: {"status":"ok"}
+```
 
 ## Project Structure
 
 ```
-vocesindigenas/
-├── client/          # React frontend
-│   ├── src/         # Source code
-│   ├── scripts/     # Build scripts (sitemap, images)
-│   ├── dist/        # Built output (gitignored)
-│   └── package.json
-├── server/          # Express backend
-│   ├── src/         # Source code
-│   ├── prisma/      # Database schema and migrations
-│   ├── dist/        # Built output (gitignored)
-│   └── package.json
-├── shared/          # Shared types and constants
-├── .context/        # Implementation documentation (17 files)
-├── .specs/          # Behavioral specifications (Allium)
-├── CONTRIBUTING.md  # Contribution guidelines
-├── LICENSE          # AGPL v3
-└── README.md        # This file
+impactoindigena-news/
+├── client/          # React frontend (Vite + TypeScript + Tailwind)
+├── server/          # Express backend (Prisma + LangChain + Azure OpenAI)
+├── shared/          # Tipos y constantes compartidos
+├── .specs/          # Especificaciones de comportamiento (Allium)
+├── .context/        # Documentación de implementación (17 archivos)
+├── .plans/          # Planes de desarrollo activos
+│   └── completed/   # Planes completados (archivo)
+├── .github/
+│   └── workflows/   # CI/CD: deploy-azure.yml + deploy-azure-frontend.yml
+├── CONTRIBUTING.md
+├── LICENSE
+└── README.md
 ```
 
 ## Contributing
@@ -186,27 +160,3 @@ Impacto Indígena es un proyecto sin fines de lucro que busca un custodio instit
 ## License
 
 This project is licensed under the [GNU Affero General Public License v3.0](LICENSE). Organizations interested in running impactoindigena.news as a long-term steward can receive more accommodating license terms — see [Stewardship](https://impactoindigena.news/stewardship).
-
-## Troubleshooting
-
-### Build Fails
-Check the build logs. Common issues:
-- Missing `Root Directory` setting on Render
-- Node version mismatch — add `engines` to package.json if needed
-- Missing `npx prisma generate` before server build
-
-### API Calls Fail (CORS Error)
-1. Verify `FRONTEND_URL` is set correctly on the backend
-2. Ensure it matches exactly (including `https://`, no trailing slash)
-3. Redeploy after changing environment variables
-
-### Database Connection Fails
-1. Verify `DATABASE_URL` is correct
-2. Ensure pgvector extension is installed: `CREATE EXTENSION IF NOT EXISTS vector;`
-3. Run migrations: `npx prisma migrate deploy`
-
-### Health Check
-```bash
-curl https://your-api-url.onrender.com/health
-# Should return: {"status":"ok"}
-```
