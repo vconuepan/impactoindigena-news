@@ -77,6 +77,12 @@ export default function MethodologyPage() {
       </div>
 
       <div className="page-section">
+        <p className="page-intro !mt-8">
+          Los pueblos indígenas son los primeros innovadores sociales de la humanidad. Esta
+          plataforma existe para que esa historia llegue a quienes toman decisiones: con datos,
+          con análisis y con la claridad que solo da saber por qué algo importa.
+        </p>
+
         <div className="prose max-w-none">
           <h2 className="section-heading mt-8">¿Qué significa "impacto" para nosotros?</h2>
           <p>

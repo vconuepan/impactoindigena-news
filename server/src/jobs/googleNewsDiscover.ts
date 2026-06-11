@@ -53,6 +53,12 @@ const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
   { query: 'indigenous communities land',      region: 'US:en' },
   { query: 'indigenous climate change',        region: 'US:en' },
   { query: 'first nations rights',             region: 'CA:en' },
+  // Vertical jurídico — Corte IDH, C169 OIT, UNDRIP
+  { query: 'Corte Interamericana Derechos Humanos indigena', region: 'CL:es' },
+  { query: 'Convenio 169 OIT pueblos indígenas',             region: 'CL:es' },
+  { query: 'UNDRIP declaration indigenous peoples rights',   region: 'US:en' },
+  { query: 'Inter-American Court indigenous peoples',        region: 'US:en' },
+  { query: 'ILO convention 169 indigenous rights',           region: 'US:en' },
 ]
 
 export async function runGoogleNewsDiscover(): Promise<void> {

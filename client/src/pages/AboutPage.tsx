@@ -4,6 +4,7 @@ import { GITHUB_REPO_URL } from "../config";
 import { SEO, CommonOgTags } from "../lib/seo";
 import StructuredData from "../components/StructuredData";
 import { buildBreadcrumbSchema } from "../lib/structured-data";
+
 export default function AboutPage() {
   return (
     <>
@@ -11,12 +12,12 @@ export default function AboutPage() {
         <title>Quiénes Somos - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Impacto Indígena es una plataforma de noticias curada por IA que analiza el impacto global en los pueblos indígenas. Parte de Impacto Indígena SpA, empresa social indígena fundada por Venancio Conuepan Mesías."
+          content="Impacto Indígena nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT."
         />
         <meta property="og:title" content={`Quiénes Somos - ${SEO.siteName}`} />
         <meta
           property="og:description"
-          content="Impacto Indígena es una plataforma de noticias curada por IA que analiza el impacto global en los pueblos indígenas."
+          content="Impacto Indígena nace de la historia de un pueblo que nunca fue conquistado."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/about`} />
@@ -30,7 +31,7 @@ export default function AboutPage() {
             "@type": "WebPage",
             name: `Quiénes Somos - ${SEO.siteName}`,
             description:
-              "Impacto Indígena es una plataforma de noticias curada por IA que analiza el impacto global en los pueblos indígenas.",
+              "Impacto Indígena nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT.",
             url: `${SEO.siteUrl}/about`,
             isPartOf: {
               "@type": "WebSite",
@@ -45,52 +46,132 @@ export default function AboutPage() {
         ]}
       />
 
-      {/* Hero intro */}
+      {/* Hero */}
       <div className="bg-neutral-900 text-white py-14 px-4 mb-0">
         <div className="max-w-2xl mx-auto text-center">
           <span className="inline-block text-xs font-bold uppercase tracking-widest text-brand-400 mb-4">Quiénes Somos</span>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-6">
-            No solo hablamos sobre<br className="hidden md:block" /> pueblos indígenas.
+            Un pueblo que nunca<br className="hidden md:block" /> fue conquistado.
           </h1>
-          <p className="text-lg text-white/70 leading-relaxed">
-            Somos pueblos indígenas. Y es tiempo de construir con nosotros, no sin nosotros.
+          <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto">
+            Una plataforma que nace de esa historia. Construida con pueblos indígenas, no para ellos.
           </p>
         </div>
       </div>
 
       <div className="page-section">
-        <p className="page-intro !mt-8">
-          Monitoreamos el mundo para encontrar noticias que importan a los pueblos indígenas: los desafíos que enfrentan en sus territorios y derechos, y las soluciones que están liderando para el planeta. Dos caras de la misma historia.
-        </p>
-
         <div className="prose max-w-none">
 
-          <h2 className="section-heading mt-8">La Historia</h2>
+          {/* ── ACT I: El Yo ── */}
+          <div className="not-prose flex items-center gap-4 mt-8 mb-6">
+            <span className="font-fraunces text-5xl font-bold text-brand-200 leading-none select-none" aria-hidden="true">I</span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-0.5">Historia de Origen</p>
+              <h2 className="text-xl font-bold text-neutral-900 leading-snug">El pueblo que dijo no</h2>
+            </div>
+          </div>
+
           <p>
-            Los pueblos indígenas representan menos del 5% de la población mundial, pero protegen
-            más del 80% de la biodiversidad del planeta. Sin embargo, la narrativa global los
-            presenta casi siempre desde la vulnerabilidad: una visión que, aunque bien
-            intencionada, no les permite alcanzar su máximo potencial ni contribuir con dignidad
-            a transformar los desafíos globales que nos afectan a todos por igual.
+            En 1641, en el llano de Quilín, la Corona española firmó un tratado con el pueblo
+            mapuche reconociendo el río Biobío como frontera. Era la primera vez que España
+            reconocía la soberanía de un pueblo indígena mediante un acuerdo formal. Los mapuche
+            no fueron conquistados. Resistieron durante más de tres siglos y forzaron al Imperio
+            más poderoso del mundo a negociar.
           </p>
           <p>
-            Lo que hoy llamamos soluciones basadas en la naturaleza es la realidad cotidiana de
-            la mayoría de los pueblos indígenas del mundo. Su conocimiento ancestral, su
-            gobernanza propia y su relación profunda con el territorio son contribuciones
-            invaluables para enfrentar la crisis climática, la pérdida de biodiversidad y los
-            retos de la convivencia global.
-          </p>
-          <p>
-            <strong>Impacto Indígena News</strong> nace para cambiar esa narrativa. Siguiendo
-            los principios de la narrativa pública de Marshall Ganz, creemos que cambiar una
-            historia requiere amplificar historias reales: las de comunidades que resisten,
-            innovan, lideran y construyen el futuro desde sus territorios. Usamos inteligencia
-            artificial para monitorear fuentes especializadas en todo el mundo, analizar el
-            impacto real de las noticias en los pueblos indígenas y presentar esa información
-            de forma clara, accesible y sin publicidad.
+            Esa resistencia no es solo historia: es el punto de partida de Impacto Indígena.
+            Los pueblos indígenas no son grupos vulnerables que esperan ser defendidos. Son,
+            y han sido siempre, protagonistas de su propio futuro. Representan menos del 5&nbsp;%
+            de la población mundial, pero protegen más del 80&nbsp;% de la biodiversidad del
+            planeta. Su conocimiento ancestral, su gobernanza propia y su relación con el
+            territorio son contribuciones que el mundo necesita urgentemente.
           </p>
 
-          <h2 className="section-heading mt-10">Impacto Indígena SpA</h2>
+          <h3 className="section-heading mt-8">Fundador</h3>
+          <p>
+            <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
+              <strong>Venancio Conuepan Mesías</strong>
+            </a>{" "}
+            es un abogado mapuche y consultor en sostenibilidad, fundador de Impacto Indígena
+            SpA y Director Ejecutivo de la Fundación Empresas Indígenas. Con más de diez años
+            de trayectoria, ha liderado proyectos en gobernanza territorial, mediación
+            intercultural, acción climática y emprendimiento indígena.
+          </p>
+          <p>
+            Ha representado a Chile en espacios globales como el Caucus Indígena Internacional
+            sobre empresas y derechos, propiedad intelectual y cambio climático. Fue reconocido
+            como uno de los 100 Jóvenes Líderes de Chile en 2014, y ha recibido becas del
+            Departamento de Estado de EE.UU., el Alto Comisionado de Naciones Unidas, One Young
+            World y The Melton Foundation. Actualmente es becario de la Fundación Pacto Social y
+            finaliza su Máster en Derecho Regulatorio en la Pontificia Universidad Católica de
+            Chile.
+          </p>
+          <p>
+            Contacto:{" "}
+            <a href="mailto:venancio@impactoindigena.com" className="text-brand-800 hover:text-brand-700 underline">
+              venancio@impactoindigena.com
+            </a>
+          </p>
+
+          {/* ── ACT II: El Nosotros ── */}
+          <div className="not-prose flex items-center gap-4 mt-12 mb-6">
+            <span className="font-fraunces text-5xl font-bold text-brand-200 leading-none select-none" aria-hidden="true">II</span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-0.5">La Comunidad</p>
+              <h2 className="text-xl font-bold text-neutral-900 leading-snug">Dos anillos de protección legal</h2>
+            </div>
+          </div>
+
+          <p>
+            Impacto Indígena no opera en el vacío. Existe al amparo de dos marcos internacionales
+            que protegen los derechos de los pueblos indígenas y generan obligaciones concretas
+            para los Estados:
+          </p>
+        </div>
+
+        <div className="not-prose grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
+          {[
+            {
+              numero: "20",
+              unidad: "estados",
+              titulo: "Corte Interamericana de Derechos Humanos",
+              texto: "Veinte países reconocen la jurisdicción contenciosa de la Corte IDH. Sus fallos sobre derechos indígenas generan res interpretata: todos los estados parte deben aplicar esa interpretación vía control de convencionalidad, incluso sin haber sido parte del caso.",
+              color: "#C8473A",
+            },
+            {
+              numero: "24",
+              unidad: "países",
+              titulo: "Convenio 169 de la OIT",
+              texto: "El único tratado internacional vinculante sobre derechos de pueblos indígenas, ratificado por 24 países en cinco continentes: desde Chile y México hasta Nepal, Fiji y Luxemburgo. Establece el derecho a la consulta previa, libre e informada y la autonomía territorial.",
+              color: "#0D5F3C",
+            },
+          ].map((item) => (
+            <div
+              key={item.titulo}
+              className="rounded-xl p-6 border"
+              style={{ backgroundColor: `${item.color}08`, borderColor: `${item.color}25` }}
+            >
+              <div className="flex items-baseline gap-1.5 mb-3">
+                <span className="font-fraunces text-4xl font-bold leading-none" style={{ color: item.color }}>{item.numero}</span>
+                <span className="text-sm text-neutral-500 font-medium">{item.unidad}</span>
+              </div>
+              <h3 className="font-bold text-neutral-800 mb-2 text-sm">{item.titulo}</h3>
+              <p className="text-sm text-neutral-600 leading-relaxed">{item.texto}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="prose max-w-none">
+          <p>
+            A estos dos marcos se suma la{" "}
+            <strong>Declaración de las Naciones Unidas sobre los Derechos de los Pueblos
+            Indígenas (UNDRIP)</strong>, adoptada en 2007, que establece los derechos
+            colectivos e individuales de los pueblos indígenas en materia de cultura, identidad,
+            educación, salud, empleo y territorio. Impacto Indígena cubre activamente la
+            jurisprudencia que estos marcos generan y su implementación en los países signatarios.
+          </p>
+
+          <h3 className="section-heading mt-8">Impacto Indígena SpA</h3>
           <p>
             Esta plataforma es parte de{" "}
             <a href="https://www.impactoindigena.com" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
@@ -102,7 +183,19 @@ export default function AboutPage() {
             sus saberes para un desarrollo sostenible y autodeterminado.
           </p>
 
-          <h2 className="section-heading mt-10">El Modelo R · E · D Indígena</h2>
+          <h3 className="section-heading mt-8">Red Indígena Colaborativa</h3>
+          <p>
+            Trabajamos en una red indígena colaborativa que articula capacidades, saberes y
+            recursos junto a:
+          </p>
+          <ul>
+            <li>Fundación Konwepang-Millakir por el respeto del mapu</li>
+            <li>Fundación Empresas Indígenas</li>
+            <li>Sociedad de Profesionales Conuepan y Millaquir Limitada</li>
+            <li>Impacto Indígena SpA</li>
+          </ul>
+
+          <h3 className="section-heading mt-8">El Modelo R · E · D Indígena</h3>
           <p>
             Todo nuestro trabajo se articula en torno al modelo RED Indígena: una forma de
             impulsar transformación con identidad.
@@ -148,25 +241,39 @@ export default function AboutPage() {
         </div>
 
         <div className="prose max-w-none">
+
+          {/* ── ACT III: El Ahora ── */}
+          <div className="not-prose flex items-center gap-4 mt-12 mb-6">
+            <span className="font-fraunces text-5xl font-bold text-brand-200 leading-none select-none" aria-hidden="true">III</span>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-0.5">La Urgencia</p>
+              <h2 className="text-xl font-bold text-neutral-900 leading-snug">Lo que el mundo no puede resolver sin ellos</h2>
+            </div>
+          </div>
+
           <p>
-            El modelo RED es más que un enfoque: es una forma de regenerar el presente y
-            co-crear un futuro justo con los pueblos indígenas, en beneficio de todas las
-            personas y el planeta.
+            La crisis climática, la pérdida de biodiversidad y los conflictos territoriales tienen
+            algo en común: en cada uno de estos desafíos globales, los pueblos indígenas son
+            parte esencial de la solución. No como víctimas que necesitan ayuda, sino como
+            innovadores sociales que llevan milenios gestionando ecosistemas, construyendo
+            gobernanza colectiva y manteniendo la diversidad cultural que hace a la humanidad
+            más resiliente.
+          </p>
+          <p>
+            Lo que hoy llamamos soluciones basadas en la naturaleza es la realidad cotidiana
+            de la mayoría de los pueblos indígenas del mundo. La narrativa dominante, sin embargo,
+            los presenta casi siempre desde la vulnerabilidad: una visión que, aunque bien
+            intencionada, invisibiliza su liderazgo y los excluye de las decisiones que los afectan.
+          </p>
+          <p>
+            <strong>Impacto Indígena News</strong> nace para cambiar esa narrativa. Usamos
+            inteligencia artificial para monitorear fuentes especializadas en todo el mundo,
+            analizar el impacto real de las noticias en los pueblos indígenas y presentar esa
+            información de forma clara, accesible y sin publicidad. La elección es concreta:
+            construir con los pueblos indígenas, o seguir construyendo sin ellos.
           </p>
 
-          <h2 className="section-heading mt-10">Red Indígena Colaborativa</h2>
-          <p>
-            Trabajamos en una red indígena colaborativa que articula capacidades, saberes y
-            recursos junto a:
-          </p>
-          <ul>
-            <li>Fundación Konwepang-Millakir por el respeto del mapu</li>
-            <li>Fundación Empresas Indígenas</li>
-            <li>Sociedad de Profesionales Conuepan y Millaquir Limitada</li>
-            <li>Impacto Indígena SpA</li>
-          </ul>
-
-          <h2 className="section-heading mt-10">Nuestros Proyectos</h2>
+          <h3 className="section-heading mt-8">Nuestros Proyectos</h3>
           <p>Iniciativas que transforman territorios y relaciones.</p>
         </div>
 
@@ -195,8 +302,8 @@ export default function AboutPage() {
           ].map((p) => (
             <div
               key={p.titulo}
-              className="rounded-xl p-5"
-              style={{ borderLeft: `3px solid ${p.accent}`, backgroundColor: `${p.accent}08` }}
+              className="rounded-xl p-5 bg-neutral-50 border border-neutral-100"
+              style={{ borderLeftColor: p.accent, borderLeftWidth: '3px' }}
             >
               <h3 className="font-bold text-neutral-800 mb-2">{p.titulo}</h3>
               <p className="text-sm text-neutral-600 leading-relaxed">{p.texto}</p>
@@ -206,58 +313,7 @@ export default function AboutPage() {
 
         <div className="prose max-w-none">
 
-          <h2 className="section-heading mt-10">Servicios para Empresas Responsables</h2>
-          <p>
-            Apoyamos a las empresas responsables en el diseño de estrategias efectivas para
-            cumplir sus compromisos de respeto a los derechos humanos de los pueblos indígenas,
-            mediante un enfoque práctico, integrado y basado en principios internacionales.{" "}
-            <a href="https://www.impactoindigena.com" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
-              Conoce más en impactoindigena.com
-            </a>.
-          </p>
-
-          <h2 className="section-heading mt-10">Fundador</h2>
-          <p>
-            <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
-              <strong>Venancio Conuepan Mesías</strong>
-            </a>{" "}
-            es un abogado mapuche y consultor en sostenibilidad, fundador de Impacto Indígena
-            SpA y Director Ejecutivo de la Fundación Empresas Indígenas. Con más de diez años
-            de trayectoria, ha liderado proyectos en gobernanza territorial, mediación
-            intercultural, acción climática y emprendimiento indígena.
-          </p>
-          <p>
-            Ha representado a Chile en espacios globales como el Caucus Indígena Internacional
-            sobre empresas y derechos, propiedad intelectual y cambio climático. Fue reconocido
-            como uno de los 100 Jóvenes Líderes de Chile en 2014, y ha recibido becas y
-            distinciones del Departamento de Estado de EE.UU., el Alto Comisionado de Naciones
-            Unidas, One Young World y The Melton Foundation. Actualmente es becario de la
-            Fundación Pacto Social y finaliza su Máster en Derecho Regulatorio en la
-            Pontificia Universidad Católica de Chile.
-          </p>
-          <p>
-            Contacto:{" "}
-            <a href="mailto:venancio@impactoindigena.com" className="text-brand-800 hover:text-brand-700 underline">
-              venancio@impactoindigena.com
-            </a>
-          </p>
-
-          <h2 className="section-heading mt-10">Sobre esta plataforma</h2>
-          <p>
-            Impacto Indígena News es una plataforma de noticias curada por inteligencia
-            artificial que monitorea fuentes especializadas en todo el mundo, analiza el impacto
-            real de las noticias en los pueblos indígenas y presenta esa información de forma
-            clara, accesible y sin publicidad.
-          </p>
-          <p>
-            Su propósito es concreto: cambiar la narrativa global sobre los pueblos indígenas.
-            No presentarlos como víctimas o grupos vulnerables que necesitan ser defendidos, sino
-            como lo que realmente son: innovadores sociales, guardianes del conocimiento
-            ancestral y protagonistas activos en la solución de los desafíos globales que nos
-            afectan a todos. Construimos puentes entre pueblos indígenas, sociedad civil,
-            empresas responsables y Estados, integrando el conocimiento ancestral con el
-            desarrollo económico, la acción climática y la consolidación de la paz.
-          </p>
+          <h3 className="section-heading mt-10">Sobre esta plataforma</h3>
           <p>
             La plataforma fue desarrollada como una adaptación con enfoque exclusivo indígena
             del proyecto{" "}
@@ -268,21 +324,13 @@ export default function AboutPage() {
             <a href="https://www.linkedin.com/in/odinmuehlenbein/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
               Odin Mühlenbein
             </a>
-            . Mientras Actually Relevant cura noticias relevantes para la humanidad en general,
-            Impacto Indígena News adapta esa misma tecnología y pipeline de inteligencia
-            artificial con un foco exclusivo en los pueblos indígenas del mundo: sus territorios,
-            derechos, culturas, conocimientos y contribuciones. Una herramienta pensada para
-            amplificar las voces invisibilizadas y demostrar que lo ancestral y lo moderno
-            pueden y deben unirse.
-          </p>
-          <p>
-            El prototipo fue desarrollado en el marco de la cohorte{" "}
+            . El prototipo fue desarrollado en el marco de la cohorte{" "}
             <strong>LatAm AI 2025</strong> de{" "}
             <a href="https://changemakerxchange.ai" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
               Changemakerxchange.ai
             </a>
-            , con el apoyo de Odin como mentor de la cohorte y experto en inteligencia
-            artificial del Ashoka AI Lab. El código es abierto y está disponible en{" "}
+            , con el apoyo de Odin como mentor y experto en inteligencia artificial del Ashoka AI
+            Lab. El código es abierto y está disponible en{" "}
             <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
               GitHub
             </a>.

@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
 import Markdown from 'react-markdown'
+import { useSubscribe } from '../components/SubscribeProvider'
 import { usePublicStory } from '../hooks/usePublicStories'
 import { getCategoryColor, shiftHex } from '../lib/category-colors'
 import { parsePoints } from '../lib/parse-points'
@@ -20,6 +21,34 @@ import { SEO, CommonOgTags } from '../lib/seo'
 import { buildArticleSchema, buildBreadcrumbSchema } from '../lib/structured-data'
 import { ECOSYSTEM_AI_URL } from '../config'
 import { publisherFromUrl } from '@shared/utils/publisher'
+
+// ---------------------------------------------------------------------------
+// Newsletter CTA — shown after article body, before related stories
+// ---------------------------------------------------------------------------
+
+function ArticleCta() {
+  const { openSubscribe } = useSubscribe()
+  return (
+    <div className="my-10 rounded-xl overflow-hidden border border-accent-100">
+      <div className="bg-accent-500 px-6 py-5 flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className="flex-1">
+          <p className="text-xs font-bold uppercase tracking-widest text-accent-100 mb-1">
+            Boletín semanal
+          </p>
+          <p className="text-white font-bold text-base leading-snug">
+            Las noticias que importan a los pueblos indígenas, cada semana.
+          </p>
+        </div>
+        <button
+          onClick={() => openSubscribe()}
+          className="shrink-0 inline-flex items-center gap-2 bg-white text-accent-600 font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-accent-50 transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-accent-500 whitespace-nowrap"
+        >
+          Suscribirse gratis
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Guide links shown below related stories for specific issue areas
@@ -354,6 +383,9 @@ export default function StoryPage() {
               accentColor={shiftHex(colors.hex, -0.25)}
             />
           )}
+
+          {/* Newsletter CTA — end of article */}
+          <ArticleCta />
 
           {/* Related stories */}
           {story.slug && <RelatedStories slug={story.slug} />}
