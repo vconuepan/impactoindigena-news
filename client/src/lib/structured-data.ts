@@ -2,7 +2,7 @@ import type { PublicStory } from '@shared/types'
 import type { PublicIssue } from './api'
 import { SEO } from './seo'
 
-const LOGO_URL = `${SEO.siteUrl}/images/logo.png`
+const LOGO_URL = `${SEO.siteUrl}/images/logo-horizontal.png`
 
 const publisher = {
   '@type': 'Organization',

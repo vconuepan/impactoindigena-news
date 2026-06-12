@@ -79,9 +79,11 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
   return (
     <Link to="/" onClick={onClick} className="flex items-center shrink-0">
       <img
-        src="/images/logo-horizontal.png"
+        src="/images/logo-horizontal.svg"
         alt="Impacto Indígena"
-        className="h-14 md:h-[4.5rem] w-auto"
+        width={357}
+        height={80}
+        className="h-12 md:h-14 w-auto"
       />
     </Link>
   );
