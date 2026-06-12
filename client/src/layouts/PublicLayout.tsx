@@ -81,9 +81,9 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
       <img
         src="/images/logo-horizontal.svg"
         alt="Impacto Indígena"
-        width={365}
-        height={88}
-        className="h-12 md:h-14 w-auto"
+        width={369}
+        height={92}
+        className="h-14 md:h-[4.5rem] w-auto"
       />
     </Link>
   );
