@@ -89,6 +89,7 @@ export interface Story {
   relevanceCalculation: string | null
   crawlMethod: string | null
   imageUrl?: string | null
+  narrativeFrame?: string | null
   titleEn?: string | null
   titleLabelEn?: string | null
   summaryEn?: string | null

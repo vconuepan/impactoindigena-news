@@ -71,6 +71,38 @@ function CategoryPill({ name, hex }: { name: string; hex: string }) {
   )
 }
 
+const NARRATIVE_LABELS: Record<string, string> = {
+  protagonismo: 'Protagonismo',
+  resiliencia: 'Resiliencia',
+  alianza: 'Alianza',
+  confrontacion: 'Confrontación',
+}
+
+function NarrativeFrameTag({ frame, dark = false }: { frame: string; dark?: boolean }) {
+  const label = NARRATIVE_LABELS[frame] ?? frame
+  return (
+    <span
+      className={`inline-block text-[9px] italic font-dm-sans cursor-help leading-none mb-1.5 ${dark ? 'text-white/50' : 'text-neutral-400'}`}
+      title={`Marco narrativo: ${label}`}
+    >
+      {label}
+    </span>
+  )
+}
+
+function EditorialSeal() {
+  return (
+    <div className="absolute bottom-2 right-2 pointer-events-none select-none" aria-hidden="true">
+      <img
+        src="/images/logo-no-text-square.png"
+        alt=""
+        className="w-9 h-9 object-contain"
+        style={{ opacity: 0.18 }}
+      />
+    </div>
+  )
+}
+
 function CardImage({
   src,
   alt,
@@ -147,9 +179,11 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
             )}
             {/* Gradient overlay — heavier at bottom to seat the meta strip */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+            {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
             {/* Headline + category */}
             <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-3">
               {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
+              {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} dark />}
               {getTitleLabel(localizedStory) && (
                 <span className="block text-xs font-bold uppercase tracking-wider text-white/70 mb-1">{getTitleLabel(localizedStory)}</span>
               )}
@@ -173,7 +207,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
     return (
       <article className={`group relative overflow-hidden rounded-xl border border-neutral-100 bg-white hover:shadow-md transition-shadow duration-300 h-full ${readClass}`}>
         <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-xl overflow-hidden">
-          <div className="aspect-video overflow-hidden bg-neutral-100">
+          <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <CardImage
                 src={imageUrl}
@@ -190,10 +224,12 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
                 {Pattern && <Pattern opacity={0.2} />}
               </div>
             )}
+            {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
           </div>
         </Link>
         <div className="p-4">
           {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
+          {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
           <div className="flex items-start justify-between gap-1">
             <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
               <h3 className="text-base font-bold text-neutral-900 mb-2 group-hover:text-brand-800 transition-colors leading-snug">
@@ -219,6 +255,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
           {/* Text left */}
           <div className="flex-1 p-6 md:p-7">
             {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
+            {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
             <div className="flex items-start justify-between gap-2">
               <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                 {getTitleLabel(localizedStory) && (
@@ -260,6 +297,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
                   {Pattern && <Pattern opacity={0.22} />}
                 </div>
               )}
+              {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
             </div>
           </Link>
         </div>

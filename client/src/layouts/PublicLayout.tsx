@@ -14,6 +14,7 @@ import SubscribeProvider, {
 import FeedbackProvider from "../components/FeedbackProvider";
 import { PositivityProvider } from "../contexts/PositivityContext";
 import { MoodDialPanel } from "../components/PositivitySlider";
+import CurationStatsBar from "../components/CurationStatsBar";
 
 const KOFI_URL = "https://ko-fi.com/impactoindigena";
 const INSTAGRAM_URL = "https://www.instagram.com/impactoindigena";
@@ -199,6 +200,7 @@ function PublicLayoutInner() {
         {t('nav.skipToContent')}
       </a>
 
+      <CurationStatsBar />
       <header>
         <div className="bg-white border-b border-neutral-100">
           <div className="max-w-6xl mx-auto px-4 py-4 md:py-5 flex items-center justify-between">

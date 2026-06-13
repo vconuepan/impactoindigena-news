@@ -601,6 +601,7 @@ const PUBLIC_STORY_SELECT = {
   relevanceSummary: true,
   antifactors: true,
   imageUrl: true,
+  narrativeFrame: true,
   titleEn: true,
   titleLabelEn: true,
   summaryEn: true,
