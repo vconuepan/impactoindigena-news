@@ -137,12 +137,33 @@ Estos colores se usan en: dots de categoría en nav, tags en cards, borders acti
 
 ## Header
 
-- **Estructura:** Logo centrado, acciones a la derecha (Guardados, Suscribirse, "Apóyanos", idioma), slider Tono a la izquierda
-- **Background:** Blanco puro (`#FFFFFF`) — sin strip de color adicional
-- **Altura:** 60px
+- **Estructura completa (top→bottom):**
+  1. **Stats bar** — fondo `var(--brand)`, 32px de alto, DM Sans 10px
+  2. **Header principal** — blanco puro `#FFFFFF`, 60px de alto
+  3. **Category nav** — bajo el header, separado por `1px solid var(--border)`
+- **Stats bar** (nueva): muestra métricas de curación en tiempo real. Fondo `#0D5F3C`, texto `rgba(255,255,255,0.65)`, indicador de pulso verde `#4ade80`. Ejemplo: "Revisadas hoy: 847 · Seleccionadas: 23 · Fuentes activas: 214". Vincula a `/metodologia`.
+- **Background header:** Blanco puro (`#FFFFFF`)
+- **Altura header:** 60px
 - **Font:** DM Sans para todas las acciones del header
-- **Botón Suscribirse:** Terracota (`#C8473A`), pills (`border-radius: 9999px`), `min-height: 44px` — CTA principal
-- **Botón Apóyanos (Support us):** Brand verde (`#0D5F3C`), ghost/outline o filled secundario. **Debe tener menor jerarquía visual que Suscribirse** — usar `border: 1px solid` con texto verde y fondo transparente para no competir con el terracota. Referencia: `<LandingCta>`
+- **Botón Suscribirse:** Terracota (`#C8473A`), pills (`border-radius: 9999px`), `min-height: 36px` — CTA principal
+- **Botón Apóyanos:** Brand verde (`#0D5F3C`), ghost/outline. `border: 1px solid` con texto verde y fondo transparente — menor jerarquía que Suscribirse. Referencia: `<LandingCta>`
+
+## Hero
+
+El hero principal es el primer elemento debajo del header. Es tratamiento de **portada de revista**, no un card.
+
+- **Altura:** 560–600px (no `auto`, no `min-height` pequeño)
+- **Imagen:** Full-bleed, `background-size: cover`. Sin borde, sin `border-radius`.
+- **Overlay:** `linear-gradient(to top, rgba(13,95,60,0.92) 0%, rgba(13,95,60,0.55) 50%, rgba(13,95,60,0.20) 100%)` — gradiente del brand verde
+- **Watermark:** Patrón geométrico de inspiración indígena, `opacity: 0.04`, posición top-right, `pointer-events: none`
+- **Contenido (alineado al fondo del hero):**
+  - `hero-eyebrow`: DM Sans 10px 700 uppercase, `color: rgba(255,255,255,0.60)`, con línea decorativa `24×1px` color `var(--accent)` a la izquierda. Incluye la etiqueta de la semana + NarrativeFrame del artículo.
+  - `hero-title` (h1): **Fraunces 62px 700, line-height 1.06**, `color: #fff`, `letter-spacing: -0.02em`. Rango: `clamp(42px, 4.5vw, 62px)`.
+  - `hero-deck`: Lora 16px, `color: rgba(255,255,255,0.75)`, `max-width: 520px`.
+  - `hero-byline`: DM Sans 11px, `color: rgba(255,255,255,0.50)`.
+- **Padding contenido:** `padding: 0 56px 56px`
+- **Títulos en Title Case** — NUNCA en minúsculas. Los títulos de stories en todo el sitio van en Title Case o Sentence case editorial.
+- **Paginación:** Dots en esquina inferior derecha; dot activo se expande a `width: 18px` (pill).
 
 ## Componentes clave
 
@@ -158,6 +179,41 @@ white-space: nowrap;
 padding: 12px 12px; /* px-3 */
 border-bottom: 2px solid transparent;
 ```
+
+### `.ruled-section` (encabezados de sección en homepage)
+
+```css
+/* Estructura: dot de categoría + título + "Ver todas →" flush right */
+display: flex;
+align-items: center;
+gap: 14px;
+padding: 36px 0 18px;
+border-bottom: 2px solid var(--text); /* negro cálido #1C1917 */
+margin-bottom: 24px;
+```
+
+- **Dot:** 9×9px, color de la categoría correspondiente
+- **Título sección:** Fraunces 20px 700, `letter-spacing: -0.01em`
+- **Enlace "Ver todas →":** `margin-left: auto`, DM Sans 11px 600, `color: var(--brand)`
+
+### `.editorial-grid-1` (grid primario — hero story + 2 side stories)
+
+Layout para la sección principal de cada categoría. Reemplaza el grid de cards homogéneas.
+
+```css
+display: grid;
+grid-template-columns: 1.7fr 1fr;
+grid-template-rows: 1fr 1fr;
+gap: 1px;                    /* los 1px crean separadores sin bordes explícitos */
+background: var(--border);   /* el gap 1px sobre este fondo = línea de separación */
+border: 1px solid var(--border);
+border-radius: 6px;
+overflow: hidden;
+```
+
+- **Main story** ocupa `grid-row: 1 / 3` — imagen 3:2 + contenido bajo ella
+- **Side stories** ocupan 1 fila cada una — imagen 16:9 + contenido compacto
+- Todas las celdas tienen `background: var(--surface)` (así el `gap 1px` sobre el fondo borde = líneas editoriales)
 
 ### `.ruled-heading` (divisores de sección)
 
@@ -183,9 +239,79 @@ font-size: 4.5rem;
 color: var(--brand); /* #0D5F3C */
 ```
 
+### `.narrative-frame-tag` (NUEVO — AI-native signal)
+
+Muestra el marco narrativo clasificado por la IA bajo cada tag de categoría en las story cards.
+
+```css
+font-family: 'DM Sans', sans-serif;
+font-size: 9px;
+font-style: italic;
+font-weight: 400;
+color: var(--text-subtle);   /* #A8A29E */
+letter-spacing: 0.02em;
+margin-bottom: 8px;
+display: block;
+cursor: help;                /* tooltip al hover */
+```
+
+Texto: `· Protagonismo` / `· Resiliencia` / `· Alianza` / `· Confrontación`
+
+Al hacer hover: tooltip `title` o `aria-describedby` explicando el marco. El tooltip enlaza a `/metodologia`.
+
+**Regla:** Mostrar en TODAS las cards de stories que tengan `narrativeFrame` definido (≠ null). Si `narrativeFrame` es null, no mostrar nada — no placeholder.
+
+### `.editorial-seal` (NUEVO — jerarquía sin badge)
+
+Sello circular del logo como marca de agua en imágenes de stories con `relevanceScore ≥ 8`.
+
+```css
+position: absolute;
+bottom: 10px;
+right: 10px;
+width: 34px;
+height: 34px;
+opacity: 0.18;
+pointer-events: none;
+user-select: none;
+```
+
+SVG: versión simplificada del sello del logo — círculo exterior + estrella de 7 puntas interior, trazo blanco sobre cualquier fondo de imagen.
+
+**Regla:** Solo historias con `relevanceScore ≥ 8`. No mostrar si la imagen no carga (fallback: ocultar).
+
+### `.statement-section` (sección misión — reemplaza el CTA genérico)
+
+Reemplaza la sección "Construimos puentes..." con tratamiento editorial en brand verde.
+
+```css
+background: var(--brand);    /* #0D5F3C */
+padding: 64px 56px;
+border-radius: 6px;
+position: relative;
+overflow: hidden;
+/* Decoración: 2 círculos concentrados en esquina */
+```
+
+- **Eyebrow:** DM Sans 10px 700 uppercase, `color: rgba(255,255,255,0.45)`, con línea dorada `20×1px` a la izquierda
+- **Texto principal:** Fraunces `clamp(28px, 2.8vw, 38px)` 300 italic, `color: rgba(255,255,255,0.95)`, `max-width: 680px`
+- **CTA:** `border: 1px solid rgba(255,255,255,0.30)`, border-radius pill, DM Sans 13px 600 blanco
+
+### `.guides-section` (sección guías — fondo brand-pale)
+
+Las guías de referencia jurídica van sobre fondo `var(--brand-pale)`, no blanco genérico.
+
+```css
+background: var(--brand-pale);  /* #E8F2EC */
+padding: 40px;
+border-radius: 6px;
+```
+
+Grid interno: 3 columnas. Cards con `background: var(--surface)`, `border: 1px solid rgba(13,95,60,0.12)`.
+
 ### Watermarks decorativos
 
-- Opacidad máxima: `0.06` (bajar del valor actual si es mayor)
+- Opacidad máxima: `0.06` en cuerpo de artículo; `0.04` en secciones de homepage
 - Máximo 1 watermark visible por viewport
 - Siempre `pointer-events: none; user-select: none;`
 
@@ -210,3 +336,11 @@ color: var(--brand); /* #0D5F3C */
 | 2026-04-18 | Fondo `#FAFAF8` (blanco cálido) | Reduce contraste agresivo de blanco puro. Más editorial. |
 | 2026-04-18 | Eliminar strip rosado del header | No tenía precedente en el sistema. El header va en blanco puro. |
 | 2026-04-18 | Sistema multicolor de categorías: mantener | Distintivo y funcional. No cambiar. |
+| 2026-06-12 | Stats bar verde encima del header | Hace visible la inteligencia AI desde el primer pixel. Inspirado en The Markup. |
+| 2026-06-12 | Hero cinemático 560-600px con overlay verde | El hero actual actúa como card. Tratar como portada de revista: Fraunces 62px, full-bleed, gradiente profundo. |
+| 2026-06-12 | Títulos de stories en Title Case — nunca lowercase | Los slugs-as-titles en producción eran error editorial. Regla explícita. |
+| 2026-06-12 | NarrativeFrame visible en cards (`.narrative-frame-tag`) | El sistema clasifica `protagonismo/resiliencia/alianza/confrontación` pero ningún lector lo sabe. Hacerlo visible es la definición de AI-native. |
+| 2026-06-12 | Editorial seal en historias score ≥ 8 | Jerarquía visual sin badge genérico "FEATURED". El sello del logo como marca de excelencia editorial. |
+| 2026-06-12 | Editorial grid 1.7fr/1fr con gap 1px | Reemplaza el grid de cards homogéneas. Las líneas de 1px crean separadores sin bordes explícitos — estilo NYT/Guardian. |
+| 2026-06-12 | Sección misión en brand verde `.statement-section` | El CTA anterior ("Construimos puentes...") no tenía identidad visual. Fondo verde editorial con Fraunces italic refuerza la voz institucional. |
+| 2026-06-12 | Guías en fondo brand-pale `.guides-section` | Las guías jurídicas son contenido premium. El fondo verde pálido las distingue visualmente del feed de noticias. |
