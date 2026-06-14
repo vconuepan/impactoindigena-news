@@ -11,7 +11,7 @@ import { getCategoryColor } from '../lib/category-colors'
 import { getCategoryPattern } from '../lib/category-patterns'
 import { parsePoints, stripMarkdown, stripPrefix, limitSentences } from '../lib/parse-points'
 import { formatDate } from '../lib/format'
-import { getTitleLabel, getHeadline } from '../lib/title-label'
+import { getHeadline } from '../lib/title-label'
 import { SEO, CommonOgTags } from '../lib/seo'
 import { buildWebSiteSchema, buildOrganizationSchema } from '../lib/structured-data'
 import SupportBanner from '../components/SupportBanner'
@@ -22,13 +22,23 @@ import { usePositivity } from '../contexts/PositivityContext'
 import { mixHomepageStories, pickHero } from '../lib/mix-stories'
 
 // ---------------------------------------------------------------------------
+// Shared constants
+// ---------------------------------------------------------------------------
+
+const NARRATIVE_LABELS: Record<string, string> = {
+  protagonismo: 'Protagonismo',
+  resiliencia: 'Resiliencia',
+  alianza: 'Alianza',
+  confrontacion: 'Confrontación',
+}
+
+// ---------------------------------------------------------------------------
 // Hero
 // ---------------------------------------------------------------------------
 function HeroSection({ story }: { story: PublicStory }) {
   const { i18n } = useTranslation()
   const issueSlug = story.issue?.slug ?? story.feed?.issue?.slug ?? 'general-news'
   const issueName = story.issue?.name ?? story.feed?.issue?.name ?? ''
-  const colors = getCategoryColor(issueSlug)
   const Pattern = getCategoryPattern(issueSlug)
   const dateStr = story.datePublished ? formatDate(story.datePublished) : null
   const heroImage = story.imageUrl || null
@@ -42,42 +52,75 @@ function HeroSection({ story }: { story: PublicStory }) {
   const displaySummary = (isEn && story.summaryEn) ? story.summaryEn : story.summary
   const displayQuote = (isEn && story.quoteEn) ? story.quoteEn : story.quote
 
+  const deckText = story.relevanceReasons && parsePoints(story.relevanceReasons)[0]
+    ? limitSentences(stripPrefix(stripMarkdown(parsePoints(story.relevanceReasons)[0])), 2)
+    : displayQuote
+      ? `"${displayQuote}"`
+      : displaySummary
+        ? displaySummary.slice(0, 240)
+        : null
+
   return (
     <section className="relative overflow-hidden">
-      {/* Full-bleed image background */}
-      <div className="relative w-full h-[460px] md:h-[580px] overflow-hidden bg-neutral-900">
+      <div className="relative w-full h-[560px] md:h-[600px] overflow-hidden bg-neutral-900">
         {heroImage ? (
           <img
             src={heroImage}
             alt=""
-            className="w-full h-full object-cover opacity-65"
+            className="w-full h-full object-cover opacity-90"
             fetchPriority="high"
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
           />
         ) : (
-          <div className="w-full h-full relative" style={{ background: `linear-gradient(150deg, ${colors.hex}55 0%, #1a1a1a 60%)` }}>
+          <div
+            className="w-full h-full relative"
+            style={{ background: 'linear-gradient(150deg, rgba(13,95,60,0.8) 0%, #1a1a1a 60%)' }}
+          >
             {Pattern && <Pattern opacity={0.18} />}
           </div>
         )}
-        {/* Gradient overlay — heavier at bottom for legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/5" />
 
-        {/* Content on overlay */}
+        {/* Brand green gradient overlay */}
+        <div
+          className="absolute inset-0"
+          style={{ background: 'linear-gradient(to top, rgba(13,95,60,0.92) 0%, rgba(13,95,60,0.55) 50%, rgba(13,95,60,0.20) 100%)' }}
+        />
+
+        {/* Geometric watermark — top right, opacity 0.04 */}
+        {Pattern && (
+          <div className="absolute top-0 right-0 w-64 h-64 pointer-events-none select-none" aria-hidden="true">
+            <Pattern opacity={0.04} />
+          </div>
+        )}
+
+        {/* Content */}
         <div className="absolute inset-0 flex items-end">
-          <div className="max-w-4xl mx-auto px-4 pb-12 md:pb-16 w-full">
-            {/* Issue pill */}
-            {issueName && (
+          <div className="w-full max-w-4xl mx-auto px-4 md:px-14 pb-10 md:pb-14">
+
+            {/* Eyebrow: accent line + issue + narrativeFrame */}
+            <div className="flex items-center gap-3 mb-5">
+              <span aria-hidden="true" style={{ width: '24px', height: '1px', backgroundColor: '#C8473A', flexShrink: 0 }} />
               <span
-                className="inline-block text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3"
-                style={{ backgroundColor: `${colors.hex}40`, color: colors.hex, border: `1px solid ${colors.hex}80` }}
+                className="font-dm-sans"
+                style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.60)' }}
               >
                 {issueName}
+                {issueName && story.narrativeFrame && (
+                  <span style={{ margin: '0 6px', opacity: 0.4 }}>·</span>
+                )}
+                {story.narrativeFrame && (
+                  <span style={{ fontStyle: 'italic', textTransform: 'none', letterSpacing: '0.02em' }}>
+                    {NARRATIVE_LABELS[story.narrativeFrame] ?? story.narrativeFrame}
+                  </span>
+                )}
               </span>
-            )}
-            {getTitleLabel(localizedStory) && (
-              <span className="block text-sm font-bold uppercase tracking-wider text-white/60 mb-2">{getTitleLabel(localizedStory)}</span>
-            )}
-            <h1 className="text-3xl md:text-5xl font-bold font-fraunces text-white mb-4 leading-tight max-w-3xl">
+            </div>
+
+            {/* Title */}
+            <h1
+              className="font-fraunces text-white mb-5"
+              style={{ fontSize: 'clamp(42px, 4.5vw, 62px)', fontWeight: '700', lineHeight: '1.06', letterSpacing: '-0.02em', maxWidth: '820px' }}
+            >
               <Link
                 to={`/stories/${story.slug}`}
                 className="hover:text-white/90 transition-colors focus-visible:ring-2 focus-visible:ring-white rounded"
@@ -85,27 +128,25 @@ function HeroSection({ story }: { story: PublicStory }) {
                 {getHeadline(localizedStory)}
               </Link>
             </h1>
-            {/* Summary or quote */}
-            {story.relevanceReasons && parsePoints(story.relevanceReasons)[0] ? (
-              <p className="text-base md:text-lg text-white/80 leading-relaxed max-w-2xl mb-4">
-                {limitSentences(stripPrefix(stripMarkdown(parsePoints(story.relevanceReasons)[0])), 2)}
+
+            {/* Deck */}
+            {deckText && (
+              <p
+                className="mb-4"
+                style={{ fontSize: '16px', color: 'rgba(255,255,255,0.75)', lineHeight: '1.65', maxWidth: '520px' }}
+              >
+                {deckText}
               </p>
-            ) : displayQuote ? (
-              <p className="text-base md:text-lg text-white/80 leading-relaxed max-w-2xl mb-4">
-                &ldquo;{displayQuote}&rdquo;
-              </p>
-            ) : displaySummary ? (
-              <p className="text-base md:text-lg text-white/80 leading-relaxed max-w-2xl mb-4">
-                {displaySummary.slice(0, 200)}
-              </p>
-            ) : null}
-            {/* Meta */}
-            <div className="flex items-center gap-2 text-sm text-white/60">
-              <a href={story.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-white/80 transition-colors">
+            )}
+
+            {/* Byline */}
+            <div className="flex items-center gap-2 font-dm-sans" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.50)' }}>
+              <a href={story.sourceUrl} target="_blank" rel="noopener noreferrer" className="hover:text-white/70 transition-colors">
                 {story.feed.displayTitle || story.feed.title}
               </a>
-              {dateStr && <><span>·</span><span>{dateStr}</span></>}
+              {dateStr && <><span aria-hidden="true">·</span><span>{dateStr}</span></>}
             </div>
+
           </div>
         </div>
       </div>
@@ -114,34 +155,35 @@ function HeroSection({ story }: { story: PublicStory }) {
 }
 
 // ---------------------------------------------------------------------------
-// Section heading with rules
+// Section heading — editorial ruled style
 // ---------------------------------------------------------------------------
 
-function RuledHeading({ issue }: { issue: PublicIssue }) {
+function RuledSection({ issue }: { issue: PublicIssue }) {
   const colors = getCategoryColor(issue.slug)
 
   return (
-    <div className="relative z-20 mb-6">
-      <div className="flex items-center gap-4">
-        <span className="flex-1 border-t border-neutral-200" aria-hidden="true" />
-        <Link
-          to={`/issues/${issue.slug}`}
-          className="flex items-center gap-2.5 hover:opacity-80 transition-opacity focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
-        >
-          <span
-            className={`w-3 h-3 rounded-full shrink-0`}
-            style={{ backgroundColor: colors.hex }}
-            aria-hidden="true"
-          />
-          <h2
-            className="text-sm font-bold uppercase tracking-widest"
-            style={{ color: colors.hex }}
-          >
-            {issue.name}
-          </h2>
-        </Link>
-        <span className="flex-1 border-t border-neutral-200" aria-hidden="true" />
-      </div>
+    <div
+      className="relative z-20 flex items-center"
+      style={{ gap: '14px', padding: '36px 0 18px', borderBottom: '2px solid #1C1917', marginBottom: '24px' }}
+    >
+      <span
+        className="shrink-0"
+        style={{ width: '9px', height: '9px', borderRadius: '50%', backgroundColor: colors.hex }}
+        aria-hidden="true"
+      />
+      <h2
+        className="font-fraunces"
+        style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '-0.01em', color: '#1C1917' }}
+      >
+        {issue.name}
+      </h2>
+      <Link
+        to={`/issues/${issue.slug}`}
+        className="ml-auto font-dm-sans hover:opacity-70 transition-opacity focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
+        style={{ fontSize: '11px', fontWeight: '600', color: '#0D5F3C', whiteSpace: 'nowrap' }}
+      >
+        Ver todas →
+      </Link>
     </div>
   )
 }
@@ -182,23 +224,41 @@ function IssueSection({
           <img src={`/illustrations/${issue.slug}.png`} alt="" className="opacity-[0.18] w-full h-full" />
         </div>
 
-        <RuledHeading issue={issue} />
+        <RuledSection issue={issue} />
 
         <div className="relative">
-          {/* Layout A: 2+3 grid (featured left, compacts right) */}
+          {/* Layout A: editorial grid 1.7fr/1fr with 1px separators (NYT/Guardian style) */}
           {layout === 'A' && (
-            <div className="grid gap-5 md:grid-cols-3">
-              <div className="md:col-span-2">
+            <>
+              {/* Mobile: stacked */}
+              <div className="block md:hidden space-y-4">
                 <StoryCard story={featured} variant="featured" />
+                {rest.slice(0, 2).map((story) => (
+                  <StoryCard key={story.id} story={story} variant="compact" />
+                ))}
               </div>
-              {rest.length > 0 && (
-                <div className="space-y-3">
-                  {rest.slice(0, 3).map((story) => (
-                    <StoryCard key={story.id} story={story} variant="compact" />
-                  ))}
+              {/* Desktop: editorial grid */}
+              <div
+                className="hidden md:grid"
+                style={{
+                  gridTemplateColumns: '1.7fr 1fr',
+                  gap: '1px',
+                  background: '#E7E5E4',
+                  border: '1px solid #E7E5E4',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div style={{ gridRow: '1 / 3', background: '#FFFFFF' }}>
+                  <StoryCard story={featured} variant="featured" />
                 </div>
-              )}
-            </div>
+                {rest.slice(0, 2).map((story) => (
+                  <div key={story.id} style={{ background: '#FFFFFF', overflow: 'hidden' }}>
+                    <StoryCard story={story} variant="horizontal" />
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Layout B: Full-width horizontal card + compact row below */}
@@ -254,6 +314,89 @@ function QuoteDivider({ stories }: { stories: PublicStory[] }) {
   if (!storyWithQuote) return null
 
   return <PullQuote story={storyWithQuote} />
+}
+
+// ---------------------------------------------------------------------------
+// Mission statement section
+// ---------------------------------------------------------------------------
+
+function StatementSection() {
+  return (
+    <section
+      className="my-12 mx-auto"
+      style={{
+        background: '#0D5F3C',
+        padding: 'clamp(40px, 6vw, 64px) clamp(24px, 5vw, 56px)',
+        borderRadius: '6px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Decorative concentric circles */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', right: '-60px', bottom: '-60px',
+          width: '280px', height: '280px', borderRadius: '50%',
+          border: '50px solid rgba(255,255,255,0.04)',
+          pointerEvents: 'none', userSelect: 'none',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', right: '50px', bottom: '50px',
+          width: '150px', height: '150px', borderRadius: '50%',
+          border: '30px solid rgba(255,255,255,0.04)',
+          pointerEvents: 'none', userSelect: 'none',
+        }}
+      />
+
+      {/* Eyebrow */}
+      <div className="flex items-center gap-3 mb-6">
+        <span aria-hidden="true" style={{ width: '20px', height: '1px', backgroundColor: '#C8473A', flexShrink: 0 }} />
+        <span
+          className="font-dm-sans"
+          style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.45)' }}
+        >
+          Nuestra misión
+        </span>
+      </div>
+
+      {/* Main text */}
+      <p
+        className="font-fraunces mb-8"
+        style={{
+          fontSize: 'clamp(28px, 2.8vw, 38px)',
+          fontWeight: '300',
+          fontStyle: 'italic',
+          lineHeight: '1.35',
+          color: 'rgba(255,255,255,0.95)',
+          maxWidth: '680px',
+        }}
+      >
+        Cubrimos las historias que el mundo necesita escuchar — las que ponen a los pueblos indígenas como protagonistas, no como víctimas.
+      </p>
+
+      {/* CTA */}
+      <Link
+        to="/metodologia"
+        className="font-dm-sans transition-colors hover:border-white/60"
+        style={{
+          display: 'inline-block',
+          border: '1px solid rgba(255,255,255,0.30)',
+          borderRadius: '9999px',
+          fontSize: '13px',
+          fontWeight: '600',
+          color: '#fff',
+          padding: '10px 20px',
+          textDecoration: 'none',
+        }}
+      >
+        Nuestra metodología →
+      </Link>
+    </section>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -361,11 +504,11 @@ export default function HomePage() {
             )
           }).reduce<React.ReactNode[]>((acc, section, idx) => {
             acc.push(section)
-            // Insert support banner after the 2nd issue section
+            if (idx === 0) {
+              acc.push(<StatementSection key="statement-section" />)
+            }
             if (idx === 1) {
-              acc.push(
-                <SupportBanner key="support-banner" />
-              )
+              acc.push(<SupportBanner key="support-banner" />)
             }
             return acc
           }, [])
