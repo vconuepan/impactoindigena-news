@@ -21,13 +21,10 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
   const publishDate = story.datePublished ? formatDate(story.datePublished) : null
   const ageMonths = story.sourceDatePublished ? storyAgeMonths(story.sourceDatePublished) : 0
   const isOld = ageMonths >= 3
-  // Show both dates only when they differ (different day)
   const showBothDates = sourceDate && publishDate && sourceDate !== publishDate
   return (
-    <div className={`flex flex-wrap items-center gap-x-2 text-neutral-500 font-dm-sans ${size === 'xs' ? 'text-xs' : 'text-sm'}`}>
+    <div className={`flex flex-wrap items-center gap-x-2 text-neutral-500 font-dm-sans ${size === 'xs' ? 'text-[11px]' : 'text-[12px]'}`}>
       <span className="inline-flex items-center gap-1.5">
-        {/* Real outlet derived from sourceUrl; favicon only when the shown
-            name IS the feed (discovery feeds say "Google News"). */}
         {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title) === (story.feed.displayTitle || story.feed.title) && (
           <FeedFavicon feedId={story.feed.id} size={size === 'xs' ? 14 : 16} />
         )}
@@ -59,11 +56,11 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
 function CategoryPill({ name, hex }: { name: string; hex: string }) {
   return (
     <span
-      className="inline-block text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-2 font-dm-sans"
+      className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-2 font-dm-sans"
       style={{
-        backgroundColor: hexToRgba(hex, 0.12),
+        backgroundColor: hexToRgba(hex, 0.10),
         color: hex,
-        border: `1px solid ${hexToRgba(hex, 0.25)}`,
+        border: `1px solid ${hexToRgba(hex, 0.22)}`,
       }}
     >
       {name}
@@ -157,15 +154,15 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
   // === FEATURED variant — full-bleed image, meta flush inside card ===
   if (variant === 'featured') {
     return (
-      <article className={`group relative overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow duration-300 ${readClass}`}>
-        <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-xl">
-          {/* Image area — extended gradient covers the meta row below */}
+      <article className={`group relative overflow-hidden rounded-lg ${readClass}`}>
+        <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg">
+          {/* Image area */}
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <CardImage
                 src={imageUrl}
                 alt={headlineText}
-                className="w-full h-full object-cover transition-transform duration-500"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
                     {Pattern && <Pattern opacity={0.25} />}
@@ -177,24 +174,24 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
                 {Pattern && <Pattern opacity={0.25} />}
               </div>
             )}
-            {/* Gradient overlay — heavier at bottom to seat the meta strip */}
+            {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
             {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
             {/* Headline + category */}
-            <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-3">
+            <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-4">
               {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
               {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} dark />}
               {getTitleLabel(localizedStory) && (
-                <span className="block text-xs font-bold uppercase tracking-wider text-white/70 mb-1">{getTitleLabel(localizedStory)}</span>
+                <span className="block text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1.5 font-dm-sans">{getTitleLabel(localizedStory)}</span>
               )}
-              <h3 className="text-xl md:text-2xl font-bold text-white leading-tight">
+              <h3 className="font-fraunces text-[21px] md:text-[24px] font-semibold text-white leading-tight">
                 {headlineText}
               </h3>
             </div>
           </div>
         </Link>
-        {/* Meta strip — no border, neutral-50 background for seamless step-down */}
-        <div className="bg-neutral-50 px-5 py-3 flex items-center justify-between gap-2 rounded-b-xl">
+        {/* Meta strip */}
+        <div className="px-5 py-3 flex items-center justify-between gap-2 border-t border-neutral-100 bg-white">
           <StoryMeta story={story} size="xs" />
           {story.slug && <BookmarkButton slug={story.slug} size="sm" hoverReveal className="shrink-0" />}
         </div>
@@ -202,17 +199,17 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
     )
   }
 
-  // === EQUAL variant — image top, text below (Ladera Sur style) ===
+  // === EQUAL variant — image top, text below ===
   if (variant === 'equal') {
     return (
-      <article className={`group relative overflow-hidden rounded-xl border border-neutral-100 bg-white hover:shadow-md transition-shadow duration-300 h-full ${readClass}`}>
-        <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-xl overflow-hidden">
+      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white h-full ${readClass}`}>
+        <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg overflow-hidden">
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <CardImage
                 src={imageUrl}
                 alt={headlineText}
-                className="w-full h-full object-cover transition-transform duration-500"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
                     {Pattern && <Pattern opacity={0.2} />}
@@ -227,12 +224,12 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
             {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
           </div>
         </Link>
-        <div className="p-4">
+        <div className="p-5">
           {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
           {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
           <div className="flex items-start justify-between gap-1">
             <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
-              <h3 className="text-base font-bold text-neutral-900 mb-2 group-hover:text-brand-800 transition-colors leading-snug">
+              <h3 className="font-fraunces text-[17px] font-semibold text-neutral-900 mb-2.5 group-hover:text-brand-800 transition-colors leading-snug">
                 {headlineText}
               </h3>
             </Link>
@@ -240,7 +237,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
           </div>
           <StoryMeta story={story} size="xs" />
           {displaySummary && (
-            <p className="text-sm text-neutral-500 leading-relaxed mt-2 line-clamp-2">{displaySummary}</p>
+            <p className="text-[13px] text-neutral-500 leading-relaxed mt-2.5 line-clamp-2">{displaySummary}</p>
           )}
         </div>
       </article>
@@ -250,18 +247,18 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
   // === HORIZONTAL variant — text left, image right ===
   if (variant === 'horizontal') {
     return (
-      <article className={`group relative overflow-hidden rounded-xl border border-neutral-100 bg-white hover:shadow-md transition-shadow duration-300 ${readClass}`}>
+      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white ${readClass}`}>
         <div className="flex flex-col md:flex-row">
           {/* Text left */}
-          <div className="flex-1 p-6 md:p-7">
+          <div className="flex-1 p-5 md:p-6">
             {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
             {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
             <div className="flex items-start justify-between gap-2">
               <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                 {getTitleLabel(localizedStory) && (
-                  <span className="block text-xs font-bold uppercase tracking-wider text-neutral-500 mb-1">{getTitleLabel(localizedStory)}</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1.5 font-dm-sans">{getTitleLabel(localizedStory)}</span>
                 )}
-                <h3 className="text-2xl md:text-3xl font-bold text-neutral-900 mb-3 group-hover:text-brand-800 transition-colors leading-tight">
+                <h3 className="font-fraunces text-xl md:text-[22px] font-semibold text-neutral-900 mb-3 group-hover:text-brand-800 transition-colors leading-tight">
                   {headlineText}
                 </h3>
               </Link>
@@ -269,17 +266,17 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
             </div>
             <StoryMeta story={story} />
             {displaySummary && (
-              <p className="text-neutral-600 leading-relaxed mt-3 line-clamp-3">{displaySummary}</p>
+              <p className="text-[13px] text-neutral-600 leading-relaxed mt-3 line-clamp-3">{displaySummary}</p>
             )}
           </div>
-          {/* Image right — shown with image or as color accent strip */}
-          <Link to={`/stories/${story.slug}`} className="md:w-56 md:shrink-0 overflow-hidden rounded-b-xl md:rounded-b-none md:rounded-r-xl focus-visible:ring-2 focus-visible:ring-brand-500">
-            <div className="h-48 md:h-full min-h-[180px] overflow-hidden bg-neutral-100 relative">
+          {/* Image right */}
+          <Link to={`/stories/${story.slug}`} className="md:w-44 md:shrink-0 overflow-hidden rounded-b-lg md:rounded-b-none md:rounded-r-lg focus-visible:ring-2 focus-visible:ring-brand-500">
+            <div className="h-44 md:h-full min-h-[160px] overflow-hidden bg-neutral-100 relative">
               {imageUrl ? (
                 <CardImage
                   src={imageUrl}
                   alt={headlineText}
-                  className="w-full h-full object-cover transition-transform duration-500"
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
                   fallback={
                     <div
                       className="w-full h-full"
@@ -316,9 +313,9 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
           className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
         >
           {getTitleLabel(localizedStory) && (
-            <span className="block text-xs font-bold uppercase tracking-wider mb-0.5 font-dm-sans" style={{ color: colors.hex }}>{getTitleLabel(localizedStory)}</span>
+            <span className="block text-[10px] font-bold uppercase tracking-widest mb-0.5 font-dm-sans" style={{ color: colors.hex }}>{getTitleLabel(localizedStory)}</span>
           )}
-          <h3 className="text-[15px] font-bold text-neutral-800 mb-1 group-hover:text-brand-800 transition-colors leading-snug">
+          <h3 className="font-fraunces text-[15px] font-semibold text-neutral-800 mb-1 group-hover:text-brand-800 transition-colors leading-snug">
             {headlineText}
           </h3>
         </Link>

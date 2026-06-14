@@ -253,8 +253,12 @@ function IssueSection({
                   <StoryCard story={featured} variant="featured" />
                 </div>
                 {rest.slice(0, 2).map((story) => (
-                  <div key={story.id} style={{ background: '#FFFFFF', overflow: 'hidden' }}>
-                    <StoryCard story={story} variant="horizontal" />
+                  <div
+                    key={story.id}
+                    className="[&_article]:border-b-0 [&_article]:py-0"
+                    style={{ background: '#FFFFFF', padding: '24px 28px', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
+                  >
+                    <StoryCard story={story} variant="compact" />
                   </div>
                 ))}
               </div>
