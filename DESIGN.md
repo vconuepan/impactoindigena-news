@@ -84,18 +84,21 @@ Inter, Roboto, Arial, Helvetica, Montserrat, Poppins, Raleway — no usar como d
 | `--brand-pale` | `#0a3d26` |
 | `--accent-pale` | `#3d1512` |
 
-### Colores de categoría (sistema multicolor — mantener)
+### Colores de categoría (paleta tierra editorial)
 
-| Categoría | Hex | Tailwind approx |
-|-----------|-----|-----------------|
-| Cambio Climático y Biodiversidad | `#15803D` | green-700 |
-| Derechos de los Pueblos Indígenas | `#EA580C` | orange-600 |
-| Empresas Indígenas | `#CA8A04` | yellow-600 |
-| Reconciliación y Paz | `#2563EB` | blue-600 |
-| Chile Intercultural | `#9333EA` | purple-600 |
-| Comunidades | `#DC2626` | red-600 |
+Cuatro familias derivadas de la marca. Sin violeta ni naranja brillante — todos los tonos son tierra, bosque, agua o terracota.
 
-Estos colores se usan en: dots de categoría en nav, tags en cards, borders activos en `.issue-nav-link`, `.ruled-heading`.
+| Familia | Hex | Categorías |
+|---------|-----|-----------|
+| Verde bosque | `#15803D` | Cambio Climático y Biodiversidad, Planeta/Clima |
+| Terracota | `#B84236` | Derechos de los Pueblos Indígenas, Amenazas urgentes |
+| Ocre tierra | `#8A6A28` | Empresas Indígenas, Desarrollo sostenible |
+| Pizarra (azul agua) | `#1A6B8A` | Chile Intercultural, Ciencia y tecnología |
+| Verde marca (default) | `#0D5F3C` | General, Comunidades, fallback |
+
+Implementación: `client/src/lib/category-colors.ts` — los cinco objetos base (`VERDE_BOSQUE`, `TERRACOTA`, `OCRE_TIERRA`, `PIZARRA`, `VERDE_MARCA`) asignados por slug.
+
+Estos colores se usan en: dots de categoría en nav, tags en cards, borders activos en `.issue-nav-link`, gradientes de cards sin imagen.
 
 ### Uso del color acento (terracota `#C8473A`)
 

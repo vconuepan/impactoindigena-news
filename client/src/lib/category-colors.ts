@@ -29,88 +29,70 @@ export interface CategoryColor {
   bgTint: string
 }
 
+// Earth-toned palette — 4 semantic families derived from the brand.
+// All hex values are used as inline styles in CategoryPill, dots, and card gradients.
+// Tailwind class strings are approximate and used only for dotBg in nav/issue pages.
+
+const VERDE_BOSQUE = {
+  border: 'border-green-700',
+  borderThick: 'border-l-[6px] border-green-700',
+  dot: 'text-green-700',
+  bg: 'bg-green-50',
+  dotBg: 'bg-green-700',
+  hex: '#15803D',
+  bgTint: 'bg-green-50/60',
+} satisfies CategoryColor
+
+const TERRACOTA = {
+  border: 'border-accent-600',
+  borderThick: 'border-l-[6px] border-accent-600',
+  dot: 'text-accent-600',
+  bg: 'bg-accent-50',
+  dotBg: 'bg-accent-600',
+  hex: '#B84236',
+  bgTint: 'bg-accent-50/60',
+} satisfies CategoryColor
+
+const OCRE_TIERRA = {
+  border: 'border-yellow-700',
+  borderThick: 'border-l-[6px] border-yellow-700',
+  dot: 'text-yellow-700',
+  bg: 'bg-yellow-50',
+  dotBg: 'bg-yellow-700',
+  hex: '#8A6A28',
+  bgTint: 'bg-yellow-50/60',
+} satisfies CategoryColor
+
+const PIZARRA = {
+  border: 'border-sky-700',
+  borderThick: 'border-l-[6px] border-sky-700',
+  dot: 'text-sky-700',
+  bg: 'bg-sky-50',
+  dotBg: 'bg-sky-700',
+  hex: '#1A6B8A',
+  bgTint: 'bg-sky-50/60',
+} satisfies CategoryColor
+
+const VERDE_MARCA = {
+  border: 'border-brand-800',
+  borderThick: 'border-l-[6px] border-brand-800',
+  dot: 'text-brand-800',
+  bg: 'bg-brand-50',
+  dotBg: 'bg-brand-800',
+  hex: '#0D5F3C',
+  bgTint: 'bg-brand-50/60',
+} satisfies CategoryColor
+
 const CATEGORY_COLORS: Record<string, CategoryColor> = {
-  'cambio-climatico': {
-    border: 'border-emerald-400',
-    borderThick: 'border-l-[6px] border-emerald-400',
-    dot: 'text-emerald-500',
-    bg: 'bg-emerald-50',
-    dotBg: 'bg-emerald-400',
-    hex: '#34d399',
-    bgTint: 'bg-emerald-50/60',
-  },
-  'derechos-indigenas': {
-    border: 'border-orange-400',
-    borderThick: 'border-l-[6px] border-orange-400',
-    dot: 'text-orange-500',
-    bg: 'bg-orange-50',
-    dotBg: 'bg-orange-400',
-    hex: '#fb923c',
-    bgTint: 'bg-orange-50/60',
-  },
-  'desarrollo-sostenible-y-autodeterminado': {
-    border: 'border-amber-400',
-    borderThick: 'border-l-[6px] border-amber-400',
-    dot: 'text-amber-500',
-    bg: 'bg-amber-50',
-    dotBg: 'bg-amber-400',
-    hex: '#fbbf24',
-    bgTint: 'bg-amber-50/60',
-  },
-  'chile-indigena': {
-    border: 'border-violet-400',
-    borderThick: 'border-l-[6px] border-violet-400',
-    dot: 'text-violet-500',
-    bg: 'bg-violet-50',
-    dotBg: 'bg-violet-400',
-    hex: '#a78bfa',
-    bgTint: 'bg-violet-50/60',
-  },
-  'human-development': {
-    border: 'border-amber-400',
-    borderThick: 'border-l-[6px] border-amber-400',
-    dot: 'text-amber-500',
-    bg: 'bg-amber-50',
-    dotBg: 'bg-amber-400',
-    hex: '#fbbf24',
-    bgTint: 'bg-amber-50/60',
-  },
-  'planet-climate': {
-    border: 'border-teal-400',
-    borderThick: 'border-l-[6px] border-teal-400',
-    dot: 'text-teal-500',
-    bg: 'bg-teal-50',
-    dotBg: 'bg-teal-400',
-    hex: '#2dd4bf',
-    bgTint: 'bg-teal-50/60',
-  },
-  'existential-threats': {
-    border: 'border-red-400',
-    borderThick: 'border-l-[6px] border-red-400',
-    dot: 'text-red-500',
-    bg: 'bg-red-50',
-    dotBg: 'bg-red-400',
-    hex: '#f87171',
-    bgTint: 'bg-red-50/60',
-  },
-  'science-technology': {
-    border: 'border-indigo-400',
-    borderThick: 'border-l-[6px] border-indigo-400',
-    dot: 'text-indigo-500',
-    bg: 'bg-indigo-50',
-    dotBg: 'bg-indigo-400',
-    hex: '#818cf8',
-    bgTint: 'bg-indigo-50/60',
-  },
-  'general-news': {
-    border: 'border-brand-400',
-    borderThick: 'border-l-[6px] border-brand-400',
-    dot: 'text-brand-500',
-    bg: 'bg-brand-50',
-    dotBg: 'bg-brand-400',
-    hex: '#f472b6',
-    bgTint: 'bg-brand-50/60',
-  },
+  'cambio-climatico': VERDE_BOSQUE,
+  'derechos-indigenas': TERRACOTA,
+  'desarrollo-sostenible-y-autodeterminado': OCRE_TIERRA,
+  'chile-indigena': PIZARRA,
+  'human-development': OCRE_TIERRA,
+  'planet-climate': VERDE_BOSQUE,
+  'existential-threats': TERRACOTA,
+  'science-technology': PIZARRA,
+  'general-news': VERDE_MARCA,
 }
 
 const DEFAULT_COLOR: CategoryColor = CATEGORY_COLORS['general-news']
