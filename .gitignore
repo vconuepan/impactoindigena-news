@@ -26,6 +26,7 @@ logs/
 # AI development artifacts
 nul
 .playwright-mcp
+.gstack-design-audit/
 
 # Non-coding-related project files
 DOCS/
