@@ -1,6 +1,9 @@
 {
   "name": "impactoindigena-news-server",
   "version": "0.1.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "type": "module",
   "description": "Backend API for Impacto Indígena news curation platform",
   "main": "dist/index.js",

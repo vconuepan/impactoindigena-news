@@ -128,6 +128,12 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
       res.status(409).json({ error: 'Already exists' })
       return
     }
+    // P2023: malformed input (e.g. invalid UUID/enum value) reaching a query —
+    // a client error, not a server fault. Map to 400 instead of a 500.
+    if (err.code === 'P2023') {
+      res.status(400).json({ error: 'Invalid request' })
+      return
+    }
   }
 
   // Known service errors

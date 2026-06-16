@@ -21,6 +21,10 @@
       "rewrite": "/api/sitemap.xml"
     },
     {
+      "route": "/feed",
+      "rewrite": "/api/feed"
+    },
+    {
       "route": "/podcast/feed.xml",
       "rewrite": "/api/podcast/feed.xml"
     }
