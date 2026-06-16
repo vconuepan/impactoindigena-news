@@ -83,7 +83,7 @@ function HeroSection({ story }: { story: PublicStory }) {
         {/* Brand green gradient overlay */}
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(13,95,60,0.92) 0%, rgba(13,95,60,0.55) 50%, rgba(13,95,60,0.20) 100%)' }}
+          style={{ background: 'linear-gradient(to top, rgba(13,95,60,0.88) 0%, rgba(13,95,60,0.42) 55%, rgba(13,95,60,0.06) 100%)' }}
         />
 
         {/* Geometric watermark — top right, opacity 0.04 */}

@@ -157,7 +157,7 @@ El hero principal es el primer elemento debajo del header. Es tratamiento de **p
 
 - **Altura:** 560–600px (no `auto`, no `min-height` pequeño)
 - **Imagen:** Full-bleed, `background-size: cover`. Sin borde, sin `border-radius`.
-- **Overlay:** `linear-gradient(to top, rgba(13,95,60,0.92) 0%, rgba(13,95,60,0.55) 50%, rgba(13,95,60,0.20) 100%)` — gradiente del brand verde
+- **Overlay:** `linear-gradient(to top, rgba(13,95,60,0.88) 0%, rgba(13,95,60,0.42) 55%, rgba(13,95,60,0.06) 100%)` — gradiente del brand verde. Base densa (0.88) para legibilidad del titular alineado al fondo; cima casi limpia (0.06) para que la fotografía respire. (Ajustado 2026-06-14 tras audit: el gradiente previo 0.92→0.20 aplanaba la foto.)
 - **Watermark:** Patrón geométrico de inspiración indígena, `opacity: 0.04`, posición top-right, `pointer-events: none`
 - **Contenido (alineado al fondo del hero):**
   - `hero-eyebrow`: DM Sans 10px 700 uppercase, `color: rgba(255,255,255,0.60)`, con línea decorativa `24×1px` color `var(--accent)` a la izquierda. Incluye la etiqueta de la semana + NarrativeFrame del artículo.
@@ -248,19 +248,23 @@ Muestra el marco narrativo clasificado por la IA bajo cada tag de categoría en 
 
 ```css
 font-family: 'DM Sans', sans-serif;
-font-size: 9px;
+font-size: 10px;
 font-style: italic;
 font-weight: 400;
-color: var(--text-subtle);   /* #A8A29E */
-letter-spacing: 0.02em;
+color: var(--text-muted);    /* #78716C — legible, no fantasma */
 margin-bottom: 8px;
-display: block;
+display: inline-flex;
+align-items: center;
+gap: 6px;
 cursor: help;                /* tooltip al hover */
 ```
 
-Texto: `· Protagonismo` / `· Resiliencia` / `· Alianza` / `· Confrontación`
+Estructura: marcador `IA` (8px, semibold, uppercase, opacity 0.55) + línea separadora `10×1px` + label itálico.
+Texto del label: `Protagonismo` / `Resiliencia` / `Alianza` / `Confrontación`.
 
-Al hacer hover: tooltip `title` o `aria-describedby` explicando el marco. El tooltip enlaza a `/metodologia`.
+El marcador `IA` hace explícito que el marco lo determinó el sistema — es la señal AI-native a nivel de card. (Ajustado 2026-06-14 tras audit: la versión previa a 9px gris `--text-subtle` era invisible en pantalla.)
+
+Al hacer hover: tooltip `title` = "Marco narrativo identificado por IA: {label}".
 
 **Regla:** Mostrar en TODAS las cards de stories que tengan `narrativeFrame` definido (≠ null). Si `narrativeFrame` es null, no mostrar nada — no placeholder.
 
@@ -272,9 +276,9 @@ Sello circular del logo como marca de agua en imágenes de stories con `relevanc
 position: absolute;
 bottom: 10px;
 right: 10px;
-width: 34px;
-height: 34px;
-opacity: 0.18;
+width: 36px;
+height: 36px;
+opacity: 0.32;   /* subido de 0.18 (audit 2026-06-14): a 0.18 era indistinguible sobre la foto */
 pointer-events: none;
 user-select: none;
 ```

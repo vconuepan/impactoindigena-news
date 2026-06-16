@@ -79,9 +79,11 @@ function NarrativeFrameTag({ frame, dark = false }: { frame: string; dark?: bool
   const label = NARRATIVE_LABELS[frame] ?? frame
   return (
     <span
-      className={`inline-block text-[9px] italic font-dm-sans cursor-help leading-none mb-1.5 ${dark ? 'text-white/50' : 'text-neutral-400'}`}
-      title={`Marco narrativo: ${label}`}
+      className={`inline-flex items-center gap-1.5 text-[10px] italic font-dm-sans cursor-help leading-none mb-2 ${dark ? 'text-white/75' : 'text-neutral-500'}`}
+      title={`Marco narrativo identificado por IA: ${label}`}
     >
+      <span aria-hidden="true" className="not-italic font-semibold tracking-[0.08em] opacity-55 text-[8px]">IA</span>
+      <span aria-hidden="true" className={`w-2.5 h-px ${dark ? 'bg-white/40' : 'bg-neutral-300'}`} />
       {label}
     </span>
   )
@@ -89,12 +91,12 @@ function NarrativeFrameTag({ frame, dark = false }: { frame: string; dark?: bool
 
 function EditorialSeal() {
   return (
-    <div className="absolute bottom-2 right-2 pointer-events-none select-none" aria-hidden="true">
+    <div className="absolute bottom-2.5 right-2.5 pointer-events-none select-none" aria-hidden="true">
       <img
         src="/images/logo-no-text-square.png"
         alt=""
         className="w-9 h-9 object-contain"
-        style={{ opacity: 0.18 }}
+        style={{ opacity: 0.32 }}
       />
     </div>
   )
