@@ -10,6 +10,9 @@ const mockPrisma = vi.hoisted(() => ({
   mastodonPost: {
     findMany: vi.fn(),
   },
+  instagramPost: {
+    findMany: vi.fn(),
+  },
 }))
 
 const mockLlm = vi.hoisted(() => ({
@@ -30,7 +33,13 @@ vi.mock('../prompts/index.js', () => ({
 const { findAutoPostCandidates, pickBestStoryForSocial } = await import('./socialMedia.js')
 
 describe('findAutoPostCandidates', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Default each channel to "nothing posted" so tests only set the channels they care about.
+    mockPrisma.blueskyPost.findMany.mockResolvedValue([])
+    mockPrisma.mastodonPost.findMany.mockResolvedValue([])
+    mockPrisma.instagramPost.findMany.mockResolvedValue([])
+  })
 
   it('returns empty when no published stories', async () => {
     mockPrisma.story.findMany.mockResolvedValue([])
@@ -60,7 +69,7 @@ describe('findAutoPostCandidates', () => {
     expect(result).toContain('story-3')
   })
 
-  it('excludes stories posted to both channels', async () => {
+  it('excludes stories posted to all channels', async () => {
     mockPrisma.story.findMany.mockResolvedValue([
       { id: 'story-1' },
       { id: 'story-2' },
@@ -72,10 +81,13 @@ describe('findAutoPostCandidates', () => {
     mockPrisma.mastodonPost.findMany.mockResolvedValue([
       { storyId: 'story-1' },
     ])
+    mockPrisma.instagramPost.findMany.mockResolvedValue([
+      { storyId: 'story-1' },
+    ])
 
     const result = await findAutoPostCandidates(25)
 
-    // story-1 posted to both — excluded; story-2 only on Bluesky — included
+    // story-1 posted to all three — excluded; story-2 only on Bluesky — included
     expect(result).not.toContain('story-1')
     expect(result).toContain('story-2')
   })

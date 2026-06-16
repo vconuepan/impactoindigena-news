@@ -83,6 +83,6 @@ describe('DashboardPage', () => {
 
   it('renders run buttons for each job', async () => {
     renderDashboard()
-    expect(await screen.findByRole('button', { name: 'Run Crawl Feeds' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: 'Ejecutar Crawl Feeds' })).toBeInTheDocument()
   })
 })

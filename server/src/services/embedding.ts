@@ -12,14 +12,23 @@ import {
 
 const log = createLogger('embedding')
 
-const openai: OpenAI = config.llm.provider === 'azure'
-  ? new AzureOpenAI({
-      endpoint: config.llm.azure.endpoint,
-      apiKey: config.llm.azure.apiKey,
-      apiVersion: config.llm.azure.apiVersion,
-      deployment: config.llm.azure.deployments.embedding,
-    })
-  : new OpenAI()
+let _openai: OpenAI | null = null
+
+// Lazy init: construir el cliente en el primer uso, no al importar el módulo.
+// Instanciarlo eager rompía la carga de cualquier test que importe esta cadena
+// cuando OPENAI_API_KEY no está seteada (p. ej. en CI).
+function getOpenAI(): OpenAI {
+  if (_openai) return _openai
+  _openai = config.llm.provider === 'azure'
+    ? new AzureOpenAI({
+        endpoint: config.llm.azure.endpoint,
+        apiKey: config.llm.azure.apiKey,
+        apiVersion: config.llm.azure.apiVersion,
+        deployment: config.llm.azure.deployments.embedding,
+      })
+    : new OpenAI()
+  return _openai
+}
 
 export type StoryForEmbedding = StoryEmbeddingRow
 
@@ -70,7 +79,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   const input = text.length > MAX_EMBEDDING_CHARS ? text.slice(0, MAX_EMBEDDING_CHARS) : text
   const response = await withRetry(
     () =>
-      openai.embeddings.create({
+      getOpenAI().embeddings.create({
         model: config.embedding.model,
         input,
         dimensions: config.embedding.dimensions,
@@ -108,7 +117,7 @@ export async function generateEmbeddingsBatch(
 ): Promise<number[][]> {
   const response = await withRetry(
     () =>
-      openai.embeddings.create({
+      getOpenAI().embeddings.create({
         model: config.embedding.model,
         input: texts,
         dimensions: config.embedding.dimensions,

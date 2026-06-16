@@ -71,8 +71,8 @@ describe('SearchPage', () => {
     expect(await screen.findByText(/climate/)).toBeTruthy()
   })
 
-  it('shows prompt when no query provided', async () => {
+  it('shows search input when no query provided', async () => {
     renderSearchPage('/search')
-    expect(await screen.findByText('Enter a term to search for stories.')).toBeTruthy()
+    expect(await screen.findByRole('searchbox')).toBeTruthy()
   })
 })
