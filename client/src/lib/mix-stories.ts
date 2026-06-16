@@ -26,6 +26,13 @@ export function mixHomepageStories(
     return buckets.uplifting.slice(0, slots).sort(byDateDesc)
   }
 
+  // At 0%, strict negative only — no backfill from positive buckets (mirror of
+  // the 100% case). Without this, an issue with fewer than `slots` negative
+  // stories would leak uplifting/calm into the "Solo noticias pesadas" view.
+  if (positivity === 0) {
+    return buckets.negative.slice(0, slots).sort(byDateDesc)
+  }
+
   // For all other settings, combine uplifting+calm as "positive"
   const positive = [...buckets.uplifting, ...buckets.calm].sort(byDateDesc)
   const negative = buckets.negative
@@ -137,13 +144,21 @@ export function filterStoriesByPositivity(
 /**
  * Map positivity slider position to emotion tag filters for server-side pagination.
  * Returns undefined at 50% (no filter — show all stories).
+ *
+ * The intermediate stops are symmetric "mood bands" over the emotional spectrum
+ * (scary < frustrating < calm < uplifting): 25% ("Mayormente pesadas") is the
+ * bottom three tags and 75% ("Mayormente positivas") is the top three. Each
+ * excludes only the opposite extreme (25% drops 'uplifting'; 75% drops 'scary')
+ * while keeping the milder opposite tag, so neither stop over-excludes a pole.
+ * Previously 75% returned only ['uplifting','calm'], erasing all heavy stories
+ * and leaving the two stops asymmetric.
  */
 export function positivityToEmotionTags(positivity: number): string[] | undefined {
   switch (positivity) {
     case 0: return ['frustrating', 'scary']
     case 25: return ['frustrating', 'scary', 'calm']
     case 50: return undefined
-    case 75: return ['uplifting', 'calm']
+    case 75: return ['frustrating', 'calm', 'uplifting']
     case 100: return ['uplifting']
     default: return undefined
   }

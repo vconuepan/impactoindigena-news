@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { mixHomepageStories, filterStoriesByPositivity, pickHero } from './mix-stories'
+import { mixHomepageStories, filterStoriesByPositivity, pickHero, positivityToEmotionTags } from './mix-stories'
 import type { StoryBuckets } from './mix-stories'
 import type { PublicStory, EmotionTag } from '@shared/types'
 
@@ -86,6 +86,14 @@ describe('mixHomepageStories', () => {
     const buckets = makeBuckets(7, 5, 7)
     const result = mixHomepageStories(buckets, 7, 0)
     expect(result).toHaveLength(7)
+    expect(result.every((s) => ['frustrating', 'scary'].includes(s.emotionTag!))).toBe(true)
+  })
+
+  it('does not leak positive stories at 0% when negatives are short', () => {
+    const buckets = makeBuckets(7, 5, 3) // only 3 negatives available, 7 slots
+    const result = mixHomepageStories(buckets, 7, 0)
+    // No backfill from positive buckets — return only the available negatives
+    expect(result).toHaveLength(3)
     expect(result.every((s) => ['frustrating', 'scary'].includes(s.emotionTag!))).toBe(true)
   })
 
@@ -218,6 +226,33 @@ describe('pickHero', () => {
   it('returns null for empty buckets', () => {
     const hero = pickHero({}, 50)
     expect(hero).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// positivityToEmotionTags
+// ---------------------------------------------------------------------------
+
+describe('positivityToEmotionTags', () => {
+  it('maps each slider stop to its emotion-tag band', () => {
+    expect(positivityToEmotionTags(0)).toEqual(['frustrating', 'scary'])
+    expect(positivityToEmotionTags(25)).toEqual(['frustrating', 'scary', 'calm'])
+    expect(positivityToEmotionTags(50)).toBeUndefined()
+    expect(positivityToEmotionTags(75)).toEqual(['frustrating', 'calm', 'uplifting'])
+    expect(positivityToEmotionTags(100)).toEqual(['uplifting'])
+  })
+
+  it('keeps 25% and 75% symmetric — each drops only the opposite extreme', () => {
+    const heavy = positivityToEmotionTags(25)!
+    const light = positivityToEmotionTags(75)!
+    // 25% (mostly heavy) drops the most upbeat tag; 75% (mostly positive) drops the most alarming tag
+    expect(heavy).not.toContain('uplifting')
+    expect(light).not.toContain('scary')
+    // neither stop erases the milder opposite tag — 'calm' appears in both
+    expect(heavy).toContain('calm')
+    expect(light).toContain('calm')
+    // same band size: no asymmetric over-exclusion (the regression had 75% at length 2)
+    expect(heavy).toHaveLength(light.length)
   })
 })
 
