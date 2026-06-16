@@ -55,6 +55,7 @@ export default function CommunityDirectoryPage() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/comunidades`} />
+        <link rel="canonical" href={`${SEO.siteUrl}/comunidades`} />
         {CommonOgTags({})}
       </Helmet>
 

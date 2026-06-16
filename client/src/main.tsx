@@ -9,6 +9,19 @@ import App from './App'
 import './i18n'
 import './index.css'
 
+// Prerender-only fix: headless Chrome with --disable-gpu fires
+// requestAnimationFrame unreliably, and react-helmet-async defers its <head>
+// commit to rAF (commitTagChanges runs inside requestAnimationFrame). Without a
+// real frame, per-page <title>/canonical/hreflang/JSON-LD never reach the
+// snapshot, so the home and lazy SPA routes prerendered with the generic
+// homepage head. Shim rAF to a timer so Helmet flushes deterministically.
+// Gated on navigator.webdriver — never affects real browsers. Must run before
+// React commits effects (i.e. before createRoot().render below).
+if (typeof navigator !== 'undefined' && navigator.webdriver) {
+  window.requestAnimationFrame = ((cb: FrameRequestCallback): number =>
+    window.setTimeout(() => cb(performance.now()), 0) as unknown as number) as typeof window.requestAnimationFrame
+}
+
 // Accessibility: log a11y violations to console during development
 if (import.meta.env.DEV) {
   import('@axe-core/react').then((axe) => {
