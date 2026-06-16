@@ -152,7 +152,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 
 ## Memory
 
-All project memory lives in this `CLAUDE.md` file. Do not use or update the auto-memory file under `~/.claude/projects/`.
+Project memory lives in the auto-memory directory under `~/.claude/projects/-Users-venancio-Claude-Repo-vocesindigenas/memory/` (one fact per file + `MEMORY.md` index). Keep it current at session boundaries. This `CLAUDE.md` holds durable conventions and architecture; transient state (wave status, pending infra actions, recent design work) goes in auto-memory.
 
 ## Maintaining This File
 
