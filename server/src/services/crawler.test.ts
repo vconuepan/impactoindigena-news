@@ -223,7 +223,7 @@ describe('crawlFeed', () => {
     mockExtractContent.mockResolvedValue({
       title: 'Better Title',
       content: 'Content here',
-      datePublished: '2024-01-15',
+      datePublished: null,
       method: 'readability',
     })
     mockCreateStory.mockResolvedValue({ id: 'story-1' })

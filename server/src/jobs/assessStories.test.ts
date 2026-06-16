@@ -38,9 +38,9 @@ describe('runAssessStories', () => {
 
     // First call: snapshot with no filters
     expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed')
-    // Per-issue and unassigned calls use global threshold (4) from config
-    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed', { ratingMin: 4, issueId: 'issue-1' })
-    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed', { ratingMin: 4, issueId: null })
+    // Per-issue and unassigned calls use global threshold (5) from config
+    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed', { ratingMin: 5, issueId: 'issue-1' })
+    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed', { ratingMin: 5, issueId: null })
     expect(mockAssessStories).toHaveBeenCalledWith(['story-1', 'story-2'])
   })
 
@@ -59,7 +59,7 @@ describe('runAssessStories', () => {
     await runAssessStories()
 
     expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed')
-    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed', { ratingMin: 4, issueId: 'issue-1' })
+    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed', { ratingMin: 5, issueId: 'issue-1' })
     expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('pre_analyzed', { ratingMin: 7, issueId: 'issue-2' })
     expect(mockAssessStories).toHaveBeenCalledWith(['story-1', 'story-2'])
   })

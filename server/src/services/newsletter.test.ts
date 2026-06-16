@@ -114,7 +114,7 @@ describe('generateHtmlContent', () => {
     expect(html).toContain('Dr. Jane Smith, MIT')
   })
 
-  it('does not render border-bottom dividers between stories', async () => {
+  it('renders subtle border-bottom dividers between stories', async () => {
     const content = storyBlock({
       issue: 'Science',
       issueSlug: 'science-technology',
@@ -134,12 +134,8 @@ describe('generateHtmlContent', () => {
 
     expect(html).toContain('Story one')
     expect(html).toContain('Story two')
-    // Story cells should not have border-bottom dividers
-    const storyTds = html.match(/<td style="padding: 20px[^"]*">/g)
-    expect(storyTds).toBeTruthy()
-    for (const td of storyTds!) {
-      expect(td).not.toContain('border-bottom')
-    }
+    // Editorial redesign separates story cells with a subtle border-bottom divider
+    expect(html).toContain('border-bottom: 1px solid #f3f4f6')
   })
 
   it('links story title to source URL', async () => {
@@ -153,7 +149,7 @@ describe('generateHtmlContent', () => {
     mockPrisma.newsletter.findUnique.mockResolvedValue({ ...baseNewsletter, content })
     const html = await generateHtmlContent('nl-1')
 
-    expect(html).toContain('<a href="https://example.com/linked" style="color: #171717; text-decoration: none;">Linked story title</a>')
+    expect(html).toContain('<a href="https://example.com/linked" style="color: #1B3A2D; text-decoration: none;">Linked story title</a>')
   })
 
   it('escapes HTML entities in content', async () => {
