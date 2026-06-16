@@ -252,7 +252,7 @@ function PublicLayoutInner() {
         </div>
 
         <nav className="hidden lg:block border-b border-neutral-200" aria-label={t('nav.thematicCategories')}>
-          <ul className="max-w-6xl mx-auto px-4 flex items-center justify-center gap-0">
+          <ul className="max-w-6xl mx-auto px-4 flex flex-wrap items-center justify-center gap-0">
             <li>
               <button onClick={() => setSearchOpen(!searchOpen)} className={`issue-nav-link ${searchOpen ? "!text-brand-800" : ""}`} aria-label={searchOpen ? t('nav.closeSearch') : t('nav.openSearch')} aria-expanded={searchOpen} aria-controls="search-panel">
                 <SearchIcon className="w-5 h-5" />

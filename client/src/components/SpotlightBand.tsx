@@ -138,7 +138,7 @@ export default function SpotlightBand() {
 
           {/* Dot navigation — 44px touch targets */}
           {total > 1 && (
-            <nav className="shrink-0 flex items-center gap-0.5 self-start pt-1" aria-label="Navegación de titulares">
+            <nav className="hidden lg:flex shrink-0 items-center gap-0.5 self-start pt-1" aria-label="Navegación de titulares">
               {stories.map((_, idx) => (
                 <button
                   key={idx}
