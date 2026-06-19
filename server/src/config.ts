@@ -140,6 +140,14 @@ export const config = {
     fromName: process.env.BREVO_FROM_NAME || "Impacto Indígena",
     testSegmentId: process.env.BREVO_TEST_SEGMENT_ID || "",
   },
+  // Operational alerts when a scheduled job fails (e.g. dead LLM key).
+  alerts: {
+    // Email that receives job-failure alerts. Empty disables email alerts.
+    failureEmail: process.env.ALERT_EMAIL || "venancio@conuepan.cl",
+    // At most one email per job per this many hours, so a job that keeps
+    // failing every cron tick doesn't flood the inbox.
+    throttleHours: parseInt(process.env.ALERT_THROTTLE_HOURS || "6", 10),
+  },
   subscribe: {
     confirmTokenExpiryHours: parseInt(
       process.env.SUBSCRIBE_TOKEN_EXPIRY_HOURS || "24",
