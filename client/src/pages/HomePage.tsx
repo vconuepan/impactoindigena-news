@@ -379,7 +379,7 @@ function StatementSection() {
           maxWidth: '680px',
         }}
       >
-        Cubrimos las historias que el mundo necesita escuchar — las que ponen a los pueblos indígenas como protagonistas, no como víctimas.
+        Cubrimos las historias que ponen a los pueblos indígenas como protagonistas, no como víctimas.
       </p>
 
       {/* CTA */}

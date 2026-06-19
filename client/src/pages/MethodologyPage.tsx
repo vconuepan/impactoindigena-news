@@ -298,16 +298,15 @@ export default function MethodologyPage() {
               Odin Mühlenbein
             </a>
             , mentor de la cohorte LatAm AI 2025 de Changemakerxchange.ai y experto en inteligencia
-            artificial del <strong>Ashoka AI Lab</strong>. A través del Taller de Prototipos de IA,
-            Odin acompañó a Venancio en transformar una visión clara — crear una plataforma que
-            analice grandes volúmenes de información y simplifique el acceso al conocimiento para
-            líderes y comunidades indígenas — en una herramienta tangible y funcional.
+            artificial del <strong>Ashoka AI Lab</strong>. La idea de partida fue concreta: una
+            plataforma que ordene grandes volúmenes de información y acerque ese conocimiento a
+            líderes y comunidades indígenas.
           </p>
           <p className="mt-4">
-            Este proyecto nace de la convicción de que los pueblos indígenas son los primeros
-            innovadores sociales de la humanidad, y que la inteligencia artificial puede ser un
-            puente para amplificar su voz, su conocimiento y su liderazgo en la solución de los
-            desafíos globales que nos afectan a todos.
+            Este proyecto nace de una convicción: los pueblos indígenas llevan milenios
+            gestionando ecosistemas, construyendo gobernanza colectiva y sosteniendo la diversidad
+            cultural — y la inteligencia artificial puede ser un puente para amplificar su voz, su
+            conocimiento y su liderazgo frente a los desafíos que nos afectan a todos.
           </p>
 
         <LandingCta

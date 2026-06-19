@@ -92,22 +92,17 @@ export default function AboutPage() {
             <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
               <strong>Venancio Conuepan Mesías</strong>
             </a>{" "}
-            es un abogado mapuche y consultor en sostenibilidad, fundador de Impacto Indígena
-            SpA y Director Ejecutivo de la Fundación Empresas Indígenas. Con más de diez años
-            de trayectoria, ha liderado proyectos en gobernanza territorial, mediación
-            intercultural, acción climática y emprendimiento indígena.
+            es abogado mapuche, fundador de Impacto Indígena SpA y director ejecutivo de la
+            Fundación Empresas Indígenas. Su trabajo se ha centrado en la gobernanza
+            territorial, la mediación intercultural y el emprendimiento indígena — en construir
+            instituciones propias, más que en pedir que otros las construyan por nosotros.
           </p>
-          <p>
-            Ha representado a Chile en espacios globales como el Caucus Indígena Internacional
-            sobre empresas y derechos, propiedad intelectual y cambio climático. Fue reconocido
-            como uno de los 100 Jóvenes Líderes de Chile en 2014, y ha recibido becas del
-            Departamento de Estado de EE.UU., el Alto Comisionado de Naciones Unidas, One Young
-            World y The Melton Foundation. Actualmente es becario de la Fundación Pacto Social y
-            finaliza su Máster en Derecho Regulatorio en la Pontificia Universidad Católica de
-            Chile.
-          </p>
-          <p>
-            Contacto:{" "}
+          <p className="text-sm text-neutral-500">
+            Trayectoria, reconocimientos y becas en{" "}
+            <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
+              LinkedIn →
+            </a>
+            {" · "}Contacto:{" "}
             <a href="mailto:venancio@impactoindigena.com" className="text-brand-800 hover:text-brand-700 underline">
               venancio@impactoindigena.com
             </a>
@@ -247,7 +242,7 @@ export default function AboutPage() {
             <span className="font-fraunces text-5xl font-bold text-brand-200 leading-none select-none" aria-hidden="true">III</span>
             <div>
               <p className="text-xs font-bold uppercase tracking-widest text-brand-600 mb-0.5">La Urgencia</p>
-              <h2 className="text-xl font-bold text-neutral-900 leading-snug">Lo que el mundo no puede resolver sin ellos</h2>
+              <h2 className="text-xl font-bold text-neutral-900 leading-snug">Lo que el mundo no debería resolver sin ellos</h2>
             </div>
           </div>
 
