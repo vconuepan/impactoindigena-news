@@ -1,4 +1,4 @@
-import type { PublicStory, PaginatedResponse, Community } from '@shared/types'
+import type { PublicStory, PaginatedResponse, Community, PublicAgenda } from '@shared/types'
 
 export interface CommunitySignals {
   community: { slug: string; name: string }
@@ -280,6 +280,8 @@ export const publicApi = {
       ),
     get: (id: string) => request<EditorialFull>(`/editorials/${id}`),
   },
+
+  agenda: () => request<PublicAgenda>('/agenda'),
 }
 
 export interface EditorialSummary {

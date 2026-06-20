@@ -21,6 +21,7 @@ export const routes: RouteConfig[] = [
   { path: '/', priority: 1.0, changefreq: 'daily' },
   { path: '/issues', priority: 0.8, changefreq: 'monthly' },
   { path: '/comunidades', priority: 0.8, changefreq: 'weekly' },
+  { path: '/incidencia-internacional', priority: 0.9, changefreq: 'daily' },
   { path: '/methodology', priority: 0.7, changefreq: 'monthly' },
   { path: '/about', priority: 0.7, changefreq: 'monthly' },
   { path: '/newsletter', priority: 0.6, changefreq: 'monthly' },

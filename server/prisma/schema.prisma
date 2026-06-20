@@ -642,3 +642,52 @@ model AlertSubscription {
   @@index([active, confirmedAt])
   @@map("alert_subscriptions")
 }
+
+// --- Incidencia Internacional Indígena ---
+// Date-anchored, actionable agenda items (NOT news): events/sessions, calls for
+// input, opportunities (fellowships/funds), and key publications from the UN
+// system, the Inter-American system, and Latin American bodies. Spanish-first.
+// Displayed publicly at /incidencia-internacional. Ingested from structured
+// feeds (iCal/RSS) + scrape+LLM; a confidence gate routes uncertain extractions
+// to draft. See .plans/incidencia-internacional.md for the verified source map.
+
+enum AgendaItemType {
+  evento        // event / session (foro, período de sesiones, audiencia)
+  convocatoria  // call for input / submissions / consultation (con fecha límite)
+  oportunidad   // fellowship / fund / grant / beca (con fecha límite + elegibilidad)
+  publicacion   // key report / study (informe accionable)
+}
+
+model AgendaItem {
+  id               String         @id @default(uuid())
+  type             AgendaItemType
+  status           ContentStatus  @default(draft)
+  title            String                                  // Spanish-first display title
+  titleOriginal    String?        @map("title_original")   // original-language title if translated
+  summary          String?                                 // short Spanish description
+  // Dates: dueDate for convocatoria/oportunidad; startDate/endDate for evento
+  dueDate          DateTime?      @map("due_date")
+  startDate        DateTime?      @map("start_date")
+  endDate          DateTime?      @map("end_date")
+  allDay           Boolean        @default(false) @map("all_day")
+  location         String?
+  sourceName       String         @map("source_name")      // "ACNUDH", "FILAC", "Docip", "Corte IDH"
+  sourceUrl        String?        @map("source_url")
+  lang             String         @default("es")
+  docRef           String?        @map("doc_ref")          // e.g. "A/HRC/62/36/Add.2"
+  countries        String[]       @default([])             // for calls scoped to countries
+  tags             String[]       @default([])             // topic/issue tags
+  highlightNew     Boolean        @default(false) @map("highlight_new")    // "NUEVO"
+  extendedDeadline Boolean        @default(false) @map("extended_deadline") // "EXTENDIDA"
+  // Ingestion bookkeeping
+  externalId       String?        @unique @map("external_id")  // iCal UID / source-hash for dedup
+  extractionScore  Float?         @map("extraction_score")     // LLM confidence (gate)
+  publishedAt      DateTime?      @map("published_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  @@index([status, type])
+  @@index([status, dueDate])
+  @@index([status, startDate])
+  @@map("agenda_items")
+}

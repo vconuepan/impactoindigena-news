@@ -48,6 +48,7 @@ const UnidripPage = lazy(() => import('./pages/UnidripPage'))
 const OpenDataPage = lazy(() => import('./pages/OpenDataPage'))
 const NewsletterArchivePage = lazy(() => import('./pages/NewsletterArchivePage'))
 const NewsletterDetailPagePublic = lazy(() => import('./pages/NewsletterDetailPage'))
+const IncidenciaPage = lazy(() => import('./pages/IncidenciaPage'))
 const CasesPage = lazy(() => import('./pages/CasesPage'))
 const CasePage = lazy(() => import('./pages/CasePage'))
 const AlertsPage = lazy(() => import('./pages/AlertsPage'))
@@ -146,6 +147,7 @@ export default function App() {
         <Route path="/feedback" element={<LazyPage><FeedbackPagePublic /></LazyPage>} />
         <Route path="/thank-you" element={<LazyPage><ThankYouPage /></LazyPage>} />
         <Route path="/comunidades" element={<LazyPage><CommunityDirectoryPage /></LazyPage>} />
+        <Route path="/incidencia-internacional" element={<LazyPage><IncidenciaPage /></LazyPage>} />
         <Route path="/comunidad/:slug" element={<LazyPage><CommunityPage /></LazyPage>} />
         <Route path="/magic-sent" element={<LazyPage><MagicLinkSentPage /></LazyPage>} />
         <Route path="/perfil" element={<LazyPage><ProfilePage /></LazyPage>} />

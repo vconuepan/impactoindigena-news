@@ -256,6 +256,65 @@ export interface Podcast {
   updatedAt: string
 }
 
+// --- Incidencia Internacional Indígena (agenda tracker) ---
+
+export type AgendaItemType = 'evento' | 'convocatoria' | 'oportunidad' | 'publicacion'
+
+export interface AgendaItem {
+  id: string
+  type: AgendaItemType
+  status: 'draft' | 'published'
+  title: string
+  titleOriginal: string | null
+  summary: string | null
+  dueDate: string | null
+  startDate: string | null
+  endDate: string | null
+  allDay: boolean
+  location: string | null
+  sourceName: string
+  sourceUrl: string | null
+  lang: string
+  docRef: string | null
+  countries: string[]
+  tags: string[]
+  highlightNew: boolean
+  extendedDeadline: boolean
+  externalId: string | null
+  extractionScore: number | null
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+// Public-facing agenda item (trimmed; only published items reach the public).
+export interface PublicAgendaItem {
+  id: string
+  type: AgendaItemType
+  title: string
+  summary: string | null
+  dueDate: string | null
+  startDate: string | null
+  endDate: string | null
+  allDay: boolean
+  location: string | null
+  sourceName: string
+  sourceUrl: string | null
+  docRef: string | null
+  countries: string[]
+  tags: string[]
+  highlightNew: boolean
+  extendedDeadline: boolean
+}
+
+// Grouped payload for the public /incidencia-internacional page.
+export interface PublicAgenda {
+  events: PublicAgendaItem[]
+  calls: PublicAgendaItem[]
+  opportunities: PublicAgendaItem[]
+  publications: PublicAgendaItem[]
+}
+
 export type BlueskyPostStatus = 'draft' | 'published' | 'failed'
 
 export interface BlueskyPost {
