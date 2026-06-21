@@ -232,7 +232,11 @@ export const config = {
     apiKey:     process.env.AZURE_IMAGE_API_KEY     || '',
     apiVersion: process.env.AZURE_IMAGE_API_VERSION || '2025-04-01-preview',
     deployment: process.env.AZURE_IMAGE_DEPLOYMENT  || 'gpt-image-2',
+    // Calidad del hero landscape del sitio web: se ve grande y NO se recomprime → alta.
     quality:    (process.env.AZURE_IMAGE_QUALITY    || 'high') as 'low' | 'medium' | 'high',
+    // Calidad del portrait para redes (Instagram/Twitter recomprimen al subir, así que
+    // 'high' es gasto perdido). Medium recorta ~60-70% el costo sin diferencia visible en el feed.
+    qualityPortrait: (process.env.AZURE_IMAGE_QUALITY_PORTRAIT || 'medium') as 'low' | 'medium' | 'high',
   },
   r2: {
     endpoint: process.env.R2_ENDPOINT || '',

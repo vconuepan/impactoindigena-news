@@ -149,6 +149,8 @@ All routes require admin or editor role (`requireAuth, requireRole('admin', 'edi
 | `AZURE_IMAGE_ENDPOINT` | No | `''` | Separate Azure resource for image gen (Sweden Central) |
 | `AZURE_IMAGE_API_KEY` | No | `''` | API key for the image gen resource |
 | `AZURE_IMAGE_DEPLOYMENT` | No | `gpt-image-2` | Deployment name for image generation |
+| `AZURE_IMAGE_QUALITY` | No | `high` | Quality for landscape images (website hero, not recompressed): low/medium/high |
+| `AZURE_IMAGE_QUALITY_PORTRAIT` | No | `medium` | Quality for portrait images (Instagram/Twitter recompress on upload, so high is wasted): low/medium/high |
 
 ## Common Issues
 

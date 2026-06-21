@@ -79,7 +79,11 @@ Cinematic composition, high contrast, visually striking.
       ? (isGptImage ? '1024x1536' : '1024x1792')
       : (isGptImage ? '1536x1024' : '1792x1024'),
     // gpt-image-2: low/medium/high  |  dall-e-3: standard/hd
-    quality: isGptImage ? config.imageGen.quality : 'standard',
+    // Landscape (hero del sitio, se ve grande) usa calidad alta; portrait (redes que
+    // recomprimen al subir) usa la calidad reducida → mismo resultado visible, menos costo.
+    quality: isGptImage
+      ? (orientation === 'portrait' ? config.imageGen.qualityPortrait : config.imageGen.quality)
+      : 'standard',
   }
 
   // gpt-image-2 no acepta response_format — devuelve b64_json por defecto en Azure
