@@ -270,26 +270,6 @@ function PublicLayoutInner() {
                 </li>
               );
             })}
-            <li>
-              <Link
-                to="/comunidades"
-                className="issue-nav-link"
-                data-active={location.pathname.startsWith('/comunidad')}
-              >
-                <span className="w-2.5 h-2.5 rounded-full opacity-70" style={{ backgroundColor: '#0D5F3C' }} aria-hidden="true" />
-                Comunidades
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/incidencia-internacional"
-                className="issue-nav-link"
-                data-active={location.pathname.startsWith('/incidencia-internacional')}
-              >
-                <span className="w-2.5 h-2.5 rounded-full opacity-70" style={{ backgroundColor: '#1A6B8A' }} aria-hidden="true" />
-                Incidencia Internacional
-              </Link>
-            </li>
             {memberAuth.isAuthenticated() && (
               <li>
                 <Link
@@ -334,26 +314,6 @@ function PublicLayoutInner() {
                     </li>
                   );
                 })}
-                <li>
-                  <Link
-                    to="/comunidades"
-                    onClick={() => setMenuOpen(false)}
-                    className={`flex items-center gap-2 py-2.5 text-sm font-bold focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 ${location.pathname.startsWith('/comunidad') ? "text-neutral-900" : "text-neutral-600 hover:text-neutral-900"}`}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-brand-800" aria-hidden="true" />
-                    Comunidades
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    to="/incidencia-internacional"
-                    onClick={() => setMenuOpen(false)}
-                    className={`flex items-center gap-2 py-2.5 text-sm font-bold focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 ${location.pathname.startsWith('/incidencia-internacional') ? "text-neutral-900" : "text-neutral-600 hover:text-neutral-900"}`}
-                  >
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#1A6B8A' }} aria-hidden="true" />
-                    Incidencia Internacional
-                  </Link>
-                </li>
                 <li>
                   <Link
                     to="/guia"
