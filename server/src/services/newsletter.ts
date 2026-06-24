@@ -94,11 +94,17 @@ export async function assignStories(newsletterId: string) {
   })
   const usedStoryIds = new Set(recentlySent.flatMap(n => n.selectedStoryIds))
 
-  // Find recently published stories from the last N days, excluding already-used ones
+  // Find stories that are both recently PUBLISHED and recently crawled, excluding
+  // already-used ones. The datePublished floor is essential: without it, an old
+  // article re-surfaced by a feed (e.g. a 2022 piece) gets a recent dateCrawled
+  // and lands in the newsletter. datePublished is the article's own date; a null
+  // date fails `gte`, so undated stories are also kept out of the newsletter.
+  const cutoff = new Date(Date.now() - config.content.storyAssignmentDays * 24 * 60 * 60 * 1000)
   const stories = await prisma.story.findMany({
     where: {
       status: StoryStatus.published,
-      dateCrawled: { gte: new Date(Date.now() - config.content.storyAssignmentDays * 24 * 60 * 60 * 1000) },
+      datePublished: { gte: cutoff },
+      dateCrawled: { gte: cutoff },
       ...(usedStoryIds.size > 0 ? { id: { notIn: [...usedStoryIds] } } : {}),
     },
     orderBy: { dateCrawled: 'desc' },

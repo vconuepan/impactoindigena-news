@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockPrisma = vi.hoisted(() => ({
   newsletter: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
     update: vi.fn(),
   },
   story: {
@@ -25,7 +26,7 @@ vi.mock('../lib/retry.js', () => ({
   withRetry: vi.fn((fn: () => Promise<any>) => fn()),
 }))
 
-const { generateHtmlContent } = await import('./newsletter.js')
+const { generateHtmlContent, assignStories } = await import('./newsletter.js')
 
 describe('generateHtmlContent', () => {
   beforeEach(() => {
@@ -209,5 +210,28 @@ describe('generateHtmlContent', () => {
     expect(html).toContain('Technology')
     expect(html).toContain('Climate story')
     expect(html).toContain('Tech story')
+  })
+})
+
+describe('assignStories', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('longlists only articles recently PUBLISHED (datePublished floor), not just recently crawled', async () => {
+    mockPrisma.newsletter.findUnique.mockResolvedValue({ id: 'nl-1', selectedStoryIds: [], storyIds: [] })
+    mockPrisma.newsletter.findMany.mockResolvedValue([]) // no recently-sent newsletters
+    mockPrisma.story.findMany.mockResolvedValue([{ id: 's1' }, { id: 's2' }])
+    mockPrisma.newsletter.update.mockResolvedValue({})
+
+    await assignStories('nl-1')
+
+    expect(mockPrisma.story.findMany).toHaveBeenCalledTimes(1)
+    const where = mockPrisma.story.findMany.mock.calls[0][0].where
+    // Regression: without the datePublished floor, an old article (e.g. a 2022
+    // piece a feed re-surfaced) with a recent dateCrawled would land in the newsletter.
+    expect(where.datePublished?.gte).toBeInstanceOf(Date)
+    expect(where.dateCrawled?.gte).toBeInstanceOf(Date)
+    expect(where.status).toBe('published')
   })
 })

@@ -23,11 +23,15 @@ export function getWeekTitle(date: Date): string {
 }
 
 export async function runGenerateNewsletter(): Promise<void> {
-  // Must match the query in newsletter.assignStories() to avoid false positives
+  // Must match the query in newsletter.assignStories() to avoid false positives.
+  // Both filters required: recently published AND recently crawled (the
+  // datePublished floor keeps re-surfaced old articles out of the newsletter).
+  const cutoff = new Date(Date.now() - config.content.storyAssignmentDays * 24 * 60 * 60 * 1000)
   const count = await prisma.story.count({
     where: {
       status: StoryStatus.published,
-      dateCrawled: { gte: new Date(Date.now() - config.content.storyAssignmentDays * 24 * 60 * 60 * 1000) },
+      datePublished: { gte: cutoff },
+      dateCrawled: { gte: cutoff },
     },
   })
 
