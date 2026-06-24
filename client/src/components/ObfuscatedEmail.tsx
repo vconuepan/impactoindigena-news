@@ -10,7 +10,7 @@ export default function ObfuscatedEmail({ className }: { className?: string }) {
 
   useEffect(() => {
     if (!ref.current) return
-    const p = ['contact', 'actuallyrelevant', 'news']
+    const p = ['contacto', 'fundacionkm', 'org']
     const addr = `${p[0]}@${p[1]}.${p[2]}`
     const a = document.createElement('a')
     a.href = `\x6D\x61\x69\x6C\x74\x6F:${addr}`
