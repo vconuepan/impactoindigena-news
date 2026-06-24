@@ -96,15 +96,27 @@ router.get('/', async (_req, res) => {
       const startOfToday = new Date()
       startOfToday.setUTCHours(0, 0, 0, 0)
 
-      const rows = (await prisma.agendaItem.findMany({
-        where: { status: 'published' },
-        select: {
-          id: true, type: true, title: true, summary: true,
-          dueDate: true, startDate: true, endDate: true, allDay: true,
-          location: true, sourceName: true, sourceUrl: true, docRef: true,
-          countries: true, tags: true, highlightNew: true, extendedDeadline: true,
-        },
-      })) as AgendaRow[]
+      let rows: AgendaRow[]
+      try {
+        rows = (await prisma.agendaItem.findMany({
+          where: { status: 'published' },
+          select: {
+            id: true, type: true, title: true, summary: true,
+            dueDate: true, startDate: true, endDate: true, allDay: true,
+            location: true, sourceName: true, sourceUrl: true, docRef: true,
+            countries: true, tags: true, highlightNew: true, extendedDeadline: true,
+          },
+        })) as AgendaRow[]
+      } catch (err: unknown) {
+        // Table not provisioned yet (migration pending) — degrade to an empty
+        // agenda so the page renders its empty state instead of erroring.
+        const code = (err as { code?: string })?.code
+        if (code === 'P2021' || code === 'P2022') {
+          log.warn({ code }, 'agenda_items not available yet; returning empty agenda')
+          return { events: [], calls: [], opportunities: [], publications: [] }
+        }
+        throw err
+      }
 
       // Events: keep upcoming/ongoing (effective end >= today). Sort by start asc.
       const events = rows
