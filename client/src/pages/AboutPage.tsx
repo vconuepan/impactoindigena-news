@@ -103,8 +103,8 @@ export default function AboutPage() {
               LinkedIn →
             </a>
             {" · "}Contacto:{" "}
-            <a href="mailto:venancio@impactoindigena.com" className="text-brand-800 hover:text-brand-700 underline">
-              venancio@impactoindigena.com
+            <a href="mailto:venancio@fundacionkm.org" className="text-brand-800 hover:text-brand-700 underline">
+              venancio@fundacionkm.org
             </a>
           </p>
 
