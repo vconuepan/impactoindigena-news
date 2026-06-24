@@ -67,7 +67,7 @@ export default function AlertsPage() {
       await publicApi.unsubscribeAlerts(unsubToken ? { token: unsubToken } : { email: unsubEmail! })
       setMessage('Tus alertas han sido desactivadas.')
     } catch {
-      setMessage('No se pudo desactivar. Escríbenos a contacto@impactoindigena.news.')
+      setMessage('No se pudo desactivar. Escríbenos a contacto@fundacionkm.org.')
     }
   }
 

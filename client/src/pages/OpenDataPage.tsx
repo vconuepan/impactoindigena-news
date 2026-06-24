@@ -162,8 +162,8 @@ export default function OpenDataPage() {
           </p>
           <p>
             Escríbenos a{' '}
-            <a href="mailto:contacto@impactoindigena.news" className="text-brand-800 hover:text-brand-700">
-              contacto@impactoindigena.news
+            <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
+              contacto@fundacionkm.org
             </a>{' '}
             con asunto <strong>"API institucional"</strong> e indica tu organización y uso previsto.
           </p>
