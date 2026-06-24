@@ -29,12 +29,12 @@ export default function ImprintPage() {
         <div className="prose max-w-none">
           <h2 className="section-heading mt-8">Contact</h2>
           <p className="text-neutral-600 leading-relaxed">
-            Impacto Indígena<br />
+            Fundación Coñuepan-Millaquir — impactoindigena.news<br />
             <a
-              href="mailto:contacto@impactoindigena.news"
+              href="mailto:contacto@fundacionkm.org"
               className="text-brand-800 hover:text-brand-700"
             >
-              contacto@impactoindigena.news
+              contacto@fundacionkm.org
             </a>
           </p>
 

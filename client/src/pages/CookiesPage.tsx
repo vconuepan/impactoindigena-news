@@ -28,9 +28,10 @@ export default function CookiesPage() {
         <div className="prose max-w-none">
           <h2 className="section-heading mt-8">Responsable</h2>
           <p>
-            <strong>Impacto Indígena SpA</strong>, RUT 76.707.746-7. Contacto:{" "}
-            <a href="mailto:contacto@impactoindigena.news" className="text-brand-800 hover:text-brand-700">
-              contacto@impactoindigena.news
+            <strong>Fundación Coñuepan-Millaquir</strong>, RUT 65.191.983-5,
+            organización sin fines de lucro que opera impactoindigena.news. Contacto:{" "}
+            <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
+              contacto@fundacionkm.org
             </a>
             .
           </p>

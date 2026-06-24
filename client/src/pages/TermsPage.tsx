@@ -35,10 +35,10 @@ export default function TermsPage() {
 
           <h2 className="section-heading mt-8">2. Titular</h2>
           <p>
-            El Sitio es operado por <strong>Impacto Indígena SpA</strong>, RUT
-            76.707.746-7, domiciliada en Chile. Contacto:{" "}
-            <a href="mailto:contacto@impactoindigena.news" className="text-brand-800 hover:text-brand-700">
-              contacto@impactoindigena.news
+            El Sitio es operado por la <strong>Fundación Coñuepan-Millaquir</strong>, RUT
+            65.191.983-5, organización sin fines de lucro domiciliada en Chile. Contacto:{" "}
+            <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
+              contacto@fundacionkm.org
             </a>
             .
           </p>
@@ -63,15 +63,15 @@ export default function TermsPage() {
             de la Ley N° 17.336 sobre Propiedad Intelectual), siempre
             identificando la fuente y enlazando al original. Los resúmenes,
             análisis, calificaciones, textos editoriales, marca, diseño y
-            software del Sitio son propiedad de Impacto Indígena SpA o se usan
+            software del Sitio son propiedad de la Fundación Coñuepan-Millaquir o se usan
             bajo licencia.
           </p>
           <p>
             <strong>Solicitudes de retiro (takedown).</strong> Si eres titular de
             derechos y consideras que un contenido excede el uso legítimo o
             vulnera tus derechos, escríbenos a{" "}
-            <a href="mailto:contacto@impactoindigena.news" className="text-brand-800 hover:text-brand-700">
-              contacto@impactoindigena.news
+            <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
+              contacto@fundacionkm.org
             </a>{" "}
             indicando el enlace, el contenido afectado y tu titularidad.
             Atenderemos las solicitudes legítimas a la brevedad.
@@ -94,7 +94,7 @@ export default function TermsPage() {
             El Sitio se ofrece "tal cual". Si bien procuramos calidad y
             precisión, no garantizamos la exactitud, completitud ni vigencia de
             los resúmenes, ni la disponibilidad ininterrumpida del servicio. En
-            la máxima medida permitida por la ley, Impacto Indígena SpA no será
+            la máxima medida permitida por la ley, la Fundación Coñuepan-Millaquir no será
             responsable por daños indirectos o consecuenciales derivados del uso
             del Sitio o de la confianza depositada en sus contenidos.
           </p>
@@ -121,8 +121,8 @@ export default function TermsPage() {
             indígenas. Si una comunidad considera que un contenido o imagen es
             culturalmente sensible o inapropiado, puede solicitarnos su revisión
             o retiro escribiendo a{" "}
-            <a href="mailto:contacto@impactoindigena.news" className="text-brand-800 hover:text-brand-700">
-              contacto@impactoindigena.news
+            <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
+              contacto@fundacionkm.org
             </a>
             .
           </p>
