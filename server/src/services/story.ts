@@ -654,13 +654,33 @@ const RRF_K = 60
 const RRF_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutos
 const rrfCache = new Map<string, { rankedIds: string[]; expiry: number }>()
 
+type PublishedDateRange = { gte?: Date; lt?: Date }
+
+/**
+ * Build an inclusive UTC date range for filtering by datePublished.
+ * dateFrom/dateTo are YYYY-MM-DD; dateTo is inclusive (translated to < next day).
+ * Returns undefined when neither bound is set.
+ */
+function buildPublishedDateRange(dateFrom?: string, dateTo?: string): PublishedDateRange | undefined {
+  if (!dateFrom && !dateTo) return undefined
+  const range: PublishedDateRange = {}
+  if (dateFrom) range.gte = new Date(`${dateFrom}T00:00:00.000Z`)
+  if (dateTo) {
+    const lt = new Date(`${dateTo}T00:00:00.000Z`)
+    lt.setUTCDate(lt.getUTCDate() + 1)
+    range.lt = lt
+  }
+  return range
+}
+
 async function hybridSearch(options: {
   query: string
   issueSlug?: string
+  dateRange?: PublishedDateRange
   page: number
   pageSize: number
 }) {
-  const { query, issueSlug, page, pageSize } = options
+  const { query, issueSlug, dateRange, page, pageSize } = options
 
   // Build issue filter SQL fragment for semantic search
   const issueFilter = issueSlug
@@ -673,8 +693,19 @@ async function hybridSearch(options: {
       )`
     : Prisma.empty
 
-  // Check RRF cache
-  const cacheKey = `${query}::${issueSlug ?? ''}`
+  // Build date filter SQL fragment for semantic search (mirrors issueFilter)
+  let dateFilter = Prisma.empty
+  if (dateRange?.gte && dateRange.lt) {
+    dateFilter = Prisma.sql`AND s.date_published >= ${dateRange.gte} AND s.date_published < ${dateRange.lt}`
+  } else if (dateRange?.gte) {
+    dateFilter = Prisma.sql`AND s.date_published >= ${dateRange.gte}`
+  } else if (dateRange?.lt) {
+    dateFilter = Prisma.sql`AND s.date_published < ${dateRange.lt}`
+  }
+
+  // Check RRF cache (key must include the date range so filtered results aren't served stale)
+  const dateKey = `${dateRange?.gte?.toISOString() ?? ''}~${dateRange?.lt?.toISOString() ?? ''}`
+  const cacheKey = `${query}::${issueSlug ?? ''}::${dateKey}`
   const cached = rrfCache.get(cacheKey)
   const rankedIds = cached && cached.expiry > Date.now()
     ? cached.rankedIds
@@ -688,6 +719,7 @@ async function hybridSearch(options: {
         const rows = await searchByEmbedding(queryEmbedding, {
           limit: RRF_FETCH_LIMIT,
           issueFilter,
+          dateFilter,
         })
         return rows.map((r) => r.id)
       } catch (err) {
@@ -706,6 +738,9 @@ async function hybridSearch(options: {
       })
       if (issueSlug) {
         conditions.push(buildIssueCondition(issueSlug))
+      }
+      if (dateRange) {
+        conditions.push({ datePublished: dateRange })
       }
       const rows = await prisma.story.findMany({
         where: { status: 'published', AND: conditions },
@@ -767,15 +802,19 @@ export async function getPublishedStories(options: {
   issueSlug?: string
   search?: string
   emotionTags?: string[]
+  dateFrom?: string
+  dateTo?: string
 }) {
   const page = options.page || 1
   const pageSize = options.pageSize || 25
+  const dateRange = buildPublishedDateRange(options.dateFrom, options.dateTo)
 
   // Use hybrid search when search query is provided
   if (options.search) {
     return hybridSearch({
       query: options.search,
       issueSlug: options.issueSlug,
+      dateRange,
       page,
       pageSize,
     })
@@ -788,6 +827,9 @@ export async function getPublishedStories(options: {
   }
   if (options.emotionTags?.length) {
     conditions.push({ emotionTag: { in: options.emotionTags as EmotionTag[] } })
+  }
+  if (dateRange) {
+    conditions.push({ datePublished: dateRange })
   }
 
   const orderBy: Prisma.StoryOrderByWithRelationInput[] = [{ datePublished: 'desc' }, { dateCrawled: 'desc' }]

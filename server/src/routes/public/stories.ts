@@ -27,6 +27,8 @@ router.get('/', (req, res, next) => {
       issueSlug: query.issueSlug,
       search: query.search,
       emotionTags,
+      dateFrom: query.dateFrom,
+      dateTo: query.dateTo,
     })
     res.set('Cache-Control', 'public, max-age=60')
     res.json(result)

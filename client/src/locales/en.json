@@ -110,6 +110,12 @@
     "resultsFor": "Results for \"{{q}}\"",
     "empty": "Enter a term to search for stories.",
     "noResults": "No results found for \"{{q}}\".",
+    "noResultsFiltered": "No results found for those filters.",
+    "promptFilters": "Enter a term or pick a date range.",
+    "dateLegend": "Filter by date",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "clearFilters": "Clear filters",
     "backToHome": "← Back to home",
     "label": "Search"
   },

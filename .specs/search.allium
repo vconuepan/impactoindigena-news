@@ -34,19 +34,27 @@ external entity Visitor {}
 -- Runs two search legs in parallel and fuses their rankings.
 
 rule HybridSearch {
-    when: VisitorSearches(query, issue_slug?, page, page_size)
+    when: VisitorSearches(query, issue_slug?, date_from?, date_to?, page, page_size)
+
+    -- Optional date range filter, applied to BOTH legs.
+    -- date_from / date_to are calendar days (YYYY-MM-DD); the range is
+    -- inclusive of date_to (translated to date_published < date_to + 1 day)
+    -- and evaluated in UTC against Story.date_published. Either bound may
+    -- be omitted for an open-ended range.
 
     -- Leg 1: Semantic search
     -- Generate a query embedding via OpenAI, then find the nearest
-    -- published stories by cosine distance (pgvector <=> operator).
+    -- published stories by cosine distance (pgvector <=> operator),
+    -- constrained to the date range when present.
     -- Capped at rrf_fetch_limit results.
     -- On failure: returns empty (graceful degradation).
-    let semantic_ids = semantic_search(query, issue_slug, config.rrf_fetch_limit)
+    let semantic_ids = semantic_search(query, issue_slug, date_from, date_to, config.rrf_fetch_limit)
 
     -- Leg 2: Text search
-    -- Prisma case-insensitive contains on title + summary fields.
+    -- Prisma case-insensitive contains on title + summary fields,
+    -- constrained to the date range when present.
     -- Ordered by datePublished desc, capped at rrf_fetch_limit.
-    let text_ids = text_search(query, issue_slug, config.rrf_fetch_limit)
+    let text_ids = text_search(query, issue_slug, date_from, date_to, config.rrf_fetch_limit)
 
     -- Reciprocal Rank Fusion: score each story by its rank position
     -- in both result sets. Formula: score(d) = sum(1 / (k + rank_i))
@@ -138,7 +146,7 @@ surface PublicSearch {
     facing visitor: Visitor
 
     provides:
-        VisitorSearches(query, issue_slug?, page, page_size)
+        VisitorSearches(query, issue_slug?, date_from?, date_to?, page, page_size)
 
     exposes:
         -- Search results include standard published story fields.
@@ -154,7 +162,13 @@ surface PublicSearch {
         "Search is triggered by the query parameter on the stories
         list page. Results are paginated. When a search query is
         present, the API switches from standard chronological
-        listing to hybrid RRF search."
+        listing to hybrid RRF search.
+
+        A date range (date_from / date_to) may be supplied with or
+        without a query. Combined with a query, it constrains both RRF
+        legs. Without a query, the standard chronological listing is
+        filtered by date_published over the same inclusive UTC range,
+        letting visitors browse all stories published on a given day."
 }
 
 surface RelatedStories {

@@ -149,7 +149,7 @@ export const publicApi = {
   homepage: () => request<HomepageData>('/homepage'),
 
   stories: {
-    list: (params?: { page?: number; pageSize?: number; issueSlug?: string; search?: string; emotionTags?: string }) =>
+    list: (params?: { page?: number; pageSize?: number; issueSlug?: string; search?: string; emotionTags?: string; dateFrom?: string; dateTo?: string }) =>
       request<PaginatedResponse<PublicStory>>(`/stories${toQueryString((params || {}) as Record<string, unknown>)}`),
     get: (slug: string) => request<PublicStory>(`/stories/${slug}`),
     related: (slug: string, limit = 4) =>

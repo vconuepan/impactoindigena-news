@@ -21,6 +21,22 @@ vi.mock('../../services/crawler.js', () => ({
   crawlAllDueFeeds: vi.fn(),
   crawlUrl: vi.fn(),
 }))
+// Avoid network (embedding API) and raw SQL (pgvector) in the semantic search leg
+const mockEmbedding = vi.hoisted(() => ({
+  generateSearchEmbedding: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
+}))
+vi.mock('../../services/embedding.js', () => ({
+  generateSearchEmbedding: mockEmbedding.generateSearchEmbedding,
+  generateEmbeddingForContent: vi.fn(),
+  ensureEmbedding: vi.fn(),
+  ensureEmbeddings: vi.fn(),
+}))
+const mockVectors = vi.hoisted(() => ({ searchByEmbedding: vi.fn().mockResolvedValue([{ id: 'story-1' }]) }))
+vi.mock('../../lib/vectors.js', () => ({
+  searchByEmbedding: mockVectors.searchByEmbedding,
+  fetchStoryForEmbedding: vi.fn(),
+  saveEmbeddingTx: vi.fn(),
+}))
 
 process.env.PUBLIC_API_KEY = TEST_API_KEY
 
@@ -84,6 +100,62 @@ describe('Public Stories API', () => {
     it('rejects search queries longer than 200 characters', async () => {
       const longQuery = 'a'.repeat(201)
       const res = await request(app).get(`/api/stories?search=${longQuery}`)
+      expect(res.status).toBe(400)
+    })
+
+    it('filters by date range without a search term (dateTo inclusive)', async () => {
+      mockPrisma.story.findMany.mockResolvedValue([publicStory])
+      mockPrisma.story.count.mockResolvedValue(1)
+
+      const res = await request(app).get('/api/stories?dateFrom=2026-06-13&dateTo=2026-06-13')
+      expect(res.status).toBe(200)
+      expect(mockPrisma.story.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'published',
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                datePublished: {
+                  gte: new Date('2026-06-13T00:00:00.000Z'),
+                  lt: new Date('2026-06-14T00:00:00.000Z'),
+                },
+              }),
+            ]),
+          }),
+        }),
+      )
+    })
+
+    it('applies the date range to the text leg of hybrid search', async () => {
+      mockPrisma.story.findMany.mockResolvedValue([publicStory])
+
+      const res = await request(app).get('/api/stories?search=mapuche&dateFrom=2026-06-13&dateTo=2026-06-13')
+      expect(res.status).toBe(200)
+      // The text-search leg must constrain by datePublished too
+      expect(mockPrisma.story.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: 'published',
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                datePublished: {
+                  gte: new Date('2026-06-13T00:00:00.000Z'),
+                  lt: new Date('2026-06-14T00:00:00.000Z'),
+                },
+              }),
+            ]),
+          }),
+        }),
+      )
+      // And the semantic leg receives a non-empty dateFilter
+      expect(mockVectors.searchByEmbedding).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ dateFilter: expect.anything() }),
+      )
+    })
+
+    it('rejects invalid date format', async () => {
+      const res = await request(app).get('/api/stories?dateFrom=13-06-2026')
       expect(res.status).toBe(400)
     })
 

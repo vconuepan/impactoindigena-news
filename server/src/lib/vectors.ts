@@ -114,10 +114,12 @@ export async function searchByEmbedding(
   options?: {
     limit?: number
     issueFilter?: Prisma.Sql
+    dateFilter?: Prisma.Sql
   },
 ): Promise<{ id: string }[]> {
   const limit = options?.limit ?? 50
   const issueFilter = options?.issueFilter ?? Prisma.empty
+  const dateFilter = options?.dateFilter ?? Prisma.empty
   const vectorStr = toVectorLiteral(queryEmbedding)
 
   return prisma.$queryRaw<{ id: string }[]>`
@@ -126,6 +128,7 @@ export async function searchByEmbedding(
     WHERE s.status = 'published'
       AND s.embedding IS NOT NULL
       ${issueFilter}
+      ${dateFilter}
     ORDER BY s.embedding <=> ${vectorStr}::vector
     LIMIT ${limit}
   `

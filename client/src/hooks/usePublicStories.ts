@@ -7,6 +7,8 @@ export function usePublicStories(params?: {
   issueSlug?: string
   search?: string
   emotionTags?: string
+  dateFrom?: string
+  dateTo?: string
 }) {
   return useQuery({
     queryKey: ['public-stories', params],

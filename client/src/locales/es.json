@@ -110,6 +110,12 @@
     "resultsFor": "Resultados para \"{{q}}\"",
     "empty": "Ingresa un término para buscar noticias.",
     "noResults": "No se encontraron resultados para \"{{q}}\".",
+    "noResultsFiltered": "No se encontraron resultados con esos filtros.",
+    "promptFilters": "Ingresa un término o elige un rango de fechas.",
+    "dateLegend": "Filtrar por fecha",
+    "dateFrom": "Desde",
+    "dateTo": "Hasta",
+    "clearFilters": "Limpiar filtros",
     "backToHome": "← Volver al inicio",
     "label": "Buscar"
   },

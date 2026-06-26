@@ -106,6 +106,8 @@ export const publicStoryQuerySchema = z.object({
   issueSlug: z.string().optional(),
   search: z.string().min(2).max(200).optional(),
   emotionTags: z.string().optional(),
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   page: z.coerce.number().int().positive().optional().default(1),
   pageSize: z.coerce.number().int().positive().max(100).optional().default(25),
 })
