@@ -1,5 +1,10 @@
 import { config } from "../config.js";
-import { Guidelines, buildGuidelinesXml } from "./shared.js";
+import {
+  Guidelines,
+  buildGuidelinesXml,
+  UNTRUSTED_CONTENT_GUARD,
+  sanitizeUntrustedContent,
+} from "./shared.js";
 
 export function buildAssessPrompt(
   title: string,
@@ -57,13 +62,15 @@ Reserva 9-10 para lo verdaderamente excepcional, pero NO evites 7-8 cuando el im
 Analiza el artículo a continuación y produce una evaluación completa de relevancia: cita clave, resumen, factores de relevancia, factores limitantes, cálculo de relevancia, calificación de relevancia, resumen de relevancia, título y blurb de marketing. Evita el uso de jerga técnica.
 </GOAL>
 
-<ARTICLE>
-Title: ${title}
-Publisher: ${publisher}
-URL: ${url}
+<UNTRUSTED_ARTICLE>
+${UNTRUSTED_CONTENT_GUARD}
 
-${truncatedContent}
-</ARTICLE>
+Title: ${sanitizeUntrustedContent(title)}
+Publisher: ${sanitizeUntrustedContent(publisher)}
+URL: ${sanitizeUntrustedContent(url)}
+
+${sanitizeUntrustedContent(truncatedContent)}
+</UNTRUSTED_ARTICLE>
 ${temporalNote}
 ${guidelinesXml}
 

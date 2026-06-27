@@ -145,7 +145,7 @@ describe('buildAssessPrompt', () => {
     const prompt = buildAssessPrompt('Title', 'Content', 'Pub', 'https://example.com', guidelines)
     expect(prompt).toContain('<ROLE>')
     expect(prompt).toContain('<GOAL>')
-    expect(prompt).toContain('<ARTICLE>')
+    expect(prompt).toContain('<UNTRUSTED_ARTICLE>')
     expect(prompt).toContain('<ANALYSIS_REQUIREMENTS>')
     expect(prompt).toContain('<GUIDELINES>')
   })

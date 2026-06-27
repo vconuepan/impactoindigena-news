@@ -111,6 +111,11 @@ rule Assess {
     -- Polls for pre_analyzed stories above threshold.
     requires: story.relevance_pre >= story.assessment_threshold
 
+    -- Crawled source content is untrusted: it is fed to the LLM strictly as
+    -- data, never as instructions (prompt-injection defense). Malformed LLM
+    -- output (e.g. an injection-induced parse failure) fails closed — the
+    -- story is skipped and no partial data is written.
+
     -- LLM generates editorial content + detailed rating
     ensures: story.title = LLM.generate_title(story)
     ensures: story.title_label = LLM.generate_label(story)

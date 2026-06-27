@@ -36,6 +36,17 @@ These waste reasoning tokens and can degrade performance.
 
 **No contradictions.** GPT-5 models spend reasoning tokens trying to reconcile conflicting instructions rather than ignoring one. If the schema says one thing and the prompt says another, fix the conflict.
 
+## Untrusted Content (prompt-injection defense)
+
+Crawled article content (`sourceTitle`, `sourceContent`) is **untrusted third-party data** and may contain prompt-injection attempts — text imitating the output schema, or instructions to change the model's role, format, or language. A real incident (story `c9dfe0c8`) broke structured output this way; it failed closed (the story was skipped, no data written), but the prompt was hardened afterward.
+
+Any prompt that interpolates crawled content **must**:
+
+1. **Sanitize it** with `sanitizeUntrustedContent()` (from `prompts/shared.ts`) — escapes angle brackets so the content cannot close its delimiting block or forge a new prompt section ("breakout"). It deliberately leaves quotes/apostrophes/ampersands intact so quote extraction is not corrupted. (Prompts that interpolate *already-analyzed* fields — title, summary, etc. — use `escapeXml()` instead.)
+2. **Precede the block** with `UNTRUSTED_CONTENT_GUARD` — the declarative instruction telling the model to treat the block strictly as data, never as instructions, and to ignore any embedded order or text imitating the output fields. This is the primary defense against natural-language / field-imitation injection.
+
+Today the two entry points for raw crawled content are `buildAssessPrompt` (wraps it in `<UNTRUSTED_ARTICLE>`) and `formatArticlesBlock` (the `<ARTICLES>` block shared by pre-assess / reclassify / emotion-tag). Do **not** strip suspicious patterns by regex — that damages legitimate content; rely on the guard + structured-output schema instead. Malformed structured output is always fail-closed: the parse throws and no partial data is written.
+
 ## What to Keep in Prompts
 
 - Content quality guidance (good/bad examples for summaries, titles, quotes)

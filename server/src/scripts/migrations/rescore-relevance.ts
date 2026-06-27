@@ -9,6 +9,11 @@
  *   npm run migration:rescore-relevance --prefix server -- --limit 20             # write a 20-story sample
  *   npm run migration:rescore-relevance --prefix server -- --filter=compressed    # only relevance 5-6
  *   npm run migration:rescore-relevance --prefix server                           # full backfill (all published)
+ *   npm run migration:rescore-relevance --prefix server -- --dry-run --id=<uuid>  # single story, NO writes
+ *
+ * The --id selector re-runs the (hardened) assess prompt against one specific
+ * story regardless of status — useful to confirm a previously-failing story
+ * (e.g. a prompt-injection victim) now scores cleanly or fails closed.
  */
 import prisma from '../../lib/prisma.js'
 import { Semaphore } from '../../lib/semaphore.js'
@@ -27,6 +32,7 @@ function parseLimit(): number | undefined {
 const LIMIT = parseLimit()
 const FILTER = process.argv.find((a) => a.startsWith('--filter='))?.split('=')[1] ?? 'all'
 const COMPRESSED_ONLY = FILTER === 'compressed'
+const ONLY_ID = process.argv.find((a) => a.startsWith('--id='))?.split('=')[1]
 
 function distribution(values: (number | null)[]): Record<string, number> {
   const dist: Record<string, number> = {}
@@ -38,10 +44,13 @@ function distribution(values: (number | null)[]): Record<string, number> {
 }
 
 async function main() {
-  const where = {
-    status: 'published' as const,
-    ...(COMPRESSED_ONLY ? { relevance: { gte: 5, lte: 6 } } : {}),
-  }
+  // --id targets one story regardless of status; otherwise re-score published stories.
+  const where = ONLY_ID
+    ? { id: ONLY_ID }
+    : {
+        status: 'published' as const,
+        ...(COMPRESSED_ONLY ? { relevance: { gte: 5, lte: 6 } } : {}),
+      }
   const stories = await prisma.story.findMany({
     where,
     select: { id: true, relevance: true },
@@ -50,7 +59,7 @@ async function main() {
   })
 
   console.log(
-    `Re-scoring ${stories.length} stories (filter=${FILTER}${LIMIT ? `, limit=${LIMIT}` : ''}, dryRun=${DRY_RUN})`
+    `Re-scoring ${stories.length} stories (${ONLY_ID ? `id=${ONLY_ID}` : `filter=${FILTER}`}${LIMIT ? `, limit=${LIMIT}` : ''}, dryRun=${DRY_RUN})`
   )
   console.log('Old distribution:', distribution(stories.map((s) => s.relevance)))
 

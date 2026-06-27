@@ -263,6 +263,24 @@ describe('assessStory', () => {
     await expect(assessStory('nonexistent')).rejects.toThrow('Story not found')
   })
 
+  it('fails closed when structured-output parsing fails — writes nothing', async () => {
+    // Simulates a prompt-injection-induced malformed function call: the schema
+    // parser rejects the response. The story must be skipped without any partial
+    // write (no embedding, no transaction, no update). See story c9dfe0c8.
+    const story = storyWithRelations({ id: 'story-1' })
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    const mockStructuredLlm = {
+      invoke: vi.fn().mockRejectedValue(new Error('Failed to parse structured output')),
+    }
+    mockGetMediumLLM.mockReturnValue({ withStructuredOutput: () => mockStructuredLlm })
+
+    await expect(assessStory('story-1')).rejects.toThrow(/LLM call failed/)
+
+    expect(mockGenerateEmbeddingForContent).not.toHaveBeenCalled()
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled()
+    expect(mockPrisma.story.update).not.toHaveBeenCalled()
+  })
+
   it('throws and does not save when embedding generation fails', async () => {
     const story = storyWithRelations({ id: 'story-1' })
     mockPrisma.story.findUnique.mockResolvedValue(story)
@@ -433,6 +451,17 @@ describe('rescoreStory', () => {
     const res = await rescoreStory('story-2', { dryRun: true })
 
     expect(res.newRelevance).toBe(9)
+    expect(mockPrisma.story.update).not.toHaveBeenCalled()
+  })
+
+  it('fails closed when structured-output parsing fails — writes nothing', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(storyWithRelations({ id: 'story-3', relevance: 5 }))
+    const mockStructuredLlm = {
+      invoke: vi.fn().mockRejectedValue(new Error('Failed to parse structured output')),
+    }
+    mockGetMediumLLM.mockReturnValue({ withStructuredOutput: () => mockStructuredLlm })
+
+    await expect(rescoreStory('story-3')).rejects.toThrow(/parse/)
     expect(mockPrisma.story.update).not.toHaveBeenCalled()
   })
 })
