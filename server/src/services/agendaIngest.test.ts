@@ -94,6 +94,13 @@ describe('buildFromVevent', () => {
     expect(d!.allDay).toBe(true)
   })
 
+  it('skips calendar-artifact events (daylight saving time markers)', () => {
+    expect(buildFromVevent(
+      { type: 'VEVENT', uid: 'dst-1', summary: 'End of Daylight Saving Time: New York (UTC-4 -> UTC-5)', start: new Date('2026-11-01T00:00:00Z'), datetype: 'date' },
+      icalEvento, TODAY, NOW,
+    )).toBeNull()
+  })
+
   it('skips past events', () => {
     const d = buildFromVevent(
       { type: 'VEVENT', uid: 'old', summary: 'Vieja', start: new Date('2020-01-01T00:00:00Z'), end: new Date('2020-01-02T00:00:00Z'), datetype: 'date-time' },

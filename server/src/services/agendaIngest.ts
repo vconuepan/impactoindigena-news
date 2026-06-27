@@ -37,10 +37,16 @@ function parseDate(value: string | Date | null | undefined): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
-/** Reject placeholder/empty titles that feeds sometimes emit (e.g. CBD's "No item available"). */
+// Calendar-artifact titles that aren't real agenda items (e.g. the Docip Google
+// Calendar emits daylight-saving-time change markers as VEVENTs).
+const JUNK_TITLE_PATTERNS = [/daylight saving/i, /horario de verano/i, /\bDST\b/]
+
+/** Reject placeholder/empty/artifact titles that feeds emit (CBD "No item available", DST markers). */
 function isJunkTitle(title: string | undefined | null): boolean {
-  const t = (title ?? '').trim().toLowerCase()
-  return t.length < 4 || t === 'no item available' || t === 'untitled' || t === 'sin título'
+  const raw = (title ?? '').trim()
+  const t = raw.toLowerCase()
+  if (t.length < 4 || t === 'no item available' || t === 'untitled' || t === 'sin título') return true
+  return JUNK_TITLE_PATTERNS.some((re) => re.test(raw))
 }
 
 // RSS items (calls/events) carry no structured event date — only a publish date.
