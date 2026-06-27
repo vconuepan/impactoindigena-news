@@ -10,7 +10,7 @@ describe('assessResultSchema', () => {
     factors: ['- **Factor one:** Explanation.'],
     limitingFactors: ['- **Limiting factor:** Explanation.'],
     relevanceCalculation: ['- **Key factor:** 5'],
-    conservativeRating: 7,
+    relevanceRating: 7,
     relevanceSummary: 'Test relevance summary explaining the rating in sufficient detail.',
     titleLabel: 'Climate risk',
     relevanceTitle: 'New study reveals climate impact on coastal regions',

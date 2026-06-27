@@ -46,7 +46,7 @@ vi.mock('./dedup.js', () => ({
   detectAndCluster: mockDetectAndCluster,
 }))
 
-const { preAssessStories, reclassifyStories, assessStory, selectStories } = await import('./analysis.js')
+const { preAssessStories, reclassifyStories, assessStory, selectStories, rescoreStory } = await import('./analysis.js')
 
 function storyWithRelations(overrides: Record<string, any> = {}) {
   return {
@@ -219,7 +219,7 @@ describe('assessStory', () => {
       factors: ['Factor one: Detailed explanation.', 'Factor two: Detailed explanation.'],
       limitingFactors: ['Limiting factor: Explanation of limitation.'],
       relevanceCalculation: ['Key factor: 5', 'Limitation: -2'],
-      conservativeRating: 3,
+      relevanceRating: 3,
       relevanceSummary: 'Test relevance summary explaining the rating.',
       titleLabel: 'Test topic',
       relevanceTitle: 'Test title: subtitle here',
@@ -277,7 +277,7 @@ describe('assessStory', () => {
         factors: ['Factor'],
         limitingFactors: [],
         relevanceCalculation: ['calc'],
-        conservativeRating: 5,
+        relevanceRating: 5,
         relevanceSummary: 'Relevance summary',
         titleLabel: 'Topic',
         relevanceTitle: 'Title',
@@ -312,7 +312,7 @@ describe('assessStory', () => {
         factors: ['Factor'],
         limitingFactors: [],
         relevanceCalculation: ['calc'],
-        conservativeRating: 5,
+        relevanceRating: 5,
         relevanceSummary: 'Rel',
         titleLabel: 'Topic',
         relevanceTitle: 'Title',
@@ -375,5 +375,64 @@ describe('selectStories', () => {
     mockPrisma.story.findMany.mockResolvedValue([])
     const result = await selectStories(['nonexistent'])
     expect(result).toEqual({ selected: [], rejected: [] })
+  })
+})
+
+describe('rescoreStory', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  function mockRescoreLlm(extra: Record<string, unknown> = {}) {
+    const mockStructuredLlm = {
+      invoke: vi.fn().mockResolvedValue({
+        relevanceRating: 8,
+        relevanceCalculation: ['- **Factor:** 8'],
+        factors: ['- **Factor clave:** alto impacto'],
+        limitingFactors: ['- **Límite:** menor'],
+        relevanceSummary: 'Resumen recalibrado',
+        // copy fields present in the assess output but must be IGNORED by rescore
+        relevanceTitle: 'TÍTULO NUEVO que no debe escribirse',
+        summary: 'RESUMEN NUEVO que no debe escribirse',
+        ...extra,
+      }),
+    }
+    mockGetMediumLLM.mockReturnValue({ withStructuredOutput: () => mockStructuredLlm })
+  }
+
+  it('updates only the relevance fields, preserving status and copy', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(
+      storyWithRelations({ id: 'story-1', relevance: 5, status: 'published', title: 'Título original' })
+    )
+    mockPrisma.story.update.mockResolvedValue({})
+    mockRescoreLlm()
+
+    const res = await rescoreStory('story-1')
+
+    expect(res).toEqual({ storyId: 'story-1', oldRelevance: 5, newRelevance: 8 })
+    expect(mockPrisma.story.update).toHaveBeenCalledWith({
+      where: { id: 'story-1' },
+      data: {
+        relevance: 8,
+        relevanceCalculation: '- **Factor:** 8',
+        relevanceReasons: '- **Factor clave:** alto impacto',
+        antifactors: '- **Límite:** menor',
+        relevanceSummary: 'Resumen recalibrado',
+      },
+    })
+    const updateData = mockPrisma.story.update.mock.calls[0][0].data
+    expect(updateData).not.toHaveProperty('status')
+    expect(updateData).not.toHaveProperty('title')
+    expect(updateData).not.toHaveProperty('summary')
+  })
+
+  it('writes nothing in dry-run mode', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(storyWithRelations({ id: 'story-2', relevance: 6 }))
+    mockRescoreLlm({ relevanceRating: 9 })
+
+    const res = await rescoreStory('story-2', { dryRun: true })
+
+    expect(res.newRelevance).toBe(9)
+    expect(mockPrisma.story.update).not.toHaveBeenCalled()
   })
 })

@@ -304,7 +304,7 @@ export async function assessStory(storyId: string): Promise<void> {
     throw new Error(`LLM call failed: ${msg}${detail ? ` [${detail}]` : ''}`)
   }
 
-  log.info({ storyId, rating: parsed.conservativeRating, title: parsed.relevanceTitle?.slice(0, 60) }, 'assessment complete')
+  log.info({ storyId, rating: parsed.relevanceRating, title: parsed.relevanceTitle?.slice(0, 60) }, 'assessment complete')
 
   // Parse publication date returned by the LLM. The sentinel "1970-01-01" means
   // the LLM couldn't find it — treat as unknown and leave the field untouched.
@@ -325,7 +325,7 @@ export async function assessStory(storyId: string): Promise<void> {
     relevanceReasons: parsed.factors.join('\n'),
     antifactors: parsed.limitingFactors.join('\n'),
     relevanceCalculation: parsed.relevanceCalculation.join('\n'),
-    relevance: parsed.conservativeRating,
+    relevance: parsed.relevanceRating,
     status: 'analyzed' as const,
     ...(sourceDatePublished !== undefined && { sourceDatePublished }),
   }
@@ -364,6 +364,58 @@ export async function assessStory(storyId: string): Promise<void> {
         log.error({ err, storyId }, 'post-assessment dedup failed')
       })
   }
+}
+
+/**
+ * Re-score ONLY the relevance fields of a story with the (recalibrated) assess
+ * prompt — WITHOUT touching status, editorial copy (title/summary/quote), or the
+ * embedding. Used by the relevance backfill so re-scoring published stories never
+ * un-publishes them nor regenerates already-published copy. With dryRun it computes
+ * the new rating but writes nothing. Returns old vs new relevance for reporting.
+ */
+export async function rescoreStory(
+  storyId: string,
+  opts: { dryRun?: boolean } = {},
+): Promise<{ storyId: string; oldRelevance: number | null; newRelevance: number }> {
+  const story = await prisma.story.findUnique({
+    where: { id: storyId },
+    include: { issue: true, feed: { include: { issue: true } } },
+  })
+  if (!story) throw new Error('Story not found')
+
+  const guidelines = getGuidelines(story.issue ?? story.feed.issue)
+  const prompt = buildAssessPrompt(
+    story.sourceTitle,
+    story.sourceContent,
+    story.feed.title,
+    story.sourceUrl,
+    guidelines,
+    story.sourceDatePublished?.toISOString(),
+  )
+
+  await rateLimitDelay()
+  const llm = getLLMByTier(config.assess.modelTier)
+  const structuredLlm = llm.withStructuredOutput(assessResultSchema, { method: 'functionCalling' })
+  const parsed = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
+
+  const newRelevance = parsed.relevanceRating
+  const oldRelevance = story.relevance
+
+  if (!opts.dryRun) {
+    await prisma.story.update({
+      where: { id: storyId },
+      data: {
+        relevance: newRelevance,
+        relevanceCalculation: parsed.relevanceCalculation.join('\n'),
+        relevanceReasons: parsed.factors.join('\n'),
+        antifactors: parsed.limitingFactors.join('\n'),
+        relevanceSummary: parsed.relevanceSummary || null,
+      },
+    })
+  }
+
+  log.info({ storyId, oldRelevance, newRelevance, dryRun: !!opts.dryRun }, 'rescored relevance')
+  return { storyId, oldRelevance, newRelevance }
 }
 
 /** Orchestrate concurrent assessment of multiple stories. */

@@ -36,6 +36,8 @@
     "migration:backfill-embeddings:test": "tsx src/scripts/migrations/backfill-embeddings.ts --test",
     "migration:backfill-old-story-titles": "tsx src/scripts/migrations/backfill-old-story-titles.ts",
     "migration:backfill-old-story-titles:test": "tsx src/scripts/migrations/backfill-old-story-titles.ts --test",
+    "migration:rescore-relevance": "tsx src/scripts/migrations/rescore-relevance.ts",
+    "migration:rescore-relevance:dry": "tsx src/scripts/migrations/rescore-relevance.ts --dry-run --limit 20",
     "translations:backfill": "tsx src/scripts/backfill-translations.ts",
     "images:backfill": "tsx src/scripts/backfill-images.ts"
   },

@@ -22,7 +22,7 @@ export const preAssessItemSchema = z.object({
     .min(0)
     .max(10)
     .describe(
-      "Conservative relevance rating 1-10 as per the <RATING GUIDELINES>. Minimum value is 1 — never use 0."
+      "Calibrated relevance rating 1-10 per the <RATING GUIDELINES>, using the full scale. Minimum value is 1 — never use 0."
     ),
   emotionTag: EMOTION_TAG_SCHEMA,
   narrativeFrame: NARRATIVE_FRAME_SCHEMA,
@@ -88,17 +88,18 @@ export const assessResultSchema = z.object({
     .array(z.string())
     .describe(
       "Viñetas Markdown que muestran los pasos del cálculo de calificación, en español. " +
-        'Formato: "- **[Factor clave]:** [calificación 1-10]", ' +
-        '"- **[Factor limitante genérico]:** [modificador +0 a -4]", ' +
-        '"- **[Otros factores combinados]:** [modificador +/- 0-2]".'
+        'Formato: "- **[Factor clave]:** [calificación base 1-10]", ' +
+        '"- **[Factor que eleva o limita]:** [modificador, puede sumar o restar]", ' +
+        '"- **[Otros factores combinados]:** [modificador, puede sumar o restar]".'
     ),
-  conservativeRating: z
+  relevanceRating: z
     .number()
     .int()
     .min(1)
     .max(10)
     .describe(
-      "Calificación conservadora de relevancia 1-10 basada en el cálculo de relevancia"
+      "Calificación de relevancia 1-10 calibrada según la <ESCALA_DE_RELEVANCIA>, derivada del cálculo de relevancia. " +
+        "Usa todo el rango: reserva 7-8 para alto impacto y 9-10 para casos excepcionales/históricos."
     ),
   relevanceSummary: z
     .string()
