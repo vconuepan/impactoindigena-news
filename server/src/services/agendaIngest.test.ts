@@ -10,13 +10,13 @@ const NOW = new Date('2026-06-27T12:00:00Z')
 const TODAY = new Date('2026-06-27T00:00:00Z')
 
 describe('buildFromRss', () => {
-  it('publishes a publicacion using the RSS pubDate as startDate', () => {
+  it('drafts a publicacion using the RSS pubDate as startDate (curation: never auto-publish)', () => {
     const d = buildFromRss(
       { url: 'https://filac.org/p1', title: 'Informe sobre derechos', datePublished: '2026-06-20T00:00:00Z', description: 'desc', imageUrl: null },
       rssPublicacion, NOW,
     )
     expect(d).not.toBeNull()
-    expect(d!.status).toBe('published')
+    expect(d!.status).toBe('draft')
     expect(d!.type).toBe('publicacion')
     expect(d!.startDate?.toISOString()).toBe('2026-06-20T00:00:00.000Z')
     expect(d!.externalId).toBe('rss:https://filac.org/p1')
@@ -38,20 +38,25 @@ describe('buildFromRss', () => {
     expect(buildFromRss({ url: 'u', title: '', datePublished: null, description: null, imageUrl: null }, rssPublicacion)).toBeNull()
   })
 
+  it('rejects junk placeholder titles', () => {
+    expect(buildFromRss({ url: 'u', title: 'No item available', datePublished: null, description: null, imageUrl: null }, rssConvocatoria)).toBeNull()
+  })
+
   it('falls back to draft if a publicacion has no parseable date', () => {
-    const d = buildFromRss({ url: 'u', title: 't', datePublished: null, description: null, imageUrl: null }, rssPublicacion, NOW)
+    const d = buildFromRss({ url: 'u', title: 'Informe sin fecha', datePublished: null, description: null, imageUrl: null }, rssPublicacion, NOW)
     expect(d!.status).toBe('draft')
+    expect(d!.startDate).toBeNull()
   })
 })
 
 describe('buildFromVevent', () => {
-  it('publishes a future event with authoritative dates', () => {
+  it('drafts a future event with authoritative dates (curation: never auto-publish)', () => {
     const d = buildFromVevent(
       { type: 'VEVENT', uid: 'evt-1', summary: '62º Consejo DDHH', start: new Date('2026-07-10T09:00:00Z'), end: new Date('2026-07-12T18:00:00Z'), location: 'Ginebra', datetype: 'date-time' },
       icalEvento, TODAY, NOW,
     )
     expect(d).not.toBeNull()
-    expect(d!.status).toBe('published')
+    expect(d!.status).toBe('draft')
     expect(d!.type).toBe('evento')
     expect(d!.externalId).toBe('ical:evt-1')
     expect(d!.allDay).toBe(false)

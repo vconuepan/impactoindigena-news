@@ -37,6 +37,12 @@ function parseDate(value: string | Date | null | undefined): Date | null {
   return isNaN(d.getTime()) ? null : d
 }
 
+/** Reject placeholder/empty titles that feeds sometimes emit (e.g. CBD's "No item available"). */
+function isJunkTitle(title: string | undefined | null): boolean {
+  const t = (title ?? '').trim().toLowerCase()
+  return t.length < 4 || t === 'no item available' || t === 'untitled' || t === 'sin título'
+}
+
 function startOfTodayUTC(): Date {
   const d = new Date()
   d.setUTCHours(0, 0, 0, 0)
@@ -44,16 +50,16 @@ function startOfTodayUTC(): Date {
 }
 
 /**
- * Normalize an RSS item into an AgendaItem draft. The TYPE comes from the source
- * (type-specific feed). Confidence gate (Fase 2a, no LLM):
- * - `publicacion`: the RSS pubDate IS the publication date → publish.
- * - `evento` / `convocatoria` / `oportunidad`: the RSS pubDate is NOT the event
- *   date nor the deadline (that lives in the body, needs LLM in 2b) → draft for
- *   review, with no date set.
- * Returns null if the item lacks a usable title/url.
+ * Normalize an RSS item into an AgendaItem DRAFT. The TYPE comes from the source
+ * (type-specific feed). Curation model: nothing auto-publishes — every item lands
+ * as `draft` for admin review. `extractionScore` still flags confidence: higher
+ * when a publication date is present, lower when no structured date exists (the
+ * deadline/event date lives in the body and needs LLM in Fase 2b).
+ * Returns null if the item lacks a usable title/url or the title is junk.
  */
 export function buildFromRss(item: RSSItem, source: AgendaSource, now: Date = new Date()): AgendaItemDraft | null {
-  if (!item.url || !item.title) return null
+  if (!item.url || !item.title || isJunkTitle(item.title)) return null
+  void now
   const base = {
     type: source.type,
     title: item.title.trim(),
@@ -71,13 +77,12 @@ export function buildFromRss(item: RSSItem, source: AgendaSource, now: Date = ne
     externalId: `rss:${item.url}`,
   }
 
+  // Publications carry the pubDate (shown via startDate); higher confidence but
+  // still draft for curation.
   if (source.type === 'publicacion') {
     const pub = parseDate(item.datePublished)
-    if (pub) {
-      return { ...base, status: 'published', startDate: pub, publishedAt: now, extractionScore: 0.9 }
-    }
+    return { ...base, status: 'draft', startDate: pub, publishedAt: null, extractionScore: pub ? 0.9 : 0.3 }
   }
-  // No reliable structured date for this type → hold as draft for admin / Fase 2b.
   return { ...base, status: 'draft', publishedAt: null, extractionScore: 0.3 }
 }
 
@@ -93,12 +98,14 @@ type VEventLike = {
 }
 
 /**
- * Normalize an iCal VEVENT into an `evento` AgendaItem draft. Authoritative
- * start/end dates → publish. Past events (effective end < today) and events
- * without a start date or UID are skipped (returns null).
+ * Normalize an iCal VEVENT into an `evento` AgendaItem DRAFT (high confidence —
+ * authoritative start/end dates — but still draft for curation). Past events
+ * (effective end < today), junk titles, and events without a start/UID are
+ * skipped (returns null).
  */
 export function buildFromVevent(ev: VEventLike, source: AgendaSource, today: Date = startOfTodayUTC(), now: Date = new Date()): AgendaItemDraft | null {
-  if (ev.type !== 'VEVENT' || !ev.uid || !ev.summary) return null
+  if (ev.type !== 'VEVENT' || !ev.uid || !ev.summary || isJunkTitle(ev.summary)) return null
+  void now
   const start = parseDate(ev.start)
   if (!start) return null
   const end = parseDate(ev.end)
@@ -107,7 +114,7 @@ export function buildFromVevent(ev: VEventLike, source: AgendaSource, today: Dat
 
   return {
     type: 'evento',
-    status: 'published',
+    status: 'draft',
     title: ev.summary.trim(),
     summary: null,
     dueDate: null,
@@ -122,7 +129,7 @@ export function buildFromVevent(ev: VEventLike, source: AgendaSource, today: Dat
     tags: [],
     externalId: `ical:${ev.uid}`,
     extractionScore: 1.0,
-    publishedAt: now,
+    publishedAt: null,
   }
 }
 

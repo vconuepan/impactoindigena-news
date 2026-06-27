@@ -21,21 +21,10 @@ export interface AgendaSource {
 }
 
 export const AGENDA_SOURCES: AgendaSource[] = [
-  // ─── iCal: sesiones oficiales ONU (fechas autoritativas → evento) ───
-  {
-    sourceName: 'ACNUDH · Consejo de Derechos Humanos',
-    url: 'https://indico.un.org/category/885/events.ics',
-    kind: 'ical',
-    type: 'evento',
-    lang: 'en',
-  },
-  {
-    sourceName: 'ONU · Órganos de tratado',
-    url: 'https://indico.un.org/category/829/events.ics',
-    kind: 'ical',
-    type: 'evento',
-    lang: 'en',
-  },
+  // ─── iCal: calendario indígena curado de Docip (alta señal, ~18 futuros) ───
+  // Nota: se omiten los iCal crudos de indico.un.org (HRC 885, órganos de
+  // tratado 829): explotan en decenas de sub-sesiones granulares; las sesiones
+  // clave ya entran curadas vía seed + este calendario.
   {
     sourceName: 'Docip · Calendario indígena',
     url: 'https://calendar.google.com/calendar/ical/c_pkgrek952kh2te4d76f568n2lg%40group.calendar.google.com/public/basic.ics',
@@ -66,27 +55,6 @@ export const AGENDA_SOURCES: AgendaSource[] = [
     type: 'publicacion',
     lang: 'es',
   },
-
-  // ─── RSS: CBD (por sección/tipo) ───
-  {
-    sourceName: 'CBD · Notificaciones',
-    url: 'https://www.cbd.int/rss/notifications.aspx',
-    kind: 'rss',
-    type: 'convocatoria',
-    lang: 'en',
-  },
-  {
-    sourceName: 'CBD · Reuniones',
-    url: 'https://www.cbd.int/rss/meetings.aspx',
-    kind: 'rss',
-    type: 'evento',
-    lang: 'en',
-  },
-  {
-    sourceName: 'CBD · Informes',
-    url: 'https://www.cbd.int/rss/reports.aspx',
-    kind: 'rss',
-    type: 'publicacion',
-    lang: 'en',
-  },
+  // Se omiten las fuentes CBD (notificaciones/reuniones/informes): códigos
+  // administrativos crípticos en inglés, baja señal como agenda indígena.
 ]
