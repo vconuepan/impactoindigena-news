@@ -43,6 +43,19 @@ function isJunkTitle(title: string | undefined | null): boolean {
   return t.length < 4 || t === 'no item available' || t === 'untitled' || t === 'sin título'
 }
 
+// RSS items (calls/events) carry no structured event date — only a publish date.
+// Anything published more than this long ago is stale (the deadline passed / the
+// event happened): e.g. a 2021 fellowship. Drop it so the agenda stays current.
+const RSS_MAX_AGE_MONTHS = 18
+
+function isStaleByPubDate(datePublished: string | null, now: Date): boolean {
+  const d = parseDate(datePublished)
+  if (!d) return false // no date → can't tell → keep (lands as a draft anyway)
+  const cutoff = new Date(now)
+  cutoff.setMonth(cutoff.getMonth() - RSS_MAX_AGE_MONTHS)
+  return d < cutoff
+}
+
 function startOfTodayUTC(): Date {
   const d = new Date()
   d.setUTCHours(0, 0, 0, 0)
@@ -59,7 +72,7 @@ function startOfTodayUTC(): Date {
  */
 export function buildFromRss(item: RSSItem, source: AgendaSource, now: Date = new Date()): AgendaItemDraft | null {
   if (!item.url || !item.title || isJunkTitle(item.title)) return null
-  void now
+  if (isStaleByPubDate(item.datePublished, now)) return null
   const base = {
     type: source.type,
     title: item.title.trim(),

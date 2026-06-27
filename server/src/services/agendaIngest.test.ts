@@ -42,6 +42,20 @@ describe('buildFromRss', () => {
     expect(buildFromRss({ url: 'u', title: 'No item available', datePublished: null, description: null, imageUrl: null }, rssConvocatoria)).toBeNull()
   })
 
+  it('drops stale RSS items published long ago (e.g. a 2021 fellowship)', () => {
+    const stale = buildFromRss(
+      { url: 'https://filac.org/becas2021', title: 'BECAS 2021: título de experto', datePublished: '2021-03-01T00:00:00Z', description: null, imageUrl: null },
+      rssConvocatoria, NOW,
+    )
+    expect(stale).toBeNull()
+    // A recent item with no parseable date is kept (can't tell its age).
+    const recent = buildFromRss(
+      { url: 'https://filac.org/becas2026', title: 'Becas 2026', datePublished: '2026-05-01T00:00:00Z', description: null, imageUrl: null },
+      rssConvocatoria, NOW,
+    )
+    expect(recent).not.toBeNull()
+  })
+
   it('falls back to draft if a publicacion has no parseable date', () => {
     const d = buildFromRss({ url: 'u', title: 'Informe sin fecha', datePublished: null, description: null, imageUrl: null }, rssPublicacion, NOW)
     expect(d!.status).toBe('draft')
