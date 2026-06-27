@@ -66,6 +66,24 @@ describe('buildFromRss', () => {
     )).not.toBeNull()
   })
 
+  it('drops administrative procurement/tender notices (not opportunities)', () => {
+    // FILAC tender for external auditors → noise
+    expect(buildFromRss(
+      { url: 'https://filac.org/aud', title: 'FILAC convoca a empresas auditoras para la Auditoría Externa Institucional Financiera 2024 y 2025', datePublished: '2026-05-01T00:00:00Z', description: null, imageUrl: null },
+      rssConvocatoria, NOW,
+    )).toBeNull()
+    // Multimedia services contract → noise (even though it names "Pueblos Indígenas")
+    expect(buildFromRss(
+      { url: 'https://filac.org/mm', title: 'Contratación de servicios especializados para la producción multimedia del Curso en Derechos Colectivos de los Pueblos Indígenas', datePublished: '2026-05-01T00:00:00Z', description: null, imageUrl: null },
+      rssConvocatoria, NOW,
+    )).toBeNull()
+    // Legitimate scholarship call → kept
+    expect(buildFromRss(
+      { url: 'https://filac.org/becas', title: 'Becas para Juventudes Indígenas: Diplomado en Monitoreo de Fondos Climáticos', datePublished: '2026-05-01T00:00:00Z', description: null, imageUrl: null },
+      rssConvocatoria, NOW,
+    )).not.toBeNull()
+  })
+
   it('falls back to draft if a publicacion has no parseable date', () => {
     const d = buildFromRss({ url: 'u', title: 'Informe sin fecha', datePublished: null, description: null, imageUrl: null }, rssPublicacion, NOW)
     expect(d!.status).toBe('draft')

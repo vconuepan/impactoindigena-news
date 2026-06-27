@@ -74,6 +74,23 @@ function isIndigenousRelevant(...texts: (string | null | undefined)[]): boolean 
   return INDIGENOUS_TERMS.some((term) => hay.includes(term))
 }
 
+// Administrative procurement/tender notices that orgs publish in their "calls"
+// feeds (e.g. FILAC convoca empresas auditoras / contratación de servicios): these
+// are supplier-facing tenders, NOT opportunities for indigenous peoples. Dropped
+// from ALL sources (not gated by topicFilter) since they're noise everywhere.
+const PROCUREMENT_TERMS = [
+  'empresas auditoras', 'auditoria externa', 'servicios de auditoria',
+  'contratacion de servicios', 'contratacion de empresa', 'licitacion',
+  'terminos de referencia', 'cotizacion', 'concurso de precios',
+  'llamado a presentar ofertas', 'invitacion a cotizar',
+]
+
+/** True if a title/summary looks like an administrative procurement/tender notice. */
+function isProcurementNotice(...texts: (string | null | undefined)[]): boolean {
+  const hay = texts.filter(Boolean).map((t) => stripDiacritics(t as string)).join('  ')
+  return PROCUREMENT_TERMS.some((term) => hay.includes(term))
+}
+
 function isStaleByPubDate(datePublished: string | null, now: Date): boolean {
   const d = parseDate(datePublished)
   if (!d) return false // no date → can't tell → keep (lands as a draft anyway)
@@ -98,6 +115,7 @@ function startOfTodayUTC(): Date {
  */
 export function buildFromRss(item: RSSItem, source: AgendaSource, now: Date = new Date()): AgendaItemDraft | null {
   if (!item.url || !item.title || isJunkTitle(item.title)) return null
+  if (isProcurementNotice(item.title, item.description)) return null // admin tenders, not opportunities
   if (isStaleByPubDate(item.datePublished, now)) return null
   // Broad sources (topicFilter): keep only indigenous-relevant items. FILAC and
   // other inherently indigenous sources omit topicFilter and pass through.
@@ -147,6 +165,7 @@ type VEventLike = {
  */
 export function buildFromVevent(ev: VEventLike, source: AgendaSource, today: Date = startOfTodayUTC(), now: Date = new Date()): AgendaItemDraft | null {
   if (ev.type !== 'VEVENT' || !ev.uid || !ev.summary || isJunkTitle(ev.summary)) return null
+  if (isProcurementNotice(ev.summary)) return null // admin tenders, not events
   void now
   const start = parseDate(ev.start)
   if (!start) return null
