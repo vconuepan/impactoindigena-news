@@ -1,5 +1,5 @@
 // Enforces the "citas breves" promise from the site's Terms (derecho de cita,
-// Art. 71 Ley 17.336): quotes stored and displayed never exceed
+// Ley 17.336): quotes stored and displayed never exceed
 // MAX_QUOTE_CHARS. The assess prompt instructs the model to keep quotes
 // short; this function is the guarantee. Truncation drops trailing whole
 // sentences — a verbatim quote is never cut mid-sentence. Only when the first

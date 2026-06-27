@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto'
 import prisma from '../lib/prisma.js'
 import { config } from '../config.js'
 import * as brevo from './brevo.js'
-import { createLogger } from '../lib/logger.js'
+import { createLogger, maskEmail } from '../lib/logger.js'
 
 const log = createLogger('subscribe')
 
@@ -31,7 +31,7 @@ export async function subscribe({ email, firstName, language = 'es' }: Subscribe
     where: { email, confirmedAt: { not: null } },
   })
   if (existing) {
-    log.info({ email }, 'already subscribed, returning success without action')
+    log.info({ email: maskEmail(email) }, 'already subscribed, returning success without action')
     return
   }
 
@@ -49,7 +49,7 @@ export async function subscribe({ email, firstName, language = 'es' }: Subscribe
     }
   } catch (err) {
     if (err instanceof EmailValidationError) throw err
-    log.warn({ err, email }, 'email verification failed, skipping check')
+    log.warn({ err, email: maskEmail(email) }, 'email verification failed, skipping check')
   }
 
   // Delete any existing unconfirmed pending subscriptions for this email.
@@ -69,7 +69,7 @@ export async function subscribe({ email, firstName, language = 'es' }: Subscribe
     })
     plunkContactId = contact.id
   } catch (err) {
-    log.warn({ err, email }, 'failed to create Brevo contact, proceeding with subscription')
+    log.warn({ err, email: maskEmail(email) }, 'failed to create Brevo contact, proceeding with subscription')
   }
 
   // Store pending subscription
@@ -148,9 +148,9 @@ export async function subscribe({ email, firstName, language = 'es' }: Subscribe
       subject,
       body: html,
     })
-    log.info({ email }, 'confirmation email sent')
+    log.info({ email: maskEmail(email) }, 'confirmation email sent')
   } catch (err) {
-    log.error({ err, email }, 'failed to send confirmation email')
+    log.error({ err, email: maskEmail(email) }, 'failed to send confirmation email')
     throw new Error('Failed to send confirmation email')
   }
 }
@@ -179,7 +179,7 @@ export async function confirmSubscription(token: string, email: string) {
         subscribed: true,
       })
     } catch (err) {
-      log.warn({ err, email }, 'failed to update Brevo contact, marking as confirmed anyway')
+      log.warn({ err, email: maskEmail(email) }, 'failed to update Brevo contact, marking as confirmed anyway')
     }
   }
 
@@ -189,7 +189,7 @@ export async function confirmSubscription(token: string, email: string) {
     data: { confirmedAt: new Date() },
   })
 
-  log.info({ email }, 'subscription confirmed')
+  log.info({ email: maskEmail(email) }, 'subscription confirmed')
 }
 
 /**

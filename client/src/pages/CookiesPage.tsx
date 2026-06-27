@@ -93,6 +93,42 @@ export default function CookiesPage() {
               </ul>
             </li>
           </ul>
+
+          <div className="overflow-x-auto mt-4">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-neutral-200">
+                  <th scope="col" className="text-left align-top py-2 pr-4 font-normal">Cookie</th>
+                  <th scope="col" className="text-left align-top py-2 pr-4 font-normal">Propósito</th>
+                  <th scope="col" className="text-left align-top py-2 font-normal">Duración</th>
+                </tr>
+              </thead>
+              <tbody className="text-neutral-600">
+                <tr className="border-b border-neutral-100">
+                  <td className="align-top py-2 pr-4"><code>member_token</code></td>
+                  <td className="align-top py-2 pr-4">Sesión de miembro (autenticación)</td>
+                  <td className="align-top py-2">30 días</td>
+                </tr>
+                <tr className="border-b border-neutral-100">
+                  <td className="align-top py-2 pr-4"><code>member_session</code></td>
+                  <td className="align-top py-2 pr-4">Indicador de sesión activa</td>
+                  <td className="align-top py-2">30 días</td>
+                </tr>
+                <tr>
+                  <td className="align-top py-2 pr-4"><code>refresh_token</code></td>
+                  <td className="align-top py-2 pr-4">Renovación de la sesión</td>
+                  <td className="align-top py-2">24 horas</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-sm text-neutral-500">
+            Las preferencias en <em>localStorage</em> se guardan bajo las claves
+            técnicas <code>ar-positivity</code>, <code>ii_lng</code>,{" "}
+            <code>ar-preferred-issues</code>, <code>ar-saved-stories</code> y{" "}
+            <code>ar-read-stories</code>. No son cookies ni contienen datos personales.
+          </p>
+
           <p className="mt-3">
             Para los lectores que no inician sesión, el Sitio no instala cookies.
           </p>

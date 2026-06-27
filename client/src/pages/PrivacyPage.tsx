@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 2.0 · vigente desde el 24 de junio de 2026.
+            Versión 2.1 · vigente desde el 27 de junio de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -54,10 +54,10 @@ export default function PrivacyPage() {
             medio <strong>impactoindigena.news</strong> como programa con fines
             exclusivamente informativos y educativos. Su representante legal es{" "}
             <strong>Venancio Coñuepan Mesías</strong>. No hemos designado un
-            encargado de prevención (DPO), por no concurrir los supuestos del
-            artículo 50 de la Ley 21.719; las consultas de privacidad las atiende
-            el responsable. Para ejercer tus derechos o cualquier consulta de
-            privacidad, escríbenos a{" "}
+            delegado de protección de datos, figura de carácter facultativo
+            conforme al artículo 50 de la Ley 21.719; las consultas de privacidad
+            las atiende directamente el responsable. Para ejercer tus derechos o
+            cualquier consulta de privacidad, escríbenos a{" "}
             <ObfuscatedEmail className="text-brand-800 hover:text-brand-700" />.
           </p>
 
@@ -85,6 +85,7 @@ export default function PrivacyPage() {
             <li><strong>Boletín:</strong> tu correo y, opcionalmente, tu nombre, cuando te suscribes voluntariamente.</li>
             <li><strong>Alertas por tema:</strong> tu correo y los temas que selecciones.</li>
             <li><strong>Acceso de miembros:</strong> tu correo, si inicias sesión con enlace mágico.</li>
+            <li><strong>Membresía a comunidades:</strong> la(s) comunidad(es) a la(s) que te unes y tus preferencias de recepción del boletín de comunidad (digest).</li>
             <li><strong>Feedback:</strong> tu mensaje y, opcionalmente, tu correo; de la IP solo guardamos un hash no reversible.</li>
             <li><strong>Métricas de uso:</strong> páginas vistas y fuente de tráfico, de forma agregada y sin identificación personal, mediante analítica propia (sin proveedores de rastreo de terceros).</li>
             <li><strong>Búsqueda:</strong> el texto que escribes se procesa con nuestro proveedor de IA para la búsqueda semántica; no se asocia a tu identidad ni se usa para entrenar modelos.</li>
@@ -171,7 +172,7 @@ export default function PrivacyPage() {
                   <td className="align-top py-2 pr-4">Microsoft Azure OpenAI</td>
                   <td className="align-top py-2 pr-4">Clasificación, resumen y traducción con IA; búsqueda semántica</td>
                   <td className="align-top py-2 pr-4">EE.&nbsp;UU.</td>
-                  <td className="align-top py-2">Contenido de noticias de fuentes públicas y consultas del buscador (sin asociar a identidad)</td>
+                  <td className="align-top py-2">Contenido editorial de noticias de fuentes públicas —incluidos nombres, cargos y citas de terceros, y el pueblo indígena divulgado por la fuente (art. 16 a)— y, por separado, las consultas del buscador, que no se asocian a tu identidad</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Microsoft Azure AI Foundry</td>

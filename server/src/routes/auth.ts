@@ -13,7 +13,7 @@ import {
   verifyAccessToken,
 } from '../services/auth.js'
 import { getUserById } from '../services/user.js'
-import { createLogger } from '../lib/logger.js'
+import { createLogger, maskEmail } from '../lib/logger.js'
 import prisma from '../lib/prisma.js'
 import * as brevo from '../services/brevo.js'
 
@@ -57,14 +57,14 @@ router.post('/login', authLimiter, validateBody(loginSchema), async (req, res) =
 
     const user = await getUserByEmail(email)
     if (!user || !user.passwordHash) {
-      log.warn({ email }, 'login failed: user not found')
+      log.warn({ email: maskEmail(email) }, 'login failed: user not found')
       res.status(401).json({ error: 'Invalid email or password' })
       return
     }
 
     const valid = await verifyPassword(password, user.passwordHash)
     if (!valid) {
-      log.warn({ email }, 'login failed: wrong password')
+      log.warn({ email: maskEmail(email) }, 'login failed: wrong password')
       res.status(401).json({ error: 'Invalid email or password' })
       return
     }
@@ -267,12 +267,12 @@ router.delete('/subscription', requireMember, async (req, res) => {
       try {
         await brevo.updateContact(subscription.plunkContactId, { subscribed: false })
       } catch (err) {
-        log.warn({ err, email: req.user!.email }, 'failed to update Brevo contact on unsubscribe, deleting record anyway')
+        log.warn({ err, email: maskEmail(req.user!.email) }, 'failed to update Brevo contact on unsubscribe, deleting record anyway')
       }
     }
 
     await prisma.pendingSubscription.delete({ where: { id: subscription.id } })
-    log.info({ email: req.user!.email }, 'subscription cancelled')
+    log.info({ email: maskEmail(req.user!.email) }, 'subscription cancelled')
     res.json({ success: true })
   } catch (err) {
     log.error({ err }, 'failed to cancel subscription')

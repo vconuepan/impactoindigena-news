@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { serializeError } from './logger.js'
+import { serializeError, maskEmail } from './logger.js'
 
 describe('serializeError', () => {
   it('strips axios response body, request, and config from serialized output', () => {
@@ -59,5 +59,22 @@ describe('serializeError', () => {
     expect(result.code).toBe('ECONNREFUSED')
     expect(result.status).toBeUndefined()
     expect(result.url).toBe('https://example.com/api')
+  })
+})
+
+describe('maskEmail', () => {
+  it('keeps the first char of the local part and the full domain', () => {
+    expect(maskEmail('venancio@fundacionkm.org')).toBe('v***@fundacionkm.org')
+  })
+
+  it('does not leak the local part for short addresses', () => {
+    expect(maskEmail('a@b.com')).toBe('a***@b.com')
+  })
+
+  it('handles missing or malformed emails without throwing', () => {
+    expect(maskEmail(undefined)).toBe('[no-email]')
+    expect(maskEmail('')).toBe('[no-email]')
+    expect(maskEmail('not-an-email')).toBe('[redacted-email]')
+    expect(maskEmail('@nolocal.com')).toBe('[redacted-email]')
   })
 })

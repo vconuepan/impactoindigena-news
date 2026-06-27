@@ -89,3 +89,16 @@ export const logger = pino(
 export function createLogger(module: string) {
   return logger.child({ module })
 }
+
+/**
+ * Mask an email for logging: keep the first character of the local part and the
+ * full domain, redact the rest (e.g. "v***@fundacionkm.org"). Keeps logs useful
+ * for debugging without storing readers' emails in clear text (Ley 21.719,
+ * principio de proporcionalidad/minimización).
+ */
+export function maskEmail(email: string | null | undefined): string {
+  if (!email) return '[no-email]'
+  const at = email.indexOf('@')
+  if (at <= 0) return '[redacted-email]'
+  return `${email[0]}***@${email.slice(at + 1)}`
+}

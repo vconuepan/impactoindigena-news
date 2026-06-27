@@ -59,8 +59,8 @@ export default function TermsPage() {
             El Sitio enlaza y hace referencia a contenidos de terceros (medios,
             ONG, organismos públicos), cuyos derechos pertenecen a sus
             respectivos titulares. Impacto Indígena publica resúmenes propios y
-            citas breves al amparo del <strong>derecho de cita</strong> (Art. 71
-            de la Ley N° 17.336 sobre Propiedad Intelectual), siempre
+            citas breves al amparo del <strong>derecho de cita</strong>{" "}
+            reconocido en la Ley N° 17.336 sobre Propiedad Intelectual, siempre
             identificando la fuente y enlazando al original. Los resúmenes,
             análisis, calificaciones, textos editoriales, marca, diseño y
             software del Sitio son propiedad de la Fundación Coñuepan-Millaquir o se usan
