@@ -22,6 +22,7 @@ import spotlightsRouter from './spotlights.js'
 import casesRouter from './cases.js'
 import editorialsRouter from './editorials.js'
 import integrationHealthRouter from './integration-health.js'
+import agendaRouter from './agenda.js'
 
 const router = Router()
 
@@ -50,5 +51,6 @@ router.use('/spotlights', spotlightsRouter)
 router.use('/cases', casesRouter)
 router.use('/editorials', editorialsRouter)
 router.use('/integration-health', integrationHealthRouter)
+router.use('/agenda', agendaRouter)
 
 export default router

@@ -79,6 +79,7 @@ const CommunitiesAdminPage = lazy(() => import('./pages/admin/CommunitiesAdminPa
 const MaintenancePage = lazy(() => import('./pages/admin/MaintenancePage'))
 const SpotlightsAdminPage = lazy(() => import('./pages/admin/SpotlightsAdminPage'))
 const CasesAdminPage = lazy(() => import('./pages/admin/CasesAdminPage'))
+const AgendaPage = lazy(() => import('./pages/admin/AgendaPage'))
 const SubscribersPage = lazy(() => import('./pages/admin/SubscribersPage'))
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage'))
 const EditorialsPage = lazy(() => import('./pages/admin/EditorialsPage'))
@@ -225,6 +226,7 @@ export default function App() {
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="spotlights" element={<SpotlightsAdminPage />} />
         <Route path="casos" element={<CasesAdminPage />} />
+        <Route path="agenda" element={<AgendaPage />} />
       </Route>
 
       {/* Catch-all */}

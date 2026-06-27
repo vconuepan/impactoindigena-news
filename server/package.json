@@ -66,6 +66,7 @@
     "langchain": "^1.2.15",
     "masto": "^7.10.1",
     "node-cron": "^3.0.3",
+    "node-ical": "^0.26.1",
     "pdf-parse": "^2.4.5",
     "pdfkit": "^0.17.2",
     "pino": "^10.3.0",

@@ -321,6 +321,33 @@ export const authApi = {
   me: () => request<{ id: string; email: string; name: string; role: string }>('/auth/me'),
 }
 
+export interface AdminAgendaItem {
+  id: string
+  type: 'evento' | 'convocatoria' | 'oportunidad' | 'publicacion'
+  status: 'draft' | 'published'
+  title: string
+  titleOriginal: string | null
+  summary: string | null
+  dueDate: string | null
+  startDate: string | null
+  endDate: string | null
+  allDay: boolean
+  location: string | null
+  sourceName: string
+  sourceUrl: string | null
+  lang: string
+  docRef: string | null
+  countries: string[]
+  tags: string[]
+  highlightNew: boolean
+  extendedDeadline: boolean
+  externalId: string | null
+  extractionScore: number | null
+  publishedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 export const adminApi = {
   // Stories
   stories: {
@@ -665,6 +692,17 @@ export const adminApi = {
       request<AdminOngoingCase>(`/cases/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
     delete: (id: string) =>
       request<void>(`/cases/${id}`, { method: 'DELETE' }),
+  },
+
+  agenda: {
+    list: (params?: { status?: string; type?: string; page?: number; pageSize?: number }) =>
+      request<{ items: AdminAgendaItem[]; total: number; page: number; pageSize: number }>(
+        `/agenda${toQueryString(params ?? {})}`,
+      ),
+    update: (id: string, body: Partial<AdminAgendaItem>) =>
+      request<AdminAgendaItem>(`/agenda/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+    delete: (id: string) => request<void>(`/agenda/${id}`, { method: 'DELETE' }),
+    ingest: () => request<{ message: string }>('/agenda/ingest', { method: 'POST' }),
   },
 
   // Integration health

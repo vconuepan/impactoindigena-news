@@ -46,6 +46,7 @@ const navigation = [
   { name: 'Users', href: '/admin/users', icon: UsersIcon },
   { name: 'Miembros', href: '/admin/members', icon: UserGroupIcon },
   { name: 'En Foco', href: '/admin/spotlights', icon: GlobeAltIcon },
+  { name: 'Incidencia', href: '/admin/agenda', icon: GlobeAltIcon },
   { name: 'Comunidades', href: '/admin/communities', icon: GlobeAltIcon },
   { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
   { name: 'Suscriptores', href: '/admin/subscribers', icon: EnvelopeOpenIcon },
