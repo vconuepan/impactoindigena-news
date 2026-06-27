@@ -309,7 +309,7 @@ router.get('/:slug/membership', requireMember, async (req, res) => {
     const membership = await prisma.communityMember.findUnique({
       where: { userId_communityId: { userId: req.user!.userId, communityId: community.id } },
     })
-    res.json({ isMember: !!membership })
+    res.json({ isMember: !!membership, consented: !!membership?.consentedAt })
   } catch (err) {
     log.error({ err, slug: req.params.slug }, 'failed to check membership')
     res.status(500).json({ error: 'Failed to check membership' })
@@ -321,7 +321,7 @@ router.post('/:slug/join', requireMember, async (req, res) => {
   try {
     const community = await prisma.community.findUnique({
       where: { slug: req.params.slug },
-      select: { id: true, name: true, slug: true, issueIds: true, keywords: true },
+      select: { id: true, name: true, slug: true, type: true, issueIds: true, keywords: true },
     })
     if (!community) {
       res.status(404).json({ error: 'Community not found' })
@@ -333,10 +333,25 @@ router.post('/:slug/join', requireMember, async (req, res) => {
       where: { userId_communityId: { userId: req.user!.userId, communityId: community.id } },
     })
 
+    // Express consent gate for PUEBLO communities: membership reveals the
+    // user's ethnic origin (sensitive data, Ley 21.719 Art. 16). Required for
+    // new joins and to backfill legacy members who never consented.
+    const consent = req.body?.consent === true
+    const isPueblo = community.type === 'PUEBLO'
+    const alreadyConsented = !!existing?.consentedAt
+    if (isPueblo && !alreadyConsented && !consent) {
+      res.status(400).json({ error: 'consent_required' })
+      return
+    }
+    const consentData =
+      isPueblo && consent
+        ? { consentedAt: new Date(), consentVersion: config.community.consentVersion }
+        : {}
+
     await prisma.communityMember.upsert({
       where: { userId_communityId: { userId: req.user!.userId, communityId: community.id } },
-      update: {},
-      create: { userId: req.user!.userId, communityId: community.id },
+      update: consentData,
+      create: { userId: req.user!.userId, communityId: community.id, ...consentData },
     })
 
     log.info({ userId: req.user!.userId, slug: req.params.slug }, 'user joined community')

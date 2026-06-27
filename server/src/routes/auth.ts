@@ -16,6 +16,7 @@ import { getUserById } from '../services/user.js'
 import { createLogger, maskEmail } from '../lib/logger.js'
 import prisma from '../lib/prisma.js'
 import * as brevo from '../services/brevo.js'
+import { writeAuditLog } from '../services/audit.js'
 
 const log = createLogger('auth')
 
@@ -277,6 +278,118 @@ router.delete('/subscription', requireMember, async (req, res) => {
   } catch (err) {
     log.error({ err }, 'failed to cancel subscription')
     res.status(500).json({ error: 'Failed to cancel subscription' })
+  }
+})
+
+/**
+ * GET /api/auth/export — data portability/access (Ley 21.719 arts. 5 y 9).
+ * Assembles every piece of the authenticated member's personal data into a
+ * downloadable JSON. Excludes password hashes and raw tokens.
+ */
+router.get('/export', requireMember, async (req, res) => {
+  try {
+    const userId = req.user!.userId
+    const email = req.user!.email
+
+    const [user, memberships, digestExclusions, posts, subscription, alerts, feedback] = await Promise.all([
+      getUserById(userId),
+      prisma.communityMember.findMany({
+        where: { userId },
+        select: { joinedAt: true, consentedAt: true, consentVersion: true, community: { select: { name: true, slug: true, type: true } } },
+      }),
+      prisma.digestExclusion.findMany({
+        where: { userId },
+        select: { createdAt: true, community: { select: { name: true, slug: true } } },
+      }),
+      prisma.communityPost.findMany({ where: { userId } }),
+      prisma.pendingSubscription.findFirst({
+        where: { email },
+        select: { confirmedAt: true, createdAt: true },
+      }),
+      prisma.alertSubscription.findMany({
+        where: { email },
+        select: { topics: true, confirmedAt: true, active: true, createdAt: true },
+      }),
+      prisma.feedback.findMany({
+        where: { email },
+        select: { category: true, message: true, status: true, createdAt: true },
+      }),
+    ])
+
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      responsable: 'Fundación Coñuepan-Millaquir (impactoindigena.news)',
+      profile: user,
+      communityMemberships: memberships,
+      digestExclusions,
+      communityPosts: posts,
+      newsletterSubscription: subscription,
+      topicAlerts: alerts,
+      feedback,
+    }
+
+    await writeAuditLog({ actor: req.user, action: 'data.export', targetType: 'user', targetId: userId })
+
+    res.setHeader('Content-Type', 'application/json; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename="mis-datos-impactoindigena.json"')
+    res.send(JSON.stringify(exportData, null, 2))
+  } catch (err) {
+    log.error({ err }, 'failed to export user data')
+    res.status(500).json({ error: 'Failed to export data' })
+  }
+})
+
+/**
+ * DELETE /api/auth/account — right to erasure (Ley 21.719 art. 7).
+ * Deletes the member's account and all linked personal data. Requires an
+ * explicit typed confirmation. Idempotent. Clears session cookies and audits.
+ */
+router.delete('/account', requireMember, async (req, res) => {
+  try {
+    if (req.body?.confirm !== 'ELIMINAR') {
+      res.status(400).json({ error: 'confirmation_required' })
+      return
+    }
+    const userId = req.user!.userId
+    const email = req.user!.email
+
+    // Best-effort: remove from Brevo before deleting the local record
+    const sub = await prisma.pendingSubscription.findFirst({ where: { email } })
+    if (sub?.plunkContactId) {
+      try {
+        await brevo.updateContact(sub.plunkContactId, { subscribed: false })
+      } catch (err) {
+        log.warn({ err, email: maskEmail(email) }, 'failed to update Brevo on account deletion, continuing')
+      }
+    }
+
+    // Delete the user (cascades CommunityMember, DigestExclusion, CommunityPost, RefreshToken)
+    try {
+      await prisma.user.delete({ where: { id: userId } })
+    } catch (err: any) {
+      if (err?.code !== 'P2025') throw err // already gone → idempotent
+    }
+
+    // Clean up records keyed by email that have no FK cascade to User
+    await Promise.all([
+      prisma.magicLink.deleteMany({ where: { email } }),
+      prisma.pendingSubscription.deleteMany({ where: { email } }),
+      prisma.alertSubscription.deleteMany({ where: { email } }),
+      prisma.feedback.deleteMany({ where: { email } }),
+    ])
+
+    // Clear session cookies (mirror auth-public cookie options)
+    const secure = process.env.NODE_ENV !== 'development'
+    res.clearCookie('member_token', { httpOnly: true, secure, sameSite: 'none', path: '/' })
+    res.clearCookie('member_session', { httpOnly: false, secure, sameSite: 'none', path: '/' })
+    res.clearCookie(REFRESH_COOKIE, { httpOnly: true, secure, sameSite: 'none', path: '/api/auth' })
+
+    await writeAuditLog({ actor: req.user, action: 'account.delete', targetType: 'user', targetId: userId })
+    log.info({ email: maskEmail(email) }, 'member account deleted (self-service)')
+    res.json({ success: true })
+  } catch (err) {
+    log.error({ err }, 'failed to delete account')
+    res.status(500).json({ error: 'Failed to delete account' })
   }
 })
 

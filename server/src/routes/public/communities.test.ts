@@ -241,6 +241,37 @@ describe('Communities API', () => {
       expect(mockPrisma.communityMember.upsert).toHaveBeenCalledOnce()
     })
 
+    it('requires express consent to join a PUEBLO community', async () => {
+      mockPrisma.community.findUnique.mockResolvedValue(sampleCommunity({ type: 'PUEBLO' }))
+      mockPrisma.communityMember.findUnique.mockResolvedValue(null)
+
+      const res = await request(app)
+        .post('/api/communities/pueblo-mapuche/join')
+        .set(memberAuthHeader())
+
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('consent_required')
+      expect(mockPrisma.communityMember.upsert).not.toHaveBeenCalled()
+    })
+
+    it('joins a PUEBLO community with consent and stamps consentedAt', async () => {
+      mockPrisma.community.findUnique.mockResolvedValue(sampleCommunity({ type: 'PUEBLO' }))
+      mockPrisma.communityMember.findUnique.mockResolvedValue(null)
+      mockPrisma.communityMember.upsert.mockResolvedValue({ userId: 'veedor-1', communityId: 'comm-1' })
+      mockPrisma.user.findUnique.mockResolvedValue({ email: 'member@example.com', name: 'member' })
+
+      const res = await request(app)
+        .post('/api/communities/pueblo-mapuche/join')
+        .set(memberAuthHeader())
+        .send({ consent: true })
+
+      expect(res.status).toBe(200)
+      expect(res.body.isMember).toBe(true)
+      const call = mockPrisma.communityMember.upsert.mock.calls[0][0]
+      expect(call.create.consentedAt).toBeInstanceOf(Date)
+      expect(call.create.consentVersion).toBeTruthy()
+    })
+
     it('returns 404 for unknown community', async () => {
       mockPrisma.community.findUnique.mockResolvedValue(null)
 

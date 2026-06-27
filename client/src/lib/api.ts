@@ -171,9 +171,12 @@ export const publicApi = {
         `/communities/${slug}/stories${toQueryString((params || {}) as Record<string, unknown>)}`
       ),
     membership: (slug: string) =>
-      memberRequest<{ isMember: boolean }>(`/communities/${slug}/membership`),
-    join: (slug: string) =>
-      memberRequest<{ isMember: boolean }>(`/communities/${slug}/join`, { method: 'POST' }),
+      memberRequest<{ isMember: boolean; consented: boolean }>(`/communities/${slug}/membership`),
+    join: (slug: string, consent?: boolean) =>
+      memberRequest<{ isMember: boolean }>(`/communities/${slug}/join`, {
+        method: 'POST',
+        ...(consent !== undefined ? { body: JSON.stringify({ consent }) } : {}),
+      }),
     leave: (slug: string) =>
       memberRequest<{ isMember: boolean }>(`/communities/${slug}/leave`, { method: 'DELETE' }),
     signals: (slug: string, period = '30d') =>
@@ -199,6 +202,12 @@ export const publicApi = {
       memberRequest<{ subscribed: boolean; confirmedAt: string | null }>('/auth/subscription'),
     unsubscribe: () =>
       memberRequest<{ success: boolean }>('/auth/subscription', { method: 'DELETE' }),
+    exportData: () => memberRequest<Record<string, unknown>>('/auth/export'),
+    deleteAccount: (confirm: string) =>
+      memberRequest<{ success: boolean }>('/auth/account', {
+        method: 'DELETE',
+        body: JSON.stringify({ confirm }),
+      }),
   },
 
   auth: {

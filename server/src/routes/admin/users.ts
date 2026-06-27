@@ -6,6 +6,7 @@ import { validateBody } from '../../middleware/validate.js'
 import { requireRole } from '../../middleware/auth.js'
 import { createUserSchema, updateUserSchema } from '../../schemas/user.js'
 import { resetPasswordSchema } from '../../schemas/auth.js'
+import { writeAuditLog } from '../../services/audit.js'
 
 const router = Router()
 const log = createLogger('users')
@@ -91,6 +92,7 @@ router.delete('/:id', async (req, res) => {
     }
     await revokeAllUserTokens(req.params.id)
     await userService.deleteUser(req.params.id)
+    await writeAuditLog({ actor: req.user, action: 'user.delete', targetType: 'user', targetId: req.params.id })
     res.status(204).send()
   } catch (err: any) {
     if (err.code === 'P2025') {

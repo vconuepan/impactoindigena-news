@@ -19,6 +19,9 @@ export default function ProfilePage() {
   const [nameError, setNameError] = useState('')
   const [nameSaved, setNameSaved] = useState(false)
   const [unsubscribeConfirm, setUnsubscribeConfirm] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleteText, setDeleteText] = useState('')
+  const [exporting, setExporting] = useState(false)
 
   // Capture member_token from magic link redirect
   useEffect(() => {
@@ -66,6 +69,33 @@ export default function ProfilePage() {
       setUnsubscribeConfirm(false)
     },
   })
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: () => publicApi.profile.deleteAccount('ELIMINAR'),
+    onSuccess: () => {
+      memberAuth.clearToken()
+      queryClient.clear()
+      window.location.href = '/'
+    },
+  })
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const data = await publicApi.profile.exportData()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'mis-datos-impactoindigena.json'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const excludeMutation = useMutation({
     mutationFn: (communityId: string) => publicApi.profile.excludeDigest(communityId),
@@ -335,6 +365,66 @@ export default function ProfilePage() {
               >
                 Suscribirse →
               </Link>
+            </div>
+          )}
+        </section>
+
+        {/* Data & privacy */}
+        <section className="mb-8 rounded-lg border border-neutral-200 bg-white p-6">
+          <h2 className="text-base font-semibold text-neutral-800 mb-4">Tus datos y privacidad</h2>
+          <p className="text-sm text-neutral-500 mb-4">
+            Puedes descargar todos los datos que tratamos sobre ti, o eliminar tu cuenta
+            y todos tus datos de forma permanente.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="px-4 py-2 text-sm font-medium rounded-md border border-neutral-300 text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 transition-colors"
+            >
+              {exporting ? 'Preparando…' : 'Descargar mis datos'}
+            </button>
+            {!deleteConfirm && (
+              <button
+                onClick={() => setDeleteConfirm(true)}
+                className="px-4 py-2 text-sm font-medium rounded-md border border-red-200 text-red-600 hover:bg-red-50 transition-colors"
+              >
+                Eliminar mi cuenta
+              </button>
+            )}
+          </div>
+          {deleteConfirm && (
+            <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-4">
+              <p className="text-sm text-red-700 mb-3">
+                Esto elimina tu cuenta, membresías, suscripciones y feedback de forma
+                permanente e irreversible. Para confirmar, escribe <strong>ELIMINAR</strong>.
+              </p>
+              <input
+                type="text"
+                value={deleteText}
+                onChange={(e) => setDeleteText(e.target.value)}
+                placeholder="ELIMINAR"
+                aria-label="Escribe ELIMINAR para confirmar"
+                className="w-full sm:w-64 rounded-md border border-red-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 mb-3"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => deleteAccountMutation.mutate()}
+                  disabled={deleteText !== 'ELIMINAR' || deleteAccountMutation.isPending}
+                  className="px-4 py-2 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-40 transition-colors"
+                >
+                  {deleteAccountMutation.isPending ? 'Eliminando…' : 'Eliminar definitivamente'}
+                </button>
+                <button
+                  onClick={() => { setDeleteConfirm(false); setDeleteText('') }}
+                  className="text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+              {deleteAccountMutation.isError && (
+                <p className="mt-2 text-sm text-red-600">No se pudo eliminar. Intenta de nuevo.</p>
+              )}
             </div>
           )}
         </section>

@@ -497,12 +497,16 @@ model Community {
 }
 
 model CommunityMember {
-  id          String    @id @default(uuid())
-  userId      String    @map("user_id")
-  communityId String    @map("community_id")
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  joinedAt    DateTime  @default(now()) @map("joined_at")
+  id             String    @id @default(uuid())
+  userId         String    @map("user_id")
+  communityId    String    @map("community_id")
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community      Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  joinedAt       DateTime  @default(now()) @map("joined_at")
+  // Express consent for PUEBLO communities (sensitive data: ethnic origin,
+  // Ley 21.719 Art. 16). Null for non-PUEBLO joins and legacy memberships.
+  consentedAt    DateTime? @map("consented_at")
+  consentVersion String?   @map("consent_version")
 
   @@unique([userId, communityId])
   @@index([communityId])
@@ -690,4 +694,25 @@ model AgendaItem {
   @@index([status, dueDate])
   @@index([status, startDate])
   @@map("agenda_items")
+}
+
+// Persistent audit trail for admin operations on personal data (deletes,
+// data exports, account deletions). Backs the "registro de actividad" promise
+// of the privacy policy (Ley 21.719, deber de seguridad). Write-only from the
+// app; no PII beyond actor email + an optional ip hash.
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?  @map("actor_id")
+  actorEmail String?  @map("actor_email")
+  actorRole  String?  @map("actor_role")
+  action     String                                  // e.g. user.delete, feedback.bulk_delete, account.delete, data.export
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id")
+  metadata   Json?
+  ipHash     String?  @map("ip_hash")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_log")
 }

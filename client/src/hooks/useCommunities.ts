@@ -38,9 +38,9 @@ export function useMembership(slug: string) {
 export function useJoinCommunity(slug: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => publicApi.communities.join(slug),
-    onSuccess: () => {
-      queryClient.setQueryData(['community-membership', slug], { isMember: true })
+    mutationFn: (consent?: boolean) => publicApi.communities.join(slug, consent),
+    onSuccess: (_data, consent) => {
+      queryClient.setQueryData(['community-membership', slug], { isMember: true, consented: consent === true })
     },
   })
 }
@@ -50,7 +50,7 @@ export function useLeaveCommunity(slug: string) {
   return useMutation({
     mutationFn: () => publicApi.communities.leave(slug),
     onSuccess: () => {
-      queryClient.setQueryData(['community-membership', slug], { isMember: false })
+      queryClient.setQueryData(['community-membership', slug], { isMember: false, consented: false })
     },
   })
 }

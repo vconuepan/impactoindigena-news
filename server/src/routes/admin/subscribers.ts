@@ -2,6 +2,7 @@ import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
 import { createLogger } from '../../lib/logger.js'
 import * as brevo from '../../services/brevo.js'
+import { writeAuditLog } from '../../services/audit.js'
 
 const router = Router()
 const log = createLogger('admin:subscribers')
@@ -98,6 +99,7 @@ router.delete('/:id', async (req, res) => {
   try {
     await prisma.pendingSubscription.delete({ where: { id } })
     log.info({ id }, 'subscriber deleted by admin')
+    await writeAuditLog({ actor: req.user, action: 'subscriber.delete', targetType: 'pending_subscription', targetId: id })
     res.json({ ok: true })
   } catch (err: unknown) {
     const code = (err as { code?: string }).code

@@ -10,6 +10,7 @@ const mockPrisma = vi.hoisted(() => ({
   user: {
     findUnique: vi.fn(),
     update: vi.fn(),
+    delete: vi.fn(),
   },
   refreshToken: {
     create: vi.fn(),
@@ -18,6 +19,14 @@ const mockPrisma = vi.hoisted(() => ({
     deleteMany: vi.fn(),
     update: vi.fn(),
   },
+  communityMember: { findMany: vi.fn() },
+  digestExclusion: { findMany: vi.fn() },
+  communityPost: { findMany: vi.fn() },
+  pendingSubscription: { findFirst: vi.fn(), deleteMany: vi.fn() },
+  alertSubscription: { findMany: vi.fn(), deleteMany: vi.fn() },
+  feedback: { findMany: vi.fn(), deleteMany: vi.fn() },
+  magicLink: { deleteMany: vi.fn() },
+  auditLog: { create: vi.fn() },
   $disconnect: vi.fn(),
 }))
 
@@ -294,6 +303,63 @@ describe('Auth Routes', () => {
         .send({ currentPassword: 'testpassword', newPassword: 'short' })
 
       expect(res.status).toBe(400)
+    })
+  })
+
+  describe('Account data (ARCO)', () => {
+    const memberToken = () => generateAccessToken({ id: 'user-1', email: 'member@example.com', role: 'veedor' })
+
+    it('exports all of the member personal data as JSON', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'member@example.com', name: 'Miembro' })
+      mockPrisma.communityMember.findMany.mockResolvedValue([])
+      mockPrisma.digestExclusion.findMany.mockResolvedValue([])
+      mockPrisma.communityPost.findMany.mockResolvedValue([])
+      mockPrisma.pendingSubscription.findFirst.mockResolvedValue(null)
+      mockPrisma.alertSubscription.findMany.mockResolvedValue([])
+      mockPrisma.feedback.findMany.mockResolvedValue([])
+
+      const res = await request(app)
+        .get('/api/auth/export')
+        .set('Authorization', `Bearer ${memberToken()}`)
+
+      expect(res.status).toBe(200)
+      expect(res.headers['content-disposition']).toContain('attachment')
+      expect(res.body.profile.email).toBe('member@example.com')
+      expect(res.body).toHaveProperty('communityMemberships')
+      expect(res.body).toHaveProperty('newsletterSubscription')
+      expect(mockPrisma.auditLog.create).toHaveBeenCalled()
+    })
+
+    it('rejects account deletion without the typed confirmation', async () => {
+      const res = await request(app)
+        .delete('/api/auth/account')
+        .set('Authorization', `Bearer ${memberToken()}`)
+        .send({})
+
+      expect(res.status).toBe(400)
+      expect(res.body.error).toBe('confirmation_required')
+      expect(mockPrisma.user.delete).not.toHaveBeenCalled()
+    })
+
+    it('deletes the account, orphan records by email, and audits', async () => {
+      mockPrisma.pendingSubscription.findFirst.mockResolvedValue(null)
+      mockPrisma.user.delete.mockResolvedValue({ id: 'user-1' })
+      mockPrisma.magicLink.deleteMany.mockResolvedValue({ count: 0 })
+      mockPrisma.pendingSubscription.deleteMany.mockResolvedValue({ count: 0 })
+      mockPrisma.alertSubscription.deleteMany.mockResolvedValue({ count: 0 })
+      mockPrisma.feedback.deleteMany.mockResolvedValue({ count: 0 })
+
+      const res = await request(app)
+        .delete('/api/auth/account')
+        .set('Authorization', `Bearer ${memberToken()}`)
+        .send({ confirm: 'ELIMINAR' })
+
+      expect(res.status).toBe(200)
+      expect(res.body.success).toBe(true)
+      expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: 'user-1' } })
+      expect(mockPrisma.magicLink.deleteMany).toHaveBeenCalledWith({ where: { email: 'member@example.com' } })
+      expect(mockPrisma.alertSubscription.deleteMany).toHaveBeenCalledWith({ where: { email: 'member@example.com' } })
+      expect(mockPrisma.auditLog.create).toHaveBeenCalled()
     })
   })
 })

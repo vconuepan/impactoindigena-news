@@ -209,6 +209,11 @@ export const config = {
     rateLimitMax: parseInt(process.env.FEEDBACK_RATE_LIMIT_MAX || '3', 10),
     messageMaxLength: 2000,
   },
+  community: {
+    // Version stamped on express consent for PUEBLO-community membership
+    // (Ley 21.719 Art. 16). Bump when the consent copy/scope changes.
+    consentVersion: process.env.CONSENT_VERSION || '1.0',
+  },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),
     pickModelTier: 'medium' as const,

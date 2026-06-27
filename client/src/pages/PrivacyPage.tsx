@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 2.1 · vigente desde el 27 de junio de 2026.
+            Versión 2.2 · vigente desde el 27 de junio de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -130,10 +130,10 @@ export default function PrivacyPage() {
           {/* 5. Datos sensibles */}
           <h2 className="section-heading mt-10">Datos sensibles</h2>
           <p>
-            No solicitamos a nuestros lectores ni suscriptores datos personales
-            sensibles (salud, origen étnico individual, creencias, orientación
-            sexual, datos biométricos o genéticos). Como cubrimos asuntos de
-            pueblos indígenas, el contenido editorial proveniente de medios públicos
+            No requerimos datos personales sensibles (salud, origen étnico,
+            creencias, orientación sexual, datos biométricos o genéticos) para leer
+            el Sitio ni para suscribirte al boletín o a las alertas. Como cubrimos
+            asuntos de pueblos indígenas, el contenido editorial proveniente de medios públicos
             puede, en ciertos casos, revelar el <strong>origen étnico</strong> de
             personas identificables. Cuando ello ocurre respecto de declaraciones o
             información que la propia persona o la fuente hicieron{" "}
@@ -143,6 +143,14 @@ export default function PrivacyPage() {
             exponer atributos sensibles de personas privadas más allá de lo que la
             noticia de interés público requiere, y atendemos solicitudes de
             rectificación o supresión.
+          </p>
+          <p className="mt-3">
+            Además, si decides unirte a una comunidad de tipo <em>pueblo</em>, esa
+            membresía puede revelar tu propio <strong>origen étnico</strong>. Solo
+            tratamos ese dato con tu <strong>consentimiento expreso</strong>, que te
+            solicitamos de forma específica al unirte y que puedes retirar en cualquier
+            momento abandonando la comunidad; su base de licitud es el artículo 16 de
+            la Ley 21.719 (datos sensibles tratados con consentimiento).
           </p>
 
           {/* 6. Encargados */}
@@ -234,6 +242,12 @@ export default function PrivacyPage() {
             los derechos de rectificación, supresión y oposición es{" "}
             <strong>siempre gratuito</strong>; el acceso es gratuito al menos una
             vez por trimestre.
+          </p>
+          <p className="mt-3">
+            Si eres miembro con sesión iniciada, puedes además{" "}
+            <strong>descargar todos tus datos</strong> y <strong>eliminar tu cuenta</strong>{" "}
+            (con todos tus datos asociados) directamente desde tu{" "}
+            <Link to="/perfil" className="text-brand-800 hover:text-brand-700">perfil</Link>.
           </p>
           <p className="mt-3">
             Cuando el tratamiento se basa en tu <strong>consentimiento</strong>{" "}

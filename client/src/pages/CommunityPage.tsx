@@ -44,14 +44,12 @@ function ShareBar({ communityName }: { communityName: string }) {
   )
 }
 
-type JoinState = 'anon' | 'email-sent' | 'member'
-
-function JoinBlock({ slug, communityName }: { slug: string; communityName: string }) {
+function JoinBlock({ slug, communityName, communityType }: { slug: string; communityName: string; communityType: string }) {
   const navigate = useNavigate()
-  const [joinState, setJoinState] = useState<JoinState>(
-    // isAuthenticated() reads a non-httpOnly cookie — safe in private mode (returns false on error)
-    memberAuth.isAuthenticated() ? 'member' : 'anon'
-  )
+  // isAuthenticated() reads a non-httpOnly cookie — safe in private mode (returns false on error)
+  const isAuthed = memberAuth.isAuthenticated()
+  const isPueblo = communityType === 'PUEBLO'
+  const [consentChecked, setConsentChecked] = useState(false)
   const [email, setEmail] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -60,16 +58,14 @@ function JoinBlock({ slug, communityName }: { slug: string; communityName: strin
   const joinMutation = useJoinCommunity(slug)
   const leaveMutation = useLeaveCommunity(slug)
 
-  // If authenticated and membership loaded, join automatically (first visit after magic link)
+  // Auto-join only for non-PUEBLO communities. PUEBLO requires explicit consent
+  // (membership reveals ethnic origin, a sensitive datum — Ley 21.719 Art. 16).
   const joinMutate = joinMutation.mutate
   useEffect(() => {
-    if (memberAuth.isAuthenticated() && membership !== undefined && !membership.isMember) {
-      joinMutate()
+    if (isAuthed && !isPueblo && membership !== undefined && !membership.isMember) {
+      joinMutate(undefined)
     }
-    if (membership?.isMember) {
-      setJoinState('member')
-    }
-  }, [membership, joinMutate])
+  }, [isAuthed, isPueblo, membership, joinMutate])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -88,10 +84,56 @@ function JoinBlock({ slug, communityName }: { slug: string; communityName: strin
 
   async function handleLeave() {
     await leaveMutation.mutateAsync()
-    setJoinState('anon')
   }
 
-  if (joinState === 'member') {
+  const consentNotice = (
+    <label className="flex items-start gap-2 text-left text-xs text-neutral-600">
+      <input
+        type="checkbox"
+        checked={consentChecked}
+        onChange={(e) => setConsentChecked(e.target.checked)}
+        className="mt-0.5 shrink-0"
+      />
+      <span>
+        Entiendo que unirme a esta comunidad-pueblo revela mi pertenencia y origen
+        étnico (dato sensible) y <strong>consiento</strong> su tratamiento conforme a la{" "}
+        <Link to="/privacy" className="text-brand-800 underline">Política de Privacidad</Link>.
+        Puedo retirarlo abandonando la comunidad.
+      </span>
+    </label>
+  )
+
+  // Authenticated member
+  if (isAuthed && membership?.isMember) {
+    // Legacy PUEBLO member who never gave express consent → non-blocking prompt
+    if (isPueblo && membership.consented === false) {
+      return (
+        <div className="mt-10 border-t border-neutral-100 pt-8">
+          <div className="max-w-md mx-auto text-center flex flex-col gap-3">
+            <p className="text-sm font-medium text-neutral-700">Confirma tu consentimiento</p>
+            <p className="text-xs text-neutral-500">
+              Esta es una comunidad-pueblo. Necesitamos tu consentimiento expreso para
+              mantener tu membresía conforme a la Ley 21.719.
+            </p>
+            {consentNotice}
+            <button
+              onClick={() => joinMutate(true)}
+              disabled={!consentChecked || joinMutation.isPending}
+              className="self-center px-5 py-2 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+            >
+              {joinMutation.isPending ? '...' : 'Confirmar consentimiento'}
+            </button>
+            <button
+              onClick={handleLeave}
+              disabled={leaveMutation.isPending}
+              className="text-xs text-neutral-400 hover:text-red-500 transition-colors"
+            >
+              {leaveMutation.isPending ? 'Saliendo...' : 'Abandonar comunidad'}
+            </button>
+          </div>
+        </div>
+      )
+    }
     return (
       <div className="mt-10 border-t border-neutral-100 pt-8 flex flex-col items-center text-center gap-3">
         <p className="text-sm font-medium text-neutral-700">Eres miembro de esta comunidad</p>
@@ -106,6 +148,39 @@ function JoinBlock({ slug, communityName }: { slug: string; communityName: strin
     )
   }
 
+  // Authenticated, not a member, PUEBLO → explicit consent gate (no silent auto-join)
+  if (isAuthed && isPueblo && membership && !membership.isMember) {
+    return (
+      <div className="mt-10 border-t border-neutral-100 pt-8">
+        <div className="max-w-md mx-auto text-center">
+          <h2 className="text-lg font-semibold mb-1">Únete a {communityName}</h2>
+          <p className="text-sm text-neutral-500 mb-4">
+            Recibe las noticias más relevantes de esta comunidad en tu correo.
+          </p>
+          <div className="mb-4">{consentNotice}</div>
+          <button
+            onClick={() => joinMutate(true)}
+            disabled={!consentChecked || joinMutation.isPending}
+            className="px-5 py-2 text-sm font-medium bg-brand-600 text-white rounded-lg hover:bg-brand-700 disabled:opacity-50 transition-colors"
+          >
+            {joinMutation.isPending ? '...' : 'Confirmar unión'}
+          </button>
+          {joinMutation.isError && <p className="text-xs text-red-600 mt-2">No se pudo unir. Intenta de nuevo.</p>}
+        </div>
+      </div>
+    )
+  }
+
+  // Authenticated but membership still loading (or non-PUEBLO auto-join in progress)
+  if (isAuthed) {
+    return (
+      <div className="mt-10 border-t border-neutral-100 pt-8 text-center">
+        <p className="text-sm text-neutral-400">{joinMutation.isPending ? 'Uniéndote…' : 'Cargando…'}</p>
+      </div>
+    )
+  }
+
+  // Anonymous → request a magic link
   return (
     <div className="mt-10 border-t border-neutral-100 pt-8">
       <div className="max-w-md mx-auto text-center">
@@ -130,6 +205,11 @@ function JoinBlock({ slug, communityName }: { slug: string; communityName: strin
             {submitting ? '...' : 'Unirme'}
           </button>
         </form>
+        {isPueblo && (
+          <p className="text-xs text-neutral-400 mt-2">
+            Al unirte te pediremos tu consentimiento expreso (es una comunidad-pueblo).
+          </p>
+        )}
         {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
       </div>
     </div>
@@ -424,7 +504,7 @@ export default function CommunityPage() {
         )}
 
         {community && slug && (
-          <JoinBlock slug={slug} communityName={community.name} />
+          <JoinBlock slug={slug} communityName={community.name} communityType={community.type} />
         )}
       </div>
     </>

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { validateBody, validateQuery } from '../../middleware/validate.js'
 import prisma from '../../lib/prisma.js'
 import { createLogger } from '../../lib/logger.js'
+import { writeAuditLog } from '../../services/audit.js'
 
 const router = Router()
 const log = createLogger('admin:feedback')
@@ -88,6 +89,7 @@ router.patch('/:id', validateBody(updateStatusSchema), async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     await prisma.feedback.delete({ where: { id: req.params.id } })
+    await writeAuditLog({ actor: req.user, action: 'feedback.delete', targetType: 'feedback', targetId: req.params.id })
     res.status(204).send()
   } catch (err: any) {
     if (err.code === 'P2025') {
@@ -111,6 +113,7 @@ router.post('/bulk', validateBody(bulkActionSchema), async (req, res) => {
 
     if (action === 'delete') {
       const result = await prisma.feedback.deleteMany({ where: { id: { in: ids } } })
+      await writeAuditLog({ actor: req.user, action: 'feedback.bulk_delete', targetType: 'feedback', metadata: { ids, count: result.count } })
       res.json({ affected: result.count })
     } else {
       const result = await prisma.feedback.updateMany({
