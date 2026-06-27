@@ -45,8 +45,9 @@ function isJunkTitle(title: string | undefined | null): boolean {
 
 // RSS items (calls/events) carry no structured event date — only a publish date.
 // Anything published more than this long ago is stale (the deadline passed / the
-// event happened): e.g. a 2021 fellowship. Drop it so the agenda stays current.
-const RSS_MAX_AGE_MONTHS = 18
+// event happened): e.g. a 2021 fellowship. 6 months keeps the agenda to recent
+// items only (~current year); tune via env without a redeploy.
+const RSS_MAX_AGE_MONTHS = parseInt(process.env.AGENDA_RSS_MAX_AGE_MONTHS || '6', 10)
 
 function isStaleByPubDate(datePublished: string | null, now: Date): boolean {
   const d = parseDate(datePublished)
