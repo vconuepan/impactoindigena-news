@@ -55,6 +55,25 @@ function isJunkTitle(title: string | undefined | null): boolean {
 // items only (~current year); tune via env without a redeploy.
 const RSS_MAX_AGE_MONTHS = parseInt(process.env.AGENDA_RSS_MAX_AGE_MONTHS || '6', 10)
 
+// Indigenous-relevance keyword gate for broad sources (source.topicFilter).
+const INDIGENOUS_TERMS = [
+  'indigena', 'indigenous', 'originari', 'aborigen', 'first nations', 'tribal',
+  'abya yala', 'clpi', 'fpic', 'medpi', 'emrip', 'unpfii', 'foro permanente',
+  'consulta previa', 'consentimiento libre', 'afroindigena',
+  'mapuche', 'quechua', 'aymara', 'guarani', 'sami', 'maori', 'kichwa',
+  'rapa nui', 'lickanantay', 'wayuu', 'garifuna', 'nasa', 'inuit', 'first peoples',
+]
+
+function stripDiacritics(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+/** True if any provided text mentions an indigenous-related term (accent-insensitive). */
+function isIndigenousRelevant(...texts: (string | null | undefined)[]): boolean {
+  const hay = texts.filter(Boolean).map((t) => stripDiacritics(t as string)).join('  ')
+  return INDIGENOUS_TERMS.some((term) => hay.includes(term))
+}
+
 function isStaleByPubDate(datePublished: string | null, now: Date): boolean {
   const d = parseDate(datePublished)
   if (!d) return false // no date → can't tell → keep (lands as a draft anyway)
@@ -80,6 +99,9 @@ function startOfTodayUTC(): Date {
 export function buildFromRss(item: RSSItem, source: AgendaSource, now: Date = new Date()): AgendaItemDraft | null {
   if (!item.url || !item.title || isJunkTitle(item.title)) return null
   if (isStaleByPubDate(item.datePublished, now)) return null
+  // Broad sources (topicFilter): keep only indigenous-relevant items. FILAC and
+  // other inherently indigenous sources omit topicFilter and pass through.
+  if (source.topicFilter && !isIndigenousRelevant(item.title, item.description)) return null
   const base = {
     type: source.type,
     title: item.title.trim(),
@@ -131,6 +153,8 @@ export function buildFromVevent(ev: VEventLike, source: AgendaSource, today: Dat
   const end = parseDate(ev.end)
   const effectiveEnd = end ?? start
   if (effectiveEnd < today) return null // skip past events
+  // Broad calendars (topicFilter): keep only indigenous-relevant events.
+  if (source.topicFilter && !isIndigenousRelevant(ev.summary)) return null
 
   return {
     type: 'evento',

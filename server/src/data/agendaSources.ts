@@ -18,6 +18,10 @@ export interface AgendaSource {
   kind: 'rss' | 'ical'
   type: AgendaItemType
   lang: string
+  // When true, only items whose title/summary mention an indigenous-related term
+  // are kept (the source is broad/general, e.g. the Docip UN calendar). Omit for
+  // inherently indigenous sources (FILAC) so nothing relevant is dropped.
+  topicFilter?: boolean
 }
 
 export const AGENDA_SOURCES: AgendaSource[] = [
@@ -31,6 +35,7 @@ export const AGENDA_SOURCES: AgendaSource[] = [
     kind: 'ical',
     type: 'evento',
     lang: 'es',
+    topicFilter: true, // calendario amplio (UN/Ginebra): exigir término indígena
   },
 
   // ─── RSS: FILAC (español nativo, por tipo) ───

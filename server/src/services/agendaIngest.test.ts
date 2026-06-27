@@ -5,6 +5,7 @@ import type { AgendaSource } from '../data/agendaSources.js'
 const rssPublicacion: AgendaSource = { sourceName: 'FILAC · Publicaciones', url: 'x', kind: 'rss', type: 'publicacion', lang: 'es' }
 const rssConvocatoria: AgendaSource = { sourceName: 'FILAC · Convocatorias', url: 'x', kind: 'rss', type: 'convocatoria', lang: 'es' }
 const icalEvento: AgendaSource = { sourceName: 'ONU', url: 'x', kind: 'ical', type: 'evento', lang: 'en' }
+const icalDocip: AgendaSource = { sourceName: 'Docip', url: 'x', kind: 'ical', type: 'evento', lang: 'es', topicFilter: true }
 
 const NOW = new Date('2026-06-27T12:00:00Z')
 const TODAY = new Date('2026-06-27T00:00:00Z')
@@ -99,6 +100,24 @@ describe('buildFromVevent', () => {
       { type: 'VEVENT', uid: 'dst-1', summary: 'End of Daylight Saving Time: New York (UTC-4 -> UTC-5)', start: new Date('2026-11-01T00:00:00Z'), datetype: 'date' },
       icalEvento, TODAY, NOW,
     )).toBeNull()
+  })
+
+  it('with topicFilter, drops events without an indigenous-related term', () => {
+    const ev = { type: 'VEVENT', uid: 'g1', summary: '2026 United Nations Water Conference', start: new Date('2026-12-08T00:00:00Z'), datetype: 'date' }
+    expect(buildFromVevent(ev, icalDocip, TODAY, NOW)).toBeNull()
+    // same event under a non-filtered source is kept
+    expect(buildFromVevent(ev, icalEvento, TODAY, NOW)).not.toBeNull()
+  })
+
+  it('with topicFilter, keeps indigenous events (accent-insensitive)', () => {
+    expect(buildFromVevent(
+      { type: 'VEVENT', uid: 'i1', summary: "EU Arctic Forum, Indigenous Peoples' Dialogue", start: new Date('2026-09-01T00:00:00Z'), datetype: 'date' },
+      icalDocip, TODAY, NOW,
+    )).not.toBeNull()
+    expect(buildFromVevent(
+      { type: 'VEVENT', uid: 'i2', summary: 'Día Internacional de los Pueblos Indígenas', start: new Date('2026-08-09T00:00:00Z'), datetype: 'date' },
+      icalDocip, TODAY, NOW,
+    )).not.toBeNull()
   })
 
   it('skips past events', () => {
