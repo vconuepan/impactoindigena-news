@@ -37,6 +37,8 @@ vi.mock('../../lib/vectors.js', () => ({
   fetchStoryForEmbedding: vi.fn(),
   saveEmbeddingTx: vi.fn(),
 }))
+const mockNotify = vi.hoisted(() => ({ notifyJobFailure: vi.fn().mockResolvedValue(undefined) }))
+vi.mock('../../lib/notify.js', () => ({ notifyJobFailure: mockNotify.notifyJobFailure }))
 
 process.env.PUBLIC_API_KEY = TEST_API_KEY
 
@@ -95,6 +97,36 @@ describe('Public Stories API', () => {
 
       const res = await request(app).get('/api/stories?search=Published')
       expect(res.status).toBe(200)
+    })
+
+    it('searches sourceTitle in the text leg of hybrid search', async () => {
+      mockPrisma.story.findMany.mockResolvedValue([publicStory])
+
+      const res = await request(app).get('/api/stories?search=mapuche')
+      expect(res.status).toBe(200)
+      expect(mockPrisma.story.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                OR: expect.arrayContaining([
+                  expect.objectContaining({ sourceTitle: { contains: 'mapuche', mode: 'insensitive' } }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+      )
+    })
+
+    it('alerts and falls back to text-only when semantic search fails', async () => {
+      mockEmbedding.generateSearchEmbedding.mockRejectedValueOnce(new Error('Azure 401 Unauthorized'))
+      mockPrisma.story.findMany.mockResolvedValue([publicStory])
+
+      // Unique query to avoid the module-level RRF cache from earlier tests
+      const res = await request(app).get('/api/stories?search=wallmapu')
+      expect(res.status).toBe(200) // text leg still serves results
+      expect(mockNotify.notifyJobFailure).toHaveBeenCalledWith('semantic_search', expect.stringContaining('Azure 401'))
     })
 
     it('rejects search queries longer than 200 characters', async () => {

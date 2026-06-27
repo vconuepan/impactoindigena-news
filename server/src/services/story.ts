@@ -7,6 +7,7 @@ import { normalizeUrl } from '../utils/urlNormalization.js'
 import { generateEmbeddingForContent, generateSearchEmbedding, ensureEmbedding, ensureEmbeddings } from './embedding.js'
 import { searchByEmbedding, fetchStoryForEmbedding, saveEmbeddingTx } from '../lib/vectors.js'
 import { createLogger } from '../lib/logger.js'
+import { notifyJobFailure } from '../lib/notify.js'
 import { config } from '../config.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { buildRelatedStoriesPrompt } from '../prompts/related-stories.js'
@@ -723,7 +724,10 @@ async function hybridSearch(options: {
         })
         return rows.map((r) => r.id)
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err)
         log.warn({ err }, 'semantic search failed, falling back to text-only')
+        // Alert (throttled webhook + email) — silent fallback hid the Azure 401 for 4 days
+        notifyJobFailure('semantic_search', msg).catch(() => {})
         return []
       }
     })(),
@@ -733,6 +737,7 @@ async function hybridSearch(options: {
       conditions.push({
         OR: [
           { title: { contains: query, mode: 'insensitive' } },
+          { sourceTitle: { contains: query, mode: 'insensitive' } },
           { summary: { contains: query, mode: 'insensitive' } },
         ],
       })
