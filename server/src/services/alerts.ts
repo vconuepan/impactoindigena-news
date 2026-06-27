@@ -109,6 +109,25 @@ export async function unsubscribeByToken(token: string): Promise<boolean> {
 }
 
 // ---------------------------------------------------------------------------
+// Cleanup — called by the cleanup_subscriptions cron job
+// ---------------------------------------------------------------------------
+
+/**
+ * Remove abandoned alert double opt-ins: unconfirmed subscriptions whose
+ * confirmation token has already expired. They can never be confirmed
+ * (confirmAlert rejects expired tokens) yet retain the reader's email and
+ * topics. Confirmed subscribers are active data subjects and are kept.
+ * Supports the storage-limitation principle of Ley 21.719.
+ */
+export async function cleanupExpiredAlertSubscriptions(): Promise<number> {
+  const { count } = await prisma.alertSubscription.deleteMany({
+    where: { confirmedAt: null, expiresAt: { lt: new Date() } },
+  })
+  if (count > 0) log.info({ count }, 'expired unconfirmed alert subscriptions purged')
+  return count
+}
+
+// ---------------------------------------------------------------------------
 // Daily send — called by the send_alerts cron job
 // ---------------------------------------------------------------------------
 

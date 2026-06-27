@@ -38,6 +38,8 @@ export const JOB_DISPLAY_NAMES: Record<JobName, string> = {
   send_alerts: 'Send Alerts',
   generate_editorial: 'Generate Editorial',
   google_news_discover: 'Google News Discover',
+  cleanup_auth_data: 'Cleanup Auth Data',
+  cleanup_subscriptions: 'Cleanup Subscriptions',
 }
 
 /** Pipeline execution order for sorting jobs in the UI. */

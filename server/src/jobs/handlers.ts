@@ -17,6 +17,8 @@ import { runSendCommunityDigest } from './sendCommunityDigest.js'
 import { runSendAlerts } from './sendAlerts.js'
 import { runGenerateEditorial } from './generateEditorial.js'
 import { runGoogleNewsDiscover } from './googleNewsDiscover.js'
+import { runCleanupAuthData } from './cleanupAuthData.js'
+import { runCleanupSubscriptions } from './cleanupSubscriptions.js'
 
 export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   crawl_feeds: runCrawlFeeds,
@@ -38,4 +40,6 @@ export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   send_alerts: runSendAlerts,
   generate_editorial: runGenerateEditorial,
   google_news_discover: runGoogleNewsDiscover,
+  cleanup_auth_data: runCleanupAuthData,
+  cleanup_subscriptions: runCleanupSubscriptions,
 }

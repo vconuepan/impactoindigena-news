@@ -134,6 +134,21 @@ rule ConfirmSubscription {
     ensures: pending.confirmed_at = now
 }
 
+-- ─── Cleanup ──────────────────────────────────────────────────────
+-- Storage limitation (Ley 21.719, conservación limitada): an abandoned
+-- double opt-in lingers with the visitor's email but can never be
+-- confirmed once its token expires (ConfirmSubscription requires
+-- not is_expired). A daily job purges these. Confirmed subscriptions
+-- are deliberately retained — they back the idempotency check in
+-- Subscribe and represent active, consented data subjects.
+
+rule CleanupExpiredPendingSubscriptions {
+    when: SubscriptionCleanupJobRuns()
+
+    for entry in PendingSubscriptions where is_expired:
+        ensures: not exists entry
+}
+
 -- ─── Surfaces ─────────────────────────────────────────────────────
 
 surface SubscribeForm {

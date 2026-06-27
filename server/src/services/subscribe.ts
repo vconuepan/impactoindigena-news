@@ -191,3 +191,18 @@ export async function confirmSubscription(token: string, email: string) {
 
   log.info({ email }, 'subscription confirmed')
 }
+
+/**
+ * Remove abandoned double opt-in records: unconfirmed pending subscriptions
+ * whose confirmation token has already expired. These can never be confirmed
+ * (confirmSubscription rejects expired tokens) and serve no further purpose,
+ * yet they retain the visitor's email. Confirmed subscriptions are kept — they
+ * back the "already subscribed" idempotency check in subscribe(). Supports the
+ * storage-limitation principle of Ley 21.719 (conservación limitada).
+ */
+export async function cleanupExpiredPendingSubscriptions(): Promise<number> {
+  const result = await prisma.pendingSubscription.deleteMany({
+    where: { confirmedAt: null, expiresAt: { lt: new Date() } },
+  })
+  return result.count
+}

@@ -18,7 +18,7 @@ const mockBrevo = {
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('./brevo.js', () => mockBrevo)
 
-const { subscribe, EmailValidationError } = await import('./subscribe.js')
+const { subscribe, EmailValidationError, cleanupExpiredPendingSubscriptions } = await import('./subscribe.js')
 
 describe('subscribe service', () => {
   beforeEach(() => {
@@ -178,6 +178,19 @@ describe('subscribe service', () => {
       await subscribe({ email: 'confirmed@example.com' })
 
       expect(mockPrisma.pendingSubscription.deleteMany).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('cleanupExpiredPendingSubscriptions (retention — Ley 21.719)', () => {
+    it('deletes only unconfirmed pending subscriptions whose token expired', async () => {
+      mockPrisma.pendingSubscription.deleteMany.mockResolvedValue({ count: 3 })
+
+      const count = await cleanupExpiredPendingSubscriptions()
+
+      expect(count).toBe(3)
+      expect(mockPrisma.pendingSubscription.deleteMany).toHaveBeenCalledWith({
+        where: { confirmedAt: null, expiresAt: { lt: expect.any(Date) } },
+      })
     })
   })
 })

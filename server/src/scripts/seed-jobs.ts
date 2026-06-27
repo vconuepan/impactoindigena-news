@@ -36,6 +36,11 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   { jobName: 'generate_editorial',  cronExpression: '0 5 * * 0' },
   // scrape_docip: diario 2 AM UTC (baja carga horaria)
   { jobName: 'scrape_docip',        cronExpression: '0 2 * * *' },
+  // --- Data retention (Ley 21.719) — enabled by default ---
+  // cleanup_auth_data: diario 3 AM UTC — purga refresh tokens y magic links expirados
+  { jobName: 'cleanup_auth_data',      cronExpression: '0 3 * * *',  enabled: true },
+  // cleanup_subscriptions: diario 3:30 AM UTC — purga opt-ins no confirmados expirados
+  { jobName: 'cleanup_subscriptions',  cronExpression: '30 3 * * *', enabled: true },
 ]
 
 async function main() {

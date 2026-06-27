@@ -23,7 +23,7 @@ const mockBrevo = {
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('./brevo.js', () => mockBrevo)
 
-const { unsubscribeFromAlerts, unsubscribeByToken, sendDailyAlerts } = await import('./alerts.js')
+const { unsubscribeFromAlerts, unsubscribeByToken, sendDailyAlerts, cleanupExpiredAlertSubscriptions } = await import('./alerts.js')
 
 describe('alerts unsubscribe (B1 — hard delete, Ley 21.719)', () => {
   beforeEach(() => {
@@ -128,5 +128,22 @@ describe('alert emails (token links + real publisher)', () => {
     expect(body).not.toContain('unsubscribe=lectora')
     // Real outlet derived from sourceUrl, not the discovery feed name.
     expect(body).toContain('El País')
+  })
+})
+
+describe('cleanupExpiredAlertSubscriptions (retention — Ley 21.719)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('deletes only unconfirmed alert subscriptions whose token expired', async () => {
+    mockPrisma.alertSubscription.deleteMany.mockResolvedValue({ count: 2 })
+
+    const count = await cleanupExpiredAlertSubscriptions()
+
+    expect(count).toBe(2)
+    expect(mockPrisma.alertSubscription.deleteMany).toHaveBeenCalledWith({
+      where: { confirmedAt: null, expiresAt: { lt: expect.any(Date) } },
+    })
   })
 })

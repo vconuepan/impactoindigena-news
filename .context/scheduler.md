@@ -39,6 +39,8 @@ On server startup, `initScheduler()`:
 | `bluesky_update_metrics` | `runBlueskyUpdateMetrics` | Configurable |
 | `mastodon_update_metrics` | `runMastodonUpdateMetrics` | Configurable |
 | `generate_newsletter` | `runGenerateNewsletter` | `0 4 * * 6` (Saturday 4am) |
+| `cleanup_auth_data` | `runCleanupAuthData` | `0 3 * * *` (daily 3am) — purges expired refresh tokens + magic links (Ley 21.719 storage limitation) |
+| `cleanup_subscriptions` | `runCleanupSubscriptions` | `30 3 * * *` (daily 3:30am) — purges unconfirmed expired pending/alert subscriptions |
 
 ## Adding a New Job
 
