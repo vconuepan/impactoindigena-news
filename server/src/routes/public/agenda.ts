@@ -83,7 +83,8 @@ function toPublic(r: AgendaRow): PublicAgendaItem {
     sourceUrl: r.sourceUrl,
     docRef: r.docRef,
     countries: r.countries,
-    tags: r.tags,
+    // Drop reserved internal control tags (sys:llm-dated / sys:llm-translated).
+    tags: r.tags.filter((t) => !t.startsWith('sys:')),
     highlightNew: r.highlightNew,
     extendedDeadline: r.extendedDeadline,
   }

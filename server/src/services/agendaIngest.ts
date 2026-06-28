@@ -69,7 +69,7 @@ function stripDiacritics(s: string): string {
 }
 
 /** True if any provided text mentions an indigenous-related term (accent-insensitive). */
-function isIndigenousRelevant(...texts: (string | null | undefined)[]): boolean {
+export function isIndigenousRelevant(...texts: (string | null | undefined)[]): boolean {
   const hay = texts.filter(Boolean).map((t) => stripDiacritics(t as string)).join('  ')
   return INDIGENOUS_TERMS.some((term) => hay.includes(term))
 }
@@ -99,7 +99,7 @@ function isStaleByPubDate(datePublished: string | null, now: Date): boolean {
   return d < cutoff
 }
 
-function startOfTodayUTC(): Date {
+export function startOfTodayUTC(): Date {
   const d = new Date()
   d.setUTCHours(0, 0, 0, 0)
   return d
@@ -229,6 +229,25 @@ export interface IngestResult {
 }
 
 /**
+ * Persist a batch of drafts create-if-absent (dedup by externalId, never clobbers
+ * admin edits). Shared by ingestAgenda and the OHCHR scraper. `sourceErrors` is
+ * always 0 here — source-level failures are counted by the caller.
+ */
+export async function persistDrafts(drafts: AgendaItemDraft[]): Promise<IngestResult> {
+  const result: IngestResult = { created: 0, skipped: 0, drafts: 0, sourceErrors: 0 }
+  for (const d of drafts) {
+    const outcome = await persist(d)
+    if (outcome === 'created') {
+      result.created++
+      if (d.status === 'draft') result.drafts++
+    } else {
+      result.skipped++
+    }
+  }
+  return result
+}
+
+/**
  * Ingest all structured agenda sources into AgendaItem (Fase 2a). Resilient
  * per-source (one failing source doesn't abort the rest). Dedups by externalId
  * (create-if-absent). Items with a reliable date publish; the rest land as drafts.
@@ -257,18 +276,11 @@ export async function ingestAgenda(sources: AgendaSource[] = AGENDA_SOURCES): Pr
         }
       }
 
-      let created = 0
-      for (const d of drafts) {
-        const outcome = await persist(d)
-        if (outcome === 'created') {
-          result.created++
-          created++
-          if (d.status === 'draft') result.drafts++
-        } else {
-          result.skipped++
-        }
-      }
-      log.info({ source: source.sourceName, found: drafts.length, created }, 'agenda source ingested')
+      const r = await persistDrafts(drafts)
+      result.created += r.created
+      result.skipped += r.skipped
+      result.drafts += r.drafts
+      log.info({ source: source.sourceName, found: drafts.length, created: r.created }, 'agenda source ingested')
     } catch (err) {
       result.sourceErrors++
       log.error({ source: source.sourceName, reason: summarizeError(err) }, 'agenda source failed')
