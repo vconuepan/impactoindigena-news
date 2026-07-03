@@ -14,6 +14,7 @@ import adminRouter from './routes/admin/index.js'
 import publicRouter from './routes/public/index.js'
 import ogRouter from './routes/og.js'
 import { ogLimiter } from './middleware/rateLimit.js'
+import { getAllowedOrigins } from './lib/allowedOrigins.js'
 
 
 const httpLog = createLogger('http')
@@ -38,17 +39,7 @@ app.use(helmet({
 }))
 
 // CORS configuration
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'http://127.0.0.1:5173',
-  'http://127.0.0.1:4173',
-  'http://localhost:5174',
-  'http://localhost:4174',
-  'http://127.0.0.1:5174',
-  'http://127.0.0.1:4174',
-  process.env.FRONTEND_URL,
-].filter(Boolean) as string[]
+const allowedOrigins = getAllowedOrigins()
 
 // Open CORS for public read-only endpoints (widget/embed API calls from any origin)
 const publicReadPaths = ['/api/stories', '/api/issues', '/api/homepage', '/api/feed', '/api/docs', '/api/podcast']

@@ -14,6 +14,7 @@ import {
   DUMMY_PASSWORD_HASH,
 } from '../services/auth.js'
 import { getUserById } from '../services/user.js'
+import { isTrustedOrigin } from '../lib/allowedOrigins.js'
 import { createLogger, maskEmail } from '../lib/logger.js'
 import prisma from '../lib/prisma.js'
 import * as brevo from '../services/brevo.js'
@@ -93,6 +94,14 @@ router.post('/refresh', refreshLimiter, async (req, res) => {
     const token = req.cookies?.[REFRESH_COOKIE]
     if (!token) {
       res.status(401).json({ error: 'No refresh token' })
+      return
+    }
+
+    // CSRF defense: the refresh cookie is sent cross-site (sameSite:none), so
+    // require a trusted Origin/Referer on this state-changing request. Do NOT
+    // clear the cookie here — that would let a forged request log the user out.
+    if (!isTrustedOrigin(req)) {
+      res.status(403).json({ error: 'Invalid request origin' })
       return
     }
 

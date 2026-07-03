@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
 import { createHash, timingSafeEqual } from 'crypto'
 import { verifyAccessToken, type AccessTokenPayload } from '../services/auth.js'
+import { isTrustedOrigin } from '../lib/allowedOrigins.js'
 
 export interface AuthUser {
   userId: string
@@ -120,6 +121,14 @@ export function requireMember(req: Request, res: Response, next: NextFunction): 
 
   if (!token) {
     res.status(401).json({ error: 'Authentication required' })
+    return
+  }
+
+  // CSRF defense: for cookie-based sessions, state-changing requests must carry
+  // a trusted Origin. Bearer-token (non-browser) clients are exempt — they are
+  // not subject to CSRF (no ambient cookie is attached by the browser).
+  if (cookieToken && !isTrustedOrigin(req)) {
+    res.status(403).json({ error: 'Invalid request origin' })
     return
   }
 

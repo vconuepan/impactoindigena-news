@@ -7,7 +7,7 @@ vi.mock('../services/auth.js', () => ({
   verifyAccessToken: mockVerifyAccessToken,
 }))
 
-const { requireAuth, requireApiKey, requireRole } = await import('./auth.js')
+const { requireAuth, requireApiKey, requireRole, requireMember } = await import('./auth.js')
 
 describe('requireAuth (JWT only)', () => {
   let req: Partial<Request>
@@ -184,6 +184,63 @@ describe('requireApiKey', () => {
 
     expect(statusFn).toHaveBeenCalledWith(403)
     expect(next).not.toHaveBeenCalled()
+  })
+})
+
+describe('requireMember (CSRF Origin check for cookie sessions)', () => {
+  let req: Partial<Request>
+  let res: Partial<Response>
+  let next: NextFunction
+  let jsonFn: ReturnType<typeof vi.fn>
+  let statusFn: ReturnType<typeof vi.fn>
+  const originalFrontend = process.env.FRONTEND_URL
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    process.env.FRONTEND_URL = 'https://impactoindigena.news'
+    jsonFn = vi.fn()
+    statusFn = vi.fn().mockReturnValue({ json: jsonFn })
+    req = { headers: {}, method: 'POST' }
+    res = { status: statusFn, json: jsonFn } as any
+    next = vi.fn()
+    mockVerifyAccessToken.mockReturnValue({ userId: 'u1', email: 'm@test.com', role: 'veedor', typ: 'member' })
+  })
+
+  afterEach(() => {
+    if (originalFrontend !== undefined) process.env.FRONTEND_URL = originalFrontend
+    else delete process.env.FRONTEND_URL
+  })
+
+  it('allows a cookie session with a trusted Origin on a mutating request', () => {
+    req = { headers: { origin: 'https://impactoindigena.news' }, method: 'POST', cookies: { member_token: 'tok' } } as any
+    requireMember(req as Request, res as Response, next)
+    expect(next).toHaveBeenCalled()
+  })
+
+  it('blocks a cookie session with a foreign Origin (CSRF)', () => {
+    req = { headers: { origin: 'https://evil.com' }, method: 'POST', cookies: { member_token: 'tok' } } as any
+    requireMember(req as Request, res as Response, next)
+    expect(statusFn).toHaveBeenCalledWith(403)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('blocks a cookie session with no Origin on a mutating request', () => {
+    req = { headers: {}, method: 'POST', cookies: { member_token: 'tok' } } as any
+    requireMember(req as Request, res as Response, next)
+    expect(statusFn).toHaveBeenCalledWith(403)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('exempts bearer-token (non-cookie) clients from the Origin check', () => {
+    req = { headers: { authorization: 'Bearer tok' }, method: 'POST' } as any
+    requireMember(req as Request, res as Response, next)
+    expect(next).toHaveBeenCalled()
+  })
+
+  it('does not enforce Origin on safe methods for cookie sessions', () => {
+    req = { headers: {}, method: 'GET', cookies: { member_token: 'tok' } } as any
+    requireMember(req as Request, res as Response, next)
+    expect(next).toHaveBeenCalled()
   })
 })
 
