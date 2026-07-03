@@ -77,6 +77,27 @@ export const authLimiter = rateLimit({
 })
 
 /**
+ * Per-account login limiter. Complements authLimiter (per-IP) by capping failed
+ * attempts against a single email regardless of source IP, blunting distributed
+ * / rotating-IP brute force. Only failures count (skipSuccessfulRequests), so a
+ * legitimate user who mistypes then succeeds is never locked out.
+ */
+export const accountAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.toLowerCase().trim() : ''
+    return email ? `acct:${email}` : `acct-ip:${req.ip}`
+  },
+  message: {
+    error: 'Too many login attempts for this account. Please try again later.'
+  }
+})
+
+/**
  * Rate limiter for magic link requests.
  * 5 requests per 15 minutes per IP to prevent email spam.
  */

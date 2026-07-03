@@ -39,7 +39,7 @@ vi.mock('../services/crawler.js', () => ({
 
 process.env.PUBLIC_API_KEY = TEST_API_KEY
 // helpers.ts sets JWT_SECRET, but we set it explicitly here for clarity
-process.env.JWT_SECRET = 'test-jwt-secret-for-auth-routes'
+process.env.JWT_SECRET = 'test-jwt-secret-for-auth-routes-padded'
 
 // Pre-computed bcrypt hash for 'testpassword' (4 rounds, generated via bcryptjs)
 const testPasswordHash = '$2b$04$a7oe401dL9h9L7VNbNSZJObgY3lSlqg30AUD7GB1Tut7MlkoCCdUC'

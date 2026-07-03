@@ -19,7 +19,7 @@ vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 const originalEnv = process.env.JWT_SECRET
 
 beforeEach(() => {
-  process.env.JWT_SECRET = 'test-jwt-secret-for-unit-tests'
+  process.env.JWT_SECRET = 'test-jwt-secret-for-unit-tests-padded'
   vi.clearAllMocks()
 })
 

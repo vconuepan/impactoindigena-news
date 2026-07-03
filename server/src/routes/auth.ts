@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { validateBody } from '../middleware/validate.js'
 import { requireAuth, requireMember } from '../middleware/auth.js'
-import { authLimiter, refreshLimiter } from '../middleware/rateLimit.js'
+import { authLimiter, accountAuthLimiter, refreshLimiter } from '../middleware/rateLimit.js'
 import { loginSchema, changePasswordSchema } from '../schemas/auth.js'
 import { getUserByEmail, changePassword } from '../services/user.js'
 import {
@@ -53,7 +53,7 @@ function clearRefreshCookie(res: any) {
   })
 }
 
-router.post('/login', authLimiter, validateBody(loginSchema), async (req, res) => {
+router.post('/login', authLimiter, accountAuthLimiter, validateBody(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body
 

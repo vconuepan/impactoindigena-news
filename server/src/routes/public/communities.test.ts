@@ -39,7 +39,7 @@ vi.mock('../../services/crawler.js', () => ({
   crawlUrl: vi.fn(),
 }))
 
-const TEST_JWT_SECRET = 'test-jwt-secret-for-helpers'
+const TEST_JWT_SECRET = 'test-jwt-secret-for-helpers-padded-32'
 process.env.JWT_SECRET = TEST_JWT_SECRET
 
 function memberAuthHeader(userId = 'veedor-1', email = 'member@example.com') {

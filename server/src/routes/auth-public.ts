@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { randomUUID } from 'crypto'
 import prisma from '../lib/prisma.js'
 import * as brevo from '../services/brevo.js'
-import { generateMemberToken } from '../services/auth.js'
+import { generateMemberToken, hashToken } from '../services/auth.js'
 import { magicLinkLimiter } from '../middleware/rateLimit.js'
 import { createLogger } from '../lib/logger.js'
 
@@ -121,7 +121,7 @@ router.post('/magic', magicLinkLimiter, async (req, res) => {
     await prisma.magicLink.create({
       data: {
         email: normalizedEmail,
-        token,
+        token: hashToken(token),
         expiresAt: magicLinkExpiresAt(),
         redirectTo: redirectTo ?? null,
       },
@@ -148,7 +148,7 @@ router.get('/magic/verify', async (req, res) => {
   }
 
   try {
-    const link = await prisma.magicLink.findUnique({ where: { token } })
+    const link = await prisma.magicLink.findUnique({ where: { token: hashToken(token) } })
 
     if (!link || link.usedAt || link.expiresAt < new Date()) {
       log.warn({ tokenPrefix: token?.slice(0, 8) }, 'magic link invalid or expired')
@@ -221,7 +221,7 @@ router.post('/magic/resend', magicLinkLimiter, async (req, res) => {
     await prisma.magicLink.create({
       data: {
         email: normalizedEmail,
-        token,
+        token: hashToken(token),
         expiresAt: magicLinkExpiresAt(),
         redirectTo: redirectTo ?? null,
       },

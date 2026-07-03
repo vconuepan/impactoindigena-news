@@ -4,10 +4,11 @@ import { randomBytes, randomUUID, createHash } from 'crypto'
 import prisma from '../lib/prisma.js'
 
 /**
- * Refresh tokens are stored hashed at rest so a database leak does not expose
- * replayable session tokens. The raw token lives only in the client cookie.
+ * Hash a bearer/refresh/magic-link token for storage at rest, so a database
+ * leak does not expose replayable tokens. The raw token lives only in the
+ * client cookie or the emailed link.
  */
-function hashToken(token: string): string {
+export function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex')
 }
 
@@ -29,9 +30,14 @@ export interface AccessTokenPayload {
   typ?: 'access' | 'member'
 }
 
+const MIN_JWT_SECRET_LENGTH = 32
+
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET
   if (!secret) throw new Error('JWT_SECRET environment variable is not set')
+  if (secret.length < MIN_JWT_SECRET_LENGTH) {
+    throw new Error(`JWT_SECRET must be at least ${MIN_JWT_SECRET_LENGTH} characters`)
+  }
   return secret
 }
 
