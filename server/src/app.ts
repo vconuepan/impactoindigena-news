@@ -13,6 +13,7 @@ import authPublicRouter from './routes/auth-public.js'
 import adminRouter from './routes/admin/index.js'
 import publicRouter from './routes/public/index.js'
 import ogRouter from './routes/og.js'
+import { ogLimiter } from './middleware/rateLimit.js'
 
 
 const httpLog = createLogger('http')
@@ -105,8 +106,8 @@ app.use('/api/auth', authRouter)
 app.use('/api/auth', authPublicRouter)
 app.use('/api/admin', adminRouter)
 app.use('/api', publicRouter)
-app.use('/og', ogRouter)
-app.use('/api/og', ogRouter) // alias for Azure Static Web Apps linked backend proxy
+app.use('/og', ogLimiter, ogRouter)
+app.use('/api/og', ogLimiter, ogRouter) // alias for Azure Static Web Apps linked backend proxy
 
 
 // 404 handler for unmatched routes

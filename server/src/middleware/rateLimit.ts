@@ -47,6 +47,22 @@ export const searchLimiter = rateLimit({
 })
 
 /**
+ * Rate limiter for the bot-facing OG/social-unfurl proxy (/og).
+ * Generous enough not to throttle legitimate crawlers unfurling shared links,
+ * but bounds a single IP from hammering the DB-backed endpoints. The shell is
+ * cached separately, so each request is otherwise cheap.
+ */
+export const ogLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: 'Too many requests. Please try again later.'
+  }
+})
+
+/**
  * Strict rate limiter for login endpoint.
  * 5 attempts per 15 minutes per IP to prevent brute-force attacks.
  */

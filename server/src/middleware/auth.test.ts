@@ -79,6 +79,35 @@ describe('requireAuth (JWT only)', () => {
     expect(statusFn).toHaveBeenCalledWith(401)
     expect(next).not.toHaveBeenCalled()
   })
+
+  it('rejects a long-lived member token on access-token routes', () => {
+    mockVerifyAccessToken.mockReturnValue({
+      userId: 'user-1',
+      email: 'member@test.com',
+      role: 'veedor',
+      typ: 'member',
+    })
+    req.headers = { authorization: 'Bearer member-token' }
+
+    requireAuth(req as Request, res as Response, next)
+
+    expect(statusFn).toHaveBeenCalledWith(401)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('accepts an explicit access-type token', () => {
+    mockVerifyAccessToken.mockReturnValue({
+      userId: 'user-1',
+      email: 'admin@test.com',
+      role: 'admin',
+      typ: 'access',
+    })
+    req.headers = { authorization: 'Bearer access-token' }
+
+    requireAuth(req as Request, res as Response, next)
+
+    expect(next).toHaveBeenCalled()
+  })
 })
 
 describe('requireApiKey', () => {
@@ -130,6 +159,16 @@ describe('requireApiKey', () => {
   it('returns 403 for wrong API key', () => {
     process.env.PUBLIC_API_KEY = 'test-api-key-123'
     req.headers = { authorization: 'Bearer wrong-key' }
+
+    requireApiKey(req as Request, res as Response, next)
+
+    expect(statusFn).toHaveBeenCalledWith(403)
+    expect(next).not.toHaveBeenCalled()
+  })
+
+  it('rejects a token that is the key plus extra characters (exact match)', () => {
+    process.env.PUBLIC_API_KEY = 'test-api-key-123'
+    req.headers = { authorization: 'Bearer test-api-key-123-EXTRA' }
 
     requireApiKey(req as Request, res as Response, next)
 

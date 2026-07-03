@@ -11,6 +11,7 @@ import {
   rotateRefreshToken,
   revokeRefreshToken,
   verifyAccessToken,
+  DUMMY_PASSWORD_HASH,
 } from '../services/auth.js'
 import { getUserById } from '../services/user.js'
 import { createLogger, maskEmail } from '../lib/logger.js'
@@ -58,6 +59,9 @@ router.post('/login', authLimiter, validateBody(loginSchema), async (req, res) =
 
     const user = await getUserByEmail(email)
     if (!user || !user.passwordHash) {
+      // Run a dummy comparison so response timing matches the wrong-password
+      // path, preventing user enumeration via latency.
+      await verifyPassword(password, DUMMY_PASSWORD_HASH)
       log.warn({ email: maskEmail(email) }, 'login failed: user not found')
       res.status(401).json({ error: 'Invalid email or password' })
       return

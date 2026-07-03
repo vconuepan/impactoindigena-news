@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express'
-import { timingSafeEqual } from 'crypto'
+import { createHash, timingSafeEqual } from 'crypto'
 import { verifyAccessToken, type AccessTokenPayload } from '../services/auth.js'
 
 export interface AuthUser {
@@ -38,11 +38,11 @@ function tryApiKeyAuth(token: string): boolean {
   const apiKey = process.env.PUBLIC_API_KEY
   if (!apiKey) return false
 
-  const keyBuf = Buffer.from(apiKey)
-  // Pad/truncate to same length to avoid timing leak on length comparison
-  const tokenBuf = Buffer.alloc(keyBuf.length)
-  tokenBuf.write(token, 'utf8')
-  return timingSafeEqual(tokenBuf, keyBuf)
+  // Compare fixed-length SHA-256 digests: constant-time AND exact-match (the
+  // previous length-padding truncated longer tokens, so KEY + extra passed).
+  const tokenDigest = createHash('sha256').update(token).digest()
+  const keyDigest = createHash('sha256').update(apiKey).digest()
+  return timingSafeEqual(tokenDigest, keyDigest)
 }
 
 function extractBearerToken(req: Request): string | null {
@@ -64,7 +64,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 
   const jwtPayload = tryJwtAuth(token)
-  if (jwtPayload) {
+  // Reject long-lived passwordless member tokens on access-token routes.
+  // (Legacy tokens without a `typ` claim are treated as access tokens.)
+  if (jwtPayload && jwtPayload.typ !== 'member') {
     req.user = {
       userId: jwtPayload.userId,
       email: jwtPayload.email,

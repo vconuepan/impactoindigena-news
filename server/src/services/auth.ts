@@ -20,6 +20,13 @@ export interface AccessTokenPayload {
   userId: string
   email: string
   role: string
+  /**
+   * Token type. 'access' = short-lived password/admin session; 'member' =
+   * long-lived passwordless magic-link session. Distinguishing them stops a
+   * 30-day member token from being replayed on an access-token-only route.
+   * Optional for backward compatibility with tokens issued before this claim.
+   */
+  typ?: 'access' | 'member'
 }
 
 function getJwtSecret(): string {
@@ -36,11 +43,20 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
   return bcrypt.compare(plain, hash)
 }
 
+/**
+ * A valid bcrypt hash of a random string, used to equalize login timing when
+ * the email is unknown. Running a real bcrypt comparison against it prevents an
+ * attacker from distinguishing "user does not exist" from "wrong password" by
+ * response latency (user enumeration).
+ */
+export const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equalization-placeholder', BCRYPT_ROUNDS)
+
 export function generateAccessToken(user: { id: string; email: string; userType?: string; role?: string }): string {
   const payload: AccessTokenPayload = {
     userId: user.id,
     email: user.email,
     role: (user.userType ?? user.role ?? 'viewer').toLowerCase(),
+    typ: 'access',
   }
   return jwt.sign(payload, getJwtSecret(), { expiresIn: ACCESS_TOKEN_EXPIRY })
 }
@@ -51,6 +67,7 @@ export function generateMemberToken(user: { id: string; email: string }): string
     userId: user.id,
     email: user.email,
     role: 'veedor',
+    typ: 'member',
   }
   return jwt.sign(payload, getJwtSecret(), { expiresIn: MEMBER_TOKEN_EXPIRY })
 }
