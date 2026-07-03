@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createHash } from 'crypto'
+
+const sha256 = (s: string) => createHash('sha256').update(s).digest('hex')
 
 const mockPrisma = vi.hoisted(() => ({
   refreshToken: {
@@ -92,6 +95,10 @@ describe('generateRefreshToken', () => {
         familyId: expect.any(String),
       }),
     })
+    // The token is stored hashed, never in raw form
+    const stored = mockPrisma.refreshToken.create.mock.calls[0][0].data.token
+    expect(stored).not.toBe(token)
+    expect(stored).toBe(sha256(token))
   })
 
   it('creates token with new familyId when none provided', async () => {
@@ -225,7 +232,7 @@ describe('revokeRefreshToken', () => {
   it('deletes the token', async () => {
     mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 1 })
     await revokeRefreshToken('some-token')
-    expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { token: 'some-token' } })
+    expect(mockPrisma.refreshToken.deleteMany).toHaveBeenCalledWith({ where: { token: sha256('some-token') } })
   })
 })
 

@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { isAllowedUrl } from './urlValidation.js'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { isAllowedUrl, assertUrlAllowed } from './urlValidation.js'
+
+const mockLookup = vi.hoisted(() => vi.fn())
+vi.mock('node:dns/promises', () => ({ lookup: mockLookup }))
 
 describe('isAllowedUrl', () => {
   it('allows standard HTTPS URLs', () => {
@@ -67,5 +70,72 @@ describe('isAllowedUrl', () => {
   it('returns false for invalid URLs', () => {
     expect(isAllowedUrl('not-a-url')).toBe(false)
     expect(isAllowedUrl('')).toBe(false)
+  })
+
+  it('blocks alternate IPv4 encodings that URL normalizes to private IPs', () => {
+    // WHATWG URL normalizes these; the guard must catch the normalized form
+    expect(isAllowedUrl('http://2130706433/')).toBe(false) // 127.0.0.1 decimal
+    expect(isAllowedUrl('http://0x7f000001/')).toBe(false) // 127.0.0.1 hex
+    expect(isAllowedUrl('http://0177.0.0.1/')).toBe(false) // 127.0.0.1 octal
+    expect(isAllowedUrl('http://127.1/')).toBe(false) // 127.0.0.1 short form
+    expect(isAllowedUrl('http://2852039166/')).toBe(false) // 169.254.169.254 decimal
+  })
+
+  it('blocks IPv4-mapped and IPv4-compatible IPv6 addresses', () => {
+    expect(isAllowedUrl('http://[::ffff:127.0.0.1]/')).toBe(false)
+    expect(isAllowedUrl('http://[::ffff:7f00:1]/')).toBe(false)
+    expect(isAllowedUrl('http://[::ffff:169.254.169.254]/')).toBe(false)
+    expect(isAllowedUrl('http://[::ffff:a9fe:a9fe]/')).toBe(false)
+  })
+
+  it('blocks additional IPv6 reserved ranges', () => {
+    expect(isAllowedUrl('http://[::1]/')).toBe(false) // loopback
+    expect(isAllowedUrl('http://[::]/')).toBe(false) // unspecified
+    expect(isAllowedUrl('http://[fd00::1]/')).toBe(false) // unique local
+    expect(isAllowedUrl('http://[ff02::1]/')).toBe(false) // multicast
+  })
+
+  it('blocks CGNAT and additional reserved IPv4 ranges', () => {
+    expect(isAllowedUrl('http://100.64.0.1/')).toBe(false) // CGNAT
+    expect(isAllowedUrl('http://192.0.0.1/')).toBe(false) // IETF protocol
+    expect(isAllowedUrl('http://224.0.0.1/')).toBe(false) // multicast
+  })
+
+  it('still allows legitimate public addresses', () => {
+    expect(isAllowedUrl('https://8.8.8.8/')).toBe(true)
+    expect(isAllowedUrl('https://1.1.1.1/')).toBe(true)
+    expect(isAllowedUrl('https://[2606:4700:4700::1111]/')).toBe(true)
+  })
+})
+
+describe('assertUrlAllowed', () => {
+  beforeEach(() => mockLookup.mockReset())
+
+  it('rejects a URL that fails the synchronous guard without resolving DNS', async () => {
+    await expect(assertUrlAllowed('http://127.0.0.1/')).rejects.toThrow()
+    expect(mockLookup).not.toHaveBeenCalled()
+  })
+
+  it('rejects a public hostname that resolves to a private address (DNS rebinding)', async () => {
+    mockLookup.mockResolvedValue([{ address: '169.254.169.254', family: 4 }])
+    await expect(assertUrlAllowed('https://evil.example.com/')).rejects.toThrow(/private address/)
+  })
+
+  it('rejects when any resolved address is private', async () => {
+    mockLookup.mockResolvedValue([
+      { address: '93.184.216.34', family: 4 },
+      { address: '10.0.0.5', family: 4 },
+    ])
+    await expect(assertUrlAllowed('https://mixed.example.com/')).rejects.toThrow(/private address/)
+  })
+
+  it('allows a public hostname that resolves to public addresses', async () => {
+    mockLookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }])
+    await expect(assertUrlAllowed('https://example.com/feed.xml')).resolves.toBeUndefined()
+  })
+
+  it('does not resolve DNS for literal IP hosts', async () => {
+    await expect(assertUrlAllowed('https://8.8.8.8/')).resolves.toBeUndefined()
+    expect(mockLookup).not.toHaveBeenCalled()
   })
 })

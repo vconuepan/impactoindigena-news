@@ -2,7 +2,7 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { Readability } from '@mozilla/readability'
 import { JSDOM } from 'jsdom'
-import { isAllowedUrl } from '../utils/urlValidation.js'
+import { isAllowedUrl, assertUrlAllowed } from '../utils/urlValidation.js'
 import { summarizeError } from '../utils/errors.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
@@ -296,8 +296,10 @@ export async function extractContent(
   url: string,
   options?: { htmlSelector?: string | null; skipLocalExtraction?: boolean; shouldAbort?: () => boolean }
 ): Promise<ExtractionResult | null> {
-  if (!isAllowedUrl(url)) {
-    log.warn({ url }, 'blocked disallowed URL')
+  try {
+    await assertUrlAllowed(url)
+  } catch (err) {
+    log.warn({ url, reason: summarizeError(err) }, 'blocked disallowed URL')
     return null
   }
 

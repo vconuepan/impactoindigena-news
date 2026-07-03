@@ -1,7 +1,15 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import { randomBytes, randomUUID } from 'crypto'
+import { randomBytes, randomUUID, createHash } from 'crypto'
 import prisma from '../lib/prisma.js'
+
+/**
+ * Refresh tokens are stored hashed at rest so a database leak does not expose
+ * replayable session tokens. The raw token lives only in the client cookie.
+ */
+function hashToken(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
+}
 
 const BCRYPT_ROUNDS = 12
 const ACCESS_TOKEN_EXPIRY = '15m'
@@ -57,7 +65,7 @@ export async function generateRefreshToken(userId: string, familyId?: string): P
   const family = familyId ?? randomUUID()
 
   await prisma.refreshToken.create({
-    data: { token, userId, expiresAt, familyId: family },
+    data: { token: hashToken(token), userId, expiresAt, familyId: family },
   })
 
   return token
@@ -67,7 +75,7 @@ export async function rotateRefreshToken(
   oldToken: string
 ): Promise<{ accessToken: string; refreshToken: string }> {
   const record = await prisma.refreshToken.findUnique({
-    where: { token: oldToken },
+    where: { token: hashToken(oldToken) },
     include: { user: true },
   })
 
@@ -97,7 +105,7 @@ export async function rotateRefreshToken(
 }
 
 export async function revokeRefreshToken(token: string): Promise<void> {
-  await prisma.refreshToken.deleteMany({ where: { token } })
+  await prisma.refreshToken.deleteMany({ where: { token: hashToken(token) } })
 }
 
 export async function revokeAllUserTokens(userId: string): Promise<void> {

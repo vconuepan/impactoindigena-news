@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import { isAllowedUrl } from '../utils/urlValidation.js'
+
+const publicUrl = (msg = 'Must be a valid URL') =>
+  z.string().url(msg).refine(isAllowedUrl, 'URL must point to a public host')
 
 const feedRegionValues = [
   'north_america',
@@ -16,8 +20,8 @@ const feedRegionSchema = z.enum(feedRegionValues)
 
 export const createFeedSchema = z.object({
   title: z.string().min(1, 'Title is required'),
-  rssUrl: z.string().url('Must be a valid URL'),
-  url: z.string().url('Must be a valid URL').nullable().optional(),
+  rssUrl: publicUrl(),
+  url: publicUrl().nullable().optional(),
   displayTitle: z.string().optional(),
   language: z.string().optional().default('en'),
   region: feedRegionSchema.nullable().optional(),
@@ -28,8 +32,8 @@ export const createFeedSchema = z.object({
 
 export const updateFeedSchema = z.object({
   title: z.string().min(1).optional(),
-  rssUrl: z.string().url('Must be a valid URL').optional(),
-  url: z.string().url('Must be a valid URL').nullable().optional(),
+  rssUrl: publicUrl().optional(),
+  url: publicUrl().nullable().optional(),
   displayTitle: z.string().nullable().optional(),
   language: z.string().optional(),
   region: feedRegionSchema.nullable().optional(),
