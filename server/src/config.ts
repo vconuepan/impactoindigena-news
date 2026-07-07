@@ -222,6 +222,22 @@ export const config = {
     enrichDateLimit: parseInt(process.env.AGENDA_ENRICH_DATE_LIMIT || '20', 10),
     enrichTranslateLimit: parseInt(process.env.AGENDA_ENRICH_TRANSLATE_LIMIT || '20', 10),
     enrichContentMaxChars: parseInt(process.env.AGENDA_ENRICH_CONTENT_MAX_CHARS || '6000', 10),
+    // Fase 3: resumen semanal de "Incidencia Internacional" a redes (teaser + enlace a la sección).
+    digest: {
+      enabled: process.env.AGENDA_DIGEST_ENABLED !== 'false',
+      // Ventanas de selección: cuántos días hacia adelante contamos deadlines/eventos como
+      // "de la semana", y cuántos días atrás una publicación cuenta como novedad.
+      dueWithinDays: parseInt(process.env.AGENDA_DIGEST_DUE_WITHIN_DAYS || '21', 10),
+      eventWithinDays: parseInt(process.env.AGENDA_DIGEST_EVENT_WITHIN_DAYS || '30', 10),
+      publishedWithinDays: parseInt(process.env.AGENDA_DIGEST_PUBLISHED_WITHIN_DAYS || '7', 10),
+      channels: {
+        bluesky: process.env.AGENDA_DIGEST_BLUESKY !== 'false',
+        mastodon: process.env.AGENDA_DIGEST_MASTODON !== 'false',
+        twitter: process.env.AGENDA_DIGEST_TWITTER !== 'false',
+        instagram: process.env.AGENDA_DIGEST_INSTAGRAM !== 'false',
+      },
+      postDelayMs: parseInt(process.env.AGENDA_DIGEST_POST_DELAY_MS || '2000', 10),
+    },
   },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),

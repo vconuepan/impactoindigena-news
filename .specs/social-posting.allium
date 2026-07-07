@@ -159,6 +159,39 @@ rule PublishFails {
 -- with application-level pre-check for friendlier error messages.
 -- Admins can delete a failed post and regenerate via the admin UI.
 
+-- ─── Weekly Agenda Digest (Incidencia Internacional, Fase 3) ───────
+-- A second, independent posting path. Unlike story auto-post, the weekly
+-- agenda digest is NOT tied to a Story and creates NO SocialPost record:
+-- it is a fire-and-forget teaser published directly via the channel
+-- adapters' low-level create functions. It drives traffic to the
+-- /incidencia-internacional section rather than to a single item.
+
+rule PublishWeeklyAgendaDigest {
+    when: AgendaWeeklyDigestJobRuns()          -- cron: Friday 09:00
+
+    -- Idempotency: at most one digest per ISO week. Guards against
+    -- overdue-run on startup and manual re-triggers within the week.
+    requires: not published_this_iso_week(job.last_completed_at, now)
+
+    -- Deterministic selection (no LLM): published AgendaItems whose
+    -- dates fall in this week's windows.
+    let items = AgendaItem where status = published and (
+        (type in [convocatoria, oportunidad] and due_date in [now, now + due_window])
+        or (type = evento and starts_soon_or_running(now, event_window))
+        or (type = publicacion and published_at >= now - published_window)
+    )
+    requires: items.count > 0                   -- no post on an empty week
+
+    -- Count-based teaser + section link, formatted per channel char limit.
+    -- Bluesky: link in external card (body link-free). Mastodon/Twitter:
+    -- link appended inline. Instagram: rendered brand card image + caption
+    -- (skipped when R2 is not configured, since it needs an image URL).
+    let counts = count_by_type(items)
+    for channel in enabled_agenda_digest_channels:
+        ensures: channel.publish(teaser(counts, channel))
+    -- Per-channel failure is logged and never aborts the others.
+}
+
 -- ─── Admin Surface ─────────────────────────────────────────────────
 
 surface SocialPostManager {
