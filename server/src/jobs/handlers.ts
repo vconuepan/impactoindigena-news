@@ -20,6 +20,7 @@ import { runGoogleNewsDiscover } from './googleNewsDiscover.js'
 import { runCleanupAuthData } from './cleanupAuthData.js'
 import { runCleanupSubscriptions } from './cleanupSubscriptions.js'
 import { runIngestAgenda } from './ingestAgenda.js'
+import { runAgendaWeeklyDigest } from './agendaWeeklyDigest.js'
 
 export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   crawl_feeds: runCrawlFeeds,
@@ -44,4 +45,5 @@ export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   cleanup_auth_data: runCleanupAuthData,
   cleanup_subscriptions: runCleanupSubscriptions,
   ingest_agenda: runIngestAgenda,
+  agenda_weekly_digest: runAgendaWeeklyDigest,
 }

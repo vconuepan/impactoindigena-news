@@ -58,7 +58,7 @@ Ver `server/prisma/schema.prisma` (modelo AgendaItem) + migración
 ## Fases
 - **Fase 1 (HECHA):** modelo `AgendaItem` + migración SQL + tipos compartidos + ruta `/api/public/agenda` + página `/incidencia-internacional` + nav + sitemap + seed (`server/prisma/seed-agenda.sql`, items reales del Docip Nº501).
 - **Fase 2:** ingesta. Registrar los feeds directos (RSS/iCal) reusando el modelo `Feed` + un parser iCal; normalizar a `AgendaItem`; clasificar/traducir al español con LLM solo lo que llega en EN/FR; scrape+LLM para OHCHR/CIDH/CorteIDH con gate de confianza. Job en el scheduler (diario). Admin `/admin/agenda` para revisar drafts.
-- **Fase 3:** resumen semanal automático a redes (reusa infra social) + digest email opcional (reusa Newsletter).
+- **Fase 3 (redes HECHA · email pendiente):** resumen semanal automático a redes. Job `agenda_weekly_digest` (viernes 9am, `0 9 * * 5`), teaser con conteos + enlace a la sección, a Bluesky/Mastodon/Twitter (texto) + Instagram (tarjeta de marca renderizada con `lib/agendaCard.ts`). Selección determinista (sin LLM) por ventanas de fecha; idempotente por semana ISO; sin post en semana vacía. Config en `config.agenda.digest`; handler `jobs/agendaWeeklyDigest.ts`; servicio `services/agendaDigest.ts`. Migración `20260707000000_seed_agenda_weekly_digest`. **Pendiente:** digest email opcional (reusa Newsletter).
 
 ## Notas operativas
 - Node local 18 rompe build/tests; usar `/opt/homebrew/opt/node@20/bin`. Ver [[project-entorno-node]].

@@ -41,6 +41,8 @@ On server startup, `initScheduler()`:
 | `generate_newsletter` | `runGenerateNewsletter` | `0 4 * * 6` (Saturday 4am) |
 | `cleanup_auth_data` | `runCleanupAuthData` | `0 3 * * *` (daily 3am) — purges expired refresh tokens + magic links (Ley 21.719 storage limitation) |
 | `cleanup_subscriptions` | `runCleanupSubscriptions` | `30 3 * * *` (daily 3:30am) — purges unconfirmed expired pending/alert subscriptions |
+| `ingest_agenda` | `runIngestAgenda` | Daily — "Incidencia Internacional" ingest (RSS/iCal + OHCHR scrape + LLM enrich) |
+| `agenda_weekly_digest` | `runAgendaWeeklyDigest` | `0 9 * * 5` (Friday 9am) — weekly agenda teaser to social channels (once per ISO week) |
 
 ## Adding a New Job
 
