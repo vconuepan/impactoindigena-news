@@ -246,11 +246,17 @@ export const config = {
     apiKey:     process.env.AZURE_IMAGE_API_KEY     || '',
     apiVersion: process.env.AZURE_IMAGE_API_VERSION || '2025-04-01-preview',
     deployment: process.env.AZURE_IMAGE_DEPLOYMENT  || 'gpt-image-2',
-    // Calidad del hero landscape del sitio web: se ve grande y NO se recomprime → alta.
-    quality:    (process.env.AZURE_IMAGE_QUALITY    || 'high') as 'low' | 'medium' | 'high',
+    // Calidad del hero landscape del sitio web. El hero se muestra a max-height
+    // 480px, así que 'medium' (~$0.05/img) rinde igual que 'high' (~$0.17/img)
+    // en pantalla. Subir a 'high' solo si un cambio de layout lo agranda.
+    quality:    (process.env.AZURE_IMAGE_QUALITY    || 'medium') as 'low' | 'medium' | 'high',
     // Calidad del portrait para redes (Instagram/Twitter recomprimen al subir, así que
     // 'high' es gasto perdido). Medium recorta ~60-70% el costo sin diferencia visible en el feed.
     qualityPortrait: (process.env.AZURE_IMAGE_QUALITY_PORTRAIT || 'medium') as 'low' | 'medium' | 'high',
+    // El hero IA propio solo se genera para historias destacadas (relevance >=
+    // este umbral, el mismo del EditorialSeal). El resto reusa el og:image de la
+    // fuente (gratis), acotando el costo de imágenes al valor editorial.
+    heroAiMinRelevance: parseInt(process.env.AZURE_IMAGE_HERO_MIN_RELEVANCE || '8', 10),
   },
   r2: {
     endpoint: process.env.R2_ENDPOINT || '',
