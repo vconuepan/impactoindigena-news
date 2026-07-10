@@ -13,6 +13,9 @@ vi.mock('../lib/imageGen.js', () => ({ generateStoryImage: mockGenerateImage }))
 const mockFetchOg = vi.hoisted(() => vi.fn())
 vi.mock('../lib/extract-og-image.js', () => ({ fetchOgImage: mockFetchOg }))
 
+const mockRehost = vi.hoisted(() => vi.fn())
+vi.mock('../lib/imageStorage.js', () => ({ rehostExternalImage: mockRehost }))
+
 vi.mock('../config.js', () => ({
   config: {
     r2: { publicUrl: 'https://cdn.r2.example' },
@@ -42,6 +45,7 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     vi.clearAllMocks()
     mockGenerateImage.mockResolvedValue('https://cdn.r2.example/ai.png')
     mockFetchOg.mockResolvedValue('https://src/og.jpg')
+    mockRehost.mockResolvedValue('https://cdn.r2.example/oghero-id.jpg')
     mockPrisma.story.update.mockResolvedValue({})
   })
 
@@ -55,11 +59,22 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     })
   })
 
-  it('non-featured story reuses source og:image, no AI generation', async () => {
+  it('non-featured story reuses source og:image, rehosted to R2, no AI generation', async () => {
     mockPrisma.story.findMany.mockResolvedValue([story({ relevance: 6 })])
     await generateHeroImages(['id'])
     expect(mockGenerateImage).not.toHaveBeenCalled()
     expect(mockFetchOg).toHaveBeenCalledTimes(1)
+    expect(mockRehost).toHaveBeenCalledWith('https://src/og.jpg', 'id')
+    expect(mockPrisma.story.update).toHaveBeenCalledWith({
+      where: { id: 'id' }, data: { imageUrl: 'https://cdn.r2.example/oghero-id.jpg' },
+    })
+  })
+
+  it('falls back to the raw og:image URL when the R2 rehost fails', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([story({ relevance: 5 })])
+    mockRehost.mockResolvedValue(null)
+    await generateHeroImages(['id'])
+    expect(mockRehost).toHaveBeenCalledTimes(1)
     expect(mockPrisma.story.update).toHaveBeenCalledWith({
       where: { id: 'id' }, data: { imageUrl: 'https://src/og.jpg' },
     })
@@ -80,7 +95,7 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     expect(mockGenerateImage).toHaveBeenCalledTimes(1)
     expect(mockFetchOg).toHaveBeenCalledTimes(1)
     expect(mockPrisma.story.update).toHaveBeenLastCalledWith({
-      where: { id: 'id' }, data: { imageUrl: 'https://src/og.jpg' },
+      where: { id: 'id' }, data: { imageUrl: 'https://cdn.r2.example/oghero-id.jpg' },
     })
   })
 
