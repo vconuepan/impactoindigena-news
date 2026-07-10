@@ -218,6 +218,9 @@ export const config = {
     // "Incidencia Internacional" ingestion (Fase 2b): OHCHR scrape + LLM enrich.
     ohchrEnabled: process.env.AGENDA_OHCHR_ENABLED !== 'false',
     ohchrMaxPages: parseInt(process.env.AGENDA_OHCHR_MAX_PAGES || '4', 10),
+    // Fase 2c: scrape de comunicados de prensa de la Corte IDH (español nativo,
+    // alto valor jurídico), filtrados por tema indígena.
+    corteIdhEnabled: process.env.AGENDA_CORTEIDH_ENABLED !== 'false',
     // Per-run caps on LLM enrichment (bounds cost; the daily job catches up over time).
     enrichDateLimit: parseInt(process.env.AGENDA_ENRICH_DATE_LIMIT || '20', 10),
     enrichTranslateLimit: parseInt(process.env.AGENDA_ENRICH_TRANSLATE_LIMIT || '20', 10),

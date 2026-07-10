@@ -1,6 +1,7 @@
 import { createLogger } from '../lib/logger.js'
 import { ingestAgenda } from '../services/agendaIngest.js'
 import { ingestOhchr } from '../services/ohchrScraper.js'
+import { ingestCorteIdh } from '../services/corteIdhScraper.js'
 import { enrichAgendaItems } from '../services/agendaEnrich.js'
 import { summarizeError } from '../utils/errors.js'
 
@@ -22,9 +23,10 @@ export async function runIngestAgenda(): Promise<void> {
   try {
     const structured = await ingestAgenda()
     const ohchr = await ingestOhchr()
-    log.info({ structured, ohchr }, 'agenda ingest (structured + OHCHR) complete')
+    const corteIdh = await ingestCorteIdh()
+    log.info({ structured, ohchr, corteIdh }, 'agenda ingest (structured + OHCHR + Corte IDH) complete')
   } catch (err) {
-    log.error({ reason: summarizeError(err) }, 'agenda ingest (structured/OHCHR) failed')
+    log.error({ reason: summarizeError(err) }, 'agenda ingest (structured/OHCHR/Corte IDH) failed')
   }
 
   try {
