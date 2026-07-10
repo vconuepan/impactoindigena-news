@@ -3,6 +3,7 @@ import { getStoryIdsByStatus, bulkUpdateStatus } from '../services/story.js'
 import { translateStoriesBatch } from '../services/translation.js'
 import { fetchOgImage } from '../lib/extract-og-image.js'
 import { generateStoryImage } from '../lib/imageGen.js'
+import { rehostExternalImage } from '../lib/imageStorage.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
 
@@ -28,9 +29,12 @@ async function generateAiHero(story: {
 //   - Featured stories (relevance >= heroAiMinRelevance, the EditorialSeal
 //     threshold) get an OWN AI editorial illustration — no copyright exposure,
 //     full size/CLS control (design review 2026-06).
-//   - The rest reuse the source outlet's og:image (free), keeping image spend
-//     proportional to editorial value. When no og:image exists, we fall back to
-//     an AI hero so a story is never left imageless.
+//   - The rest reuse the source outlet's og:image, RE-HOSTED on R2 (not
+//     hotlinked) so we control hosting/availability and avoid a bare
+//     third-party URL. Keeps image spend proportional to editorial value.
+//     When no og:image exists, we fall back to an AI hero so a story is never
+//     left imageless. If the R2 rehost fails, we fall back to the raw og:image
+//     URL rather than leave the story without a hero.
 // A featured story whose AI generation fails also falls back to og:image.
 // Sequential: the image API is the bottleneck and stories/day is low.
 export async function generateHeroImages(ids: string[]): Promise<void> {
@@ -64,8 +68,17 @@ export async function generateHeroImages(ids: string[]): Promise<void> {
     // Non-featured, or a featured story whose AI generation just failed.
     const ogImage = await fetchOgImage(story.sourceUrl).catch(() => null)
     if (ogImage) {
-      await prisma.story.update({ where: { id: story.id }, data: { imageUrl: ogImage } })
-      log.info({ storyId: story.id, featured: isFeatured }, 'source og:image saved (non-featured or AI fallback)')
+      // Re-host on R2 so we don't hotlink the source. Fall back to the raw URL
+      // if the rehost fails, so the story still gets an image.
+      const rehosted = await rehostExternalImage(ogImage, story.id)
+      const finalUrl = rehosted ?? ogImage
+      await prisma.story.update({ where: { id: story.id }, data: { imageUrl: finalUrl } })
+      log.info(
+        { storyId: story.id, featured: isFeatured, rehosted: rehosted !== null },
+        rehosted !== null
+          ? 'source og:image rehosted to R2'
+          : 'source og:image saved (rehost failed, hotlinking raw URL)',
+      )
       continue
     }
 
