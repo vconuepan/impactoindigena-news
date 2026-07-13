@@ -4,7 +4,7 @@ import storiesRouter from './stories.js'
 import issuesRouter from './issues.js'
 import feedRouter from './feed.js'
 import subscribeRouter from './subscribe.js'
-import sitemapRouter from './sitemap.js'
+import sitemapRouter, { newsSitemapRouter } from './sitemap.js'
 import homepageRouter from './homepage.js'
 import docsRouter from './docs.js'
 import sourcesRouter from './sources.js'
@@ -35,6 +35,7 @@ router.use('/sources', sourcesRouter)
 router.use('/feed', feedRouter)
 router.use('/subscribe', subscribeRouter)
 router.use('/sitemap.xml', sitemapRouter)
+router.use('/sitemap-news.xml', newsSitemapRouter)
 router.use('/docs', docsRouter)
 router.use('/feedback', feedbackRouter)
 router.use('/podcast', podcastFeedRouter)

@@ -2,3 +2,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://impactoindigena.news/sitemap.xml
+Sitemap: https://impactoindigena.news/sitemap-news.xml
