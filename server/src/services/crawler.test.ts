@@ -69,6 +69,25 @@ describe('crawlFeed', () => {
     }))
   })
 
+  it('marks a broken feed (fetch/parse error) as a failure, not an empty crawl', async () => {
+    mockGetFeedById.mockResolvedValue(sampleFeed)
+    mockParseFeed.mockResolvedValue({
+      items: [], notModified: false, cacheHeaders: {},
+      error: 'Request failed with status code 404',
+    })
+
+    const result = await crawlFeed('feed-1')
+
+    expect(result.errors).toBe(1)
+    expect(result.errorMessage).toContain('404')
+    expect(mockUpdateCrawlStatus).toHaveBeenCalledWith('feed-1', expect.objectContaining({
+      hadSuccess: false,
+      feedFetchFailed: true,
+      errorMessage: 'Request failed with status code 404',
+      rssItemCount: 0,
+    }))
+  })
+
   it('handles 304 not modified response (preserves existing errors)', async () => {
     mockGetFeedById.mockResolvedValue(sampleFeed)
     mockParseFeed.mockResolvedValue(rssResult([], { notModified: true }))

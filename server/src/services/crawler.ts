@@ -48,6 +48,24 @@ export async function crawlFeed(feedId: string): Promise<CrawlResult> {
     return result
   }
 
+  // RSS fetch/parse failed (404/403/invalid XML/timeout). Mark as a crawl
+  // FAILURE — not an empty crawl — so a broken feed surfaces (red badge in
+  // admin, fail counter) instead of silently accumulating "empty" like a
+  // healthy but quiet feed.
+  if (rssResult.error) {
+    await updateCrawlStatus(feedId, {
+      hadSuccess: false,
+      feedFetchFailed: true,
+      errorMessage: rssResult.error,
+      newItemCount: 0,
+      rssItemCount: 0,
+      crawlResult: `Feed error: ${rssResult.error}`.slice(0, 200),
+    })
+    result.errors = 1
+    result.errorMessage = rssResult.error
+    return result
+  }
+
   const rssItems = rssResult.items
   if (rssItems.length === 0) {
     await updateCrawlStatus(feedId, { hadSuccess: true, newItemCount: 0, rssItemCount: 0, crawlResult: 'No items in feed' })

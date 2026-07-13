@@ -90,6 +90,10 @@ export interface CrawlOutcome {
   rssItemCount: number
   crawlResult?: string
   notModified?: boolean
+  /** The RSS fetch/parse itself failed (404/403/invalid XML/timeout) — a broken
+   *  feed, not a healthy feed with zero items. Counts as a crawl failure and does
+   *  NOT increment the empty-crawl counter. */
+  feedFetchFailed?: boolean
 }
 
 export async function updateCrawlStatus(id: string, outcome: CrawlOutcome): Promise<void> {
@@ -101,7 +105,10 @@ export async function updateCrawlStatus(id: string, outcome: CrawlOutcome): Prom
   // - Yes if no new items existed (normal "nothing new" scenario)
   // - Yes if consecutive failures exceeded max (prevent infinite retry)
   // - No if all new articles failed extraction
-  const isTotalFailure = !hadSuccess && newItemCount > 0
+  // A broken feed (RSS fetch/parse failed) or a crawl where all new articles
+  // failed extraction both count as crawl failures.
+  const isFeedFetchFailure = outcome.feedFetchFailed === true
+  const isTotalFailure = isFeedFetchFailure || (!hadSuccess && newItemCount > 0)
 
   const data: Record<string, unknown> = {
     lastCrawlResult: outcome.crawlResult || null,
@@ -136,7 +143,11 @@ export async function updateCrawlStatus(id: string, outcome: CrawlOutcome): Prom
 
   // Health metrics: track empty crawls (RSS returned zero items).
   // 304 Not Modified is not an empty crawl — it means the feed is using caching correctly.
-  if (rssItemCount === 0 && !outcome.notModified) {
+  // A broken feed (feedFetchFailed) is a failure, not an empty crawl, so it must NOT
+  // increment the empty counter — otherwise a 404/403 feed looks like a quiet-but-healthy one.
+  if (isFeedFetchFailure) {
+    // tracked as a failure above; leave the empty counter untouched
+  } else if (rssItemCount === 0 && !outcome.notModified) {
     data.consecutiveEmptyCrawls = { increment: 1 }
   } else if (hadSuccess) {
     data.consecutiveEmptyCrawls = 0
