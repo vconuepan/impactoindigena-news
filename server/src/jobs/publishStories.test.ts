@@ -14,7 +14,7 @@ const mockFetchOg = vi.hoisted(() => vi.fn())
 vi.mock('../lib/extract-og-image.js', () => ({ fetchOgImage: mockFetchOg }))
 
 const mockRehost = vi.hoisted(() => vi.fn())
-vi.mock('../lib/imageStorage.js', () => ({ rehostExternalImage: mockRehost }))
+vi.mock('../lib/storyCard.js', () => ({ rehostOrComposeStoryImage: mockRehost }))
 
 vi.mock('../config.js', () => ({
   config: {
@@ -64,7 +64,7 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     await generateHeroImages(['id'])
     expect(mockGenerateImage).not.toHaveBeenCalled()
     expect(mockFetchOg).toHaveBeenCalledTimes(1)
-    expect(mockRehost).toHaveBeenCalledWith('https://src/og.jpg', 'id')
+    expect(mockRehost).toHaveBeenCalledWith('https://src/og.jpg', 'id', 'T')
     expect(mockPrisma.story.update).toHaveBeenCalledWith({
       where: { id: 'id' }, data: { imageUrl: 'https://cdn.r2.example/oghero-id.jpg' },
     })
