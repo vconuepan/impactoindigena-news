@@ -218,10 +218,29 @@ export const config = {
     // "Incidencia Internacional" ingestion (Fase 2b): OHCHR scrape + LLM enrich.
     ohchrEnabled: process.env.AGENDA_OHCHR_ENABLED !== 'false',
     ohchrMaxPages: parseInt(process.env.AGENDA_OHCHR_MAX_PAGES || '4', 10),
+    // Fase 2c: scrape de comunicados de prensa de la Corte IDH (español nativo,
+    // alto valor jurídico), filtrados por tema indígena.
+    corteIdhEnabled: process.env.AGENDA_CORTEIDH_ENABLED !== 'false',
     // Per-run caps on LLM enrichment (bounds cost; the daily job catches up over time).
     enrichDateLimit: parseInt(process.env.AGENDA_ENRICH_DATE_LIMIT || '20', 10),
     enrichTranslateLimit: parseInt(process.env.AGENDA_ENRICH_TRANSLATE_LIMIT || '20', 10),
     enrichContentMaxChars: parseInt(process.env.AGENDA_ENRICH_CONTENT_MAX_CHARS || '6000', 10),
+    // Fase 3: resumen semanal de "Incidencia Internacional" a redes (teaser + enlace a la sección).
+    digest: {
+      enabled: process.env.AGENDA_DIGEST_ENABLED !== 'false',
+      // Ventanas de selección: cuántos días hacia adelante contamos deadlines/eventos como
+      // "de la semana", y cuántos días atrás una publicación cuenta como novedad.
+      dueWithinDays: parseInt(process.env.AGENDA_DIGEST_DUE_WITHIN_DAYS || '21', 10),
+      eventWithinDays: parseInt(process.env.AGENDA_DIGEST_EVENT_WITHIN_DAYS || '30', 10),
+      publishedWithinDays: parseInt(process.env.AGENDA_DIGEST_PUBLISHED_WITHIN_DAYS || '7', 10),
+      channels: {
+        bluesky: process.env.AGENDA_DIGEST_BLUESKY !== 'false',
+        mastodon: process.env.AGENDA_DIGEST_MASTODON !== 'false',
+        twitter: process.env.AGENDA_DIGEST_TWITTER !== 'false',
+        instagram: process.env.AGENDA_DIGEST_INSTAGRAM !== 'false',
+      },
+      postDelayMs: parseInt(process.env.AGENDA_DIGEST_POST_DELAY_MS || '2000', 10),
+    },
   },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),
@@ -246,11 +265,17 @@ export const config = {
     apiKey:     process.env.AZURE_IMAGE_API_KEY     || '',
     apiVersion: process.env.AZURE_IMAGE_API_VERSION || '2025-04-01-preview',
     deployment: process.env.AZURE_IMAGE_DEPLOYMENT  || 'gpt-image-2',
-    // Calidad del hero landscape del sitio web: se ve grande y NO se recomprime → alta.
-    quality:    (process.env.AZURE_IMAGE_QUALITY    || 'high') as 'low' | 'medium' | 'high',
+    // Calidad del hero landscape del sitio web. El hero se muestra a max-height
+    // 480px, así que 'medium' (~$0.05/img) rinde igual que 'high' (~$0.17/img)
+    // en pantalla. Subir a 'high' solo si un cambio de layout lo agranda.
+    quality:    (process.env.AZURE_IMAGE_QUALITY    || 'medium') as 'low' | 'medium' | 'high',
     // Calidad del portrait para redes (Instagram/Twitter recomprimen al subir, así que
     // 'high' es gasto perdido). Medium recorta ~60-70% el costo sin diferencia visible en el feed.
     qualityPortrait: (process.env.AZURE_IMAGE_QUALITY_PORTRAIT || 'medium') as 'low' | 'medium' | 'high',
+    // El hero IA propio solo se genera para historias destacadas (relevance >=
+    // este umbral, el mismo del EditorialSeal). El resto reusa el og:image de la
+    // fuente (gratis), acotando el costo de imágenes al valor editorial.
+    heroAiMinRelevance: parseInt(process.env.AZURE_IMAGE_HERO_MIN_RELEVANCE || '8', 10),
   },
   r2: {
     endpoint: process.env.R2_ENDPOINT || '',

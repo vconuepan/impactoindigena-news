@@ -40,7 +40,6 @@ function FaviconSection({ feedId }: { feedId: string }) {
   const [fetching, setFetching] = useState(false)
   const [imgKey, setImgKey] = useState(0)
   const { toast } = useToast()
-  const isDev = import.meta.env.DEV
 
   const handleFetch = async () => {
     setFetching(true)
@@ -62,13 +61,9 @@ function FaviconSection({ feedId }: { feedId: string }) {
   return (
     <div className="flex items-center gap-3">
       <FeedFaviconPreview feedId={feedId} imgKey={imgKey} size={24} />
-      {isDev ? (
-        <Button type="button" variant="ghost" size="sm" onClick={handleFetch} disabled={fetching}>
-          {fetching ? 'Fetching...' : 'Fetch Favicon'}
-        </Button>
-      ) : (
-        <span className="text-xs text-neutral-400">Fetch in dev only</span>
-      )}
+      <Button type="button" variant="ghost" size="sm" onClick={handleFetch} disabled={fetching}>
+        {fetching ? 'Fetching...' : 'Fetch Favicon'}
+      </Button>
     </div>
   )
 }

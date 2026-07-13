@@ -58,7 +58,11 @@ Ver `server/prisma/schema.prisma` (modelo AgendaItem) + migración
 ## Fases
 - **Fase 1 (HECHA):** modelo `AgendaItem` + migración SQL + tipos compartidos + ruta `/api/public/agenda` + página `/incidencia-internacional` + nav + sitemap + seed (`server/prisma/seed-agenda.sql`, items reales del Docip Nº501).
 - **Fase 2:** ingesta. Registrar los feeds directos (RSS/iCal) reusando el modelo `Feed` + un parser iCal; normalizar a `AgendaItem`; clasificar/traducir al español con LLM solo lo que llega en EN/FR; scrape+LLM para OHCHR/CIDH/CorteIDH con gate de confianza. Job en el scheduler (diario). Admin `/admin/agenda` para revisar drafts.
-- **Fase 3:** resumen semanal automático a redes (reusa infra social) + digest email opcional (reusa Newsletter).
+- **Fase 3 (redes HECHA · email pendiente):** resumen semanal automático a redes. Job `agenda_weekly_digest` (viernes 9am, `0 9 * * 5`), teaser con conteos + enlace a la sección, a Bluesky/Mastodon/Twitter (texto) + Instagram (tarjeta de marca renderizada con `lib/agendaCard.ts`). Selección determinista (sin LLM) por ventanas de fecha; idempotente por semana ISO; sin post en semana vacía. Config en `config.agenda.digest`; handler `jobs/agendaWeeklyDigest.ts`; servicio `services/agendaDigest.ts`. Migración `20260707000000_seed_agenda_weekly_digest`. **Pendiente:** digest email opcional (reusa Newsletter).
+
+## Fase 2c (parcial)
+- **Corte IDH — HECHO:** `services/corteIdhScraper.ts` scrapea el listado de comunicados de prensa (`comunicados_prensa.cfm`, HTML estático: `li.tr_normal` → `h4` título + `<p><em>` fecha ES + `a.link1` PDF `cp_N_YYYY`). Español nativo. Filtra por tema indígena (`isIndigenousRelevant`), clasifica tipo (audiencia→evento, convocatoria/concurso→convocatoria, resto→publicacion), parsea fecha ES inline. `externalId corteidh:cp_N_YYYY`. Integrado en el job `ingest_agenda`. Config `AGENDA_CORTEIDH_ENABLED`. Todo a draft (gate de confianza; el admin revisa falsos positivos débiles del filtro). Sin migración (reusa AgendaItem + persistDrafts).
+- **CIDH (OEA) — BLOQUEADO:** el sitio de comunicados de la CIDH es JS-rendered / anti-bot (curl y cheerio devuelven vacío). No viable con el patrón estático; requeriría un navegador headless (Playwright). Pendiente.
 
 ## Notas operativas
 - Node local 18 rompe build/tests; usar `/opt/homebrew/opt/node@20/bin`. Ver [[project-entorno-node]].

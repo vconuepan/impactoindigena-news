@@ -37,6 +37,9 @@ export interface ParseFeedResult {
   items: RSSItem[]
   notModified: boolean
   cacheHeaders: FeedCacheHeaders
+  /** Set when the fetch or XML parse failed (404/403/invalid XML/timeout).
+   *  Distinguishes a broken feed from a healthy feed that returned zero items. */
+  error?: string | null
 }
 
 export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders): Promise<ParseFeedResult> {
@@ -91,6 +94,7 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
           etag: cacheHeaders?.etag || null,
           lastModified: cacheHeaders?.lastModified || null,
         },
+        error: null,
       }
     }
 
@@ -125,9 +129,14 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
         etag: response.headers['etag'] || null,
         lastModified: response.headers['last-modified'] || null,
       },
+      error: null,
     }
   } catch (err) {
-    log.error({ feedUrl, reason: summarizeError(err) }, 'failed to parse feed')
-    return { items: [], notModified: false, cacheHeaders: {} }
+    const reason = summarizeError(err)
+    log.error({ feedUrl, reason }, 'failed to parse feed')
+    // Surface the failure so the crawler can mark the feed as broken (failed),
+    // not as an empty crawl. A silent items:[] here made 404/403/invalid-XML
+    // feeds look identical to healthy-but-quiet feeds.
+    return { items: [], notModified: false, cacheHeaders: {}, error: reason }
   }
 }

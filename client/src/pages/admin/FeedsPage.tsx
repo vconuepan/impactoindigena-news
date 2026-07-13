@@ -145,11 +145,9 @@ export default function FeedsPage() {
             >
               {showInactive ? 'Ocultar inactivas' : 'Mostrar inactivas'}
             </Button>
-            {import.meta.env.DEV && (
-              <Button variant="secondary" onClick={handleFetchAllFavicons}>
-                Obtener todos los favicons
-              </Button>
-            )}
+            <Button variant="secondary" onClick={handleFetchAllFavicons}>
+              Obtener todos los favicons
+            </Button>
             <Button variant="secondary" onClick={handleCrawlAll}>
               Rastrear todo
             </Button>

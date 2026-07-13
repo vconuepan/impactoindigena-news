@@ -40,6 +40,10 @@ When consecutive articles in a feed all fail local extraction (tiers 1+2), the c
 
 When consecutive articles all fail extraction entirely (local + API both return nothing), the crawler stops attempting remaining articles (controlled by `config.crawl.totalFailThreshold`, default 3). This prevents burning API quota on feeds where the source blocks all extraction methods. The counter resets when any article succeeds.
 
+### Broken Feed vs Empty Crawl
+
+The RSS fetch/parse layer (`rssParser.parseFeed`) distinguishes a **broken feed** from a **healthy-but-quiet feed**. On any fetch/parse failure (HTTP 404/403/5xx, invalid XML, timeout after retries) it returns `error` set instead of silently returning zero items. The crawler then records the crawl as a **failure** (`feedFetchFailed: true` → increments `consecutiveFailedCrawls`, sets `lastCrawlError`, red badge in the admin) rather than an **empty crawl** (`consecutiveEmptyCrawls`). Only a real `200 + valid XML + 0 items` counts as empty. Before this (fixed 2026-07), a 404/403 feed looked identical to a quiet healthy one, so broken feeds accumulated `empty` for months without surfacing. A broken feed auto-advances `lastCrawledAt` after `MAX_CONSECUTIVE_FAILURES` (3) to avoid infinite retry; `lastCrawlError` persists so it stays visible until a successful crawl clears it.
+
 ### Extraction Method Tracking
 
 The extraction method that succeeded (`selector`, `readability`, `diffbot`, or `pipfeed`) is persisted to `Story.crawlMethod` when the story is created. This field is used by the feed quality metrics to show a per-feed breakdown of which extraction tiers are working. The admin panel displays the dominant method in the feed table and a full percentage breakdown in the feed edit panel. Stories created before this feature have `crawlMethod = null` and are excluded from the breakdown.
