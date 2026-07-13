@@ -137,6 +137,16 @@
     "done": "Done",
     "error": "Something went wrong. Please try again."
   },
+  "articleCta": {
+    "eyebrow": "Weekly newsletter",
+    "headline": "The news that matters to Indigenous peoples, every week.",
+    "emailLabel": "Email address",
+    "placeholder": "your@email.com",
+    "submit": "Subscribe free",
+    "submitting": "Subscribing...",
+    "success": "Done! Check your email to confirm your subscription.",
+    "error": "Something went wrong. Please try again."
+  },
   "support": {
     "eyebrow": "Independent indigenous journalism",
     "heading": "Building bridges between indigenous peoples and society.",

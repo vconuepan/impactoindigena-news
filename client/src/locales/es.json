@@ -137,6 +137,16 @@
     "done": "Listo",
     "error": "Algo salió mal. Por favor intenta de nuevo."
   },
+  "articleCta": {
+    "eyebrow": "Boletín semanal",
+    "headline": "Las noticias que importan a los pueblos indígenas, cada semana.",
+    "emailLabel": "Correo electrónico",
+    "placeholder": "tu@correo.com",
+    "submit": "Suscribirse gratis",
+    "submitting": "Suscribiendo...",
+    "success": "¡Listo! Revisa tu correo para confirmar la suscripción.",
+    "error": "Algo salió mal. Intenta de nuevo."
+  },
   "support": {
     "eyebrow": "Periodismo indígena independiente",
     "heading": "Tendemos puentes entre el mundo indígena y la sociedad.",
