@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
+import { safeAxiosGet } from './safeHttp.js'
 
 const log = createLogger('image-storage')
 
@@ -50,6 +51,43 @@ export async function uploadImageToR2(
 const MAX_REHOST_BYTES = 8_000_000
 
 /**
+ * Downloads an external image over an SSRF-safe channel and validates it.
+ *
+ * The image URL is attacker-influenced: it comes from parsing the og:image meta
+ * tag out of a third-party source's HTML (see extract-og-image.ts), so a
+ * malicious/compromised source could point it at an internal address (cloud
+ * metadata at 169.254.169.254, localhost, private ranges) to make the server
+ * fetch it. `safeAxiosGet` runs `assertUrlAllowed` (DNS-resolving) on the
+ * initial URL and on every redirect hop, closing that hole — the same guard the
+ * crawler/extractor use. Returns the raw bytes + content-type, or null if the
+ * download fails, is blocked, isn't an image, or exceeds the size cap.
+ */
+async function downloadExternalImage(
+  imageUrl: string,
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const res = await safeAxiosGet(imageUrl, {
+    responseType: 'arraybuffer',
+    timeout: 10_000,
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0)' },
+    // Hard cap the response body; axios throws if the stream exceeds this.
+    maxContentLength: MAX_REHOST_BYTES,
+    maxBodyLength: MAX_REHOST_BYTES,
+  })
+
+  const contentType = (String(res.headers['content-type'] || '')).split(';')[0].trim()
+  if (!contentType.startsWith('image/')) {
+    log.warn({ imageUrl, contentType }, 'rehost: not an image')
+    return null
+  }
+  const buffer = Buffer.from(res.data)
+  if (buffer.length === 0 || buffer.length > MAX_REHOST_BYTES) {
+    log.warn({ imageUrl, size: buffer.length }, 'rehost: empty or oversized image')
+    return null
+  }
+  return { buffer, contentType }
+}
+
+/**
  * Downloads an external image (e.g. a source outlet's og:image) and re-hosts
  * it on R2, returning the R2 public URL. Avoids hotlinking third-party images
  * (copyright/hosting control). Returns null on any failure (caller should fall
@@ -57,29 +95,9 @@ const MAX_REHOST_BYTES = 8_000_000
  */
 export async function rehostExternalImage(imageUrl: string, storyId: string): Promise<string | null> {
   try {
-    const res = await fetch(imageUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0)' },
-      signal: AbortSignal.timeout(10_000),
-    })
-    if (!res.ok) {
-      log.warn({ imageUrl, status: res.status }, 'rehost: source image fetch failed')
-      return null
-    }
-    const contentType = (res.headers.get('content-type') || '').split(';')[0].trim()
-    if (!contentType.startsWith('image/')) {
-      log.warn({ imageUrl, contentType }, 'rehost: not an image')
-      return null
-    }
-    const declaredLen = Number(res.headers.get('content-length') || '0')
-    if (declaredLen && declaredLen > MAX_REHOST_BYTES) {
-      log.warn({ imageUrl, declaredLen }, 'rehost: image too large')
-      return null
-    }
-    const buffer = Buffer.from(await res.arrayBuffer())
-    if (buffer.length === 0 || buffer.length > MAX_REHOST_BYTES) {
-      log.warn({ imageUrl, size: buffer.length }, 'rehost: empty or oversized image')
-      return null
-    }
+    const downloaded = await downloadExternalImage(imageUrl)
+    if (!downloaded) return null
+    const { buffer, contentType } = downloaded
     const ext = contentType.includes('png')
       ? 'png'
       : contentType.includes('webp')
