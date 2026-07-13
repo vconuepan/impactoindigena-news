@@ -146,6 +146,7 @@ describe('Auth Routes', () => {
 
       const res = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:5173') // CSRF defense requires a trusted Origin
         .set('Cookie', 'refresh_token=valid-refresh')
 
       expect(res.status).toBe(200)
@@ -157,6 +158,7 @@ describe('Auth Routes', () => {
 
       const res = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:5173')
         .set('Cookie', 'refresh_token=invalid-token')
 
       expect(res.status).toBe(401)
@@ -176,6 +178,7 @@ describe('Auth Routes', () => {
 
       const res = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:5173')
         .set('Cookie', 'refresh_token=reused-token')
 
       expect(res.status).toBe(401)

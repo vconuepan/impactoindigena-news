@@ -19,6 +19,9 @@ vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 const mockBcrypt = vi.hoisted(() => ({
   hash: vi.fn(),
   compare: vi.fn(),
+  // auth.ts computes DUMMY_PASSWORD_HASH = bcrypt.hashSync(...) at import time
+  // (timing-attack defense added in the security PR); the mock must provide it.
+  hashSync: vi.fn(() => '$2a$12$dummyhashfortimingequalization'),
 }))
 vi.mock('bcryptjs', () => ({ default: mockBcrypt }))
 
