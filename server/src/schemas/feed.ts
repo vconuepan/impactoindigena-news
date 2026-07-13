@@ -15,10 +15,13 @@ const feedRegionValues = [
 const feedRegionSchema = z.enum(feedRegionValues)
 
 export const createFeedSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  rssUrl: z.string().url('Must be a valid URL'),
-  url: z.string().url('Must be a valid URL').nullable().optional(),
-  displayTitle: z.string().optional(),
+  // trim() runs before the checks: a whitespace-only title fails min(1), and a
+  // URL with stray spaces passes url() instead of being silently stored dirty
+  // (stray spaces in rss_url were breaking crawls — see content-extraction.md).
+  title: z.string().trim().min(1, 'Title is required'),
+  rssUrl: z.string().trim().url('Must be a valid URL'),
+  url: z.string().trim().url('Must be a valid URL').nullable().optional(),
+  displayTitle: z.string().trim().optional(),
   language: z.string().optional().default('en'),
   region: feedRegionSchema.nullable().optional(),
   issueId: z.string().min(1, 'Issue ID is required'),
@@ -27,10 +30,10 @@ export const createFeedSchema = z.object({
 })
 
 export const updateFeedSchema = z.object({
-  title: z.string().min(1).optional(),
-  rssUrl: z.string().url('Must be a valid URL').optional(),
-  url: z.string().url('Must be a valid URL').nullable().optional(),
-  displayTitle: z.string().nullable().optional(),
+  title: z.string().trim().min(1).optional(),
+  rssUrl: z.string().trim().url('Must be a valid URL').optional(),
+  url: z.string().trim().url('Must be a valid URL').nullable().optional(),
+  displayTitle: z.string().trim().nullable().optional(),
   language: z.string().optional(),
   region: feedRegionSchema.nullable().optional(),
   issueId: z.string().uuid('Must be a valid issue ID').optional(),
