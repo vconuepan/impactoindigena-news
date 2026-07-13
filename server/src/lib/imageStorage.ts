@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
+import { safeAxiosGet } from './safeHttp.js'
 
 const log = createLogger('image-storage')
 
@@ -57,32 +58,36 @@ export interface DownloadedImage {
 }
 
 /**
- * Downloads an external image (e.g. a source outlet's og:image), enforcing the
- * size cap and confirming it is actually an image. Returns null on any failure.
- * Shared by rehostExternalImage and the branded-card path so both apply the
- * same fetch/validation rules and only download the bytes once.
+ * Downloads an external image (e.g. a source outlet's og:image) over an
+ * SSRF-safe channel, enforcing the size cap and confirming it is actually an
+ * image. Returns null on any failure. Shared by rehostExternalImage and the
+ * branded-card path so both apply the same fetch/validation rules and only
+ * download the bytes once.
+ *
+ * The image URL is attacker-influenced: it comes from parsing the og:image meta
+ * tag out of a third-party source's HTML (see extract-og-image.ts), so a
+ * malicious/compromised source could point it at an internal address (cloud
+ * metadata at 169.254.169.254, localhost, private ranges) to make the server
+ * fetch it. `safeAxiosGet` runs `assertUrlAllowed` (DNS-resolving) on the
+ * initial URL and on every redirect hop, closing that hole — the same guard the
+ * crawler/extractor use.
  */
 export async function downloadExternalImage(imageUrl: string): Promise<DownloadedImage | null> {
   try {
-    const res = await fetch(imageUrl, {
+    const res = await safeAxiosGet(imageUrl, {
+      responseType: 'arraybuffer',
+      timeout: 10_000,
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0)' },
-      signal: AbortSignal.timeout(10_000),
+      // Hard cap the response body; axios throws if the stream exceeds this.
+      maxContentLength: MAX_REHOST_BYTES,
+      maxBodyLength: MAX_REHOST_BYTES,
     })
-    if (!res.ok) {
-      log.warn({ imageUrl, status: res.status }, 'download: source image fetch failed')
-      return null
-    }
-    const contentType = (res.headers.get('content-type') || '').split(';')[0].trim()
+    const contentType = (String(res.headers['content-type'] || '')).split(';')[0].trim()
     if (!contentType.startsWith('image/')) {
       log.warn({ imageUrl, contentType }, 'download: not an image')
       return null
     }
-    const declaredLen = Number(res.headers.get('content-length') || '0')
-    if (declaredLen && declaredLen > MAX_REHOST_BYTES) {
-      log.warn({ imageUrl, declaredLen }, 'download: image too large')
-      return null
-    }
-    const buffer = Buffer.from(await res.arrayBuffer())
+    const buffer = Buffer.from(res.data)
     if (buffer.length === 0 || buffer.length > MAX_REHOST_BYTES) {
       log.warn({ imageUrl, size: buffer.length }, 'download: empty or oversized image')
       return null
