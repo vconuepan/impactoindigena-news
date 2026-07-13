@@ -1,7 +1,8 @@
 import jwt from 'jsonwebtoken'
 
 export const TEST_API_KEY = 'test-admin-key-12345'
-export const TEST_JWT_SECRET = 'test-jwt-secret-for-helpers'
+// Must be >= 32 chars: auth's getJwtSecret() rejects shorter secrets (hardened in the security PR).
+export const TEST_JWT_SECRET = 'test-jwt-secret-for-helpers-0123456789'
 
 // Set JWT_SECRET early so auth middleware can verify tokens
 process.env.JWT_SECRET = TEST_JWT_SECRET

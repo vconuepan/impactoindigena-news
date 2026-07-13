@@ -1,4 +1,11 @@
 import { z } from 'zod'
+import { isAllowedUrl } from '../utils/urlValidation.js'
+
+// trim() runs before url()/refine so a URL with stray spaces is cleaned and
+// validated (stray spaces in rss_url were breaking crawls — see
+// content-extraction.md), then refine() rejects non-public hosts (SSRF).
+const publicUrl = (msg = 'Must be a valid URL') =>
+  z.string().trim().url(msg).refine(isAllowedUrl, 'URL must point to a public host')
 
 const feedRegionValues = [
   'north_america',
@@ -15,12 +22,10 @@ const feedRegionValues = [
 const feedRegionSchema = z.enum(feedRegionValues)
 
 export const createFeedSchema = z.object({
-  // trim() runs before the checks: a whitespace-only title fails min(1), and a
-  // URL with stray spaces passes url() instead of being silently stored dirty
-  // (stray spaces in rss_url were breaking crawls — see content-extraction.md).
+  // trim() before min(1): a whitespace-only title is rejected instead of stored.
   title: z.string().trim().min(1, 'Title is required'),
-  rssUrl: z.string().trim().url('Must be a valid URL'),
-  url: z.string().trim().url('Must be a valid URL').nullable().optional(),
+  rssUrl: publicUrl(),
+  url: publicUrl().nullable().optional(),
   displayTitle: z.string().trim().optional(),
   language: z.string().optional().default('en'),
   region: feedRegionSchema.nullable().optional(),
@@ -31,8 +36,8 @@ export const createFeedSchema = z.object({
 
 export const updateFeedSchema = z.object({
   title: z.string().trim().min(1).optional(),
-  rssUrl: z.string().trim().url('Must be a valid URL').optional(),
-  url: z.string().trim().url('Must be a valid URL').nullable().optional(),
+  rssUrl: publicUrl().optional(),
+  url: publicUrl().nullable().optional(),
   displayTitle: z.string().trim().nullable().optional(),
   language: z.string().optional(),
   region: feedRegionSchema.nullable().optional(),

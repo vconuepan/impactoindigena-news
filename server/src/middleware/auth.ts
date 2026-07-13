@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express'
-import { timingSafeEqual } from 'crypto'
+import { createHash, timingSafeEqual } from 'crypto'
 import { verifyAccessToken, type AccessTokenPayload } from '../services/auth.js'
+import { isTrustedOrigin } from '../lib/allowedOrigins.js'
 
 export interface AuthUser {
   userId: string
@@ -38,11 +39,11 @@ function tryApiKeyAuth(token: string): boolean {
   const apiKey = process.env.PUBLIC_API_KEY
   if (!apiKey) return false
 
-  const keyBuf = Buffer.from(apiKey)
-  // Pad/truncate to same length to avoid timing leak on length comparison
-  const tokenBuf = Buffer.alloc(keyBuf.length)
-  tokenBuf.write(token, 'utf8')
-  return timingSafeEqual(tokenBuf, keyBuf)
+  // Compare fixed-length SHA-256 digests: constant-time AND exact-match (the
+  // previous length-padding truncated longer tokens, so KEY + extra passed).
+  const tokenDigest = createHash('sha256').update(token).digest()
+  const keyDigest = createHash('sha256').update(apiKey).digest()
+  return timingSafeEqual(tokenDigest, keyDigest)
 }
 
 function extractBearerToken(req: Request): string | null {
@@ -64,7 +65,9 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 
   const jwtPayload = tryJwtAuth(token)
-  if (jwtPayload) {
+  // Reject long-lived passwordless member tokens on access-token routes.
+  // (Legacy tokens without a `typ` claim are treated as access tokens.)
+  if (jwtPayload && jwtPayload.typ !== 'member') {
     req.user = {
       userId: jwtPayload.userId,
       email: jwtPayload.email,
@@ -118,6 +121,14 @@ export function requireMember(req: Request, res: Response, next: NextFunction): 
 
   if (!token) {
     res.status(401).json({ error: 'Authentication required' })
+    return
+  }
+
+  // CSRF defense: for cookie-based sessions, state-changing requests must carry
+  // a trusted Origin. Bearer-token (non-browser) clients are exempt — they are
+  // not subject to CSRF (no ambient cookie is attached by the browser).
+  if (cookieToken && !isTrustedOrigin(req)) {
+    res.status(403).json({ error: 'Invalid request origin' })
     return
   }
 

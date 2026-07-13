@@ -93,7 +93,9 @@ router.get('/:id', async (req, res) => {
       },
     })
 
-    if (!newsletter || newsletter.status !== 'published') {
+    // Specialty/private editions are prefixed with '[' and excluded from the
+    // public archive — the detail endpoint must hide them too, not just the list.
+    if (!newsletter || newsletter.status !== 'published' || newsletter.title.startsWith('[')) {
       res.status(404).json({ error: 'Newsletter not found' })
       return
     }

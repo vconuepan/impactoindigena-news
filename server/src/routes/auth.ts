@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { validateBody } from '../middleware/validate.js'
 import { requireAuth, requireMember } from '../middleware/auth.js'
-import { authLimiter, refreshLimiter } from '../middleware/rateLimit.js'
+import { authLimiter, accountAuthLimiter, refreshLimiter } from '../middleware/rateLimit.js'
 import { loginSchema, changePasswordSchema } from '../schemas/auth.js'
 import { getUserByEmail, changePassword } from '../services/user.js'
 import {
@@ -11,8 +11,10 @@ import {
   rotateRefreshToken,
   revokeRefreshToken,
   verifyAccessToken,
+  DUMMY_PASSWORD_HASH,
 } from '../services/auth.js'
 import { getUserById } from '../services/user.js'
+import { isTrustedOrigin } from '../lib/allowedOrigins.js'
 import { createLogger, maskEmail } from '../lib/logger.js'
 import prisma from '../lib/prisma.js'
 import * as brevo from '../services/brevo.js'
@@ -52,12 +54,15 @@ function clearRefreshCookie(res: any) {
   })
 }
 
-router.post('/login', authLimiter, validateBody(loginSchema), async (req, res) => {
+router.post('/login', authLimiter, accountAuthLimiter, validateBody(loginSchema), async (req, res) => {
   try {
     const { email, password } = req.body
 
     const user = await getUserByEmail(email)
     if (!user || !user.passwordHash) {
+      // Run a dummy comparison so response timing matches the wrong-password
+      // path, preventing user enumeration via latency.
+      await verifyPassword(password, DUMMY_PASSWORD_HASH)
       log.warn({ email: maskEmail(email) }, 'login failed: user not found')
       res.status(401).json({ error: 'Invalid email or password' })
       return
@@ -89,6 +94,14 @@ router.post('/refresh', refreshLimiter, async (req, res) => {
     const token = req.cookies?.[REFRESH_COOKIE]
     if (!token) {
       res.status(401).json({ error: 'No refresh token' })
+      return
+    }
+
+    // CSRF defense: the refresh cookie is sent cross-site (sameSite:none), so
+    // require a trusted Origin/Referer on this state-changing request. Do NOT
+    // clear the cookie here — that would let a forged request log the user out.
+    if (!isTrustedOrigin(req)) {
+      res.status(403).json({ error: 'Invalid request origin' })
       return
     }
 

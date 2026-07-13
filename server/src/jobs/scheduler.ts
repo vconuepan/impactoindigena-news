@@ -1,4 +1,4 @@
-import cron from 'node-cron'
+import cron, { type ScheduledTask } from 'node-cron'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { notifyJobFailure } from '../lib/notify.js'
@@ -6,7 +6,7 @@ import { JOB_HANDLERS } from './handlers.js'
 
 const log = createLogger('scheduler')
 
-const tasksByName = new Map<string, cron.ScheduledTask>()
+const tasksByName = new Map<string, ScheduledTask>()
 const runningJobs = new Set<string>()
 
 export async function initScheduler(): Promise<void> {

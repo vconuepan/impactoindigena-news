@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import * as cheerio from 'cheerio'
 import { createLogger } from '../lib/logger.js'
 import * as feedService from './feed.js'
+import { assertUrlAllowed } from '../utils/urlValidation.js'
 
 const log = createLogger('favicon')
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -17,6 +18,29 @@ const MAX_HTML_BYTES = 2 * 1024 * 1024 // 2 MB cap for HTML pages when looking f
 const GOOGLE_GLOBE_MAX_BYTES = 400
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+const MAX_REDIRECTS = 3
+
+/**
+ * fetch() with an SSRF guard applied to the initial URL and to every redirect
+ * hop. `fetch` follows redirects transparently, so we handle them manually
+ * (redirect: 'manual') and re-validate each Location before following it.
+ */
+async function safeFetch(url: string, init: RequestInit): Promise<Response> {
+  let current = url
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    await assertUrlAllowed(current)
+    const res = await fetch(current, { ...init, redirect: 'manual' })
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get('location')
+      if (!location) return res
+      current = new URL(location, current).href
+      continue
+    }
+    return res
+  }
+  throw new Error('Too many redirects')
+}
 
 async function ensureDir(dir: string) {
   await mkdir(dir, { recursive: true })
@@ -37,7 +61,7 @@ async function faviconExists(feedId: string): Promise<boolean> {
 
 async function fetchImage(url: string): Promise<Buffer | null> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    const res = await safeFetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
     if (!res.ok) return null
 
     const contentType = res.headers.get('content-type') || ''
@@ -78,7 +102,7 @@ async function tryGoogleApi(hostname: string): Promise<Buffer | null> {
 /** Parse HTML for <link rel="icon"> and download the best match. */
 async function tryHtmlParsing(origin: string): Promise<Buffer | null> {
   try {
-    const res = await fetch(origin, {
+    const res = await safeFetch(origin, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: { 'Accept': 'text/html' },
     })

@@ -39,7 +39,7 @@ vi.mock('../services/crawler.js', () => ({
 
 process.env.PUBLIC_API_KEY = TEST_API_KEY
 // helpers.ts sets JWT_SECRET, but we set it explicitly here for clarity
-process.env.JWT_SECRET = 'test-jwt-secret-for-auth-routes'
+process.env.JWT_SECRET = 'test-jwt-secret-for-auth-routes-padded'
 
 // Pre-computed bcrypt hash for 'testpassword' (4 rounds, generated via bcryptjs)
 const testPasswordHash = '$2b$04$a7oe401dL9h9L7VNbNSZJObgY3lSlqg30AUD7GB1Tut7MlkoCCdUC'
@@ -146,6 +146,7 @@ describe('Auth Routes', () => {
 
       const res = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:5173') // CSRF defense requires a trusted Origin
         .set('Cookie', 'refresh_token=valid-refresh')
 
       expect(res.status).toBe(200)
@@ -157,6 +158,7 @@ describe('Auth Routes', () => {
 
       const res = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:5173')
         .set('Cookie', 'refresh_token=invalid-token')
 
       expect(res.status).toBe(401)
@@ -176,6 +178,7 @@ describe('Auth Routes', () => {
 
       const res = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:5173')
         .set('Cookie', 'refresh_token=reused-token')
 
       expect(res.status).toBe(401)

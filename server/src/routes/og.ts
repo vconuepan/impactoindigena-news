@@ -22,6 +22,12 @@ function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
 }
 
+// Escape a JSON string for safe embedding inside a <script> element, so story
+// content (crawled/LLM-generated) can't break out of the JSON-LD script context.
+function escapeJsonForScript(json: string): string {
+  return json.replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026')
+}
+
 // URLs in og:image content= must NOT have & encoded as &amp; —
 // LinkedIn and many OG parsers use the raw attribute value as a URL
 // without HTML-decoding it, so &amp; breaks the request.
@@ -147,7 +153,7 @@ router.get('/story-html', async (req, res) => {
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${image}" />
-  <script type="application/ld+json">${jsonLd}</script>`
+  <script type="application/ld+json">${escapeJsonForScript(jsonLd)}</script>`
 
     // Strip the shell's own title/meta (the home may be prerendered with full
     // content), clear the prerendered root so React mounts cleanly, then inject.
@@ -181,10 +187,13 @@ router.get('/stories/:slug', async (req, res) => {
         summary: true,
         imageUrl: true,
         datePublished: true,
+        status: true,
       },
     })
 
-    if (!story) {
+    // Only expose metadata for published stories — a story that was published
+    // (got a slug) and later rejected/trashed must not leak title/summary/image.
+    if (!story || story.status !== 'published') {
       res.redirect(302, `${SITE_URL}/stories/${slug}`)
       return
     }
@@ -207,12 +216,10 @@ router.get('/stories/:slug', async (req, res) => {
     const image = escapeAttrUrl(story.imageUrl || FALLBACK_IMAGE)
     const url = storyUrl
 
-    // Fetch the frontend shell to preserve React scripts
-    let shell = ''
-    try {
-      const res2 = await fetch(`${SITE_URL}/`)
-      shell = await res2.text()
-    } catch {
+    // Fetch the frontend shell to preserve React scripts (cached, 10-min TTL —
+    // avoids an outbound origin fetch on every bot request).
+    const shell = await getShell()
+    if (!shell) {
       log.warn({ slug }, 'could not fetch frontend shell, using minimal HTML')
     }
 

@@ -8,6 +8,11 @@ const router = Router()
 // Increments a daily counter per path + traffic source.
 // source: "" (direct) | "newsletter" | "social"
 const ALLOWED_SOURCES = new Set(['newsletter', 'social', ''])
+// Accept only plausible in-app paths: must start with '/', reasonable length,
+// and a restricted character set. This bounds the distinct-path cardinality an
+// abuser can create (each distinct path is a new row), rejecting arbitrary
+// junk strings while still allowing real routes and story slugs.
+const VALID_PATH = /^\/[A-Za-z0-9\-_/.~%?&=]*$/
 
 router.post('/', async (req, res) => {
   // Always respond immediately so the client isn't blocked
@@ -16,15 +21,17 @@ router.post('/', async (req, res) => {
   try {
     const { path, source } = req.body as { path?: unknown; source?: unknown }
     if (!path || typeof path !== 'string') return
+    const cleanPath = path.slice(0, 200)
+    // Reject malformed paths (must look like an in-app route)
+    if (!VALID_PATH.test(cleanPath)) return
     // Ignore admin routes and API calls
-    if (path.startsWith('/admin') || path.startsWith('/api')) return
+    if (cleanPath.startsWith('/admin') || cleanPath.startsWith('/api')) return
 
     // Validate source — unknown values fall back to direct ("")
     const cleanSource = typeof source === 'string' && ALLOWED_SOURCES.has(source) ? source : ''
 
     const today = new Date()
     today.setUTCHours(0, 0, 0, 0)
-    const cleanPath = path.slice(0, 500)
 
     // Raw upsert — avoids dependency on regenerated Prisma client for the new column
     await prisma.$executeRaw`
