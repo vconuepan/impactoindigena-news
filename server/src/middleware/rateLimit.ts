@@ -79,8 +79,17 @@ export const authLimiter = rateLimit({
 /**
  * Per-account login limiter. Complements authLimiter (per-IP) by capping failed
  * attempts against a single email regardless of source IP, blunting distributed
- * / rotating-IP brute force. Only failures count (skipSuccessfulRequests), so a
- * legitimate user who mistypes then succeeds is never locked out.
+ * / rotating-IP brute force. Only the account owner's own failures count against
+ * them lightly (skipSuccessfulRequests decrements on a correct password).
+ *
+ * TRADE-OFF (deliberate): keying on the email is what stops distributed
+ * credential stuffing, but it also means an attacker who knows a victim's email
+ * can burn this budget with wrong passwords from >=2 IPs and lock the victim out
+ * of login for the 15-minute window (a targeted availability DoS). We accept
+ * that: protecting the account from stuffing outweighs a transient lockout, and
+ * keying on email+IP instead would collapse this into the per-IP authLimiter and
+ * lose the distributed-attack protection entirely. Do NOT claim a legitimate
+ * user is "never locked out" — a targeted attacker can lock them out.
  */
 export const accountAuthLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
