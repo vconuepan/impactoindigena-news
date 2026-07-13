@@ -26,7 +26,7 @@ vi.mock('../../services/crawler.js', () => ({
 }))
 
 const { default: app } = await import('../../app.js')
-const { sitemapCache } = await import('./sitemap.js')
+const { sitemapCache, newsSitemapCache } = await import('./sitemap.js')
 
 const publishedStories = [
   { slug: 'ai-breakthrough-2024', datePublished: new Date('2024-06-15') },
@@ -124,5 +124,81 @@ describe('GET /api/sitemap.xml', () => {
 
     expect(res.status).toBe(500)
     expect(res.body.error).toBe('Failed to generate sitemap')
+  })
+})
+
+describe('GET /api/sitemap-news.xml', () => {
+  const newsStories = [
+    { slug: 'consulta-mapuche', title: 'Consulta previa en territorio mapuche', datePublished: new Date('2026-07-13T09:00:00Z') },
+    { slug: 'corte-idh-fallo', title: 'Corte IDH falla a favor de comunidad', datePublished: new Date('2026-07-12T15:30:00Z') },
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    newsSitemapCache.clear()
+  })
+
+  it('returns valid Google News XML with the news namespace', async () => {
+    mockPrisma.story.findMany.mockResolvedValue(newsStories)
+
+    const res = await request(app).get('/api/sitemap-news.xml')
+
+    expect(res.status).toBe(200)
+    expect(res.headers['content-type']).toMatch(/application\/xml/)
+    expect(res.text).toContain('xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"')
+    expect(res.text).toContain('<news:name>Impacto Indígena</news:name>')
+    expect(res.text).toContain('<news:language>es</news:language>')
+  })
+
+  it('includes story loc, publication date, and title', async () => {
+    mockPrisma.story.findMany.mockResolvedValue(newsStories)
+
+    const res = await request(app).get('/api/sitemap-news.xml')
+
+    expect(res.text).toContain('<loc>https://impactoindigena.news/stories/consulta-mapuche</loc>')
+    expect(res.text).toContain('<news:publication_date>2026-07-13T09:00:00.000Z</news:publication_date>')
+    expect(res.text).toContain('<news:title>Consulta previa en territorio mapuche</news:title>')
+  })
+
+  it('escapes XML special characters in titles', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([
+      { slug: 's', title: 'Litio & agua: "derechos" <en juego>', datePublished: new Date('2026-07-13T09:00:00Z') },
+    ])
+
+    const res = await request(app).get('/api/sitemap-news.xml')
+
+    expect(res.text).toContain('Litio &amp; agua: &quot;derechos&quot; &lt;en juego&gt;')
+    expect(res.text).not.toContain('<en juego>')
+  })
+
+  it('queries only recent published stories with slug and title', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([])
+
+    await request(app).get('/api/sitemap-news.xml')
+
+    const call = mockPrisma.story.findMany.mock.calls[0][0]
+    expect(call.where.status).toBe('published')
+    expect(call.where.slug).toEqual({ not: null })
+    expect(call.where.title).toEqual({ not: null })
+    expect(call.where.datePublished.gte).toBeInstanceOf(Date)
+    expect(call.take).toBe(1000)
+    expect(call.orderBy).toEqual({ datePublished: 'desc' })
+  })
+
+  it('sets a shorter Cache-Control than the main sitemap', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([])
+
+    const res = await request(app).get('/api/sitemap-news.xml')
+
+    expect(res.headers['cache-control']).toMatch(/max-age=900/)
+  })
+
+  it('returns 500 on database error', async () => {
+    mockPrisma.story.findMany.mockRejectedValue(new Error('DB connection failed'))
+
+    const res = await request(app).get('/api/sitemap-news.xml')
+
+    expect(res.status).toBe(500)
+    expect(res.body.error).toBe('Failed to generate news sitemap')
   })
 })

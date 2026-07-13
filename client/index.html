@@ -12,6 +12,12 @@
     <meta name="theme-color" content="#0D5F3C" />
     <meta name="description" content="Noticias sobre pueblos indígenas desde dos perspectivas: el impacto que el mundo genera en sus territorios y derechos, y el impacto que ellos generan en el mundo con su conocimiento y liderazgo. Curadas con inteligencia artificial." />
     <meta name="author" content="Venancio Conuepan Mesias" />
+    <!-- Google Discover / News: max-image-preview:large lets Google show the
+         large image card (Discover is 100% visual). Without it, articles are
+         capped/invisible in Discover — the channel that drives ~84% of traffic
+         for comparable AI-native news sites. Pages that must not be indexed
+         (profile, search) override this with their own noindex robots meta. -->
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <title>Impacto Indígena - Noticias que importan a los pueblos indígenas</title>
     <!-- Open Graph / Social sharing (fallback - overridden by Helmet on each page) -->
     <meta property="og:type" content="website" />

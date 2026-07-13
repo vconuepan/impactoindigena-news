@@ -60,6 +60,15 @@ function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
+function escapeXml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
 function buildSitemapXml(
   baseUrl: string,
   stories: { slug: string; datePublished: Date | null }[],
@@ -136,6 +145,77 @@ router.get('/', async (_req, res) => {
   } catch (err) {
     log.error({ err }, 'failed to generate sitemap')
     res.status(500).json({ error: 'Failed to generate sitemap' })
+  }
+})
+
+// --- Google News sitemap -----------------------------------------------------
+// A separate sitemap listing only articles published in the last 48h, in the
+// Google News namespace. Required for inclusion in Google News / Discover's
+// news surfaces: Google only crawls the news sitemap for the freshness signal
+// and news-specific metadata (publication name, language, publish date, title).
+// Cached with a short TTL so newly published stories surface quickly.
+
+const NEWS_WINDOW_MS = 48 * 60 * 60 * 1000
+const NEWS_MAX_URLS = 1000 // Google News sitemap hard limit
+const NEWS_CACHE_MAX_AGE = 900 // 15 min — news must surface faster than the main sitemap
+
+export const newsSitemapCache = new TTLCache<string>(NEWS_CACHE_MAX_AGE * 1000)
+
+function buildNewsSitemapXml(
+  baseUrl: string,
+  stories: { slug: string; title: string; datePublished: Date }[],
+): string {
+  const urls = stories.map((story) => `  <url>
+    <loc>${baseUrl}/stories/${story.slug}</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Impacto Indígena</news:name>
+        <news:language>es</news:language>
+      </news:publication>
+      <news:publication_date>${story.datePublished.toISOString()}</news:publication_date>
+      <news:title>${escapeXml(story.title)}</news:title>
+    </news:news>
+  </url>`)
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+${urls.join('\n')}
+</urlset>
+`
+}
+
+export const newsSitemapRouter = Router()
+
+newsSitemapRouter.get('/', async (_req, res) => {
+  try {
+    const xml = await cached(newsSitemapCache, 'sitemap-news', async () => {
+      const since = new Date(Date.now() - NEWS_WINDOW_MS)
+      const stories = await prisma.story.findMany({
+        where: {
+          status: 'published',
+          slug: { not: null },
+          title: { not: null },
+          datePublished: { gte: since },
+        },
+        select: { slug: true, title: true, datePublished: true },
+        orderBy: { datePublished: 'desc' },
+        take: NEWS_MAX_URLS,
+      })
+
+      log.info({ storyCount: stories.length }, 'generated news sitemap')
+      return buildNewsSitemapXml(
+        getSiteUrl(),
+        stories as { slug: string; title: string; datePublished: Date }[],
+      )
+    })
+
+    res.set('Content-Type', 'application/xml; charset=utf-8')
+    res.set('Cache-Control', `public, max-age=${NEWS_CACHE_MAX_AGE}`)
+    res.send(xml)
+  } catch (err) {
+    log.error({ err }, 'failed to generate news sitemap')
+    res.status(500).json({ error: 'Failed to generate news sitemap' })
   }
 })
 

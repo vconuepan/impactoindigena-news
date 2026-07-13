@@ -21,6 +21,10 @@
       "rewrite": "/api/sitemap.xml"
     },
     {
+      "route": "/sitemap-news.xml",
+      "rewrite": "/api/sitemap-news.xml"
+    },
+    {
       "route": "/feed",
       "rewrite": "/api/feed"
     },
