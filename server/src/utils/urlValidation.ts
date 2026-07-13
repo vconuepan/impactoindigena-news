@@ -21,14 +21,14 @@ function ipv4Parts(ip: string): number[] | null {
 function isBlockedIpv4(ip: string): boolean {
   const p = ipv4Parts(ip)
   if (!p) return false
-  const [a, b] = p
+  const [a, b, c] = p
   if (a === 0) return true // 0.0.0.0/8 "this network"
   if (a === 10) return true // 10.0.0.0/8 private
   if (a === 127) return true // 127.0.0.0/8 loopback
   if (a === 100 && b >= 64 && b <= 127) return true // 100.64.0.0/10 CGNAT
   if (a === 169 && b === 254) return true // 169.254.0.0/16 link-local (cloud metadata)
   if (a === 172 && b >= 16 && b <= 31) return true // 172.16.0.0/12 private
-  if (a === 192 && b === 0) return true // 192.0.0.0/24 IETF protocol assignments
+  if (a === 192 && b === 0 && c === 0) return true // 192.0.0.0/24 IETF protocol assignments (NOT the whole /16 — 192.0.64.0/18 etc. is public)
   if (a === 192 && b === 168) return true // 192.168.0.0/16 private
   if (a === 198 && (b === 18 || b === 19)) return true // 198.18.0.0/15 benchmarking
   if (a >= 224) return true // 224.0.0.0/4 multicast + 240.0.0.0/4 reserved
@@ -46,8 +46,13 @@ function expandIpv6(input: string): number[] | null {
     const parts = ipv4Parts(v4[1])
     if (!parts) return null
     tail = [(parts[0] << 8) | parts[1], (parts[2] << 8) | parts[3]]
-    ip = ip.slice(0, ip.length - v4[1].length).replace(/:$/, '') || '::'
-    if (ip === '::') ip = ':' // preserve the leading `::` marker below
+    // Strip the IPv4 tail, preserving the group separator structure:
+    //   '::1.2.3.4'      -> '::'      (keep the zero-run marker)
+    //   '::ffff:1.2.3.4' -> '::ffff'  (drop the single trailing ':')
+    //   '64:ff9b::1.2.3.4' -> '64:ff9b::'
+    ip = ip.slice(0, ip.length - v4[1].length)
+    if (!ip.endsWith('::') && ip.endsWith(':')) ip = ip.slice(0, -1)
+    if (ip === '') return null
   }
 
   const halves = ip.split('::')
@@ -82,6 +87,11 @@ function expandIpv6(input: string): number[] | null {
   return groups
 }
 
+/** Render the IPv4 embedded in two 16-bit groups as a dotted string. */
+function v4FromGroups(hi: number, lo: number): string {
+  return `${hi >> 8}.${hi & 0xff}.${lo >> 8}.${lo & 0xff}`
+}
+
 function isBlockedIpv6(ip: string): boolean {
   const g = expandIpv6(ip)
   if (!g) return false
@@ -89,13 +99,21 @@ function isBlockedIpv6(ip: string): boolean {
   // IPv4-mapped (::ffff:a.b.c.d) and IPv4-compatible (::a.b.c.d) — check the embedded v4
   const allZeroHigh = g.slice(0, 5).every((x) => x === 0)
   if (allZeroHigh && (g[5] === 0xffff || g[5] === 0)) {
-    const a = g[6] >> 8
-    const b = g[6] & 0xff
-    const c = g[7] >> 8
-    const d = g[7] & 0xff
     // ::/128 unspecified and ::1 loopback are covered here too
     if (g[5] === 0 && g[6] === 0 && (g[7] === 0 || g[7] === 1)) return true
-    return isBlockedIpv4(`${a}.${b}.${c}.${d}`)
+    return isBlockedIpv4(v4FromGroups(g[6], g[7]))
+  }
+
+  // NAT64 well-known prefix 64:ff9b::/96 embeds an IPv4 in the last 32 bits,
+  // so 64:ff9b::169.254.169.254 reaches cloud metadata via IPv6.
+  if (g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0) {
+    return isBlockedIpv4(v4FromGroups(g[6], g[7]))
+  }
+
+  // 6to4 2002::/16 embeds the IPv4 in groups 1-2 (2002:V4V4:V4V4::), so
+  // 2002:7f00:0001:: is 127.0.0.1.
+  if (g[0] === 0x2002) {
+    return isBlockedIpv4(v4FromGroups(g[1], g[2]))
   }
 
   if ((g[0] & 0xfe00) === 0xfc00) return true // fc00::/7 unique local

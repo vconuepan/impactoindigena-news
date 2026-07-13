@@ -1,10 +1,9 @@
 import Parser from 'rss-parser'
-import axios from 'axios'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
 import { withRetry } from '../lib/retry.js'
 import { normalizeUrl } from '../utils/urlNormalization.js'
-import { assertUrlAllowed, isAllowedUrl } from '../utils/urlValidation.js'
+import { safeAxiosGet } from '../lib/safeHttp.js'
 import { summarizeError } from '../utils/errors.js'
 import { crawlLimiter } from '../lib/crawlLimiter.js'
 import { SCRAPED_FEED_URLS as DISD_SCRAPED_URLS, scrapeDISD } from './disdScraper.js'
@@ -52,9 +51,6 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
   if (SCRAPED_FEED_URLS.has(feedUrl)) return scrapeDISD(feedUrl)
 
   try {
-    // SSRF guard: reject internal/private hosts before making the request (incl. DNS resolution)
-    await assertUrlAllowed(feedUrl)
-
     const headers: Record<string, string> = {
       // Mimic a real browser so sites that block generic bots (UN, OHCHR, etc.) respond correctly
       'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0; +https://impactoindigena.news)',
@@ -67,22 +63,17 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
       headers['If-Modified-Since'] = cacheHeaders.lastModified
     }
 
+    // safeAxiosGet applies the SSRF guard (assertUrlAllowed, with DNS) to the
+    // initial URL and to every redirect hop — closing the DNS-rebinding-via-
+    // redirect hole the synchronous beforeRedirect check left open. 304 (from
+    // the conditional GET above) is a non-redirect 3xx that must pass through.
     const response = await crawlLimiter.run(feedUrl, () =>
-      withRetry(() => axios.get(feedUrl, {
+      withRetry(() => safeAxiosGet(feedUrl, {
         timeout: config.crawl.httpTimeoutMs,
-        maxRedirects: 3,
         headers,
         responseType: 'text',
         maxContentLength: 5 * 1024 * 1024, // 5 MB cap to prevent OOM on huge responses
-        validateStatus: (status) => status === 200 || status === 304,
-        beforeRedirect: (options: Record<string, any>) => {
-          const redirectUrl = typeof options.href === 'string' ? options.href
-            : `${options.protocol}//${options.hostname}${options.path}`
-          if (!isAllowedUrl(redirectUrl)) {
-            throw new Error(`Blocked redirect to disallowed URL: ${redirectUrl}`)
-          }
-        },
-      }))
+      }, { maxRedirects: 3, isNonRedirect: (status) => status === 304 }))
     )
 
     if (response.status === 304) {
