@@ -111,9 +111,20 @@ router.get('/story-html', async (req, res) => {
       },
     })
 
-    if (!story || story.status !== 'published' || !shell) {
-      // Unknown/unpublished story: the React app renders its own not-found state.
-      sendShell(story ? 200 : 404)
+    if (!story || story.status !== 'published') {
+      // Unknown or unpublished (rejected/trashed/archived) story: return 404 so
+      // crawlers de-index it. Serving 200 here made Google flag de-published
+      // stories as Soft 404 (they returned 200 with the generic home shell).
+      // The React app still renders its own not-found state on the client.
+      sendShell(404)
+      return
+    }
+
+    if (!shell) {
+      // Story is live but the home shell fetch failed transiently. Don't 404 a
+      // published article over a transient upstream hiccup; serve the fallback
+      // with 200 so the client can still hydrate.
+      sendShell(200)
       return
     }
 
