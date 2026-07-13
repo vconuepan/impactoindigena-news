@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { isAllowedUrl, assertUrlAllowed } from './urlValidation.js'
+import { isAllowedUrl, assertUrlAllowed, isBlockedIp } from './urlValidation.js'
 
 const mockLookup = vi.hoisted(() => vi.fn())
 vi.mock('node:dns/promises', () => ({ lookup: mockLookup }))
@@ -137,5 +137,32 @@ describe('assertUrlAllowed', () => {
   it('does not resolve DNS for literal IP hosts', async () => {
     await expect(assertUrlAllowed('https://8.8.8.8/')).resolves.toBeUndefined()
     expect(mockLookup).not.toHaveBeenCalled()
+  })
+})
+
+describe('isBlockedIp — IPv4/IPv6 range fixes (review follow-up)', () => {
+  it('blocks 192.0.0.0/24 but NOT the rest of 192.0.0.0/16 (public)', () => {
+    expect(isBlockedIp('192.0.0.1')).toBe(true) // 192.0.0.0/24 IETF
+    expect(isBlockedIp('192.0.78.5')).toBe(false) // Automattic/WordPress.com (public)
+    expect(isBlockedIp('192.0.66.1')).toBe(false) // Gravatar (public)
+  })
+
+  it('blocks IPv4-compatible IPv6 (::a.b.c.d) — previously unparsed', () => {
+    expect(isBlockedIp('::127.0.0.1')).toBe(true)
+    expect(isBlockedIp('::ffff:127.0.0.1')).toBe(true) // IPv4-mapped (no regression)
+    expect(isBlockedIp('::1')).toBe(true) // loopback
+  })
+
+  it('blocks NAT64 (64:ff9b::/96) reaching metadata/loopback', () => {
+    expect(isBlockedIp('64:ff9b::169.254.169.254')).toBe(true) // cloud metadata via NAT64
+    expect(isBlockedIp('64:ff9b::7f00:1')).toBe(true) // 127.0.0.1 in hex form
+  })
+
+  it('blocks 6to4 (2002::/16) reaching loopback', () => {
+    expect(isBlockedIp('2002:7f00:0001::')).toBe(true) // embeds 127.0.0.1
+  })
+
+  it('still allows a genuinely public IPv6', () => {
+    expect(isBlockedIp('2606:4700:4700::1111')).toBe(false) // Cloudflare DNS
   })
 })

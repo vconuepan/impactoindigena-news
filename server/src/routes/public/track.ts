@@ -12,7 +12,10 @@ const ALLOWED_SOURCES = new Set(['newsletter', 'social', ''])
 // and a restricted character set. This bounds the distinct-path cardinality an
 // abuser can create (each distinct path is a new row), rejecting arbitrary
 // junk strings while still allowing real routes and story slugs.
-const VALID_PATH = /^\/[A-Za-z0-9\-_/.~%?&=]*$/
+// NOTE: query/hash are stripped before matching (see below), and the pattern
+// deliberately excludes ? & = so a query string can't reintroduce unbounded
+// cardinality even if stripping is ever bypassed.
+const VALID_PATH = /^\/[A-Za-z0-9\-_/.~%]*$/
 
 router.post('/', async (req, res) => {
   // Always respond immediately so the client isn't blocked
@@ -21,7 +24,9 @@ router.post('/', async (req, res) => {
   try {
     const { path, source } = req.body as { path?: unknown; source?: unknown }
     if (!path || typeof path !== 'string') return
-    const cleanPath = path.slice(0, 200)
+    // Strip query string and hash so /x?a=1 and /x?a=2 collapse to /x — otherwise
+    // an abuser mints unbounded distinct rows via the query string.
+    const cleanPath = path.split('?')[0].split('#')[0].slice(0, 200)
     // Reject malformed paths (must look like an in-app route)
     if (!VALID_PATH.test(cleanPath)) return
     // Ignore admin routes and API calls

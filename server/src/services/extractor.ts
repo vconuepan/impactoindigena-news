@@ -2,7 +2,8 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { Readability } from '@mozilla/readability'
 import { JSDOM } from 'jsdom'
-import { isAllowedUrl, assertUrlAllowed } from '../utils/urlValidation.js'
+import { assertUrlAllowed } from '../utils/urlValidation.js'
+import { safeAxiosGet } from '../lib/safeHttp.js'
 import { summarizeError } from '../utils/errors.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
@@ -118,21 +119,16 @@ const apiThrottle = new ApiThrottle(
 
 async function fetchPage(url: string): Promise<string | null> {
   try {
+    // safeAxiosGet applies the SSRF guard (assertUrlAllowed, with DNS) to the
+    // initial URL and every redirect hop, closing the DNS-rebinding-via-redirect
+    // hole that the synchronous beforeRedirect isAllowedUrl check left open.
     const response = await crawlLimiter.run(url, () =>
-      withRetry(() => axios.get(url, {
+      withRetry(() => safeAxiosGet(url, {
         timeout: config.crawl.httpTimeoutMs,
         headers: { 'User-Agent': USER_AGENT },
-        maxRedirects: 5,
         responseType: 'text',
         maxContentLength: 5 * 1024 * 1024, // 5 MB cap to prevent OOM on huge pages
-        beforeRedirect: (options: Record<string, any>) => {
-          const redirectUrl = typeof options.href === 'string' ? options.href
-            : `${options.protocol}//${options.hostname}${options.path}`
-          if (!isAllowedUrl(redirectUrl)) {
-            throw new Error(`Blocked redirect to disallowed URL: ${redirectUrl}`)
-          }
-        },
-      }))
+      }, { maxRedirects: 5 }))
     )
     return response.data
   } catch (err) {
