@@ -50,8 +50,19 @@ export async function uploadImageToR2(
 // much larger is likely not a hero photo and not worth storing.
 const MAX_REHOST_BYTES = 8_000_000
 
+export interface DownloadedImage {
+  buffer: Buffer
+  contentType: string
+  /** File extension inferred from the content type (no leading dot). */
+  ext: string
+}
+
 /**
- * Downloads an external image over an SSRF-safe channel and validates it.
+ * Downloads an external image (e.g. a source outlet's og:image) over an
+ * SSRF-safe channel, enforcing the size cap and confirming it is actually an
+ * image. Returns null on any failure. Shared by rehostExternalImage and the
+ * branded-card path so both apply the same fetch/validation rules and only
+ * download the bytes once.
  *
  * The image URL is attacker-influenced: it comes from parsing the og:image meta
  * tag out of a third-party source's HTML (see extract-og-image.ts), so a
@@ -59,32 +70,40 @@ const MAX_REHOST_BYTES = 8_000_000
  * metadata at 169.254.169.254, localhost, private ranges) to make the server
  * fetch it. `safeAxiosGet` runs `assertUrlAllowed` (DNS-resolving) on the
  * initial URL and on every redirect hop, closing that hole — the same guard the
- * crawler/extractor use. Returns the raw bytes + content-type, or null if the
- * download fails, is blocked, isn't an image, or exceeds the size cap.
+ * crawler/extractor use.
  */
-async function downloadExternalImage(
-  imageUrl: string,
-): Promise<{ buffer: Buffer; contentType: string } | null> {
-  const res = await safeAxiosGet(imageUrl, {
-    responseType: 'arraybuffer',
-    timeout: 10_000,
-    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0)' },
-    // Hard cap the response body; axios throws if the stream exceeds this.
-    maxContentLength: MAX_REHOST_BYTES,
-    maxBodyLength: MAX_REHOST_BYTES,
-  })
-
-  const contentType = (String(res.headers['content-type'] || '')).split(';')[0].trim()
-  if (!contentType.startsWith('image/')) {
-    log.warn({ imageUrl, contentType }, 'rehost: not an image')
+export async function downloadExternalImage(imageUrl: string): Promise<DownloadedImage | null> {
+  try {
+    const res = await safeAxiosGet(imageUrl, {
+      responseType: 'arraybuffer',
+      timeout: 10_000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0)' },
+      // Hard cap the response body; axios throws if the stream exceeds this.
+      maxContentLength: MAX_REHOST_BYTES,
+      maxBodyLength: MAX_REHOST_BYTES,
+    })
+    const contentType = (String(res.headers['content-type'] || '')).split(';')[0].trim()
+    if (!contentType.startsWith('image/')) {
+      log.warn({ imageUrl, contentType }, 'download: not an image')
+      return null
+    }
+    const buffer = Buffer.from(res.data)
+    if (buffer.length === 0 || buffer.length > MAX_REHOST_BYTES) {
+      log.warn({ imageUrl, size: buffer.length }, 'download: empty or oversized image')
+      return null
+    }
+    const ext = contentType.includes('png')
+      ? 'png'
+      : contentType.includes('webp')
+        ? 'webp'
+        : contentType.includes('gif')
+          ? 'gif'
+          : 'jpg'
+    return { buffer, contentType, ext }
+  } catch (err) {
+    log.warn({ err, imageUrl }, 'download: failed to fetch external image')
     return null
   }
-  const buffer = Buffer.from(res.data)
-  if (buffer.length === 0 || buffer.length > MAX_REHOST_BYTES) {
-    log.warn({ imageUrl, size: buffer.length }, 'rehost: empty or oversized image')
-    return null
-  }
-  return { buffer, contentType }
 }
 
 /**
@@ -94,20 +113,12 @@ async function downloadExternalImage(
  * back to the original URL so the story is never left imageless).
  */
 export async function rehostExternalImage(imageUrl: string, storyId: string): Promise<string | null> {
+  const dl = await downloadExternalImage(imageUrl)
+  if (!dl) return null
   try {
-    const downloaded = await downloadExternalImage(imageUrl)
-    if (!downloaded) return null
-    const { buffer, contentType } = downloaded
-    const ext = contentType.includes('png')
-      ? 'png'
-      : contentType.includes('webp')
-        ? 'webp'
-        : contentType.includes('gif')
-          ? 'gif'
-          : 'jpg'
-    return await uploadImageToR2(buffer, `oghero-${storyId}.${ext}`, contentType)
+    return await uploadImageToR2(dl.buffer, `oghero-${storyId}.${dl.ext}`, dl.contentType)
   } catch (err) {
-    log.warn({ err, imageUrl }, 'rehost: failed to rehost external image')
+    log.warn({ err, imageUrl }, 'rehost: failed to upload rehosted image')
     return null
   }
 }

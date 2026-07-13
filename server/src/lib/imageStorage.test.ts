@@ -35,7 +35,7 @@ vi.mock('../config.js', () => ({
   },
 }))
 
-const { rehostExternalImage } = await import('./imageStorage.js')
+const { rehostExternalImage, downloadExternalImage } = await import('./imageStorage.js')
 
 function imageResponse(contentType: string, bytes: number) {
   return {
@@ -108,5 +108,34 @@ describe('rehostExternalImage — SSRF-safe og:image download', () => {
     const url = await rehostExternalImage('https://source.example/og.webp', 'story-6')
 
     expect(url).toBe('https://cdn.example/social/oghero-story-6.webp')
+  })
+})
+
+// downloadExternalImage is the shared choke point (rehost + branded-card path in
+// storyCard.ts). The SSRF guard must live here so both callers are protected.
+describe('downloadExternalImage — shared SSRF-safe fetch', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('fetches through safeAxiosGet and returns bytes + inferred extension', async () => {
+    mockSafeAxiosGet.mockResolvedValue(imageResponse('image/png', 42))
+
+    const dl = await downloadExternalImage('https://source.example/og.png')
+
+    expect(mockSafeAxiosGet).toHaveBeenCalledWith(
+      'https://source.example/og.png',
+      expect.objectContaining({ responseType: 'arraybuffer', maxContentLength: 8_000_000 }),
+    )
+    expect(dl).toEqual({ buffer: expect.any(Buffer), contentType: 'image/png', ext: 'png' })
+    expect(dl?.buffer.length).toBe(42)
+  })
+
+  it('returns null when the guard blocks an internal address (SSRF attempt)', async () => {
+    mockSafeAxiosGet.mockRejectedValue(new Error('Blocked host resolving to private address'))
+
+    const dl = await downloadExternalImage('http://169.254.169.254/latest/meta-data/')
+
+    expect(dl).toBeNull()
   })
 })

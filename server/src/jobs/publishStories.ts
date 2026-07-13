@@ -3,7 +3,7 @@ import { getStoryIdsByStatus, bulkUpdateStatus } from '../services/story.js'
 import { translateStoriesBatch } from '../services/translation.js'
 import { fetchOgImage } from '../lib/extract-og-image.js'
 import { generateStoryImage } from '../lib/imageGen.js'
-import { rehostExternalImage } from '../lib/imageStorage.js'
+import { rehostOrComposeStoryImage } from '../lib/storyCard.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
 
@@ -68,9 +68,11 @@ export async function generateHeroImages(ids: string[]): Promise<void> {
     // Non-featured, or a featured story whose AI generation just failed.
     const ogImage = await fetchOgImage(story.sourceUrl).catch(() => null)
     if (ogImage) {
-      // Re-host on R2 so we don't hotlink the source. Fall back to the raw URL
-      // if the rehost fails, so the story still gets an image.
-      const rehosted = await rehostExternalImage(ogImage, story.id)
+      // Re-host on R2 so we don't hotlink the source. If the source image is
+      // smaller than Discover's 1200px minimum, a branded card is composed from
+      // it instead (zero AI cost). Fall back to the raw URL if both fail, so the
+      // story still gets an image.
+      const rehosted = await rehostOrComposeStoryImage(ogImage, story.id, story.title ?? story.sourceTitle)
       const finalUrl = rehosted ?? ogImage
       await prisma.story.update({ where: { id: story.id }, data: { imageUrl: finalUrl } })
       log.info(
