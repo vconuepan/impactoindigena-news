@@ -29,7 +29,7 @@ Write a short, informal editorial hook for Mastodon (max ${story.maxChars} chara
 - Write in a warm, conversational, slightly informal voice — like a knowledgeable friend pointing something out
 - Start with a hook or observation, then give the "why it matters" angle
 - A key number, quote, or concrete detail strengthens the hook
-- Hashtags are OK (1-2 relevant ones at the end) but not required
+- End with 2-3 hashtags for discovery — Mastodon surfaces posts by hashtag, so this is how readers who don't already follow the account find a post. Always include at least one of #PueblosIndígenas #Indigenous #DerechosIndígenas #Mapuche, plus 1-2 that fit this specific story (e.g. #Amazonía #Biodiversidad #CambioClimático #ConsultaPrevia)
 </CONSTRAINTS>
 
 <STORY>

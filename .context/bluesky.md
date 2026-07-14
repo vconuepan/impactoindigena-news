@@ -134,7 +134,7 @@ All under `/api/admin/bluesky/` (require auth):
 
 Two prompts in `server/src/prompts/bluesky.ts`:
 
-1. **`buildBlueskyPostPrompt`** — Generates a short editorial hook (not a summary). The LLM receives the story title, summary, and relevanceSummary as context, with instructions to write a "why you should care" angle. Max chars are dynamically calculated based on remaining space after title and metadata lines. Output: `blueskyPostTextSchema` (editorial text).
+1. **`buildBlueskyPostPrompt`** — Generates a short editorial hook (not a summary). The LLM receives the story title, summary, and relevanceSummary as context, with instructions to write a "why you should care" angle. Max chars are dynamically calculated based on remaining space after title and metadata lines. The hook ends with 2-3 discovery hashtags (auto-faceted by `RichText.detectFacets`); on Bluesky hashtags are how 0-follower accounts get reach. Output: `blueskyPostTextSchema` (editorial text).
 
 2. **`buildBlueskyPickBestPrompt`** — Picks the most engagement-worthy story from a set. Receives each candidate's summary and relevanceSummary (as "Why it matters") alongside metadata. Considers timeliness, emotional appeal, broad relevance, shareability, and uniqueness. Output: `blueskyPickBestSchema` (storyId + reasoning).
 

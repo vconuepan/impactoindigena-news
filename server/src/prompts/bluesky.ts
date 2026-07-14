@@ -19,8 +19,9 @@ Write a short, informal editorial hook for Bluesky (max ${story.maxChars} charac
 </GOAL>
 
 <CONSTRAINTS>
-- Max ${story.maxChars} characters (hard limit)
-- No URLs, links, hashtags, or @mentions
+- Max ${story.maxChars} characters (hard limit, hashtags included)
+- No URLs, links, or @mentions (the link appears in the card below your text)
+- End with 2-3 hashtags for discovery — on Bluesky, hashtags are how readers who don't already follow the account find a post. Always include at least one of #PueblosIndígenas #Indigenous #DerechosIndígenas #Mapuche, plus 1-2 that fit this specific story (e.g. #Amazonía #Biodiversidad #CambioClimático #ConsultaPrevia)
 - No clickbait phrases like "You won't believe" or "This changes everything"
 - Do NOT repeat the story title
 - Do NOT restate the article summary — readers already see it in the card
