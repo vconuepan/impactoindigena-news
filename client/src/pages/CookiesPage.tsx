@@ -26,6 +26,9 @@ export default function CookiesPage() {
         <h1 className="page-title">Política de Cookies</h1>
 
         <div className="prose max-w-none">
+          <p className="text-sm text-neutral-500 not-prose mb-6">
+            Versión 1.0 · vigente desde el 19 de julio de 2026.
+          </p>
           <h2 className="section-heading mt-8">Responsable</h2>
           <p>
             <strong>Fundación Coñuepan-Millaquir</strong>, RUT 65.191.983-5,
