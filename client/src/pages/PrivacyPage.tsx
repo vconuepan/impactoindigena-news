@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 2.3 · vigente desde el 19 de julio de 2026.
+            Versión 2.4 · vigente desde el 19 de julio de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -173,7 +173,7 @@ export default function PrivacyPage() {
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Microsoft Azure</td>
                   <td className="align-top py-2 pr-4">Hospedaje y base de datos</td>
-                  <td className="align-top py-2 pr-4">EE.&nbsp;UU.</td>
+                  <td className="align-top py-2 pr-4">Chile (Región Chile Central)</td>
                   <td className="align-top py-2">Toda la base, incluidos correos de suscriptores</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
@@ -219,11 +219,13 @@ export default function PrivacyPage() {
           {/* 7. Transferencias */}
           <h2 className="section-heading mt-10">Transferencias internacionales</h2>
           <p>
-            Parte de la infraestructura opera fuera de Chile, según la tabla
-            anterior: principalmente en <strong>EE.&nbsp;UU.</strong> (Microsoft
-            Azure: base de datos y servicios de IA; Cloudflare; Diffbot) y en la{" "}
-            <strong>Unión Europea</strong> (Brevo, la analítica y la generación de
-            imágenes en Suecia). Para los destinos respecto de los cuales no exista una
+            Nuestra base de datos y el hospedaje principal permanecen en{" "}
+            <strong>Chile</strong> (Microsoft Azure, Región Chile Central). Solo
+            algunos servicios auxiliares operan fuera de Chile, según la tabla
+            anterior: en <strong>EE.&nbsp;UU.</strong> los servicios de IA de
+            Azure OpenAI, Cloudflare (imágenes) y Diffbot (extracción); y en la{" "}
+            <strong>Unión Europea</strong> Brevo, la analítica y la generación de
+            imágenes en Suecia. Para los destinos respecto de los cuales no exista una
             declaración de nivel adecuado de protección, las transferencias se
             amparan en garantías idóneas, en particular las{" "}
             <strong>cláusulas contractuales tipo</strong> aprobadas por la
