@@ -12,8 +12,9 @@ import {
   EnvelopeIcon,
   MicrophoneIcon,
   ClockIcon,
-  UsersIcon,
   UserGroupIcon,
+  IdentificationIcon,
+  ShieldCheckIcon,
   ArrowRightStartOnRectangleIcon,
   Square3Stack3DIcon,
   ArrowTopRightOnSquareIcon,
@@ -22,63 +23,113 @@ import {
   WrenchScrewdriverIcon,
   EnvelopeOpenIcon,
   ChartBarIcon,
+  MegaphoneIcon,
+  StarIcon,
+  CameraIcon,
+  BriefcaseIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../lib/auth'
 import { adminApi } from '../lib/admin-api'
 import { useServerTime } from '../hooks/useJobs'
+import { useAdminTheme } from '../hooks/useAdminTheme'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { ToastProvider } from '../components/ui/Toast'
 import { BackgroundTaskProvider } from '../hooks/useBackgroundTasks'
 
-const navigation = [
-  { name: 'Dashboard', href: '/admin', icon: HomeIcon, end: true },
-  { name: 'Stories', href: '/admin/stories', icon: DocumentTextIcon },
-  { name: 'Clusters', href: '/admin/clusters', icon: Square3Stack3DIcon },
-  { name: 'Feeds', href: '/admin/feeds', icon: RssIcon },
-  { name: 'Issues', href: '/admin/issues', icon: TagIcon },
-  { name: 'Voces Indígenas', href: '/admin/editorials', icon: DocumentTextIcon },
-  { name: 'Newsletters', href: '/admin/newsletters', icon: EnvelopeIcon },
-  { name: 'Podcasts', href: '/admin/podcasts', icon: MicrophoneIcon },
-  { name: 'Instagram', href: '/admin/instagram', icon: GlobeAltIcon },
-  { name: 'LinkedIn', href: '/admin/linkedin', icon: GlobeAltIcon },
-  { name: 'Feedback', href: '/admin/feedback', icon: ChatBubbleLeftEllipsisIcon, badge: true },
-  { name: 'Jobs', href: '/admin/jobs', icon: ClockIcon },
-  { name: 'Users', href: '/admin/users', icon: UsersIcon },
-  { name: 'Miembros', href: '/admin/members', icon: UserGroupIcon },
-  { name: 'En Foco', href: '/admin/spotlights', icon: GlobeAltIcon },
-  { name: 'Incidencia', href: '/admin/agenda', icon: GlobeAltIcon },
-  { name: 'Comunidades', href: '/admin/communities', icon: GlobeAltIcon },
-  { name: 'Analytics', href: '/admin/analytics', icon: ChartBarIcon },
-  { name: 'Suscriptores', href: '/admin/subscribers', icon: EnvelopeOpenIcon },
-  { name: 'Mantenimiento', href: '/admin/maintenance', icon: WrenchScrewdriverIcon },
+interface NavItem {
+  name: string
+  href: string
+  icon: typeof HomeIcon
+  end?: boolean
+  badge?: boolean
+}
+
+// Grouped into task-based sections so 20 destinations stay scannable, each with
+// a distinct icon (no repeated glyphs), all labels in Spanish for consistency.
+const NAV_SECTIONS: { title?: string; items: NavItem[] }[] = [
+  {
+    items: [
+      { name: 'Panel', href: '/admin', icon: HomeIcon, end: true },
+    ],
+  },
+  {
+    title: 'Contenido',
+    items: [
+      { name: 'Noticias', href: '/admin/stories', icon: DocumentTextIcon },
+      { name: 'Grupos', href: '/admin/clusters', icon: Square3Stack3DIcon },
+      { name: 'Fuentes', href: '/admin/feeds', icon: RssIcon },
+      { name: 'Temas', href: '/admin/issues', icon: TagIcon },
+      { name: 'Voces Indígenas', href: '/admin/editorials', icon: MegaphoneIcon },
+      { name: 'En Foco', href: '/admin/spotlights', icon: StarIcon },
+      { name: 'Incidencia', href: '/admin/agenda', icon: GlobeAltIcon },
+    ],
+  },
+  {
+    title: 'Distribución',
+    items: [
+      { name: 'Boletines', href: '/admin/newsletters', icon: EnvelopeIcon },
+      { name: 'Podcasts', href: '/admin/podcasts', icon: MicrophoneIcon },
+      { name: 'Instagram', href: '/admin/instagram', icon: CameraIcon },
+      { name: 'LinkedIn', href: '/admin/linkedin', icon: BriefcaseIcon },
+    ],
+  },
+  {
+    title: 'Audiencia',
+    items: [
+      { name: 'Comunidades', href: '/admin/communities', icon: UserGroupIcon },
+      { name: 'Miembros', href: '/admin/members', icon: IdentificationIcon },
+      { name: 'Suscriptores', href: '/admin/subscribers', icon: EnvelopeOpenIcon },
+      { name: 'Comentarios', href: '/admin/feedback', icon: ChatBubbleLeftEllipsisIcon, badge: true },
+    ],
+  },
+  {
+    title: 'Sistema',
+    items: [
+      { name: 'Analítica', href: '/admin/analytics', icon: ChartBarIcon },
+      { name: 'Trabajos', href: '/admin/jobs', icon: ClockIcon },
+      { name: 'Usuarios', href: '/admin/users', icon: ShieldCheckIcon },
+      { name: 'Mantenimiento', href: '/admin/maintenance', icon: WrenchScrewdriverIcon },
+    ],
+  },
 ]
 
 function NavItems({ onClick, unreadFeedbackCount }: { onClick?: () => void; unreadFeedbackCount: number }) {
   return (
     <>
-      {navigation.map(item => (
-        <NavLink
-          key={item.name}
-          to={item.href}
-          end={item.end}
-          onClick={onClick}
-          className={({ isActive }) =>
-            `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
-            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500
-            ${isActive
-              ? 'bg-brand-50 text-brand-800'
-              : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
-            }`
-          }
-        >
-          <item.icon className="h-5 w-5 shrink-0" />
-          {item.name}
-          {item.badge && unreadFeedbackCount > 0 && (
-            <span className="ml-auto inline-flex items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold text-white min-w-[1.25rem]">
-              {unreadFeedbackCount > 99 ? '99+' : unreadFeedbackCount}
-            </span>
+      {NAV_SECTIONS.map((section, i) => (
+        <div key={section.title ?? '_top'} className={i > 0 ? 'mt-5' : ''}>
+          {section.title && (
+            <p className="px-3 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+              {section.title}
+            </p>
           )}
-        </NavLink>
+          <div className="space-y-0.5">
+            {section.items.map(item => (
+              <NavLink
+                key={item.name}
+                to={item.href}
+                end={item.end}
+                onClick={onClick}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500
+                  ${isActive
+                    ? 'bg-brand-50 text-brand-800'
+                    : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
+                  }`
+                }
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                {item.name}
+                {item.badge && unreadFeedbackCount > 0 && (
+                  <span className="ml-auto inline-flex items-center justify-center rounded-full bg-brand-600 px-1.5 py-0.5 text-[10px] font-bold text-white min-w-[1.25rem]">
+                    {unreadFeedbackCount > 99 ? '99+' : unreadFeedbackCount}
+                  </span>
+                )}
+              </NavLink>
+            ))}
+          </div>
+        </div>
       ))}
     </>
   )
@@ -112,7 +163,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       <div className="px-4 py-5 border-b border-neutral-200">
         <span className="text-lg font-bold text-neutral-900">Admin</span>
       </div>
-      <nav className="flex-1 space-y-1 px-3 py-4" aria-label="Admin navigation">
+      <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Admin navigation">
         <NavItems onClick={onNavigate} unreadFeedbackCount={unreadFeedbackCount} />
       </nav>
       <ServerClock />
@@ -124,8 +175,8 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 mb-1"
         >
           <ArrowTopRightOnSquareIcon className="h-5 w-5 shrink-0" />
-          View Website
-          <span className="sr-only">(opens in new tab)</span>
+          Ver sitio
+          <span className="sr-only">(se abre en una pestaña nueva)</span>
         </a>
         {user && (
           <div className="px-3 py-2 mb-1">
@@ -138,7 +189,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
         >
           <ArrowRightStartOnRectangleIcon className="h-5 w-5 shrink-0" />
-          Logout
+          Cerrar sesión
         </button>
       </div>
     </div>
@@ -148,6 +199,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 export default function AdminLayout() {
   const { isAuthenticated, isLoading, tryRestoreSession } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  useAdminTheme()
 
   // Try to restore session when accessing admin routes directly
   useEffect(() => {
