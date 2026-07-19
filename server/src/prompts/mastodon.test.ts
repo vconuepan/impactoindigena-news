@@ -45,8 +45,9 @@ describe('buildMastodonPostPrompt', () => {
     expect(prompt).toContain('Mastodon')
   })
 
-  it('allows hashtags in constraints', () => {
+  it('requires discovery hashtags in constraints', () => {
     const prompt = buildMastodonPostPrompt(baseStory)
-    expect(prompt).toContain('Hashtags are OK')
+    expect(prompt).toContain('hashtags for discovery')
+    expect(prompt).toContain('#PueblosIndígenas')
   })
 })

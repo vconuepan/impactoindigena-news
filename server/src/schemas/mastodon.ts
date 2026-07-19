@@ -8,8 +8,8 @@ export const mastodonPostTextSchema = z.object({
     'why this matters, what it means, or a conversational intro that hooks attention. ' +
     'Do NOT summarize the story or repeat the title. ' +
     'Do NOT include any URLs or links (they are added automatically). ' +
-    'Write in a warm, conversational voice like a knowledgeable friend. Avoid clickbait. ' +
-    'You may include 1-2 relevant hashtags at the end if they add value.'
+    'End with 2-3 relevant hashtags for discovery. ' +
+    'Write in a warm, conversational voice like a knowledgeable friend. Avoid clickbait.'
   ),
 })
 

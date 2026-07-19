@@ -152,7 +152,7 @@ All under `/api/admin/mastodon/` (require auth):
 
 One prompt in `server/src/prompts/mastodon.ts`:
 
-**`buildMastodonPostPrompt`** — Generates a short editorial hook for Mastodon. Similar to Bluesky but allows hashtags and targets Mastodon's higher character limit. The LLM receives the story title, summary, and relevanceSummary. Max chars are dynamically calculated based on remaining space. Output: `mastodonPostTextSchema` (editorial text).
+**`buildMastodonPostPrompt`** — Generates a short editorial hook for Mastodon. Similar to Bluesky and targets Mastodon's higher character limit. Requires 2-3 discovery hashtags at the end (Mastodon surfaces posts by hashtag, so this is how 0-follower accounts get reach). The LLM receives the story title, summary, and relevanceSummary. Max chars are dynamically calculated based on remaining space. Output: `mastodonPostTextSchema` (editorial text).
 
 Story picking reuses `pickBestStoryForSocial()` from the shared service, which uses the Bluesky pick-best prompt (criteria are universal).
 

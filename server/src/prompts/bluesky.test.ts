@@ -40,6 +40,13 @@ describe('buildBlueskyPostPrompt', () => {
     const prompt = buildBlueskyPostPrompt({ ...baseStory, title: 'A & B <C>' })
     expect(prompt).toContain('A &amp; B &lt;C&gt;')
   })
+
+  it('requires discovery hashtags (no longer forbids them)', () => {
+    const prompt = buildBlueskyPostPrompt(baseStory)
+    expect(prompt).toContain('hashtags for discovery')
+    expect(prompt).toContain('#PueblosIndígenas')
+    expect(prompt).not.toContain('links, hashtags, or @mentions')
+  })
 })
 
 describe('buildBlueskyPickBestPrompt', () => {
