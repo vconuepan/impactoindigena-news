@@ -26,6 +26,9 @@ export default function TermsPage() {
         <h1 className="page-title">Términos y Condiciones de Uso</h1>
 
         <div className="prose max-w-none">
+          <p className="text-sm text-neutral-500 not-prose mb-6">
+            Versión 1.0 · vigente desde el 19 de julio de 2026.
+          </p>
           <h2 className="section-heading mt-8">1. Aceptación</h2>
           <p>
             El uso de <strong>impactoindigena.news</strong> (el "Sitio") implica
