@@ -4,10 +4,12 @@ import { Helmet } from 'react-helmet-async'
 import { useAuth } from '../../lib/auth'
 import { Button } from '../../components/ui/Button'
 import { preloadAdminChunks } from '../../App'
+import { useAdminTheme } from '../../hooks/useAdminTheme'
 
 export default function LoginPage() {
   const { isAuthenticated, isLoading, login, tryRestoreSession } = useAuth()
   const navigate = useNavigate()
+  useAdminTheme()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Admin warm neutrals (DESIGN.md brand palette). The internal panel is built on
+   Tailwind's `neutral` classes; these variables remap that scale to a warm,
+   stone-based neutral so the admin feels like the same product as the warm
+   editorial site. Scoped to `.admin-warm` (added on <html> by the admin/login
+   surfaces via useAdminTheme), so it also reaches dialogs portaled to <body>.
+   The public site never sets `.admin-warm`, so it keeps the cool fallbacks. */
+.admin-warm {
+  --n-50: 250 250 249;
+  --n-100: 245 245 244;
+  --n-200: 231 229 228;
+  --n-300: 214 211 209;
+  --n-400: 168 162 158;
+  --n-500: 120 113 108;
+  --n-600: 87 83 78;
+  --n-700: 68 64 60;
+  --n-800: 41 37 36;
+  --n-900: 28 25 23;
+  --n-950: 12 10 9;
+}
+
 /* Hide scrollbar but keep scroll functionality */
 .scrollbar-hide {
   -ms-overflow-style: none;
