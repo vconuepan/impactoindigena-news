@@ -20,7 +20,7 @@ interface EditPanelProps {
 export function EditPanel({ open, onClose, title, loading, error, children }: EditPanelProps) {
   return (
     <Dialog open={open} onClose={onClose} className="relative z-40">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <div className="fixed inset-0 bg-neutral-900/30" aria-hidden="true" />
       <div className="fixed inset-y-0 right-0 flex max-w-full">
         <DialogPanel className="w-screen max-w-lg bg-white shadow-xl flex flex-col">
           <div className="flex items-center justify-between px-4 py-3 border-b border-neutral-200 shrink-0">

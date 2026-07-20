@@ -181,7 +181,7 @@ export default function AdminLayout() {
 
         {/* Mobile sidebar */}
         <Dialog open={mobileOpen} onClose={setMobileOpen} className="relative z-40 lg:hidden">
-          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          <div className="fixed inset-0 bg-neutral-900/30" aria-hidden="true" />
           <DialogPanel className="fixed inset-y-0 left-0 z-50 w-60 bg-white shadow-xl">
             <div className="absolute right-2 top-2">
               <button
