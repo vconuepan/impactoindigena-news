@@ -150,20 +150,29 @@ export default function AnalyticsPage() {
             <div className="bg-white rounded-lg border border-neutral-200 p-4">
               <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Origen del tráfico</p>
               <div className="flex gap-6 flex-wrap">
-                {data.bySource.map((s) => {
-                  const label =
-                    s.source === 'newsletter' ? '📧 Boletín'
-                    : s.source === 'social' ? '🔗 Social'
-                    : '🌐 Directo'
-                  const pct = data.total > 0 ? Math.round((s.count / data.total) * 100) : 0
-                  return (
-                    <div key={s.source} className="flex flex-col items-center gap-1">
-                      <span className="text-xs text-neutral-500">{label}</span>
-                      <span className="text-2xl font-bold text-neutral-900 tabular-nums">{s.count.toLocaleString('es-CL')}</span>
-                      <span className="text-xs text-neutral-400">{pct}%</span>
-                    </div>
-                  )
-                })}
+                {(() => {
+                  const SOURCE_LABELS: Record<string, string> = {
+                    newsletter: '📧 Boletín',
+                    social: '🔗 Social',
+                    search: '🔍 Búsqueda',
+                    referral: '↗ Referido',
+                    direct: '🌐 Directo',
+                  }
+                  // Percentages are over acquisition visits (internal navigation
+                  // is excluded server-side), so they sum to ~100%.
+                  const acqTotal = data.bySource.reduce((sum, x) => sum + x.count, 0)
+                  return data.bySource.map((s) => {
+                    const label = SOURCE_LABELS[s.source] ?? '🌐 Directo'
+                    const pct = acqTotal > 0 ? Math.round((s.count / acqTotal) * 100) : 0
+                    return (
+                      <div key={s.source} className="flex flex-col items-center gap-1">
+                        <span className="text-xs text-neutral-500">{label}</span>
+                        <span className="text-2xl font-bold text-neutral-900 tabular-nums">{s.count.toLocaleString('es-CL')}</span>
+                        <span className="text-xs text-neutral-400">{pct}%</span>
+                      </div>
+                    )
+                  })
+                })()}
               </div>
             </div>
           )}

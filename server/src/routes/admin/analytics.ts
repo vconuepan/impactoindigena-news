@@ -35,11 +35,13 @@ router.get('/', async (req, res) => {
       take: 50,
     }),
 
-    // Breakdown by traffic source — raw query so it compiles before db:generate
+    // Breakdown by traffic source — raw query so it compiles before db:generate.
+    // Excludes 'internal' (in-session SPA navigation isn't an acquisition source),
+    // so this reflects where visits actually came from.
     prisma.$queryRaw<Array<{ source: string; total: bigint }>>`
       SELECT source, SUM(count) AS total
       FROM page_views
-      WHERE date >= ${since}
+      WHERE date >= ${since} AND source <> 'internal'
       GROUP BY source
       ORDER BY total DESC
     `,

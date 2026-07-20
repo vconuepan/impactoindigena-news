@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 2.4 · vigente desde el 19 de julio de 2026.
+            Versión 2.5 · vigente desde el 19 de julio de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
             <li><strong>Acceso de miembros:</strong> tu correo, si inicias sesión con enlace mágico.</li>
             <li><strong>Membresía a comunidades:</strong> la(s) comunidad(es) a la(s) que te unes y tus preferencias de recepción del boletín de comunidad (digest).</li>
             <li><strong>Feedback:</strong> tu mensaje y, opcionalmente, tu correo; de la IP solo guardamos un hash no reversible.</li>
-            <li><strong>Métricas de uso:</strong> páginas vistas y fuente de tráfico, de forma agregada y sin identificación personal, mediante un proveedor de analítica sin cookies ni rastreo entre sitios (ver la tabla de encargados).</li>
+            <li><strong>Métricas de uso:</strong> páginas vistas y fuente de tráfico, de forma agregada y sin identificación personal, mediante analítica propia sin cookies (un contador en nuestra propia base de datos, sin proveedores de terceros).</li>
             <li><strong>Búsqueda:</strong> el texto que escribes se procesa con nuestro proveedor de IA para la búsqueda semántica; no se asocia a tu identidad ni se usa para entrenar modelos.</li>
           </ul>
           <p className="mt-3">
@@ -200,12 +200,6 @@ export default function PrivacyPage() {
                   <td className="align-top py-2 pr-4">EE.&nbsp;UU. / global</td>
                   <td className="align-top py-2">Imágenes editoriales (sin datos de lectores)</td>
                 </tr>
-                <tr className="border-b border-neutral-100">
-                  <td className="align-top py-2 pr-4">Simple Analytics</td>
-                  <td className="align-top py-2 pr-4">Analítica de audiencia, sin cookies ni rastreo entre sitios</td>
-                  <td className="align-top py-2 pr-4">Unión Europea (Países Bajos)</td>
-                  <td className="align-top py-2">Páginas vistas y fuente de tráfico, de forma agregada y sin identificación personal (sin cookies)</td>
-                </tr>
                 <tr>
                   <td className="align-top py-2 pr-4">Diffbot</td>
                   <td className="align-top py-2 pr-4">Extracción del texto de noticias de fuentes de acceso público</td>
@@ -224,8 +218,8 @@ export default function PrivacyPage() {
             algunos servicios auxiliares operan fuera de Chile, según la tabla
             anterior: en <strong>EE.&nbsp;UU.</strong> los servicios de IA de
             Azure OpenAI, Cloudflare (imágenes) y Diffbot (extracción); y en la{" "}
-            <strong>Unión Europea</strong> Brevo, la analítica y la generación de
-            imágenes en Suecia. Para los destinos respecto de los cuales no exista una
+            <strong>Unión Europea</strong> Brevo y la generación de imágenes en
+            Suecia. Para los destinos respecto de los cuales no exista una
             declaración de nivel adecuado de protección, las transferencias se
             amparan en garantías idóneas, en particular las{" "}
             <strong>cláusulas contractuales tipo</strong> aprobadas por la
