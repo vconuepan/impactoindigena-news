@@ -655,6 +655,9 @@ export const adminApi = {
         today: number
         yesterday: number
         uniquePages: number
+        uniqueVisitors: { today: number; yesterday: number; period: number }
+        byCountry: Array<{ country: string; count: number }>
+        byDevice: Array<{ device: string; count: number }>
         byDay: Array<{ date: string; count: number }>
         topPages: Array<{ path: string; count: number }>
         topStories: Array<{ path: string; count: number }>

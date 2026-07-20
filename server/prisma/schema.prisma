@@ -390,6 +390,23 @@ model PageView {
   @@map("page_views")
 }
 
+// One row per unique visitor per day. `visitorHash` is a non-reversible,
+// daily-rotating fingerprint (see lib/analyticsVisitor.ts) — no cookie, no
+// stored IP/UA, no cross-day correlation. Lets us count unique visitors/day and
+// aggregate country + device without identifying anyone. Written via raw SQL in
+// routes/public/track.ts (ON CONFLICT DO NOTHING) so it needs no client regen.
+model DailyVisitor {
+  id          String   @id @default(uuid())
+  date        DateTime // midnight UTC (day-level granularity)
+  visitorHash String   @map("visitor_hash") @db.VarChar(64)
+  country     String   @default("XX") @db.VarChar(2)
+  device      String   @default("desktop") @db.VarChar(16)
+
+  @@unique([date, visitorHash])
+  @@index([date])
+  @@map("daily_visitors")
+}
+
 // --- Subscription Tables ---
 
 model PendingSubscription {

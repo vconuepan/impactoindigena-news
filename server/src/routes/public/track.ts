@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
+import { deviceType, dailyVisitorHash, lookupCountry } from '../../lib/analyticsVisitor.js'
 
 const router = Router()
 
@@ -45,6 +46,25 @@ router.post('/', async (req, res) => {
       VALUES (gen_random_uuid(), ${cleanPath}, ${today}, ${cleanSource}, 1)
       ON CONFLICT (path, date, source) DO UPDATE SET count = page_views.count + 1
     `
+
+    // Record the visitor once per day (aggregate, privacy-preserving). The daily
+    // hash lets us count unique visitors without cookies or storing IP/UA; the
+    // first hit of the day also captures the visitor's country + device. ON
+    // CONFLICT DO NOTHING keeps it to one row per visitor per day. Fails silently
+    // if the table isn't migrated yet (deploy-before-migrate is safe).
+    const ip = req.ip
+    if (ip) {
+      const ua = req.headers['user-agent']
+      const dayStr = today.toISOString().slice(0, 10)
+      const hash = dailyVisitorHash(ip, ua, dayStr)
+      const country = await lookupCountry(ip)
+      const device = deviceType(ua)
+      await prisma.$executeRaw`
+        INSERT INTO daily_visitors (id, date, visitor_hash, country, device)
+        VALUES (gen_random_uuid(), ${today}, ${hash}, ${country}, ${device})
+        ON CONFLICT (date, visitor_hash) DO NOTHING
+      `
+    }
   } catch {
     // Silently ignore errors — analytics should never break the app
   }
