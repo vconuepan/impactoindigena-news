@@ -67,7 +67,7 @@ describe('DashboardPage', () => {
 
   it('renders the page title', () => {
     renderDashboard()
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
+    expect(screen.getByText('Panel')).toBeInTheDocument()
   })
 
   it('shows story stats after loading', async () => {

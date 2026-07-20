@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { PlayIcon } from '@heroicons/react/24/outline'
 import { useQuery } from '@tanstack/react-query'
@@ -15,23 +16,47 @@ import { ActionIconButton } from '../../components/ui/ActionIconButton'
 import { formatStatus, STATUS_VARIANTS, JOB_DISPLAY_NAMES, JOB_PIPELINE_ORDER } from '../../lib/constants'
 import { TimeWithRelative } from '../../components/admin/TimeWithRelative'
 
-function StatsGrid({ stats }: { stats: Record<string, number> }) {
+/**
+ * Compact metric tile. Flat 1px border (no drop shadow) to match the editorial
+ * restraint of the public site; a `brand` tone marks the outcome that matters
+ * (published stories, active communities) in the brand green.
+ */
+function StatTile({
+  label,
+  badge,
+  value,
+  tone = 'default',
+}: {
+  label?: string
+  badge?: ReactNode
+  value: number
+  tone?: 'default' | 'brand'
+}) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-      {STORY_STATUSES.map(status => (
-        <div key={status} className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-          <div className="flex items-center justify-between mb-1">
-            <Badge variant={STATUS_VARIANTS[status]}>{formatStatus(status)}</Badge>
-          </div>
-          <p className="text-2xl font-bold text-neutral-900">{stats[status] || 0}</p>
-        </div>
-      ))}
-      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-        <p className="text-xs font-medium text-neutral-500 mb-1">Total</p>
-        <p className="text-2xl font-bold text-neutral-900">
-          {Object.values(stats).reduce((sum, n) => sum + n, 0)}
-        </p>
+    <div className="rounded-lg border border-neutral-200 bg-white px-4 py-3">
+      <div className="mb-1 min-h-[1.25rem]">
+        {badge ?? <span className="text-xs font-medium text-neutral-500">{label}</span>}
       </div>
+      <p className={`text-xl font-bold tabular-nums ${tone === 'brand' ? 'text-brand-800' : 'text-neutral-900'}`}>
+        {value}
+      </p>
+    </div>
+  )
+}
+
+function StatsGrid({ stats }: { stats: Record<string, number> }) {
+  const total = Object.values(stats).reduce((sum, n) => sum + n, 0)
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+      {STORY_STATUSES.map(status => (
+        <StatTile
+          key={status}
+          badge={<Badge variant={STATUS_VARIANTS[status]}>{formatStatus(status)}</Badge>}
+          value={stats[status] || 0}
+          tone={status === 'published' ? 'brand' : 'default'}
+        />
+      ))}
+      <StatTile label="Total" value={total} />
     </div>
   )
 }
@@ -55,23 +80,11 @@ function CommunityStats() {
   const totalCommunities = (communitiesQuery.data ?? []).length
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-        <p className="text-xs font-medium text-neutral-500 mb-1">Usuarios</p>
-        <p className="text-2xl font-bold text-neutral-900">{summary?.totalUsers ?? 0}</p>
-      </div>
-      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-        <p className="text-xs font-medium text-neutral-500 mb-1">Membresías</p>
-        <p className="text-2xl font-bold text-neutral-900">{summary?.totalMemberships ?? 0}</p>
-      </div>
-      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-        <p className="text-xs font-medium text-neutral-500 mb-1">Comunidades activas</p>
-        <p className="text-2xl font-bold text-green-700">{activeCommunities}</p>
-      </div>
-      <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
-        <p className="text-xs font-medium text-neutral-500 mb-1">Comunidades totales</p>
-        <p className="text-2xl font-bold text-neutral-900">{totalCommunities}</p>
-      </div>
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      <StatTile label="Usuarios" value={summary?.totalUsers ?? 0} />
+      <StatTile label="Membresías" value={summary?.totalMemberships ?? 0} />
+      <StatTile label="Comunidades activas" value={activeCommunities} tone="brand" />
+      <StatTile label="Comunidades totales" value={totalCommunities} />
     </div>
   )
 }
@@ -218,18 +231,12 @@ export default function DashboardPage() {
   return (
     <>
       <Helmet>
-        <title>Dashboard — Admin — Impacto Indígena</title>
+        <title>Panel — Admin — Impacto Indígena</title>
       </Helmet>
 
-      <PageHeader title="Dashboard" description="Resumen de noticias y trabajos" />
+      <PageHeader title="Panel" description="Pipeline editorial y estado del sistema" />
 
-      {/* Community Stats */}
-      <section className="mb-8">
-        <h2 className="text-lg font-semibold text-neutral-900 mb-3">Comunidades y miembros</h2>
-        <CommunityStats />
-      </section>
-
-      {/* Story Stats */}
+      {/* Story pipeline — the primary editorial signal, shown first */}
       <section className="mb-8">
         <h2 className="text-lg font-semibold text-neutral-900 mb-3">Noticias por estado</h2>
         {statsQuery.isLoading && (
@@ -325,6 +332,12 @@ export default function DashboardPage() {
             </div>
           )}
         </Card>
+      </section>
+
+      {/* Community stats — secondary, shown last */}
+      <section className="mt-8">
+        <h2 className="text-lg font-semibold text-neutral-900 mb-3">Comunidades y miembros</h2>
+        <CommunityStats />
       </section>
     </>
   )
