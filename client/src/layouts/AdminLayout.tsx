@@ -5,28 +5,9 @@ import { useQuery } from '@tanstack/react-query'
 import {
   Bars3Icon,
   XMarkIcon,
-  HomeIcon,
-  DocumentTextIcon,
-  RssIcon,
-  TagIcon,
-  EnvelopeIcon,
-  MicrophoneIcon,
-  ClockIcon,
-  UserGroupIcon,
-  IdentificationIcon,
-  ShieldCheckIcon,
   ArrowRightStartOnRectangleIcon,
-  Square3Stack3DIcon,
   ArrowTopRightOnSquareIcon,
-  ChatBubbleLeftEllipsisIcon,
-  GlobeAltIcon,
-  WrenchScrewdriverIcon,
-  EnvelopeOpenIcon,
-  ChartBarIcon,
-  MegaphoneIcon,
-  StarIcon,
-  CameraIcon,
-  BriefcaseIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline'
 import { useAuth } from '../lib/auth'
 import { adminApi } from '../lib/admin-api'
@@ -35,63 +16,8 @@ import { useAdminTheme } from '../hooks/useAdminTheme'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 import { ToastProvider } from '../components/ui/Toast'
 import { BackgroundTaskProvider } from '../hooks/useBackgroundTasks'
-
-interface NavItem {
-  name: string
-  href: string
-  icon: typeof HomeIcon
-  end?: boolean
-  badge?: boolean
-}
-
-// Grouped into task-based sections so 20 destinations stay scannable, each with
-// a distinct icon (no repeated glyphs), all labels in Spanish for consistency.
-const NAV_SECTIONS: { title?: string; items: NavItem[] }[] = [
-  {
-    items: [
-      { name: 'Panel', href: '/admin', icon: HomeIcon, end: true },
-    ],
-  },
-  {
-    title: 'Contenido',
-    items: [
-      { name: 'Noticias', href: '/admin/stories', icon: DocumentTextIcon },
-      { name: 'Grupos', href: '/admin/clusters', icon: Square3Stack3DIcon },
-      { name: 'Fuentes', href: '/admin/feeds', icon: RssIcon },
-      { name: 'Temas', href: '/admin/issues', icon: TagIcon },
-      { name: 'Voces Indígenas', href: '/admin/editorials', icon: MegaphoneIcon },
-      { name: 'En Foco', href: '/admin/spotlights', icon: StarIcon },
-      { name: 'Incidencia', href: '/admin/agenda', icon: GlobeAltIcon },
-    ],
-  },
-  {
-    title: 'Distribución',
-    items: [
-      { name: 'Boletines', href: '/admin/newsletters', icon: EnvelopeIcon },
-      { name: 'Podcasts', href: '/admin/podcasts', icon: MicrophoneIcon },
-      { name: 'Instagram', href: '/admin/instagram', icon: CameraIcon },
-      { name: 'LinkedIn', href: '/admin/linkedin', icon: BriefcaseIcon },
-    ],
-  },
-  {
-    title: 'Audiencia',
-    items: [
-      { name: 'Comunidades', href: '/admin/communities', icon: UserGroupIcon },
-      { name: 'Miembros', href: '/admin/members', icon: IdentificationIcon },
-      { name: 'Suscriptores', href: '/admin/subscribers', icon: EnvelopeOpenIcon },
-      { name: 'Comentarios', href: '/admin/feedback', icon: ChatBubbleLeftEllipsisIcon, badge: true },
-    ],
-  },
-  {
-    title: 'Sistema',
-    items: [
-      { name: 'Analítica', href: '/admin/analytics', icon: ChartBarIcon },
-      { name: 'Trabajos', href: '/admin/jobs', icon: ClockIcon },
-      { name: 'Usuarios', href: '/admin/users', icon: ShieldCheckIcon },
-      { name: 'Mantenimiento', href: '/admin/maintenance', icon: WrenchScrewdriverIcon },
-    ],
-  },
-]
+import { NAV_SECTIONS } from '../config/admin-nav'
+import CommandPalette from '../components/admin/CommandPalette'
 
 function NavItems({ onClick, unreadFeedbackCount }: { onClick?: () => void; unreadFeedbackCount: number }) {
   return (
@@ -147,7 +73,7 @@ function ServerClock() {
   )
 }
 
-function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
+function Sidebar({ onNavigate, onSearch }: { onNavigate?: () => void; onSearch?: () => void }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const feedbackCountQuery = useQuery({
@@ -162,6 +88,16 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col">
       <div className="px-4 py-5 border-b border-neutral-200">
         <span className="text-lg font-bold text-neutral-900">Admin</span>
+      </div>
+      <div className="px-3 pt-3">
+        <button
+          onClick={onSearch}
+          className="flex w-full items-center gap-2 rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500 hover:bg-neutral-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+        >
+          <MagnifyingGlassIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>Buscar…</span>
+          <kbd className="ml-auto rounded border border-neutral-200 bg-white px-1.5 py-0.5 text-[10px] font-medium text-neutral-400">⌘K</kbd>
+        </button>
       </div>
       <nav className="flex-1 overflow-y-auto px-3 py-4" aria-label="Admin navigation">
         <NavItems onClick={onNavigate} unreadFeedbackCount={unreadFeedbackCount} />
@@ -199,12 +135,25 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 export default function AdminLayout() {
   const { isAuthenticated, isLoading, tryRestoreSession } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   useAdminTheme()
 
   // Try to restore session when accessing admin routes directly
   useEffect(() => {
     tryRestoreSession()
   }, [tryRestoreSession])
+
+  // ⌘K / Ctrl+K toggles the command palette from anywhere in the admin.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setPaletteOpen(prev => !prev)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   if (isLoading) {
     return (
@@ -223,9 +172,11 @@ export default function AdminLayout() {
     <ToastProvider>
     <BackgroundTaskProvider>
       <div className="flex h-screen bg-neutral-50">
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+
         {/* Desktop sidebar */}
         <aside className="hidden lg:flex lg:w-60 lg:flex-col lg:border-r lg:border-neutral-200 lg:bg-white">
-          <Sidebar />
+          <Sidebar onSearch={() => setPaletteOpen(true)} />
         </aside>
 
         {/* Mobile sidebar */}
@@ -241,7 +192,7 @@ export default function AdminLayout() {
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <Sidebar onNavigate={() => setMobileOpen(false)} />
+            <Sidebar onNavigate={() => setMobileOpen(false)} onSearch={() => { setMobileOpen(false); setPaletteOpen(true) }} />
           </DialogPanel>
         </Dialog>
 
