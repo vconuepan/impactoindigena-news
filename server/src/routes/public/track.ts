@@ -6,8 +6,9 @@ const router = Router()
 // POST /api/track
 // Lightweight page view counter — no cookies, no PII stored.
 // Increments a daily counter per path + traffic source.
-// source: "" (direct) | "newsletter" | "social"
-const ALLOWED_SOURCES = new Set(['newsletter', 'social', ''])
+// source: "" (direct) | "search" | "social" | "referral" | "newsletter" | "internal"
+// (classified client-side from the referrer / the ?_r tag; see usePageTracking)
+const ALLOWED_SOURCES = new Set(['newsletter', 'social', 'search', 'referral', 'internal', ''])
 // Accept only plausible in-app paths: must start with '/', reasonable length,
 // and a restricted character set. This bounds the distinct-path cardinality an
 // abuser can create (each distinct path is a new row), rejecting arbitrary

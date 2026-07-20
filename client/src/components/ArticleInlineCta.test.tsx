@@ -36,7 +36,6 @@ vi.mock('react-i18next', () => ({
 describe('ArticleInlineCta', () => {
   beforeEach(() => {
     mockSubscribe.mockReset()
-    window.sa_event = vi.fn()
   })
 
   it('renders an inline email field and submit button (no name field, no modal)', () => {
@@ -60,20 +59,7 @@ describe('ArticleInlineCta', () => {
     expect(mockSubscribe).toHaveBeenCalledWith({ email: 'lector@example.com', language: 'es' })
   })
 
-  it('fires the SimpleAnalytics event on successful subscribe', async () => {
-    mockSubscribe.mockResolvedValue({ success: true, message: 'ok' })
-    const user = userEvent.setup()
-
-    render(<ArticleInlineCta />)
-    await user.type(screen.getByPlaceholderText('tu@correo.com'), 'lector@example.com')
-    await user.click(screen.getByRole('button', { name: /suscribirse/i }))
-
-    await waitFor(() => {
-      expect(window.sa_event).toHaveBeenCalledWith('subscribe_article')
-    })
-  })
-
-  it('shows an error and does not fire analytics when the API reports failure', async () => {
+  it('shows an error when the API reports failure', async () => {
     mockSubscribe.mockResolvedValue({ success: false, message: 'bad' })
     const user = userEvent.setup()
 
@@ -84,7 +70,6 @@ describe('ArticleInlineCta', () => {
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent('Algo salió mal.')
     })
-    expect(window.sa_event).not.toHaveBeenCalled()
   })
 
   it('shows an error on network failure', async () => {

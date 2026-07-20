@@ -7,8 +7,7 @@ import { publicApi } from '../lib/api'
  * In-article newsletter capture. Unlike the modal-triggering button it replaces,
  * the email field lives inline in the reading flow — one field, no modal, no
  * extra click — which is the higher-converting pattern for capturing readers at
- * the end of a story. On success it fires a SimpleAnalytics event so in-article
- * signups can be measured against other subscribe surfaces.
+ * the end of a story. One field, no modal, no extra click.
  */
 export default function ArticleInlineCta() {
   const { t } = useTranslation()
@@ -27,7 +26,6 @@ export default function ArticleInlineCta() {
         return
       }
       setStatus('success')
-      if (typeof window.sa_event === 'function') window.sa_event('subscribe_article')
     } catch {
       setStatus('error')
     }
