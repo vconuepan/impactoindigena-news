@@ -34,7 +34,7 @@ export function CrawlUrlForm({ open, onClose }: CrawlUrlFormProps) {
 
   return (
     <Dialog open={open} onClose={onClose} className="relative z-50">
-      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      <div className="fixed inset-0 bg-neutral-900/30" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <DialogPanel className="mx-auto max-w-md w-full rounded-lg bg-white p-6 shadow-xl">
           <DialogTitle className="text-base font-semibold text-neutral-900 mb-4">

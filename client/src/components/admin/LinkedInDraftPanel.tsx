@@ -144,7 +144,7 @@ export function LinkedInDraftPanel({ open, onClose, draft, onPublish, onUpdate, 
 
     {zoomIndex !== null && draft?.slideUrls?.[zoomIndex] && (
       <div
-        className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4"
+        className="fixed inset-0 z-[100] bg-neutral-900/85 flex items-center justify-center p-4"
         onClick={() => setZoomIndex(null)}
         role="dialog"
         aria-modal="true"
