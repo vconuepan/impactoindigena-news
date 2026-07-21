@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 2.5 · vigente desde el 19 de julio de 2026.
+            Versión 2.6 · vigente desde el 20 de julio de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
             <li><strong>Acceso de miembros:</strong> tu correo, si inicias sesión con enlace mágico.</li>
             <li><strong>Membresía a comunidades:</strong> la(s) comunidad(es) a la(s) que te unes y tus preferencias de recepción del boletín de comunidad (digest).</li>
             <li><strong>Feedback:</strong> tu mensaje y, opcionalmente, tu correo; de la IP solo guardamos un hash no reversible.</li>
-            <li><strong>Métricas de uso:</strong> páginas vistas y fuente de tráfico, de forma agregada y sin identificación personal, mediante analítica propia sin cookies (un contador en nuestra propia base de datos, sin proveedores de terceros).</li>
+            <li><strong>Métricas de uso:</strong> páginas vistas, fuente de tráfico, país y tipo de dispositivo (móvil/escritorio), de forma agregada y sin identificación personal, mediante analítica propia sin cookies (un contador en nuestra propia base de datos, sin proveedores de terceros). Para estimar visitantes únicos por día y el país, procesamos tu dirección IP y tu navegador <strong>en el momento y de forma transitoria</strong>: no los almacenamos. Solo guardamos el país, la categoría de dispositivo y un identificador diario no reversible que cambia cada día, de modo que no permite seguirte entre días ni identificarte.</li>
             <li><strong>Búsqueda:</strong> el texto que escribes se procesa con nuestro proveedor de IA para la búsqueda semántica; no se asocia a tu identidad ni se usa para entrenar modelos.</li>
           </ul>
           <p className="mt-3">

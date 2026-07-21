@@ -20,6 +20,23 @@ function formatPath(path: string) {
   return path
 }
 
+const COUNTRY_NAMES: Record<string, string> = {
+  CL: 'Chile', US: 'Estados Unidos', MX: 'México', AR: 'Argentina', PE: 'Perú',
+  CO: 'Colombia', BR: 'Brasil', ES: 'España', EC: 'Ecuador', BO: 'Bolivia',
+  VE: 'Venezuela', GT: 'Guatemala', CA: 'Canadá', FR: 'Francia', DE: 'Alemania',
+  GB: 'Reino Unido', PY: 'Paraguay', UY: 'Uruguay', CR: 'Costa Rica', PA: 'Panamá',
+  XX: 'Desconocido',
+}
+function countryName(code: string) {
+  return COUNTRY_NAMES[code] ?? code
+}
+
+const DEVICE_LABELS: Record<string, string> = {
+  mobile: '📱 Móvil',
+  tablet: '📲 Tablet',
+  desktop: '💻 Escritorio',
+}
+
 function BarRow({ label, count, max, href }: { label: string; count: number; max: number; href?: string }) {
   const pct = max > 0 ? Math.max(2, Math.round((count / max) * 100)) : 0
   return (
@@ -130,6 +147,28 @@ export default function AnalyticsPage() {
             </div>
           </div>
 
+          {/* Unique visitors */}
+          <div className="bg-white rounded-lg border border-neutral-200 p-4">
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Visitantes únicos</p>
+            <div className="flex gap-8 flex-wrap">
+              <div className="flex flex-col">
+                <span className="text-xs text-neutral-500">Hoy</span>
+                <span className="text-2xl font-bold text-brand-800 tabular-nums">{data.uniqueVisitors.today.toLocaleString('es-CL')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-neutral-500">Ayer</span>
+                <span className="text-2xl font-bold text-neutral-700 tabular-nums">{data.uniqueVisitors.yesterday.toLocaleString('es-CL')}</span>
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs text-neutral-500">Últimos {period}d (suma diaria)</span>
+                <span className="text-2xl font-bold text-neutral-700 tabular-nums">{data.uniqueVisitors.period.toLocaleString('es-CL')}</span>
+              </div>
+            </div>
+            <p className="text-xs text-neutral-400 mt-3">
+              Cada visitante se cuenta una vez por día, sin cookies. La suma del período no equivale a personas distintas del mes.
+            </p>
+          </div>
+
           {/* Daily chart */}
           <Card title={`Vistas por día (últimos ${period} días)`}>
             {data.byDay.length > 0 ? (
@@ -174,6 +213,34 @@ export default function AnalyticsPage() {
                   })
                 })()}
               </div>
+            </div>
+          )}
+
+          {/* Country + device breakdown (by unique daily visitors) */}
+          {((data.byCountry && data.byCountry.length > 0) || (data.byDevice && data.byDevice.length > 0)) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card title="País (visitantes)">
+                {data.byCountry.length > 0 ? (
+                  <div className="space-y-0.5">
+                    {data.byCountry.map((c) => (
+                      <BarRow key={c.country} label={countryName(c.country)} count={c.count} max={data.byCountry[0]?.count ?? 1} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-400 py-4 text-center">Sin datos aún</p>
+                )}
+              </Card>
+              <Card title="Dispositivo (visitantes)">
+                {data.byDevice.length > 0 ? (
+                  <div className="space-y-0.5">
+                    {data.byDevice.map((d) => (
+                      <BarRow key={d.device} label={DEVICE_LABELS[d.device] ?? d.device} count={d.count} max={data.byDevice[0]?.count ?? 1} />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-neutral-400 py-4 text-center">Sin datos aún</p>
+                )}
+              </Card>
             </div>
           )}
 
