@@ -48,3 +48,24 @@ describe('extractTitleLabelSchema', () => {
     expect(result.success).toBe(true)
   })
 })
+
+describe('terminology guardrail in title guidance', () => {
+  // Regression: a published title turned "jóvenes… en La Araucanía" into
+  // "jóvenes araucanos" — a colonial exonym absent from the source. Both
+  // title-generating schemas must instruct the model against it.
+  it('assess relevanceTitle forbids "araucano" as demonym and unstated ethnicity', () => {
+    const desc = assessResultSchema.shape.relevanceTitle.description ?? ''
+    expect(desc).toContain('araucano')
+    expect(desc).toContain('exónimo colonial')
+    expect(desc).toContain('no atribuyas pertenencia étnica')
+    expect(desc).toContain('de La Araucanía')
+  })
+
+  it('extractTitleLabelSchema title carries the same rule', () => {
+    const desc = extractTitleLabelSchema.shape.title.description ?? ''
+    expect(desc).toContain('araucano')
+    expect(desc).toContain('exónimo colonial')
+    expect(desc).toContain('no atribuyas pertenencia étnica')
+    expect(desc).toContain('de La Araucanía')
+  })
+})

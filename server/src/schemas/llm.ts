@@ -127,7 +127,10 @@ export const assessResultSchema = z.object({
         "Una historia por titular. No repitas la etiqueta — usa ese espacio para decir algo nuevo. " +
         "Ninguna palabra o frase debe aparecer tanto en la etiqueta como en el título. " +
         "Sé concreto: nombra al actor, la acción o las consecuencias. Elimina frases vagas como 'podría afectar'. " +
-        "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado."
+        "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado. " +
+        "Terminología: no atribuyas pertenencia étnica que la fuente no afirme, y NUNCA uses 'araucano/a(s)' " +
+        "como gentilicio de personas (exónimo colonial): si la fuente dice mapuche, escribe 'mapuche'; " +
+        "si solo menciona la región, escribe 'de La Araucanía'."
     ),
   marketingBlurb: z
     .string()
@@ -204,7 +207,10 @@ export const extractTitleLabelSchema = z.object({
         "Una historia por titular. No repitas la etiqueta — usa ese espacio para decir algo nuevo. " +
         "Ninguna palabra o frase debe aparecer tanto en la etiqueta como en el título. " +
         "Sé concreto: nombra al actor, la acción o las consecuencias. Elimina frases vagas como 'podría afectar'. " +
-        "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado."
+        "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado. " +
+        "Terminología: no atribuyas pertenencia étnica que la fuente no afirme, y NUNCA uses 'araucano/a(s)' " +
+        "como gentilicio de personas (exónimo colonial): si la fuente dice mapuche, escribe 'mapuche'; " +
+        "si solo menciona la región, escribe 'de La Araucanía'."
     ),
 });
 
