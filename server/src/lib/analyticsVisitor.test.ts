@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deviceType, dailyVisitorHash } from './analyticsVisitor.js'
+import { deviceType, dailyVisitorHash, clientIpForAnalytics } from './analyticsVisitor.js'
 
 describe('deviceType', () => {
   it('detects mobile', () => {
@@ -37,5 +37,29 @@ describe('dailyVisitorHash', () => {
   })
   it('produces a 64-char hex sha256 digest', () => {
     expect(dailyVisitorHash('1.1.1.1', 'UA-x', day)).toMatch(/^[0-9a-f]{64}$/)
+  })
+})
+
+describe('clientIpForAnalytics', () => {
+  // Regression: behind the SWA linked-backend proxy, req.ip was the proxy's
+  // West Europe egress → every visitor recorded as country NL (prod, 23-jul).
+  it('takes the first X-Forwarded-For entry (original client)', () => {
+    expect(clientIpForAnalytics('190.20.30.40, 10.0.0.1', '10.0.0.1')).toBe('190.20.30.40')
+  })
+  it('strips an IPv4 port suffix (Azure SWA sends ip:port)', () => {
+    expect(clientIpForAnalytics('190.20.30.40:51840', '10.0.0.1')).toBe('190.20.30.40')
+  })
+  it('handles bracketed IPv6 with port', () => {
+    expect(clientIpForAnalytics('[2001:db8::1]:443', '10.0.0.1')).toBe('2001:db8::1')
+  })
+  it('keeps a bare IPv6 address intact', () => {
+    expect(clientIpForAnalytics('2001:db8::1', '10.0.0.1')).toBe('2001:db8::1')
+  })
+  it('falls back to req.ip when the header is missing or empty', () => {
+    expect(clientIpForAnalytics(undefined, '10.0.0.9')).toBe('10.0.0.9')
+    expect(clientIpForAnalytics('', '10.0.0.9')).toBe('10.0.0.9')
+  })
+  it('accepts the array form of the header', () => {
+    expect(clientIpForAnalytics(['190.20.30.40, 10.0.0.1'], '10.0.0.1')).toBe('190.20.30.40')
   })
 })

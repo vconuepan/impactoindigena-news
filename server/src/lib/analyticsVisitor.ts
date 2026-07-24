@@ -55,6 +55,30 @@ export function dailyVisitorHash(ip: string, ua: string | undefined | null, dayS
     .digest('hex')
 }
 
+/**
+ * Best client IP for ANALYTICS purposes. Behind the Azure Static Web App
+ * linked-backend proxy, req.ip resolves to the proxy's egress (West Europe →
+ * every visitor geolocated "NL", observed in production 23-jul-2026). The
+ * original client is the FIRST entry of X-Forwarded-For, which the SWA proxy
+ * appends as "ip" or "ip:port". Spoofable by a direct caller, which is fine
+ * here: this feeds aggregate analytics only — rate limiting keeps using req.ip.
+ */
+export function clientIpForAnalytics(
+  xff: string | string[] | undefined,
+  fallback: string | undefined,
+): string | undefined {
+  const raw = Array.isArray(xff) ? xff[0] : xff
+  const first = raw?.split(',')[0]?.trim()
+  if (!first) return fallback
+  // "[2001:db8::1]:443" → "2001:db8::1"
+  const bracketed = first.match(/^\[([^\]]+)\]/)
+  if (bracketed) return bracketed[1]
+  // "203.0.113.7:51840" → "203.0.113.7" (lone colon = IPv4:port; multiple = bare IPv6)
+  const colons = (first.match(/:/g) || []).length
+  if (colons === 1) return first.split(':')[0]
+  return first
+}
+
 /** 2-letter country code from an IP (aggregate geo). 'XX' when unknown/private. */
 export async function lookupCountry(ip: string): Promise<string> {
   try {
