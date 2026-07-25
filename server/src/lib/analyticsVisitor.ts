@@ -9,6 +9,46 @@ import geoip from 'fast-geoip'
  * or survives across days.
  */
 
+// Self-declared automated clients. Analytics should count readers, not crawlers:
+// Googlebot renders JS (mobile-first UA), so it fires the same /api/track beacon a
+// human does — on 23-jul-2026 that inflated a day to ~180 "visitors" spread flat
+// across dozens of deep stories, which is a sitemap sweep, not an audience. This
+// is the same first line of defense Plausible/Fathom use: trust the UA token that
+// well-behaved bots publish. Bots that lie are not detectable here, and that is
+// an accepted limit — aggregate analytics, not security.
+const BOT_TOKENS = [
+  // Generic self-identification
+  'bot', 'crawler', 'spider', 'crawling', 'slurp',
+  // Search engines / SEO suites
+  'googlebot', 'adsbot', 'mediapartners', 'apis-google', 'feedfetcher',
+  'google-inspectiontool', 'storebot-google', 'bingpreview', 'yandex',
+  'baiduspider', 'applebot', 'semrush', 'ahrefs', 'mj12', 'dotbot', 'petal',
+  'dataforseo', 'screaming frog', 'sitebulb', 'serpstat',
+  // AI / LLM fetchers
+  'gptbot', 'chatgpt-user', 'oai-searchbot', 'claudebot', 'claude-web',
+  'anthropic-ai', 'perplexity', 'ccbot', 'bytespider', 'amazonbot',
+  'meta-externalagent', 'applebot-extended',
+  // Link-preview unfurlers (chat/social)
+  'facebookexternalhit', 'facebot', 'twitterbot', 'slackbot', 'discordbot',
+  'telegrambot', 'whatsapp', 'linkedinbot', 'embedly', 'redditbot', 'skypeuripreview',
+  // Headless browsers, monitoring, scripted HTTP clients
+  'headlesschrome', 'phantomjs', 'puppeteer', 'playwright', 'chrome-lighthouse',
+  'pagespeed', 'gtmetrix', 'pingdom', 'uptimerobot', 'python-requests', 'scrapy',
+  'curl/', 'wget', 'go-http-client', 'okhttp', 'java/', 'node-fetch', 'axios/',
+  'libwww-perl', 'httpclient', 'guzzle',
+]
+
+/**
+ * True when the User-Agent self-identifies as an automated client. Used to skip
+ * recording entirely, so page views and unique visitors reflect people.
+ * A missing UA also counts as a bot: every real browser sends one.
+ */
+export function isBot(ua: string | undefined | null): boolean {
+  if (!ua) return true
+  const s = ua.toLowerCase()
+  return BOT_TOKENS.some((t) => s.includes(t))
+}
+
 /** Coarse device category from a User-Agent. Kept deliberately coarse (no fine
  *  fingerprinting): mobile / tablet / desktop. */
 export function deviceType(ua: string | undefined | null): 'mobile' | 'tablet' | 'desktop' {

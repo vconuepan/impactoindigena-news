@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
-import { deviceType, dailyVisitorHash, lookupCountry, clientIpForAnalytics } from '../../lib/analyticsVisitor.js'
+import { deviceType, dailyVisitorHash, lookupCountry, clientIpForAnalytics, isBot } from '../../lib/analyticsVisitor.js'
 
 const router = Router()
 
@@ -24,6 +24,11 @@ router.post('/', async (req, res) => {
   res.json({ ok: true })
 
   try {
+    // Skip self-declared crawlers before counting anything: Googlebot renders JS
+    // and fires this beacon like a browser, so without this the figures measure
+    // indexing sweeps instead of readers.
+    if (isBot(req.headers['user-agent'])) return
+
     const { path, source } = req.body as { path?: unknown; source?: unknown }
     if (!path || typeof path !== 'string') return
     // Strip query string and hash so /x?a=1 and /x?a=2 collapse to /x — otherwise

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { deviceType, dailyVisitorHash, clientIpForAnalytics } from './analyticsVisitor.js'
+import { deviceType, dailyVisitorHash, clientIpForAnalytics, isBot } from './analyticsVisitor.js'
 
 describe('deviceType', () => {
   it('detects mobile', () => {
@@ -37,6 +37,45 @@ describe('dailyVisitorHash', () => {
   })
   it('produces a 64-char hex sha256 digest', () => {
     expect(dailyVisitorHash('1.1.1.1', 'UA-x', day)).toMatch(/^[0-9a-f]{64}$/)
+  })
+})
+
+describe('isBot', () => {
+  // Regression: Googlebot renders JS and fired /api/track like a browser, so a
+  // sitemap sweep read as ~180 "visitors" on 23-jul-2026.
+  it('flags the crawlers that actually execute JS', () => {
+    expect(isBot('Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)')).toBe(true)
+    expect(isBot('Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)')).toBe(true)
+    expect(isBot('Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/126.0.0.0 Safari/537.36')).toBe(true)
+    expect(isBot('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36 Chrome-Lighthouse')).toBe(true)
+  })
+
+  it('flags AI fetchers, unfurlers and scripted clients', () => {
+    expect(isBot('Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot')).toBe(true)
+    expect(isBot('facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)')).toBe(true)
+    expect(isBot('WhatsApp/2.23.20.0')).toBe(true)
+    expect(isBot('curl/8.4.0')).toBe(true)
+    expect(isBot('python-requests/2.31.0')).toBe(true)
+  })
+
+  it('treats a missing User-Agent as a bot (every real browser sends one)', () => {
+    expect(isBot(undefined)).toBe(true)
+    expect(isBot('')).toBe(true)
+  })
+
+  it('does NOT flag real browsers — the false-positive guard', () => {
+    // Desktop Chrome, macOS Safari, Windows Firefox, iPhone Safari, Android Chrome,
+    // Edge, and the Facebook in-app browser (how readers arrive from FB on mobile).
+    const humans = [
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:127.0) Gecko/20100101 Firefox/127.0',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBDV/iPhone15,2;FBMD/iPhone;FBSN/iOS;FBSV/17.5;FBSS/3;FBID/phone;FBLC/es_LA;FBOP/5]',
+    ]
+    for (const ua of humans) expect(isBot(ua), ua.slice(0, 60)).toBe(false)
   })
 })
 
