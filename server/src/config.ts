@@ -112,6 +112,14 @@ export const config = {
   sitemap: {
     cacheMaxAge: parseInt(process.env.SITEMAP_CACHE_MAX_AGE || "3600", 10),
   },
+  analytics: {
+    // Días que se conservan las filas de daily_visitors antes de suprimirlas
+    // (job cleanup_analytics). 12 meses permite comparar año contra año y
+    // satisface el principio de proporcionalidad de la Ley 21.719 (art. 3 letra
+    // c): conservar solo el tiempo necesario para el fin del tratamiento. Debe
+    // coincidir con el plazo declarado en la Política de Privacidad.
+    visitorRetentionDays: parseInt(process.env.ANALYTICS_VISITOR_RETENTION_DAYS || "365", 10),
+  },
   rateLimit: {
     publicWindowMs: parseInt(
       process.env.RATE_LIMIT_PUBLIC_WINDOW_MS || String(15 * 60 * 1000),

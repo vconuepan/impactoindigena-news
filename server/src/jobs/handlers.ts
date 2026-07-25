@@ -19,6 +19,7 @@ import { runGenerateEditorial } from './generateEditorial.js'
 import { runGoogleNewsDiscover } from './googleNewsDiscover.js'
 import { runCleanupAuthData } from './cleanupAuthData.js'
 import { runCleanupSubscriptions } from './cleanupSubscriptions.js'
+import { runCleanupAnalytics } from './cleanupAnalytics.js'
 import { runIngestAgenda } from './ingestAgenda.js'
 import { runAgendaWeeklyDigest } from './agendaWeeklyDigest.js'
 
@@ -44,6 +45,7 @@ export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   google_news_discover: runGoogleNewsDiscover,
   cleanup_auth_data: runCleanupAuthData,
   cleanup_subscriptions: runCleanupSubscriptions,
+  cleanup_analytics: runCleanupAnalytics,
   ingest_agenda: runIngestAgenda,
   agenda_weekly_digest: runAgendaWeeklyDigest,
 }
