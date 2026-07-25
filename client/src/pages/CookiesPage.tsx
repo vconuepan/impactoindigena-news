@@ -27,7 +27,7 @@ export default function CookiesPage() {
 
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 1.0 · vigente desde el 19 de julio de 2026.
+            Versión 1.1 · vigente desde el 25 de julio de 2026.
           </p>
           <h2 className="section-heading mt-8">Responsable</h2>
           <p>
@@ -138,9 +138,18 @@ export default function CookiesPage() {
 
           <h2 className="section-heading mt-8">Analítica sin cookies</h2>
           <p>
-            Usamos Simple Analytics, que mide audiencia de forma agregada, sin
-            cookies y sin datos personales. No usamos Google Analytics ni
-            píxeles publicitarios.
+            Medimos la audiencia con un contador propio, alojado en nuestra
+            propia base de datos: <strong>sin cookies, sin proveedores de
+            analítica de terceros y sin perfilar a los lectores</strong>. Solo
+            guardamos datos agregados: páginas vistas, origen del tráfico, país,
+            categoría de dispositivo (móvil o escritorio) y un identificador
+            diario no reversible que cambia cada día y no permite seguirte entre
+            días. No usamos Google Analytics ni píxeles publicitarios. El detalle
+            está en la{" "}
+            <Link to="/privacy" className="text-brand-800 hover:text-brand-700">
+              Política de Privacidad
+            </Link>
+            .
           </p>
 
           <h2 className="section-heading mt-8">Cómo gestionar cookies</h2>

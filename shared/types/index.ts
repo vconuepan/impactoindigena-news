@@ -59,6 +59,7 @@ export type JobName =
   | 'google_news_discover'
   | 'cleanup_auth_data'
   | 'cleanup_subscriptions'
+  | 'cleanup_analytics'
 
 export type JobStatus = 'idle' | 'running' | 'failed'
 

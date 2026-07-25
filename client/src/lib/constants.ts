@@ -40,6 +40,7 @@ export const JOB_DISPLAY_NAMES: Record<JobName, string> = {
   google_news_discover: 'Google News Discover',
   cleanup_auth_data: 'Cleanup Auth Data',
   cleanup_subscriptions: 'Cleanup Subscriptions',
+  cleanup_analytics: 'Cleanup Analytics',
 }
 
 /** Pipeline execution order for sorting jobs in the UI. */
