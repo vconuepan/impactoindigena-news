@@ -21,6 +21,28 @@
 -- id usa gen_random_uuid() porque job_runs.id no tiene default en la DB.
 -- Seguro de correr varias veces (ON CONFLICT DO NOTHING).
 
+-- La tabla `social_tokens` la crea la migración 20260730000000 (Instagram), pero
+-- la reautorización de LinkedIn también escribe ahí: sin la tabla, el flujo de
+-- OAuth canjea el código y muere al guardar, perdiendo el token nuevo. Se repite
+-- acá con IF NOT EXISTS para que esta migración funcione en cualquier orden y no
+-- dependa de que la otra haya entrado. Es un no-op si ya existe.
+
+CREATE TABLE IF NOT EXISTS "social_tokens" (
+  "id"            TEXT NOT NULL,
+  "provider"      TEXT NOT NULL,
+  "access_token"  TEXT NOT NULL,
+  "expires_at"    TIMESTAMP(3),
+  "refreshed_at"  TIMESTAMP(3),
+  "last_error"    TEXT,
+  "created_at"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updated_at"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  CONSTRAINT "social_tokens_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "social_tokens_provider_key"
+  ON "social_tokens" ("provider");
+
 INSERT INTO "job_runs" ("id", "job_name", "cron_expression", "enabled", "created_at", "updated_at")
 VALUES
   (gen_random_uuid()::text, 'linkedin_check_token', '0 6 * * *', true, NOW(), NOW())
