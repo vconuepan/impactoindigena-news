@@ -314,12 +314,37 @@ export const config = {
   linkedin: {
     accessToken: process.env.LINKEDIN_ACCESS_TOKEN || '',
     authorUrn: process.env.LINKEDIN_AUTHOR_URN || '',
+    // Credenciales de la app, necesarias para introspeccionar el token y para
+    // reautorizar. Ya existían en App Service sin que el código las leyera.
+    clientId: process.env.LINKEDIN_CLIENT_ID || '',
+    clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
+    // Debe coincidir EXACTA con la URL registrada en la app de LinkedIn, o el
+    // intercambio del código falla. Pasa por el proxy de Static Web Apps.
+    redirectUri: process.env.LINKEDIN_REDIRECT_URI
+      || 'https://impactoindigena.news/api/linkedin/oauth/callback',
     autoPost: {
       enabled: process.env.LINKEDIN_AUTO_POST_ENABLED === 'true',
     },
     metrics: {
       maxAgeDays: parseInt(process.env.LINKEDIN_METRICS_MAX_AGE_DAYS || '30', 10),
     },
+    tokenCheck: {
+      // A diferencia de Instagram, un token de LinkedIn NO se puede renovar sin
+      // intervención humana (los refresh tokens programáticos son solo para
+      // partners aprobados del Marketing Developer Platform). Así que el umbral
+      // no dispara una renovación: dispara un aviso para que alguien reautorice.
+      // El job insiste a diario dentro de la ventana; reautorizar lo silencia.
+      thresholdDays: parseInt(process.env.LINKEDIN_TOKEN_WARN_THRESHOLD_DAYS || '7', 10),
+      // Vida nominal de un token de miembro. Solo se usa para estimar expires_at
+      // cuando la respuesta del intercambio no trae expires_in.
+      lifetimeDays: parseInt(process.env.LINKEDIN_TOKEN_LIFETIME_DAYS || '60', 10),
+    },
+    // Permisos que se piden al reautorizar. Solo `w_member_social`, que es el
+    // único que el sistema usa (publicar). Nada acá lee el perfil: la
+    // introspección autentica con las credenciales de la app, no con el token.
+    // Importa además porque pedir un scope que la app no tenga aprobado hace
+    // fallar la autorización completa, no solo esa parte.
+    scopes: (process.env.LINKEDIN_OAUTH_SCOPES || 'w_member_social').split(' '),
   },
   podcast: {
     autoGenerate: {

@@ -117,6 +117,25 @@ export interface FeedStatusItem {
   _count: { stories: number }
 }
 
+/**
+ * Salud del token de LinkedIn según la introspección de LinkedIn. Nunca incluye
+ * el token: solo si sirve, hasta cuándo y con qué permisos.
+ */
+export interface LinkedInTokenStatus {
+  configured: boolean
+  /** Falso cuando faltan las credenciales de la app (no se puede reautorizar). */
+  canReauthorize: boolean
+  active?: boolean
+  status?: string
+  expiresAt?: string | null
+  daysLeft?: number | null
+  scopes?: string[]
+  authType?: string
+  source?: 'db' | 'env'
+  warnThresholdDays?: number
+  error?: string
+}
+
 export interface AdminSpotlight {
   id:        string
   label:     string
@@ -570,6 +589,9 @@ export const adminApi = {
       request<void>(`/linkedin/posts/${id}`, { method: 'DELETE' }),
     refreshMetrics: () =>
       request<{ success: boolean }>('/linkedin/metrics/refresh', { method: 'POST' }),
+    tokenStatus: () => request<LinkedInTokenStatus>('/linkedin/token/status'),
+    startAuthorization: () =>
+      request<{ url: string }>('/linkedin/token/authorize', { method: 'POST' }),
   },
 
   // Feedback

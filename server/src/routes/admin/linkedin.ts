@@ -1,8 +1,16 @@
 import { Router } from 'express'
+import { config } from '../../config.js'
 import { createLogger } from '../../lib/logger.js'
 import { validateBody, validateQuery } from '../../middleware/validate.js'
 import { expensiveOpLimiter } from '../../middleware/rateLimit.js'
 import * as linkedinService from '../../services/linkedin.js'
+import {
+  buildAuthorizationUrl,
+  introspectToken,
+  isLinkedInConfigured,
+  isLinkedInOAuthConfigured,
+} from '../../lib/linkedin.js'
+import { createOAuthState } from '../../lib/linkedinOAuthState.js'
 import {
   generateLinkedInDraftBodySchema,
   updateLinkedInDraftBodySchema,
@@ -118,6 +126,72 @@ router.post('/metrics/refresh', expensiveOpLimiter, async (_req, res) => {
   } catch (err) {
     log.error({ err }, 'failed to refresh LinkedIn metrics')
     res.status(500).json({ error: 'Failed to refresh metrics' })
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Token — estado y reautorización
+// ---------------------------------------------------------------------------
+
+/**
+ * Estado del token según LinkedIn. Nunca devuelve el token, solo su salud:
+ * si está activo, cuándo expira y con qué permisos.
+ */
+router.get('/token/status', async (_req, res) => {
+  if (!isLinkedInConfigured()) {
+    res.json({ configured: false, canReauthorize: isLinkedInOAuthConfigured() })
+    return
+  }
+
+  if (!isLinkedInOAuthConfigured()) {
+    // Sin credenciales de app no se puede introspeccionar ni reautorizar.
+    res.json({
+      configured: true,
+      canReauthorize: false,
+      error: 'LINKEDIN_CLIENT_ID / LINKEDIN_CLIENT_SECRET not configured',
+    })
+    return
+  }
+
+  try {
+    const status = await introspectToken()
+    res.json({
+      configured: true,
+      canReauthorize: true,
+      active: status.active,
+      status: status.status,
+      expiresAt: status.expiresAt,
+      daysLeft: status.daysLeft,
+      scopes: status.scopes,
+      authType: status.authType,
+      source: status.source,
+      warnThresholdDays: config.linkedin.tokenCheck.thresholdDays,
+    })
+  } catch (err) {
+    log.error({ err }, 'failed to introspect LinkedIn token')
+    res.status(502).json({ error: 'Failed to check token status' })
+  }
+})
+
+/**
+ * Devuelve la URL a la que hay que mandar al admin para reautorizar.
+ *
+ * No redirige desde acá: la llamada viene por fetch con el JWT en el header, y
+ * un redirect en esa respuesta no navegaría la pestaña. El cliente recibe la URL
+ * y navega él.
+ */
+router.post('/token/authorize', expensiveOpLimiter, async (_req, res) => {
+  if (!isLinkedInOAuthConfigured()) {
+    res.status(400).json({ error: 'LinkedIn app credentials not configured' })
+    return
+  }
+
+  try {
+    const url = buildAuthorizationUrl(createOAuthState())
+    res.json({ url })
+  } catch (err) {
+    log.error({ err }, 'failed to build LinkedIn authorization URL')
+    res.status(500).json({ error: 'Failed to start authorization' })
   }
 })
 

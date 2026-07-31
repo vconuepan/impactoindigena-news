@@ -11,6 +11,7 @@ import healthRouter from './routes/health.js'
 import authRouter from './routes/auth.js'
 import authPublicRouter from './routes/auth-public.js'
 import adminRouter from './routes/admin/index.js'
+import linkedinOAuthRouter from './routes/linkedinOAuth.js'
 import publicRouter from './routes/public/index.js'
 import ogRouter from './routes/og.js'
 import { ogLimiter } from './middleware/rateLimit.js'
@@ -83,9 +84,14 @@ app.use((req, res, next) => {
     const ms = Date.now() - start
     const status = res.statusCode
     const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
+    // Las credenciales que viajan en la query no deben quedar en los logs: se
+    // descargan y se comparten para depurar. El código de OAuth es de un solo
+    // uso y dura segundos, pero mientras vive alcanza para canjear un token.
     const logUrl = req.originalUrl.includes('/magic/')
       ? req.originalUrl.replace(/([?&])token=[^&]*/g, '$1token=[REDACTED]')
-      : req.originalUrl
+      : req.originalUrl.includes('/oauth/')
+        ? req.originalUrl.replace(/([?&])(code|state)=[^&]*/g, '$1$2=[REDACTED]')
+        : req.originalUrl
     httpLog[level]({ requestId: req.id }, `${req.method} ${logUrl} ${status} ${ms}ms`)
   })
   next()
@@ -96,6 +102,9 @@ app.use('/health', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/auth', authPublicRouter)
 app.use('/api/admin', adminRouter)
+// Callback de OAuth de LinkedIn: público a la fuerza (llega por redirect del
+// navegador, sin el Bearer del admin) y protegido por un `state` firmado.
+app.use('/api/linkedin', linkedinOAuthRouter)
 app.use('/api', publicRouter)
 app.use('/og', ogLimiter, ogRouter)
 app.use('/api/og', ogLimiter, ogRouter) // alias for Azure Static Web Apps linked backend proxy
