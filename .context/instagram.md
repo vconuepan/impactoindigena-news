@@ -13,9 +13,24 @@ Uses **long-lived access token** (not OAuth 2.0 code flow). Credentials stored i
 - `INSTAGRAM_ACCESS_TOKEN` — long-lived user access token from the Instagram Graph API
 - `INSTAGRAM_USER_ID` — Instagram user ID (numeric string) associated with the business account
 
-The token is used as-is for every API call. Long-lived tokens expire after 60 days — manual rotation is required. There is no automatic refresh logic. If the token expires, all Instagram posts will fail with a 400/401 error visible in Render logs.
-
 `isInstagramConfigured()` (`server/src/lib/instagram.ts`) returns `true` when both env vars are set.
+
+### Token lifecycle (auto-refreshed)
+
+Long-lived tokens expire after 60 days. The `instagram_refresh_token` job keeps the token alive by calling `GET /refresh_access_token?grant_type=ig_refresh_token`, which extends it another 60 days.
+
+The refreshed value is a **new** token, and the process cannot rewrite its own App Service env var — so it is persisted in the `social_tokens` table instead. The read path is:
+
+1. `getAccessToken()` reads `social_tokens` where `provider = 'instagram'`
+2. If no row exists (or the DB read fails), falls back to `INSTAGRAM_ACCESS_TOKEN`
+
+The env var is the **bootstrap**: set by hand once. After the first automatic refresh the DB value wins. An empty `social_tokens` table means "still on the env var", so the mechanism is inert until the job runs.
+
+**A token that already expired cannot be refreshed** — the API requires a live token. In that case the job throws, which triggers the standard job-failure email, and a new long-lived token must be generated in the Meta Developer Console.
+
+**A token younger than 24 hours cannot be refreshed either.** Meta returns code 190 for this too, but it means the opposite of a dead token: the token is fine, just new. `InstagramTokenTooYoungError` separates the two so the job waits for the next run instead of emailing a false alarm the night after a manual rotation.
+
+**Auth errors are typed.** `InstagramAuthError` (Meta codes 190, 102, 463, 467) marks "the token is dead" as distinct from a one-off image or network failure, so loops over many posts abort on the first one instead of hammering the API.
 
 ## Post Types
 
@@ -82,6 +97,18 @@ The `instagramUpdateMetrics` job runs on a schedule (default: disabled):
 
 No special "Insights" permission is required — basic media fields suffice.
 
+If the token is dead, the loop aborts on the first post and the job fails loudly instead of retrying every post (which is what produced ~1956 useless API calls during the July 2026 outage).
+
+### Token Refresh (`instagram_refresh_token`)
+
+Daily at 05:30 server time, enabled by default:
+
+1. Skips if Instagram is not configured
+2. Reads `getTokenStatus()`; with no known expiry (first run, token still from the env var) it refreshes immediately to start tracking one
+3. If more than `INSTAGRAM_TOKEN_REFRESH_THRESHOLD_DAYS` remain, does nothing — refreshing daily would waste quota, since each call extends from today
+4. If the token already expired, throws so the failure email goes out (a dead token cannot be refreshed)
+5. Otherwise refreshes and stores the new token plus its expiry
+
 ## Publishing Pipeline (3 steps)
 
 The Graph API requires a **3-step publish flow** with deliberate delays:
@@ -142,6 +169,8 @@ All routes require admin or editor role (`requireAuth, requireRole('admin', 'edi
 | `INSTAGRAM_USER_ID` | Yes (for Instagram) | `''` | Numeric Instagram user ID |
 | `INSTAGRAM_AUTO_POST_ENABLED` | No | `false` | Enable cron auto-posting |
 | `INSTAGRAM_METRICS_MAX_AGE_DAYS` | No | `30` | Days of posts to include in metrics polling |
+| `INSTAGRAM_TOKEN_REFRESH_THRESHOLD_DAYS` | No | `15` | Refresh the token when fewer than this many days remain |
+| `INSTAGRAM_TOKEN_LIFETIME_DAYS` | No | `60` | Assumed token lifetime when the API omits `expires_in` |
 | `R2_ENDPOINT` | No | `''` | Cloudflare R2 endpoint (enables carousel mode) |
 | `R2_ACCESS_KEY_ID` | No | `''` | R2 access key |
 | `R2_SECRET_ACCESS_KEY` | No | `''` | R2 secret key |
@@ -154,7 +183,15 @@ All routes require admin or editor role (`requireAuth, requireRole('admin', 'edi
 
 ## Common Issues
 
-**Token expiry:** Long-lived tokens expire after 60 days. Symptom: all Instagram operations fail with Graph API error codes 190 or 102. Fix: generate a new long-lived token from the Meta Developer Console and update `INSTAGRAM_ACCESS_TOKEN` in Render.
+**Token expiry:** Long-lived tokens expire after 60 days. The `instagram_refresh_token` job now renews the token before that happens, so this should not recur. Symptom when it does: every Instagram operation fails with `InstagramAuthError` and Graph API code 190 (`"Error validating access token: Session has expired on …"`).
+
+Fix: generate a new long-lived token in the Meta Developer Console, update `INSTAGRAM_ACCESS_TOKEN`, and delete the stale row from `social_tokens` (otherwise the expired DB value keeps winning over the new env var):
+
+```sql
+DELETE FROM social_tokens WHERE provider = 'instagram';
+```
+
+This happened once, in July 2026: the token expired on 18-Jul and posting stayed broken for 12 days with no alert, because `updateMetrics()` swallowed the per-post error and the job kept reporting success. Both gaps are now closed — the refresh job and the typed auth error that aborts the loop.
 
 **R2 image URLs not accessible:** The Graph API fetches images from the provided URLs at publish time. If R2 public bucket access is misconfigured or the URL is not publicly reachable, carousel item creation fails with "Failed to create carousel item". Verify R2 bucket is public and `R2_PUBLIC_URL` is correct.
 
@@ -166,7 +203,9 @@ All routes require admin or editor role (`requireAuth, requireRole('admin', 'edi
 
 | File | Role |
 |------|------|
-| `server/src/lib/instagram.ts` | Low-level Graph API calls (create containers, publish, fetch metrics) |
+| `server/src/lib/instagram.ts` | Low-level Graph API calls (create containers, publish, fetch metrics, refresh token, `InstagramAuthError`) |
+| `server/src/lib/socialToken.ts` | Persistence for refreshed tokens (`social_tokens` table, raw SQL) |
+| `server/src/jobs/instagramRefreshToken.ts` | Daily token-renewal job (`instagram_refresh_token`) |
 | `server/src/services/instagram.ts` | Business logic: draft generation, caption LLM, metrics, CRUD |
 | `server/src/routes/admin/instagram.ts` | Admin API route handlers |
 | `server/src/jobs/socialAutoPost.ts` | Unified auto-post job (all social channels) |

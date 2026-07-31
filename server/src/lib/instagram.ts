@@ -1,14 +1,155 @@
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { withRetry } from './retry.js'
+import { getStoredToken, saveToken, recordTokenError } from './socialToken.js'
 
 const log = createLogger('instagram')
+
+const PROVIDER = 'instagram'
+const GRAPH_BASE = 'https://graph.instagram.com'
+const GRAPH_VERSION = 'v21.0'
 
 function isConfigured(): boolean {
   return Boolean(
     config.instagram.accessToken &&
     config.instagram.userId
   )
+}
+
+/**
+ * Error de autenticación de la Graph API (token expirado, revocado o inválido).
+ * Se distingue del resto porque reintentar no sirve de nada: hay que renovar el
+ * token. Permite cortar en seco los bucles que recorren muchos posts en vez de
+ * fallar una vez por cada uno.
+ */
+export class InstagramAuthError extends Error {
+  readonly code: number
+
+  constructor(message: string, code: number) {
+    super(message)
+    this.name = 'InstagramAuthError'
+    this.code = code
+  }
+}
+
+/** Códigos de OAuth de Meta que significan "el token ya no sirve". */
+const AUTH_ERROR_CODES = new Set([190, 102, 463, 467])
+
+/**
+ * La API se niega a renovar un token con menos de 24 h de vida. Llega como
+ * código 190, igual que un token muerto, pero significa lo contrario: el token
+ * está perfecto, solo es demasiado nuevo. Distinguirlo evita una alerta falsa
+ * la primera noche después de rotar el token a mano.
+ */
+export class InstagramTokenTooYoungError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'InstagramTokenTooYoungError'
+  }
+}
+
+function isTooYoungMessage(message: string): boolean {
+  return /24 hours old/i.test(message)
+}
+
+/**
+ * Convierte una respuesta de error de la Graph API en una excepción.
+ * Lanza `InstagramAuthError` cuando el problema es el token, para que quien
+ * llama pueda distinguirlo de un fallo puntual de una imagen o de la red.
+ */
+function throwGraphError(context: string, payload: unknown): never {
+  const err = (payload as any)?.error ?? payload
+  const code = Number((err as any)?.code)
+  const detail = JSON.stringify(err)
+
+  if (AUTH_ERROR_CODES.has(code)) {
+    throw new InstagramAuthError(`${context}: ${detail}`, code)
+  }
+  throw new Error(`${context}: ${detail}`)
+}
+
+/**
+ * Token vigente: primero el renovado en DB, si no el de la variable de entorno.
+ *
+ * La variable de entorno es el arranque (se pone a mano una vez); a partir de la
+ * primera renovación automática la DB manda. Si la DB no responde, cae de vuelta
+ * a la variable de entorno en lugar de dejar el canal muerto.
+ */
+export async function getAccessToken(): Promise<string> {
+  try {
+    const stored = await getStoredToken(PROVIDER)
+    if (stored?.accessToken) return stored.accessToken
+  } catch (err) {
+    log.warn({ err }, 'could not read stored Instagram token, using env var')
+  }
+  return config.instagram.accessToken
+}
+
+export interface TokenStatus {
+  /** Fecha de expiración conocida, o null si nunca se ha renovado por acá. */
+  expiresAt: Date | null
+  /** Días que faltan para expirar. null cuando no se conoce la fecha. */
+  daysLeft: number | null
+  source: 'db' | 'env'
+}
+
+/** Estado del token para el job de renovación y el panel de administración. */
+export async function getTokenStatus(): Promise<TokenStatus> {
+  const stored = await getStoredToken(PROVIDER)
+  if (!stored) return { expiresAt: null, daysLeft: null, source: 'env' }
+
+  const daysLeft = stored.expiresAt
+    ? Math.floor((stored.expiresAt.getTime() - Date.now()) / 86_400_000)
+    : null
+
+  return { expiresAt: stored.expiresAt, daysLeft, source: 'db' }
+}
+
+/**
+ * Renueva el token largo por otros 60 días y lo guarda.
+ *
+ * La API exige un token vigente con al menos 24 h de vida: un token ya expirado
+ * no se puede resucitar, hay que generar uno nuevo a mano en el Meta Developer
+ * Console. Por eso el job llama a esto con holgura y no al filo del vencimiento.
+ */
+export async function refreshAccessToken(): Promise<TokenStatus> {
+  const current = await getAccessToken()
+  if (!current) {
+    throw new Error('Instagram access token not configured, nothing to refresh.')
+  }
+
+  const params = new URLSearchParams({
+    grant_type: 'ig_refresh_token',
+    access_token: current,
+  })
+
+  const res = await fetch(`${GRAPH_BASE}/refresh_access_token?${params}`)
+  const data = await res.json() as { access_token?: string; expires_in?: number; error?: unknown }
+
+  if (!res.ok || data.error || !data.access_token) {
+    const detail = JSON.stringify(data.error ?? data)
+    const message = String((data.error as any)?.message ?? '')
+
+    if (isTooYoungMessage(message)) {
+      // No es un fallo: el token recién se creó. Se reintenta mañana.
+      throw new InstagramTokenTooYoungError(message)
+    }
+
+    await recordTokenError(PROVIDER, detail).catch(() => {})
+    throwGraphError('Failed to refresh Instagram token', data)
+  }
+
+  const lifetimeMs = typeof data.expires_in === 'number'
+    ? data.expires_in * 1000
+    : config.instagram.tokenRefresh.lifetimeDays * 86_400_000
+  const expiresAt = new Date(Date.now() + lifetimeMs)
+
+  await saveToken(PROVIDER, data.access_token, expiresAt)
+
+  const daysLeft = Math.floor(lifetimeMs / 86_400_000)
+  log.info({ expiresAt, daysLeft }, 'Instagram token refreshed')
+
+  return { expiresAt, daysLeft, source: 'db' }
 }
 
 export interface CreatePostResult {
@@ -32,8 +173,9 @@ export async function createCarouselPost(
 
   return withRetry(
     async () => {
-      const { accessToken, userId } = config.instagram
-      const baseUrl = `https://graph.instagram.com/v21.0`
+      const { userId } = config.instagram
+      const accessToken = await getAccessToken()
+      const baseUrl = `${GRAPH_BASE}/${GRAPH_VERSION}`
 
       log.info({ captionLength: caption.length, slideCount: imageUrls.length }, 'creating Instagram carousel')
 
@@ -54,7 +196,7 @@ export async function createCarouselPost(
         const data = await res.json() as any
 
         if (!res.ok || data.error) {
-          throw new Error(`Failed to create carousel item: ${JSON.stringify(data.error || data)}`)
+          throwGraphError('Failed to create carousel item', data)
         }
 
         childIds.push(data.id)
@@ -79,7 +221,7 @@ export async function createCarouselPost(
       const carouselData = await carouselRes.json() as any
 
       if (!carouselRes.ok || carouselData.error) {
-        throw new Error(`Failed to create carousel container: ${JSON.stringify(carouselData.error || carouselData)}`)
+        throwGraphError('Failed to create carousel container', carouselData)
       }
 
       const carouselId = carouselData.id
@@ -101,7 +243,7 @@ export async function createCarouselPost(
       const publishData = await publishRes.json() as any
 
       if (!publishRes.ok || publishData.error) {
-        throw new Error(`Failed to publish carousel: ${JSON.stringify(publishData.error || publishData)}`)
+        throwGraphError('Failed to publish carousel', publishData)
       }
 
       const postId = publishData.id
@@ -129,18 +271,18 @@ export async function getPostMetrics(instagramPostId: string): Promise<PostMetri
 
   return withRetry(
     async () => {
-      const { accessToken } = config.instagram
+      const accessToken = await getAccessToken()
       const params = new URLSearchParams({
         fields: 'like_count,comments_count',
         access_token: accessToken,
       })
       const res = await fetch(
-        `https://graph.instagram.com/v21.0/${instagramPostId}?${params}`,
+        `${GRAPH_BASE}/${GRAPH_VERSION}/${instagramPostId}?${params}`,
       )
       const data = await res.json() as any
 
       if (!res.ok || data.error) {
-        throw new Error(`Instagram metrics error: ${JSON.stringify(data.error || data)}`)
+        throwGraphError('Instagram metrics error', data)
       }
 
       return {
@@ -166,8 +308,9 @@ export async function createSingleImagePost(
 
   return withRetry(
     async () => {
-      const { accessToken, userId } = config.instagram
-      const baseUrl = `https://graph.instagram.com/v21.0`
+      const { userId } = config.instagram
+      const accessToken = await getAccessToken()
+      const baseUrl = `${GRAPH_BASE}/${GRAPH_VERSION}`
 
       log.info({ captionLength: caption.length, imageUrl }, 'creating Instagram single-image post')
 
@@ -181,7 +324,7 @@ export async function createSingleImagePost(
       const data = await res.json() as { id?: string; error?: unknown }
 
       if (!res.ok || data.error) {
-        throw new Error(`Failed to create media container: ${JSON.stringify(data.error || data)}`)
+        throwGraphError('Failed to create media container', data)
       }
 
       const containerId = data.id!
@@ -199,7 +342,7 @@ export async function createSingleImagePost(
       const publishData = await publishRes.json() as { id?: string; error?: unknown }
 
       if (!publishRes.ok || publishData.error) {
-        throw new Error(`Failed to publish post: ${JSON.stringify(publishData.error || publishData)}`)
+        throwGraphError('Failed to publish post', publishData)
       }
 
       const postId = publishData.id!

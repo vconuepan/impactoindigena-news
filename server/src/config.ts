@@ -301,6 +301,15 @@ export const config = {
     metrics: {
       maxAgeDays: parseInt(process.env.INSTAGRAM_METRICS_MAX_AGE_DAYS || '30', 10),
     },
+    tokenRefresh: {
+      // Renueva cuando al token le quedan menos de estos días. La API exige que
+      // el token tenga al menos 24 h de vida y no haya expirado, así que el
+      // margen debe ser holgado: si el job se cae unos días, todavía alcanza.
+      thresholdDays: parseInt(process.env.INSTAGRAM_TOKEN_REFRESH_THRESHOLD_DAYS || '15', 10),
+      // Vida nominal de un token largo de Instagram. Solo se usa para estimar
+      // expires_at cuando la respuesta de la API no trae expires_in.
+      lifetimeDays: parseInt(process.env.INSTAGRAM_TOKEN_LIFETIME_DAYS || '60', 10),
+    },
   },
   linkedin: {
     accessToken: process.env.LINKEDIN_ACCESS_TOKEN || '',
