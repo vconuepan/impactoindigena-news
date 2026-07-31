@@ -47,7 +47,45 @@ vi.mock('./services/analysis.js', () => ({
 
 process.env.PUBLIC_API_KEY = TEST_API_KEY
 
-const { default: app } = await import('./app.js')
+const { default: app, redactSensitiveQuery } = await import('./app.js')
+
+describe('redactSensitiveQuery', () => {
+  /**
+   * Los logs se descargan para depurar (así se encontró la caída de LinkedIn),
+   * así que una credencial en la query sale de la máquina. El código de OAuth
+   * dura segundos, pero mientras vive alcanza para canjear un token de
+   * publicación en la cuenta.
+   */
+  it('hides the OAuth code and state on a callback URL', () => {
+    const out = redactSensitiveQuery(
+      '/api/linkedin/oauth/callback?code=AQTsecret123&state=SIGNEDstate456',
+    )
+
+    expect(out).not.toMatch(/AQTsecret123/)
+    expect(out).not.toMatch(/SIGNEDstate456/)
+    expect(out).toBe('/api/linkedin/oauth/callback?code=[REDACTED]&state=[REDACTED]')
+  })
+
+  it('keeps the non-sensitive params readable', () => {
+    const out = redactSensitiveQuery('/api/linkedin/oauth/callback?code=abc&error=denied')
+
+    expect(out).toBe('/api/linkedin/oauth/callback?code=[REDACTED]&error=denied')
+  })
+
+  it('still hides the magic-link token', () => {
+    const out = redactSensitiveQuery('/api/auth/magic/verify?token=SECRET')
+
+    expect(out).toBe('/api/auth/magic/verify?token=[REDACTED]')
+  })
+
+  // Sin esto, una URL normal con `code` o `state` quedaría ilegible en los logs.
+  it('leaves unrelated URLs untouched', () => {
+    expect(redactSensitiveQuery('/api/stories?code=CL&state=active')).toBe(
+      '/api/stories?code=CL&state=active',
+    )
+    expect(redactSensitiveQuery('/api/admin/linkedin/posts')).toBe('/api/admin/linkedin/posts')
+  })
+})
 
 describe('App error handling', () => {
   beforeEach(() => {
