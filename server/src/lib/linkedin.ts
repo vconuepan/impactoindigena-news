@@ -113,9 +113,13 @@ export async function introspectToken(): Promise<TokenIntrospection> {
     )
   }
 
+  // Se resuelve por `getAccessToken()` a propósito, en vez de repetir acá la
+  // precedencia DB→env: este job existe para vigilar EL token que se usaría para
+  // publicar. Duplicar la lógica abre la puerta a que divergan y el chequeo
+  // termine dando por sano un token que no es el que se usa.
+  const token = await getAccessToken()
   const stored = await getStoredToken(PROVIDER).catch(() => null)
-  const token = stored?.accessToken || config.linkedin.accessToken
-  const source: 'db' | 'env' = stored?.accessToken ? 'db' : 'env'
+  const source: 'db' | 'env' = stored?.accessToken === token ? 'db' : 'env'
 
   if (!token) {
     throw new Error('LinkedIn access token not configured, nothing to introspect.')

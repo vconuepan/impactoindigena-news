@@ -135,6 +135,23 @@ describe('introspectToken', () => {
 
     await expect(introspectToken()).resolves.toMatchObject({ source: 'db' })
   })
+
+  /**
+   * El chequeo tiene que inspeccionar EL MISMO token que se usaría para publicar.
+   * Si la precedencia DB→env se resolviera por separado acá, podría divergir de
+   * `getAccessToken()` y el job daría por sano un token que no es el que se usa.
+   */
+  it('inspects the very token that would be used to publish', async () => {
+    mockToken.getStoredToken.mockResolvedValue({ accessToken: 'db-token', expiresAt: null, refreshedAt: null })
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ active: true }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await introspectToken()
+
+    const body = (fetchMock.mock.calls[0][1].body as URLSearchParams).toString()
+    expect(body).toContain('token=db-token')
+    expect(body).not.toContain('token=env-token')
+  })
 })
 
 describe('buildAuthorizationUrl', () => {
