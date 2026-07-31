@@ -733,3 +733,22 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_log")
 }
+
+// Long-lived social API tokens that the app refreshes on its own schedule.
+// Instagram long-lived tokens expire after 60 days; the env var can only be
+// rotated by hand, so the refreshed value lives here instead. Read path is
+// DB first, env var fallback — an empty table means "still using the env var".
+// Stored in clear text because the API call needs the literal value (same
+// exposure as the env var it replaces, no worse).
+model SocialToken {
+  id          String    @id @default(uuid())
+  provider    String    @unique          // instagram | linkedin | ...
+  accessToken String    @map("access_token")
+  expiresAt   DateTime? @map("expires_at")
+  refreshedAt DateTime? @map("refreshed_at")
+  lastError   String?   @map("last_error")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("social_tokens")
+}

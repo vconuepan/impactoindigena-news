@@ -8,6 +8,7 @@ import { runGenerateNewsletter } from './generateNewsletter.js'
 import { runSocialAutoPost } from './socialAutoPost.js'
 import { runMastodonUpdateMetrics } from './mastodonUpdateMetrics.js'
 import { runInstagramUpdateMetrics } from './instagramUpdateMetrics.js'
+import { runInstagramRefreshToken } from './instagramRefreshToken.js'
 import { runLinkedInUpdateMetrics } from './linkedinUpdateMetrics.js'
 import { runSendNewsletter } from './sendNewsletter.js'
 import { runSendWeeklyNewsletter } from './sendWeeklyNewsletter.js'
@@ -34,6 +35,7 @@ export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   generate_newsletter: runGenerateNewsletter,
   mastodon_update_metrics: runMastodonUpdateMetrics,
   instagram_update_metrics: runInstagramUpdateMetrics,
+  instagram_refresh_token: runInstagramRefreshToken,
   linkedin_update_metrics: runLinkedInUpdateMetrics,
   send_newsletter: runSendNewsletter,
   send_weekly_newsletter: runSendWeeklyNewsletter,
