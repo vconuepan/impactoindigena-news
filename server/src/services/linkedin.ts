@@ -138,7 +138,11 @@ async function buildCarouselSlides(story: {
 export async function updateDraft(postId: string, postText: string) {
   const post = await prisma.linkedInPost.findUnique({ where: { id: postId } })
   if (!post) throw new Error('Post not found')
-  if (post.status !== 'draft') throw new Error('Can only edit draft posts')
+  // Igual que en Instagram: publishPost acepta 'failed' para reintentar, así que
+  // editar también debe aceptarlo o el panel muere en 400 antes de publicar.
+  if (post.status !== 'draft' && post.status !== 'failed') {
+    throw new Error('Can only edit draft posts')
+  }
 
   return prisma.linkedInPost.update({
     where: { id: postId },

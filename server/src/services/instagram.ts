@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { HumanMessage } from '@langchain/core/messages'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
-import { createCarouselPost, createSingleImagePost, getPostMetrics, isInstagramConfigured } from '../lib/instagram.js'
+import { createCarouselPost, createSingleImagePost, getPostMetrics, isInstagramConfigured, InstagramAuthError } from '../lib/instagram.js'
 import { generateCarousel } from '../lib/carouselGen.js'
 import { generateStoryImage } from '../lib/imageGen.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
@@ -154,7 +154,13 @@ async function runGeneration(postId: string, story: any): Promise<void> {
 export async function updateDraft(postId: string, caption: string) {
   const post = await prisma.instagramPost.findUnique({ where: { id: postId } })
   if (!post) throw new Error('Post not found')
-  if (post.status !== 'draft') throw new Error('Can only edit draft posts')
+  // Los fallidos también se editan: publishPost los acepta para reintentar, y el
+  // panel guarda el caption ANTES de publicar. Si acá se rechazan, tocar el texto
+  // de un post fallido devuelve 400 y la publicación nunca se ejecuta — justo el
+  // caso que hay que arreglar a mano.
+  if (post.status !== 'draft' && post.status !== 'failed') {
+    throw new Error('Can only edit draft posts')
+  }
 
   return prisma.instagramPost.update({
     where: { id: postId },
@@ -315,6 +321,14 @@ export async function updateMetrics() {
       })
       updated++
     } catch (err) {
+      // Si el token murió, ningún post va a funcionar: cortar en seco y
+      // propagar para que el scheduler dispare la alerta. Antes se tragaba el
+      // error post por post, el job terminaba "bien" y nadie se enteraba — así
+      // pasaron 12 días de julio de 2026 con el posteo caído en silencio.
+      if (err instanceof InstagramAuthError) {
+        log.error({ err, updated, remaining: posts.length - updated }, 'Instagram token rejected, aborting metrics update')
+        throw err
+      }
       log.warn({ err, postId: post.id, instagramPostId: post.instagramPostId }, 'failed to update metrics for post')
       failed++
     }
