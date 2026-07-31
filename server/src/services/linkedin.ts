@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { HumanMessage } from '@langchain/core/messages'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
-import { createUgcPost, getOrgPostMetrics, isLinkedInConfigured } from '../lib/linkedin.js'
+import { createUgcPost, getOrgPostMetrics, isLinkedInConfigured, LinkedInAuthError } from '../lib/linkedin.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildLinkedInPostPrompt } from '../prompts/linkedin.js'
 import { generateCarousel } from '../lib/carouselGen.js'
@@ -299,6 +299,15 @@ export async function updateMetrics() {
       })
       updated++
     } catch (err) {
+      // Token muerto: no tiene sentido recorrer el resto de los posts, y sobre
+      // todo el job NO debe terminar "OK". Sube para que el scheduler avise.
+      if (err instanceof LinkedInAuthError) {
+        log.error(
+          { err, updated, skipped, failed, remaining: posts.length - (updated + skipped + failed) },
+          'LinkedIn token rejected while updating metrics, aborting',
+        )
+        throw err
+      }
       log.warn({ err, postId: post.id, linkedinPostId: post.linkedinPostId }, 'failed to update metrics for post')
       failed++
     }

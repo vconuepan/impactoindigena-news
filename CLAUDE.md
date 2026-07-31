@@ -148,6 +148,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | `bluesky.md` | AT Protocol auth, post format, auto-post, metrics |
 | `mastodon.md` | Static token auth, shared social logic, post format |
 | `instagram.md` | Graph API auth, carousel vs single-image, R2 dependency, token rotation |
+| `linkedin.md` | Member token (60d, sin refresh automático), reautorización OAuth, job de chequeo |
 | `client/.context/skeletons.md` | Skeleton components for loading states (prevents CLS) |
 
 ## Memory

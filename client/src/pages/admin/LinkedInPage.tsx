@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
 import { ArrowTopRightOnSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
 import type { LinkedInPost, LinkedInPostStatus } from '@shared/types'
 import { adminApi } from '../../lib/admin-api'
+import { LinkedInTokenCard } from '../../components/admin/LinkedInTokenCard'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorState } from '../../components/ui/ErrorState'
@@ -28,11 +30,45 @@ type Filter = 'all' | LinkedInPostStatus
 
 const PAGE_SIZE = 25
 
+/** Resultado del callback de OAuth, tal como lo deja el redirect en la query. */
+const AUTH_RESULTS: Record<string, { level: 'success' | 'error'; message: string }> = {
+  ok: { level: 'success', message: 'LinkedIn reautorizado' },
+  denied: { level: 'error', message: 'Autorización cancelada en LinkedIn' },
+  invalid_state: { level: 'error', message: 'El enlace de autorización venció. Intenta de nuevo.' },
+  missing_code: { level: 'error', message: 'LinkedIn no devolvió un código de autorización' },
+  exchange_failed: { level: 'error', message: 'No se pudo canjear el código por un token' },
+}
+
 export default function LinkedInPage() {
   const [filter, setFilter] = useState<Filter>('all')
   const [page, setPage] = useState(1)
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // La vuelta del flujo de OAuth trae el resultado en la URL. Se muestra una vez
+  // y se limpia, para que un refresh no repita el aviso.
+  const authResult = searchParams.get('auth')
+  useEffect(() => {
+    if (!authResult) return
+    const outcome = AUTH_RESULTS[authResult]
+    if (outcome) {
+      const days = searchParams.get('days')
+      toast(
+        outcome.level,
+        outcome.level === 'success' && days
+          ? `${outcome.message} — vence en ${days} días`
+          : outcome.message,
+      )
+      if (outcome.level === 'success') {
+        queryClient.invalidateQueries({ queryKey: ['linkedinTokenStatus'] })
+      }
+    }
+    const next = new URLSearchParams(searchParams)
+    next.delete('auth')
+    next.delete('days')
+    setSearchParams(next, { replace: true })
+  }, [authResult, searchParams, setSearchParams, toast, queryClient])
 
   const query = useQuery({
     queryKey: ['linkedinPosts', filter, page],
@@ -90,8 +126,13 @@ export default function LinkedInPage() {
         description="Publicaciones generadas y publicadas en LinkedIn"
       />
 
+      {/* Salud del token — arriba porque si está muerto, nada más importa */}
+      <div className="mt-4">
+        <LinkedInTokenCard />
+      </div>
+
       {/* Stats bar */}
-      <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         {[
           { label: 'Total (página)', value: total, color: 'text-neutral-900' },
           { label: 'Publicados', value: published, color: 'text-green-700' },

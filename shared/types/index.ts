@@ -49,6 +49,8 @@ export type JobName =
   | 'mastodon_update_metrics'
   | 'instagram_update_metrics'
   | 'linkedin_update_metrics'
+  | 'instagram_refresh_token'
+  | 'linkedin_check_token'
   | 'generate_newsletter'
   | 'send_newsletter'
   | 'send_private_newsletter'

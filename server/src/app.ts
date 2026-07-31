@@ -11,6 +11,7 @@ import healthRouter from './routes/health.js'
 import authRouter from './routes/auth.js'
 import authPublicRouter from './routes/auth-public.js'
 import adminRouter from './routes/admin/index.js'
+import linkedinOAuthRouter from './routes/linkedinOAuth.js'
 import publicRouter from './routes/public/index.js'
 import ogRouter from './routes/og.js'
 import { ogLimiter } from './middleware/rateLimit.js'
@@ -75,6 +76,27 @@ app.use((req, res, next) => {
   next()
 })
 
+/**
+ * Oculta las credenciales que viajan en la query antes de escribir la URL al log.
+ *
+ * Los logs se descargan y se comparten para depurar, así que lo que entra acá
+ * sale de la máquina. El token de un enlace mágico da acceso a la cuenta; el
+ * código de OAuth es de un solo uso y dura segundos, pero mientras vive alcanza
+ * para canjear un token de publicación.
+ *
+ * Exportada para poder probarla: es una protección de seguridad, no un detalle
+ * de formato.
+ */
+export function redactSensitiveQuery(url: string): string {
+  if (url.includes('/magic/')) {
+    return url.replace(/([?&])token=[^&]*/g, '$1token=[REDACTED]')
+  }
+  if (url.includes('/oauth/')) {
+    return url.replace(/([?&])(code|state)=[^&]*/g, '$1$2=[REDACTED]')
+  }
+  return url
+}
+
 // Request logging — single line per request, no redundant fields
 app.use((req, res, next) => {
   if (req.originalUrl === '/health') return next()
@@ -83,9 +105,7 @@ app.use((req, res, next) => {
     const ms = Date.now() - start
     const status = res.statusCode
     const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
-    const logUrl = req.originalUrl.includes('/magic/')
-      ? req.originalUrl.replace(/([?&])token=[^&]*/g, '$1token=[REDACTED]')
-      : req.originalUrl
+    const logUrl = redactSensitiveQuery(req.originalUrl)
     httpLog[level]({ requestId: req.id }, `${req.method} ${logUrl} ${status} ${ms}ms`)
   })
   next()
@@ -96,6 +116,9 @@ app.use('/health', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/auth', authPublicRouter)
 app.use('/api/admin', adminRouter)
+// Callback de OAuth de LinkedIn: público a la fuerza (llega por redirect del
+// navegador, sin el Bearer del admin) y protegido por un `state` firmado.
+app.use('/api/linkedin', linkedinOAuthRouter)
 app.use('/api', publicRouter)
 app.use('/og', ogLimiter, ogRouter)
 app.use('/api/og', ogLimiter, ogRouter) // alias for Azure Static Web Apps linked backend proxy
