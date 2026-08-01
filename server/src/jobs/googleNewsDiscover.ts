@@ -46,9 +46,6 @@ const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
   { query: 'consulta indígena',                region: 'CL:es' },
   { query: 'mapuche',                          region: 'CL:es' },
   { query: 'indígena Araucanía',               region: 'CL:es' },
-  // Evento: congreso NAISA 2026 en Temuco (22-24 jul). Quitar esta query
-  // cuando termine la cola de cobertura del congreso (~ago 2026).
-  { query: 'NAISA Temuco',                     region: 'CL:es' },
   // Español — Latinoamérica amplio
   { query: 'indígenas amazonia',               region: 'BR:pt-419' },
   { query: 'pueblos indígenas derechos',       region: 'MX:es' },
