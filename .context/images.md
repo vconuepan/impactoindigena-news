@@ -99,3 +99,18 @@ Preset sizes are chosen to support 2x retina displays:
 - **Skip behavior:** Variants larger than the original are skipped
 - **Originals:** Never modified or deleted
 - **Script location:** `client/scripts/images.mjs`
+
+## Feed Favicons (`client/public/images/feeds/`)
+
+One PNG per feed, named `{feedId}.png`, fetched by `server/src/services/favicon.ts`. Three strategies in order: Google's favicon service (`s2/favicons?sz=32`), the `<link rel="icon">` declared by the site, then `/favicon.ico` at the origin. The buffer is written as-is — no resize — so files range from 16x16 to 64x64 depending on what the source publishes.
+
+**The "Obtener favicons" button does nothing visible in production.** `FAVICON_DIR` defaults to `client/public/images/feeds`, which is the **static site** directory. In production the backend runs on App Service and the frontend is a separate Static Web App built from the repo, so a favicon written on the server never reaches the deployed site. Favicons only ship if they are generated locally and committed.
+
+So when a feed shows no icon in production (the component hides itself, it does not render broken), the fix is:
+
+1. Get the feed's `id` and domain
+2. Fetch the favicon **following redirects** — `curl -sL`, because Google answers the redirect-less request with HTML, and check `content-type: image/*` before saving. `favicon.ts` validates this; a manual `curl` without `-L` will happily save an HTML error page as `.png`
+3. Confirm the result is not Google's generic globe — that is what it returns for domains with no real favicon
+4. Commit the file
+
+Small sources sometimes publish only a 16x16 icon (Cultural Survival is one). Leave it at native size; upscaling a 16x16 looks worse than the original.
