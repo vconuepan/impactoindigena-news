@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Helmet } from 'react-helmet-async'
-import { ArrowTopRightOnSquareIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { ArrowTopRightOnSquareIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import type { LinkedInPost, LinkedInPostStatus } from '@shared/types'
 import { adminApi } from '../../lib/admin-api'
 import { LinkedInTokenCard } from '../../components/admin/LinkedInTokenCard'
+import { LinkedInDraftPanel } from '../../components/admin/LinkedInDraftPanel'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorState } from '../../components/ui/ErrorState'
@@ -90,6 +91,24 @@ export default function LinkedInPage() {
     onError: (err) => toast('error', err instanceof Error ? err.message : 'Error al eliminar'),
   })
 
+  // Panel para revisar, editar y publicar un borrador (o reintentar un fallido).
+  // Sin esto, un borrador de LinkedIn quedaba atrapado: esta tabla solo ofrecía
+  // eliminarlo, y la ficha de la historia esconde el botón de generar en cuanto
+  // existe cualquier post, así que no había ninguna ruta para publicarlo.
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [selectedDraft, setSelectedDraft] = useState<LinkedInPost | null>(null)
+  const [publishing, setPublishing] = useState(false)
+
+  const handleOpenDraft = useCallback((post: LinkedInPost) => {
+    setSelectedDraft(post)
+    setPanelOpen(true)
+  }, [])
+
+  function closePanel() {
+    setPanelOpen(false)
+    setSelectedDraft(null)
+  }
+
   const posts = query.data?.posts ?? []
   const total = query.data?.total ?? 0
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -120,6 +139,34 @@ export default function LinkedInPage() {
       <Helmet>
         <title>LinkedIn — Admin — Impacto Indígena</title>
       </Helmet>
+
+      <LinkedInDraftPanel
+        open={panelOpen}
+        onClose={closePanel}
+        draft={selectedDraft}
+        publishing={publishing}
+        onPublish={async (postId) => {
+          setPublishing(true)
+          try {
+            await adminApi.linkedin.publishPost(postId)
+            toast('success', 'Publicado en LinkedIn')
+            closePanel()
+            queryClient.invalidateQueries({ queryKey: ['linkedinPosts'] })
+          } catch (err) {
+            toast('error', err instanceof Error ? err.message : 'Error al publicar en LinkedIn')
+          } finally {
+            setPublishing(false)
+          }
+        }}
+        onUpdate={async (postId, postText) => {
+          await adminApi.linkedin.updateDraft(postId, postText)
+        }}
+        onDelete={async (postId) => {
+          await adminApi.linkedin.deletePost(postId)
+          closePanel()
+          queryClient.invalidateQueries({ queryKey: ['linkedinPosts'] })
+        }}
+      />
 
       <PageHeader
         title="LinkedIn"
@@ -203,6 +250,7 @@ export default function LinkedInPage() {
                   <PostRow
                     key={post.id}
                     post={post}
+                    onOpen={handleOpenDraft}
                     onDelete={handleDelete}
                     isDeleting={deleteMutation.isPending && deleteMutation.variables === post.id}
                   />
@@ -243,10 +291,12 @@ export default function LinkedInPage() {
 
 function PostRow({
   post,
+  onOpen,
   onDelete,
   isDeleting,
 }: {
   post: LinkedInPost
+  onOpen: (post: LinkedInPost) => void
   onDelete: (post: LinkedInPost) => void
   isDeleting: boolean
 }) {
@@ -294,6 +344,13 @@ function PostRow({
       {/* Actions */}
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
+          {(post.status === 'draft' || post.status === 'failed') && (
+            <ActionIconButton
+              icon={PencilIcon}
+              label="Editar/Publicar"
+              onClick={() => onOpen(post)}
+            />
+          )}
           {post.postUrl && (
             <a
               href={post.postUrl}
