@@ -312,14 +312,18 @@ export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMast
           <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Instagram</h3>
           {(story._count?.instagramPosts ?? 0) > 0 ? (
             <p className="text-sm text-neutral-500">
-              This story has been posted to Instagram.
-              {story.instagramPosts?.[0]?.permalink && (
+              {/* Un post publicado siempre trae permalink; sin él solo hay un
+                  borrador o un intento fallido. Decir "ya se publicó" en ese
+                  caso es falso y esconde que queda trabajo por hacer. */}
+              {story.instagramPosts?.[0]?.permalink ? (
                 <>
-                  {' '}
+                  This story has been posted to Instagram.{' '}
                   <a href={story.instagramPosts[0].permalink} target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                     View post
                   </a>
                 </>
+              ) : (
+                <>An Instagram post exists but is not published yet. Finish it from the Instagram page.</>
               )}
             </p>
           ) : (
@@ -340,14 +344,16 @@ export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMast
           <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">LinkedIn</h3>
           {(story._count?.linkedinPosts ?? 0) > 0 ? (
             <p className="text-sm text-neutral-500">
-              This story has been posted to LinkedIn.
-              {story.linkedinPosts?.[0]?.postUrl && (
+              {/* Mismo caso que Instagram: sin postUrl no está publicado. */}
+              {story.linkedinPosts?.[0]?.postUrl ? (
                 <>
-                  {' '}
+                  This story has been posted to LinkedIn.{' '}
                   <a href={story.linkedinPosts[0].postUrl} target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                     View post
                   </a>
                 </>
+              ) : (
+                <>A LinkedIn post exists but is not published yet. Finish it from the LinkedIn page.</>
               )}
             </p>
           ) : (
