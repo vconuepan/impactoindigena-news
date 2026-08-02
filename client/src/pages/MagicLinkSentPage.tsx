@@ -2,13 +2,22 @@ import { useState, useEffect } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { publicApi } from '../lib/api'
+import { safeInternalPath } from '../lib/safePath'
 
 const RESEND_COOLDOWN_SECONDS = 60
+const DEFAULT_REDIRECT = '/comunidades'
 
 export default function MagicLinkSentPage() {
   const [searchParams] = useSearchParams()
   const email = searchParams.get('email') ?? ''
-  const redirectTo = searchParams.get('redirect_to') ?? undefined
+  // `redirect_to` llega desde la barra de direcciones y termina en un <Link>.
+  // Sin filtrar, un `//evil.com` o `/\evil.com` saca al visitante del sitio
+  // desde una página de autenticación, que es donde el phishing convence más.
+  // Se conserva `undefined` cuando el parámetro no viene, para no inventarle un
+  // destino al correo de reenvío que el enlace original no pedía.
+  const rawRedirect = searchParams.get('redirect_to')
+  const redirectParam = rawRedirect ? safeInternalPath(rawRedirect, DEFAULT_REDIRECT) : undefined
+  const redirectTo = redirectParam ?? DEFAULT_REDIRECT
   const isExpired = searchParams.get('error') === 'expired'
 
   const [secondsLeft, setSecondsLeft] = useState(RESEND_COOLDOWN_SECONDS)
@@ -24,7 +33,7 @@ export default function MagicLinkSentPage() {
     if (!email || secondsLeft > 0 || resendState === 'sending') return
     setResendState('sending')
     try {
-      await publicApi.auth.resendMagicLink(email, redirectTo)
+      await publicApi.auth.resendMagicLink(email, redirectParam)
       setResendState('sent')
       setSecondsLeft(RESEND_COOLDOWN_SECONDS)
     } catch {
@@ -87,7 +96,7 @@ export default function MagicLinkSentPage() {
         )}
 
         <Link
-          to={redirectTo ?? '/comunidades'}
+          to={redirectTo}
           className="mt-8 text-xs text-neutral-400 hover:text-neutral-600 transition-colors"
         >
           &larr; Volver
