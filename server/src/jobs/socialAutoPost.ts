@@ -28,6 +28,11 @@ import {
   publishPost as publishLinkedInPost,
 } from '../services/linkedin.js'
 import { isLinkedInConfigured } from '../lib/linkedin.js'
+import {
+  generateDraft as generateFacebookDraft,
+  publishPost as publishFacebookPost,
+} from '../services/facebook.js'
+import { isFacebookConfigured } from '../lib/facebook.js'
 
 const log = createLogger('social_auto_post')
 
@@ -106,6 +111,15 @@ function getEnabledChannels(): ChannelConfig[] {
       publishedStoryIds: publishedLookup((args) => prisma.linkedInPost.findMany(args)),
       generateDraft: (storyId) => generateLinkedInDraft(storyId),
       publishPost: (postId) => publishLinkedInPost(postId),
+    })
+  }
+
+  if (config.facebook.autoPost.enabled && isFacebookConfigured()) {
+    channels.push({
+      name: 'facebook',
+      publishedStoryIds: publishedLookup((args) => prisma.facebookPost.findMany(args)),
+      generateDraft: (storyId) => generateFacebookDraft(storyId),
+      publishPost: (postId) => publishFacebookPost(postId),
     })
   }
 

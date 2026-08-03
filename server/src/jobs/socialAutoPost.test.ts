@@ -8,6 +8,7 @@ const mockConfig = vi.hoisted(() => ({
     twitter: { autoPost: { enabled: false } },
     instagram: { autoPost: { enabled: false } },
     linkedin: { autoPost: { enabled: false } },
+    facebook: { autoPost: { enabled: false } },
     socialAutoPost: { lookbackHours: 25 },
   },
 }))
@@ -18,6 +19,7 @@ const mockPrisma = vi.hoisted(() => ({
   twitterPost: { findMany: vi.fn().mockResolvedValue([]) },
   instagramPost: { findMany: vi.fn().mockResolvedValue([]) },
   linkedInPost: { findMany: vi.fn().mockResolvedValue([]) },
+  facebookPost: { findMany: vi.fn().mockResolvedValue([]) },
 }))
 
 const mockSocial = vi.hoisted(() => ({
@@ -28,6 +30,7 @@ const mockSocial = vi.hoisted(() => ({
 const mockChannels = vi.hoisted(() => ({
   linkedin: { generateDraft: vi.fn(), publishPost: vi.fn() },
   bluesky: { generateDraft: vi.fn(), publishPost: vi.fn() },
+  facebook: { generateDraft: vi.fn(), publishPost: vi.fn() },
 }))
 
 vi.mock('../config.js', () => mockConfig)
@@ -38,11 +41,13 @@ vi.mock('../lib/mastodon.js', () => ({ isMastodonConfigured: () => true }))
 vi.mock('../lib/twitter.js', () => ({ isTwitterConfigured: () => true }))
 vi.mock('../lib/instagram.js', () => ({ isInstagramConfigured: () => true }))
 vi.mock('../lib/linkedin.js', () => ({ isLinkedInConfigured: () => true }))
+vi.mock('../lib/facebook.js', () => ({ isFacebookConfigured: () => true }))
 vi.mock('../services/bluesky.js', () => mockChannels.bluesky)
 vi.mock('../services/mastodon.js', () => ({ generateDraft: vi.fn(), publishPost: vi.fn() }))
 vi.mock('../services/twitter.js', () => ({ generateDraft: vi.fn(), publishPost: vi.fn() }))
 vi.mock('../services/instagram.js', () => ({ generateDraft: vi.fn(), publishPost: vi.fn() }))
 vi.mock('../services/linkedin.js', () => mockChannels.linkedin)
+vi.mock('../services/facebook.js', () => mockChannels.facebook)
 
 const { runSocialAutoPost } = await import('./socialAutoPost.js')
 
@@ -55,7 +60,7 @@ function selectedChannelNames(): string[] {
 describe('runSocialAutoPost', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    for (const key of ['bluesky', 'mastodon', 'twitter', 'instagram', 'linkedin'] as const) {
+    for (const key of ['bluesky', 'mastodon', 'twitter', 'instagram', 'linkedin', 'facebook'] as const) {
       mockConfig.config[key].autoPost.enabled = false
     }
     for (const table of Object.values(mockPrisma)) table.findMany.mockResolvedValue([])
@@ -85,6 +90,27 @@ describe('runSocialAutoPost', () => {
     await runSocialAutoPost()
 
     expect(selectedChannelNames()).toEqual(['bluesky'])
+  })
+
+  it('includes Facebook when its auto-post flag is on', async () => {
+    mockConfig.config.facebook.autoPost.enabled = true
+
+    await runSocialAutoPost()
+
+    expect(selectedChannelNames()).toContain('facebook')
+  })
+
+  it('drafts and publishes to the Facebook Page for the picked story', async () => {
+    mockConfig.config.facebook.autoPost.enabled = true
+    mockSocial.findAutoPostCandidates.mockResolvedValue(['story-1'])
+    mockSocial.pickBestStoryForSocial.mockResolvedValue({ storyId: 'story-1', reasoning: 'best' })
+    mockChannels.facebook.generateDraft.mockResolvedValue({ id: 'fb-1' })
+    mockChannels.facebook.publishPost.mockResolvedValue(undefined)
+
+    await runSocialAutoPost()
+
+    expect(mockChannels.facebook.generateDraft).toHaveBeenCalledWith('story-1')
+    expect(mockChannels.facebook.publishPost).toHaveBeenCalledWith('fb-1')
   })
 
   it('drafts and publishes to LinkedIn for the picked story', async () => {

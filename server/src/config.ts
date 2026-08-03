@@ -311,6 +311,30 @@ export const config = {
       lifetimeDays: parseInt(process.env.INSTAGRAM_TOKEN_LIFETIME_DAYS || '60', 10),
     },
   },
+  facebook: {
+    // Token de PÁGINA, no de usuario ni el de Instagram: ese usa
+    // graph.instagram.com y este graph.facebook.com. Es el valor de arranque; una
+    // vez que hay fila en `social_tokens` con provider='facebook', la DB manda.
+    accessToken: process.env.FACEBOOK_PAGE_ACCESS_TOKEN || '',
+    pageId: process.env.FACEBOOK_PAGE_ID || '',
+    // Credenciales de la app, necesarias para introspeccionar el token vía
+    // /debug_token (se autentica con app_id|app_secret, no con el token mismo).
+    appId: process.env.FACEBOOK_APP_ID || '',
+    appSecret: process.env.FACEBOOK_APP_SECRET || '',
+    autoPost: {
+      enabled: process.env.FACEBOOK_AUTO_POST_ENABLED === 'true',
+    },
+    metrics: {
+      maxAgeDays: parseInt(process.env.FACEBOOK_METRICS_MAX_AGE_DAYS || '30', 10),
+    },
+    tokenCheck: {
+      // Un token de Página derivado de un user token de larga duración expira; uno
+      // de system user no expira nunca. El job avisa con esta antelación cuando
+      // hay fecha, y calla cuando no la hay (no hay nada que vigilar). No renueva:
+      // eso exige el flujo OAuth con un humano.
+      thresholdDays: parseInt(process.env.FACEBOOK_TOKEN_WARN_THRESHOLD_DAYS || '7', 10),
+    },
+  },
   linkedin: {
     accessToken: process.env.LINKEDIN_ACCESS_TOKEN || '',
     authorUrn: process.env.LINKEDIN_AUTHOR_URN || '',

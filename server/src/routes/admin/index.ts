@@ -13,6 +13,7 @@ import mastodonRouter from './mastodon.js'
 import instagramRouter from './instagram.js'
 import linkedinRouter from './linkedin.js'
 import twitterRouter from './twitter.js'
+import facebookRouter from './facebook.js'
 import feedbackRouter from './feedback.js'
 import maintenanceRouter from './maintenance.js'
 import membersRouter from './members.js'
@@ -43,6 +44,7 @@ router.use('/mastodon', mastodonRouter)
 router.use('/instagram', instagramRouter)
 router.use('/linkedin', linkedinRouter)
 router.use('/twitter', twitterRouter)
+router.use('/facebook', facebookRouter)
 router.use('/feedback', feedbackRouter)
 router.use('/maintenance', maintenanceRouter)
 router.use('/members', membersRouter)
