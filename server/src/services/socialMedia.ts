@@ -10,14 +10,33 @@ import { blueskyPickBestSchema } from '../schemas/bluesky.js'
 const log = createLogger('social-media')
 
 /**
+ * The slice of a channel that candidate selection needs: which of these
+ * stories it has already published. The caller owns the channel list, so
+ * selection can never drift from the set of channels that will be posted to.
+ */
+export interface AutoPostChannel {
+  name: string
+  publishedStoryIds: (storyIds: string[]) => Promise<Set<string>>
+}
+
+/**
  * Find recently published stories that are candidates for social media posting.
- * A story is a candidate if it hasn't been posted to ANY enabled channel yet.
- * This ensures Instagram (and future channels) are not skipped just because
- * Bluesky/Mastodon already posted.
+ * A story is a candidate if at least one of the given channels has not
+ * published it yet.
+ *
+ * The channels come from the caller rather than a hardcoded list, and that is
+ * the point: a disabled channel can never keep a story in the running (which
+ * would burn an LLM pick on a story nothing ends up posting), and enabling a
+ * channel picks up the backlog on its own.
  *
  * @returns Array of candidate story IDs
  */
-export async function findAutoPostCandidates(lookbackHours: number): Promise<string[]> {
+export async function findAutoPostCandidates(
+  lookbackHours: number,
+  channels: AutoPostChannel[],
+): Promise<string[]> {
+  if (channels.length === 0) return []
+
   const since = new Date()
   since.setHours(since.getHours() - lookbackHours)
 
@@ -36,32 +55,12 @@ export async function findAutoPostCandidates(lookbackHours: number): Promise<str
 
   const storyIds = publishedStories.map((s) => s.id)
 
-  // Find stories already posted to each channel
-  const [blueskyPosted, mastodonPosted, instagramPosted] = await Promise.all([
-    prisma.blueskyPost.findMany({
-      where: { storyId: { in: storyIds }, status: 'published' },
-      select: { storyId: true },
-    }),
-    prisma.mastodonPost.findMany({
-      where: { storyId: { in: storyIds }, status: 'published' },
-      select: { storyId: true },
-    }),
-    prisma.instagramPost.findMany({
-      where: { storyId: { in: storyIds }, status: 'published' },
-      select: { storyId: true },
-    }),
-  ])
-
-  const blueskySet   = new Set(blueskyPosted.map((p: { storyId: string }) => p.storyId))
-  const mastodonSet  = new Set(mastodonPosted.map((p: { storyId: string }) => p.storyId))
-  const instagramSet = new Set(instagramPosted.map((p: { storyId: string }) => p.storyId))
-
-  // A story is a candidate if it hasn't been posted to at least one of the known channels
-  const candidates = storyIds.filter(
-    (id) => !blueskySet.has(id) || !mastodonSet.has(id) || !instagramSet.has(id)
+  // One query per channel, in parallel.
+  const postedPerChannel = await Promise.all(
+    channels.map((channel) => channel.publishedStoryIds(storyIds)),
   )
 
-  return candidates
+  return storyIds.filter((id) => postedPerChannel.some((posted) => !posted.has(id)))
 }
 
 /**
