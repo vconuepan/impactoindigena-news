@@ -74,6 +74,7 @@ const ClustersPage = lazy(() => import('./pages/admin/ClustersPage'))
 const InstagramPage = lazy(() => import('./pages/admin/InstagramPage'))
 const LinkedInPage = lazy(() => import('./pages/admin/LinkedInPage'))
 const TwitterPage = lazy(() => import('./pages/admin/TwitterPage'))
+const FacebookPage = lazy(() => import('./pages/admin/FacebookPage'))
 const FeedbackPage = lazy(() => import('./pages/admin/FeedbackPage'))
 const MembersPage = lazy(() => import('./pages/admin/MembersPage'))
 const CommunitiesAdminPage = lazy(() => import('./pages/admin/CommunitiesAdminPage'))
@@ -219,6 +220,7 @@ export default function App() {
         <Route path="instagram" element={<InstagramPage />} />
         <Route path="linkedin" element={<LinkedInPage />} />
         <Route path="twitter" element={<TwitterPage />} />
+        <Route path="facebook" element={<FacebookPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="members" element={<MembersPage />} />
         <Route path="communities" element={<CommunitiesAdminPage />} />

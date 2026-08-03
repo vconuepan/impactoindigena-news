@@ -12,9 +12,10 @@ interface StoryDetailProps {
   onInstagramGenerate?: (storyId: string) => void
   onLinkedInGenerate?: (storyId: string) => void
   onTwitterGenerate?: (storyId: string) => void
+  onFacebookGenerate?: (storyId: string) => void
 }
 
-export function StoryDetail({ storyId, issues, onClose, onBlueskyGenerate, onMastodonGenerate, onInstagramGenerate, onLinkedInGenerate, onTwitterGenerate }: StoryDetailProps) {
+export function StoryDetail({ storyId, issues, onClose, onBlueskyGenerate, onMastodonGenerate, onInstagramGenerate, onLinkedInGenerate, onTwitterGenerate, onFacebookGenerate }: StoryDetailProps) {
   const { data: story, isLoading, error } = useStory(storyId || '')
 
   return (
@@ -25,7 +26,7 @@ export function StoryDetail({ storyId, issues, onClose, onBlueskyGenerate, onMas
       loading={isLoading}
       error={!!error}
     >
-      {story && <StoryEditForm story={story} issues={issues} onDone={onClose} onBlueskyGenerate={onBlueskyGenerate} onMastodonGenerate={onMastodonGenerate} onInstagramGenerate={onInstagramGenerate} onLinkedInGenerate={onLinkedInGenerate} onTwitterGenerate={onTwitterGenerate} variant="panel" />}
+      {story && <StoryEditForm story={story} issues={issues} onDone={onClose} onBlueskyGenerate={onBlueskyGenerate} onMastodonGenerate={onMastodonGenerate} onInstagramGenerate={onInstagramGenerate} onLinkedInGenerate={onLinkedInGenerate} onTwitterGenerate={onTwitterGenerate} onFacebookGenerate={onFacebookGenerate} variant="panel" />}
     </EditPanel>
   )
 }

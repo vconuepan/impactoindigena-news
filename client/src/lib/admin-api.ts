@@ -21,6 +21,8 @@ import type {
   InstagramPost,
   LinkedInPost,
   TwitterPost,
+  FacebookPost,
+  FacebookTokenStatus,
   Editorial,
 } from '@shared/types'
 
@@ -609,6 +611,23 @@ export const adminApi = {
       request<void>(`/twitter/posts/${id}`, { method: 'DELETE' }),
     refreshMetrics: () =>
       request<{ success: boolean }>('/twitter/metrics/refresh', { method: 'POST' }),
+  },
+
+  facebook: {
+    listPosts: (params?: { status?: string; page?: number; limit?: number }) =>
+      request<{ posts: FacebookPost[]; total: number; page: number; limit: number }>(`/facebook/posts${toQueryString((params || {}) as Record<string, unknown>)}`),
+    getPost: (id: string) => request<FacebookPost>(`/facebook/posts/${id}`),
+    generateDraft: (storyId: string) =>
+      request<FacebookPost>('/facebook/posts/generate', { method: 'POST', body: JSON.stringify({ storyId }) }),
+    updateDraft: (id: string, postText: string) =>
+      request<FacebookPost>(`/facebook/posts/${id}`, { method: 'PUT', body: JSON.stringify({ postText }) }),
+    publishPost: (id: string) =>
+      request<FacebookPost>(`/facebook/posts/${id}/publish`, { method: 'POST' }),
+    deletePost: (id: string) =>
+      request<void>(`/facebook/posts/${id}`, { method: 'DELETE' }),
+    refreshMetrics: () =>
+      request<{ success: boolean }>('/facebook/metrics/refresh', { method: 'POST' }),
+    tokenStatus: () => request<FacebookTokenStatus>('/facebook/token/status'),
   },
 
   // Feedback

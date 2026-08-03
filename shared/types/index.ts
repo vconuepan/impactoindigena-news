@@ -51,6 +51,8 @@ export type JobName =
   | 'linkedin_update_metrics'
   | 'instagram_refresh_token'
   | 'linkedin_check_token'
+  | 'facebook_update_metrics'
+  | 'facebook_check_token'
   | 'generate_newsletter'
   | 'send_newsletter'
   | 'send_private_newsletter'

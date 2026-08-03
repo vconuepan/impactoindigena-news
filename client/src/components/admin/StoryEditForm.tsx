@@ -22,6 +22,7 @@ interface StoryEditFormProps {
   onInstagramGenerate?: (storyId: string) => void
   onLinkedInGenerate?: (storyId: string) => void
   onTwitterGenerate?: (storyId: string) => void
+  onFacebookGenerate?: (storyId: string) => void
   variant?: 'page' | 'panel'
 }
 
@@ -46,7 +47,7 @@ function buildFormState(story: Story) {
   }
 }
 
-export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMastodonGenerate, onInstagramGenerate, onLinkedInGenerate, onTwitterGenerate, variant = 'page' }: StoryEditFormProps) {
+export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMastodonGenerate, onInstagramGenerate, onLinkedInGenerate, onTwitterGenerate, onFacebookGenerate, variant = 'page' }: StoryEditFormProps) {
   const [contentExpanded, setContentExpanded] = useState(false)
   const [confirmDissolve, setConfirmDissolve] = useState(false)
   const updateStory = useUpdateStory()
@@ -394,6 +395,36 @@ export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMast
               onClick={() => onTwitterGenerate(story.id)}
             >
               Generate X Post
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Facebook (Página) */}
+      {onFacebookGenerate && story.status === 'published' && (
+        <div className="border-t border-neutral-200 pt-4">
+          <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">Facebook</h3>
+          {(story._count?.facebookPosts ?? 0) > 0 ? (
+            <p className="text-sm text-neutral-500">
+              {/* Sin permalink no está publicado, igual que en los otros canales. */}
+              {story.facebookPosts?.[0]?.permalink ? (
+                <>
+                  This story has been posted to the Facebook Page.{' '}
+                  <a href={story.facebookPosts[0].permalink} target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
+                    View post
+                  </a>
+                </>
+              ) : (
+                <>A Facebook post exists but is not published yet. Finish it from the Facebook page.</>
+              )}
+            </p>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onFacebookGenerate(story.id)}
+            >
+              Generate Facebook Post
             </Button>
           )}
         </div>
