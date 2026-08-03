@@ -21,6 +21,7 @@ interface StoryEditFormProps {
   onMastodonGenerate?: (storyId: string) => void
   onInstagramGenerate?: (storyId: string) => void
   onLinkedInGenerate?: (storyId: string) => void
+  onTwitterGenerate?: (storyId: string) => void
   variant?: 'page' | 'panel'
 }
 
@@ -45,7 +46,7 @@ function buildFormState(story: Story) {
   }
 }
 
-export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMastodonGenerate, onInstagramGenerate, onLinkedInGenerate, variant = 'page' }: StoryEditFormProps) {
+export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMastodonGenerate, onInstagramGenerate, onLinkedInGenerate, onTwitterGenerate, variant = 'page' }: StoryEditFormProps) {
   const [contentExpanded, setContentExpanded] = useState(false)
   const [confirmDissolve, setConfirmDissolve] = useState(false)
   const updateStory = useUpdateStory()
@@ -363,6 +364,36 @@ export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMast
               onClick={() => onLinkedInGenerate(story.id)}
             >
               Generate LinkedIn Post
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* X/Twitter */}
+      {onTwitterGenerate && story.status === 'published' && (
+        <div className="border-t border-neutral-200 pt-4">
+          <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2">X/Twitter</h3>
+          {(story._count?.twitterPosts ?? 0) > 0 ? (
+            <p className="text-sm text-neutral-500">
+              {/* Mismo caso que Instagram y LinkedIn: sin tweetUrl no está publicado. */}
+              {story.twitterPosts?.[0]?.tweetUrl ? (
+                <>
+                  This story has been posted to X.{' '}
+                  <a href={story.twitterPosts[0].tweetUrl} target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
+                    View post
+                  </a>
+                </>
+              ) : (
+                <>An X post exists but is not published yet. Finish it from the X/Twitter page.</>
+              )}
+            </p>
+          ) : (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onTwitterGenerate(story.id)}
+            >
+              Generate X Post
             </Button>
           )}
         </div>

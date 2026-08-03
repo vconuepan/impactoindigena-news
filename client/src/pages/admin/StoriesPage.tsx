@@ -27,7 +27,8 @@ import { MastodonDraftPanel } from '../../components/admin/MastodonDraftPanel'
 import type { MastodonDraft } from '../../components/admin/MastodonDraftPanel'
 import { InstagramDraftPanel } from '../../components/admin/InstagramDraftPanel'
 import { LinkedInDraftPanel } from '../../components/admin/LinkedInDraftPanel'
-import type { InstagramPost, LinkedInPost } from '@shared/types'
+import { TwitterDraftPanel } from '../../components/admin/TwitterDraftPanel'
+import type { InstagramPost, LinkedInPost, TwitterPost } from '@shared/types'
 import { useToast } from '../../components/ui/Toast'
 
 const DEFAULT_PAGE_SIZE = 25
@@ -87,6 +88,9 @@ export default function StoriesPage() {
   const [instagramPublishing, setInstagramPublishing] = useState(false)
   const [linkedInDraft, setLinkedInDraft] = useState<LinkedInPost | null>(null)
   const [linkedInPanelOpen, setLinkedInPanelOpen] = useState(false)
+  const [twitterDraft, setTwitterDraft] = useState<TwitterPost | null>(null)
+  const [twitterPanelOpen, setTwitterPanelOpen] = useState(false)
+  const [twitterPublishing, setTwitterPublishing] = useState(false)
   const [linkedInPublishing, setLinkedInPublishing] = useState(false)
 
   const bulkUpdate = useBulkUpdateStatus()
@@ -436,6 +440,17 @@ export default function StoriesPage() {
       })
   }, [toast])
 
+  const handleTwitterGenerate = useCallback(async (storyId: string) => {
+    setTwitterPanelOpen(true)
+    setTwitterDraft(null)
+    adminApi.twitter.generateDraft(storyId)
+      .then((draft) => setTwitterDraft(draft as TwitterPost))
+      .catch((err) => {
+        toast('error', err instanceof Error ? err.message : 'Error al generar borrador de X')
+        setTwitterPanelOpen(false)
+      })
+  }, [toast])
+
   const confirmLoading = bulkUpdate.isPending || deleteStory.isPending
 
   return (
@@ -534,6 +549,7 @@ export default function StoriesPage() {
         }}
         onInstagramGenerate={handleInstagramGenerate}
         onLinkedInGenerate={handleLinkedInGenerate}
+        onTwitterGenerate={handleTwitterGenerate}
       />
 
       <CrawlUrlForm open={crawlOpen} onClose={() => setCrawlOpen(false)} />
@@ -644,6 +660,30 @@ export default function StoriesPage() {
         }}
         onDelete={async (postId) => {
           await adminApi.linkedin.deletePost(postId)
+        }}
+      />
+
+      <TwitterDraftPanel
+        open={twitterPanelOpen}
+        onClose={() => { setTwitterPanelOpen(false); setTwitterDraft(null) }}
+        draft={twitterDraft}
+        publishing={twitterPublishing}
+        onPublish={async (postId) => {
+          setTwitterPublishing(true)
+          try {
+            await adminApi.twitter.publishPost(postId)
+            toast('success', 'Publicado en X')
+            setTwitterPanelOpen(false)
+            setTwitterDraft(null)
+            invalidateStories()
+          } catch (err) {
+            toast('error', err instanceof Error ? err.message : 'Error al publicar')
+          } finally {
+            setTwitterPublishing(false)
+          }
+        }}
+        onUpdate={async (postId, postText) => {
+          await adminApi.twitter.updateDraft(postId, postText)
         }}
       />
 

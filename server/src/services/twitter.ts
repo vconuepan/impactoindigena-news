@@ -67,6 +67,71 @@ export async function generateDraft(storyId: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Draft management
+// ---------------------------------------------------------------------------
+
+/**
+ * Only `draft` is editable, matching what `publishPost` accepts. Keeping the
+ * two in step is what Instagram and LinkedIn got wrong: the panel saves the
+ * text before publishing, so a status that publish accepts but edit rejects
+ * makes the post unpublishable from the UI.
+ *
+ * Recovery from `failed` here is delete-and-regenerate, same as Bluesky and
+ * Mastodon.
+ */
+export async function updateDraft(postId: string, postText: string) {
+  const post = await prisma.twitterPost.findUnique({ where: { id: postId } })
+  if (!post) throw new Error('Post not found')
+  if (post.status !== 'draft') throw new Error('Can only edit draft posts')
+
+  return prisma.twitterPost.update({
+    where: { id: postId },
+    data: { postText },
+    include: { story: { include: { feed: true, issue: true } } },
+  })
+}
+
+/**
+ * Drops the local record only. A published tweet stays up on Twitter, because
+ * the API credentials here cover posting and metrics, not deletion. Deleting
+ * the record frees the story to be drafted again.
+ */
+export async function deletePostRecord(postId: string) {
+  const post = await prisma.twitterPost.findUnique({ where: { id: postId } })
+  if (!post) throw new Error('Post not found')
+
+  await prisma.twitterPost.delete({ where: { id: postId } })
+  log.info({ postId, status: post.status }, 'deleted Twitter post record')
+}
+
+export async function listPosts(options: { status?: string; page?: number; limit?: number }) {
+  const { status, page = 1, limit = 20 } = options
+  const skip = (page - 1) * limit
+
+  const where = status ? { status } : {}
+
+  const [posts, total] = await Promise.all([
+    prisma.twitterPost.findMany({
+      where,
+      include: { story: { include: { issue: true, feed: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }),
+    prisma.twitterPost.count({ where }),
+  ])
+
+  return { posts, total, page, limit }
+}
+
+export async function getPostById(postId: string) {
+  return prisma.twitterPost.findUnique({
+    where: { id: postId },
+    include: { story: { include: { issue: true, feed: true } } },
+  })
+}
+
+// ---------------------------------------------------------------------------
 // Publishing
 // ---------------------------------------------------------------------------
 
