@@ -1,9 +1,9 @@
 -- social-posting.allium
 -- Distilled from: server/src/services/{socialMedia,bluesky,mastodon,twitter,
---                                      instagram,linkedin}.ts,
---                 server/src/lib/{socialToken,instagram,linkedin}.ts,
+--                                      instagram,linkedin,facebook}.ts,
+--                 server/src/lib/{socialToken,instagram,linkedin,facebook}.ts,
 --                 server/src/jobs/{socialAutoPost,instagramRefreshToken,
---                                  linkedinCheckToken}.ts
+--                                  linkedinCheckToken,facebookCheckToken}.ts
 --
 -- Multi-platform social media posting. A shared story-picking step
 -- feeds into platform-specific formatters. The channel adapter
@@ -44,7 +44,7 @@ entity SocialPost {
     error: String?
     metrics_updated_at: Timestamp?
     channel: Bluesky | Mastodon | Twitter
-           | Instagram | LinkedIn                        -- discriminator
+           | Instagram | LinkedIn | Facebook             -- discriminator
 }
 
 variant Bluesky : SocialPost {
@@ -92,6 +92,17 @@ variant LinkedIn : SocialPost {
     impression_count: Integer = 0
 }
 
+-- A Page post carries no image of its own: the platform renders a link card
+-- from the article's og:image. Uploading the image instead would produce a
+-- photo that does not click through to the article.
+variant Facebook : SocialPost {
+    facebook_post_id: String?                            -- "{page_id}_{post_id}"
+    permalink: String?
+    like_count: Integer = 0
+    comment_count: Integer = 0
+    share_count: Integer = 0
+}
+
 value ChannelConfig {
     name: String
     char_limit: Integer
@@ -116,6 +127,11 @@ value ChannelConfig {
 --   | Twitter   |   275 | chars     | no        |
 --   | Instagram |  2200 | chars     | yes       |
 --   | LinkedIn  |  2900 | chars     | yes       |
+--   | Facebook  |  none | -         | yes       |
+--
+-- Facebook has no hard limit. The feed truncates after ~3 lines, so the
+-- constraint is attention, not the API, and it is enforced in the prompt
+-- (60-120 words) rather than by rejecting long text.
 
 value MetadataLine {
     issue_name: String?
@@ -308,13 +324,18 @@ rule InstagramPublishesInBackground {
 -- no alert). Two properties matter per channel — whether the token
 -- expires, and whether the system can renew it without a human.
 --
---   | Channel   | Expires | Self-renewing    | Recovery           |
---   |-----------|---------|------------------|--------------------|
---   | Instagram | 60 days | yes, scheduled   | mint a new token   |
---   | LinkedIn  | 60 days | NO               | human OAuth reauth |
---   | Bluesky   | session | yes, on re-login | none needed        |
---   | Mastodon  | never   | n/a              | none needed        |
---   | Twitter   | never   | n/a              | none needed        |
+--   | Channel   | Expires  | Self-renewing    | Recovery           |
+--   |-----------|----------|------------------|--------------------|
+--   | Instagram | 60 days  | yes, scheduled   | mint a new token   |
+--   | LinkedIn  | 60 days  | NO               | human OAuth reauth |
+--   | Facebook  | maybe    | NO               | mint a new token   |
+--   | Bluesky   | session  | yes, on re-login | none needed        |
+--   | Mastodon  | never    | n/a              | none needed        |
+--   | Twitter   | never    | n/a              | none needed        |
+--
+-- Facebook is "maybe" on purpose: a Page token derived from a user token
+-- expires, and one issued to a system user does not. The check has to handle
+-- both, and an absent expiry is not an expired token.
 --
 -- Bluesky derives a short-lived session from a long-lived app
 -- password and re-logs in when the session dies, so it renews
@@ -494,6 +515,42 @@ rule ReauthorizeLinkedIn {
     )
 }
 
+-- ─── Facebook: cannot self-renew, may not expire ────────────────────
+-- Same shape as LinkedIn (detection replaces renewal) with one twist that
+-- matters: a Page token derived from a user token expires, and one issued to
+-- a system user never does. So "no expiry date" is a healthy state here, not
+-- an unknown one, and alerting on it would mean a daily email about nothing.
+--
+-- Introspection authenticates with the app's own credentials, so it works on
+-- a publish-only token. Missing app credentials disable the check without
+-- disabling publishing, and that is not an alert either: it is not a token
+-- failure, it is a missing warning system.
+
+rule CheckFacebookToken {
+    when: FacebookCheckTokenJobRuns()                    -- daily
+    requires: Facebook.is_configured
+    requires: Facebook.app_is_configured
+
+    let status = Platform.debug_token(current_token)
+
+    if not status.is_valid:
+        ensures: reject("Page token invalid: mint a new one")
+
+    else if status.expires_at = null:
+        ensures: no_op                                   -- never expires
+
+    else if status.days_left <= config.token_expiry_warning.days:
+        ensures: reject("Page token expires soon: mint a new one")
+
+    else:
+        ensures: no_op                                   -- healthy
+}
+
+-- Invariant (Facebook groups): posting to a group is not expressible. The
+-- platform withdrew the capability in April 2024, so no rule here can grant
+-- it. Group distribution is a human sharing a link, and those visits carry
+-- no referrer, which is why they must be tagged to be measurable at all.
+
 -- ─── Weekly Agenda Digest (Incidencia Internacional, Fase 3) ───────
 -- A second, independent posting path. Unlike story auto-post, the weekly
 -- agenda digest is NOT tied to a Story and creates NO SocialPost record:
@@ -560,6 +617,10 @@ surface SocialPostManager {
             post.comment_count
             post.impression_count
             post.slide_urls
+        if post.channel = Facebook:
+            post.like_count
+            post.comment_count
+            post.share_count
 
     provides:
         AdminEditsDraft(post, new_text)
