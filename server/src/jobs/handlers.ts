@@ -11,6 +11,8 @@ import { runInstagramUpdateMetrics } from './instagramUpdateMetrics.js'
 import { runInstagramRefreshToken } from './instagramRefreshToken.js'
 import { runLinkedInUpdateMetrics } from './linkedinUpdateMetrics.js'
 import { runLinkedInCheckToken } from './linkedinCheckToken.js'
+import { runFacebookUpdateMetrics } from './facebookUpdateMetrics.js'
+import { runFacebookCheckToken } from './facebookCheckToken.js'
 import { runSendNewsletter } from './sendNewsletter.js'
 import { runSendWeeklyNewsletter } from './sendWeeklyNewsletter.js'
 import { runSendPrivateNewsletter } from './sendPrivateNewsletter.js'
@@ -39,6 +41,8 @@ export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   instagram_refresh_token: runInstagramRefreshToken,
   linkedin_update_metrics: runLinkedInUpdateMetrics,
   linkedin_check_token: runLinkedInCheckToken,
+  facebook_update_metrics: runFacebookUpdateMetrics,
+  facebook_check_token: runFacebookCheckToken,
   send_newsletter: runSendNewsletter,
   send_weekly_newsletter: runSendWeeklyNewsletter,
   send_private_newsletter: runSendPrivateNewsletter,

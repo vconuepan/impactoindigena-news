@@ -101,6 +101,7 @@ model Story {
   twitterPosts           TwitterPost[]
   instagramPosts         InstagramPost[]
   linkedinPosts          LinkedInPost[]
+  facebookPosts          FacebookPost[]
   communityPosts         CommunityPost[]
   createdAt              DateTime     @default(now()) @map("created_at")
   updatedAt              DateTime     @updatedAt @map("updated_at")
@@ -373,6 +374,32 @@ model LinkedInPost {
   @@index([status])
   @@index([publishedAt])
   @@map("linkedin_posts")
+}
+
+// --- Facebook Page Tables ---
+
+// A Page post is text plus a link: Facebook builds the link card from the
+// article's og:image, so no image is uploaded and none is stored here.
+model FacebookPost {
+  id               String    @id @default(uuid())
+  storyId          String    @unique @map("story_id")
+  story            Story     @relation(fields: [storyId], references: [id])
+  facebookPostId   String?   @unique @map("facebook_post_id")
+  permalink        String?
+  status           String    @default("draft") // draft | published | failed
+  postText         String    @map("post_text")
+  error            String?
+  publishedAt      DateTime? @map("published_at")
+  likeCount        Int       @default(0) @map("like_count")
+  commentCount     Int       @default(0) @map("comment_count")
+  shareCount       Int       @default(0) @map("share_count")
+  metricsUpdatedAt DateTime? @map("metrics_updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([publishedAt])
+  @@map("facebook_posts")
 }
 
 // --- Analytics ---

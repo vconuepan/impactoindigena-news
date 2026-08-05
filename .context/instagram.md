@@ -139,7 +139,7 @@ Key fields:
 | `caption` | Full LLM-generated caption including URL suffix |
 | `imageUrl` | First slide URL (used for previews) |
 | `slideUrls` | All slide URLs as string array (1 for single-image, 4 for carousel) |
-| `status` | `draft` → `published` or `failed` |
+| `status` | `generating` → `draft` → `publishing` → `published` or `failed`. The two transient states exist because asset building and slide upload run in the background; the client polls. Both `draft` and `failed` accept an edit or a publish, so a failed post is fixed in place rather than deleted. |
 | `instagramPostId` | Instagram's returned post ID (set after publish) |
 | `permalink` | `https://www.instagram.com/p/:postId/` |
 | `publishedAt` | Timestamp of successful publish |
@@ -197,7 +197,7 @@ This happened once, in July 2026: the token expired on 18-Jul and posting stayed
 
 **Carousel processing delay:** The Graph API sometimes needs extra time to process carousel items. If publishing fails immediately after container creation, the `withRetry` wrapper will retry with 3-second delays.
 
-**Duplicate post prevention:** `generateDraft()` checks for an existing `InstagramPost` record with the same `storyId`. If one exists (any status), generation throws "Story already has an Instagram post". Delete the existing record from `/admin/instagram` to regenerate.
+**Duplicate post prevention:** `generateDraft()` checks for an existing `InstagramPost` record with the same `storyId`. A `draft` or `generating` record is returned as-is, so the panel reopens seamlessly. A `failed` record is deleted and regenerated. Any other status (`published`, `publishing`) throws "Story already has an Instagram post" — delete the record from `/admin/instagram` to regenerate.
 
 ## Key Files
 

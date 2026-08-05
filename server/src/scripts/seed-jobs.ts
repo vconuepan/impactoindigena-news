@@ -18,11 +18,14 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   { jobName: 'mastodon_update_metrics', cronExpression: '0 4 * * *' },
   { jobName: 'instagram_update_metrics',cronExpression: '0 */6 * * *' },
   { jobName: 'linkedin_update_metrics', cronExpression: '0 */6 * * *' },
+  { jobName: 'facebook_update_metrics', cronExpression: '0 */6 * * *' },
   // Vigilancia de tokens — habilitados por defecto: son lo que evita que el
   // posteo vuelva a caerse en silencio. Instagram renueva solo; LinkedIn no
   // puede (solo partners MDP), así que su job avisa para reautorizar a mano.
   { jobName: 'instagram_refresh_token', cronExpression: '30 5 * * *', enabled: true },
   { jobName: 'linkedin_check_token',    cronExpression: '0 6 * * *',  enabled: true },
+  // Facebook tampoco renueva solo: media hora después del de LinkedIn.
+  { jobName: 'facebook_check_token',    cronExpression: '30 6 * * *', enabled: true },
   // --- Newsletter ---
   // generate_newsletter: miércoles y sábados 4 AM UTC (2× por semana — genera Jue y Lun)
   { jobName: 'generate_newsletter',       cronExpression: '0 4 * * 3,6' },

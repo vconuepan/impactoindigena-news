@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { AutoPostChannel } from './socialMedia.js'
 
 const mockPrisma = vi.hoisted(() => ({
   story: {
@@ -11,6 +12,9 @@ const mockPrisma = vi.hoisted(() => ({
     findMany: vi.fn(),
   },
   instagramPost: {
+    findMany: vi.fn(),
+  },
+  twitterPost: {
     findMany: vi.fn(),
   },
 }))
@@ -35,61 +39,74 @@ const { findAutoPostCandidates, pickBestStoryForSocial } = await import('./socia
 describe('findAutoPostCandidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    // Default each channel to "nothing posted" so tests only set the channels they care about.
-    mockPrisma.blueskyPost.findMany.mockResolvedValue([])
-    mockPrisma.mastodonPost.findMany.mockResolvedValue([])
-    mockPrisma.instagramPost.findMany.mockResolvedValue([])
+  })
+
+  // A channel that has published exactly the story IDs it was built with.
+  const channel = (name: string, published: string[] = []): AutoPostChannel => ({
+    name,
+    publishedStoryIds: vi.fn(
+      async (storyIds: string[]) => new Set(storyIds.filter((id) => published.includes(id))),
+    ),
+  })
+
+  it('returns empty without querying when no channel is enabled', async () => {
+    const result = await findAutoPostCandidates(25, [])
+
+    expect(result).toEqual([])
+    expect(mockPrisma.story.findMany).not.toHaveBeenCalled()
   })
 
   it('returns empty when no published stories', async () => {
     mockPrisma.story.findMany.mockResolvedValue([])
 
-    const result = await findAutoPostCandidates(25)
+    const result = await findAutoPostCandidates(25, [channel('bluesky')])
     expect(result).toEqual([])
   })
 
-  it('returns stories not posted to any channel', async () => {
+  it('returns stories at least one channel has not published', async () => {
     mockPrisma.story.findMany.mockResolvedValue([
       { id: 'story-1' },
       { id: 'story-2' },
       { id: 'story-3' },
     ])
-    mockPrisma.blueskyPost.findMany.mockResolvedValue([
-      { storyId: 'story-1' },
-    ])
-    mockPrisma.mastodonPost.findMany.mockResolvedValue([
-      { storyId: 'story-2' },
+
+    const result = await findAutoPostCandidates(25, [
+      channel('bluesky', ['story-1']),
+      channel('mastodon', ['story-2']),
     ])
 
-    const result = await findAutoPostCandidates(25)
-
-    // story-1 not on Mastodon, story-2 not on Bluesky, story-3 not on either
-    expect(result).toContain('story-1')
-    expect(result).toContain('story-2')
-    expect(result).toContain('story-3')
+    // story-1 not on Mastodon, story-2 not on Bluesky, story-3 on neither
+    expect(result).toEqual(['story-1', 'story-2', 'story-3'])
   })
 
-  it('excludes stories posted to all channels', async () => {
+  it('excludes stories every enabled channel has published', async () => {
     mockPrisma.story.findMany.mockResolvedValue([
       { id: 'story-1' },
       { id: 'story-2' },
     ])
-    mockPrisma.blueskyPost.findMany.mockResolvedValue([
-      { storyId: 'story-1' },
-      { storyId: 'story-2' },
-    ])
-    mockPrisma.mastodonPost.findMany.mockResolvedValue([
-      { storyId: 'story-1' },
-    ])
-    mockPrisma.instagramPost.findMany.mockResolvedValue([
-      { storyId: 'story-1' },
+
+    const result = await findAutoPostCandidates(25, [
+      channel('bluesky', ['story-1', 'story-2']),
+      channel('mastodon', ['story-1']),
+      channel('instagram', ['story-1']),
     ])
 
-    const result = await findAutoPostCandidates(25)
-
-    // story-1 posted to all three — excluded; story-2 only on Bluesky — included
+    // story-1 is on all three — excluded; story-2 only on Bluesky — included
     expect(result).not.toContain('story-1')
     expect(result).toContain('story-2')
+  })
+
+  // Regression: selection used to query a fixed set of tables instead of the
+  // enabled channels, so a channel that was off (or simply absent from that
+  // list) kept stories eligible forever and burned an LLM pick on a story
+  // every enabled channel had already posted.
+  it('ignores channels it was not given', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([{ id: 'story-1' }])
+
+    const result = await findAutoPostCandidates(25, [channel('bluesky', ['story-1'])])
+
+    expect(result).toEqual([])
+    expect(mockPrisma.twitterPost.findMany).not.toHaveBeenCalled()
   })
 })
 

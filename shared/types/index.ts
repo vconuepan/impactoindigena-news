@@ -51,6 +51,8 @@ export type JobName =
   | 'linkedin_update_metrics'
   | 'instagram_refresh_token'
   | 'linkedin_check_token'
+  | 'facebook_update_metrics'
+  | 'facebook_check_token'
   | 'generate_newsletter'
   | 'send_newsletter'
   | 'send_private_newsletter'
@@ -122,11 +124,13 @@ export interface Story {
     _count: { stories: number }
     stories: { id: string; title: string | null; sourceTitle: string; status: StoryStatus }[]
   } | null
-  _count?: { blueskyPosts: number; mastodonPosts: number; instagramPosts: number; linkedinPosts: number }
+  _count?: { blueskyPosts: number; mastodonPosts: number; instagramPosts: number; linkedinPosts: number; twitterPosts: number; facebookPosts: number }
   blueskyPosts?: { postUri: string | null }[]
   mastodonPosts?: { statusUrl: string | null }[]
   instagramPosts?: { permalink: string | null }[]
   linkedinPosts?: { postUrl: string | null }[]
+  twitterPosts?: { tweetUrl: string | null }[]
+  facebookPosts?: { permalink: string | null }[]
 }
 
 export interface PublicStory extends Story {
@@ -489,6 +493,78 @@ export interface LinkedInPost {
   likeCount: number
   commentCount: number
   impressionCount: number
+  metricsUpdatedAt: string | null
+  createdAt: string
+  updatedAt: string
+  story?: {
+    title: string | null
+    titleLabel: string | null
+    sourceUrl: string
+    slug: string | null
+    issue?: { name: string } | null
+    relevance?: number | null
+    feed: { title: string; displayTitle: string | null }
+  }
+}
+
+export type FacebookPostStatus = 'draft' | 'published' | 'failed'
+
+export interface FacebookPost {
+  id: string
+  storyId: string
+  facebookPostId: string | null
+  permalink: string | null
+  status: FacebookPostStatus
+  postText: string
+  error: string | null
+  publishedAt: string | null
+  likeCount: number
+  commentCount: number
+  shareCount: number
+  metricsUpdatedAt: string | null
+  createdAt: string
+  updatedAt: string
+  story?: {
+    title: string | null
+    titleLabel: string | null
+    sourceUrl: string
+    slug: string | null
+    imageUrl?: string | null
+    issue?: { name: string } | null
+    relevance?: number | null
+    feed: { title: string; displayTitle: string | null }
+  }
+}
+
+/** Salud del token de Página, para la tarjeta del panel. */
+export interface FacebookTokenStatus {
+  configured: boolean
+  appConfigured: boolean
+  isValid?: boolean
+  expiresAt?: string | null
+  daysLeft?: number | null
+  neverExpires?: boolean
+  scopes?: string[]
+  source?: 'db' | 'env'
+  error?: string
+}
+
+export type TwitterPostStatus = 'draft' | 'published' | 'failed'
+
+export interface TwitterPost {
+  id: string
+  storyId: string
+  tweetId: string | null
+  tweetUrl: string | null
+  status: TwitterPostStatus
+  postText: string
+  imageUrl: string | null
+  error: string | null
+  publishedAt: string | null
+  likeCount: number
+  retweetCount: number
+  replyCount: number
+  quoteCount: number
   metricsUpdatedAt: string | null
   createdAt: string
   updatedAt: string

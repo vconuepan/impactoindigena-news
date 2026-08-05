@@ -1,10 +1,19 @@
 -- social-posting.allium
--- Distilled from: server/src/services/{socialMedia,bluesky,mastodon}.ts
+-- Distilled from: server/src/services/{socialMedia,bluesky,mastodon,twitter,
+--                                      instagram,linkedin,facebook}.ts,
+--                 server/src/lib/{socialToken,instagram,linkedin,facebook}.ts,
+--                 server/src/jobs/{socialAutoPost,instagramRefreshToken,
+--                                  linkedinCheckToken,facebookCheckToken}.ts
 --
 -- Multi-platform social media posting. A shared story-picking step
 -- feeds into platform-specific formatters. The channel adapter
 -- pattern means adding a new platform requires a new variant,
 -- not new selection logic.
+--
+-- Two things vary per channel and are therefore contracts, not
+-- incidental differences: which statuses accept an edit or a publish
+-- (retry semantics), and whether the channel's credential can renew
+-- itself without a human.
 
 use "./story-pipeline.allium" as pipeline
 use "./authentication.allium" as auth
@@ -12,19 +21,30 @@ use "./authentication.allium" as auth
 config {
     lookback_hours: Integer = 25
     post_delay: Duration = 2.seconds
+
+    -- Credential renewal (Instagram is the only self-renewing channel)
+    token_refresh_threshold: Duration = 15.days
+    token_nominal_lifetime: Duration = 60.days
+    token_min_age_to_refresh: Duration = 24.hours
+
+    -- Credential expiry warning (channels that cannot self-renew)
+    token_expiry_warning: Duration = 7.days
 }
 
 -- ─── Channel as Sum Type ───────────────────────────────────────────
 -- Each platform has distinct formatting rules but shares the
--- draft → published → failed lifecycle.
+-- draft → published → failed lifecycle. Instagram adds two
+-- transient states because its slow work runs in the background.
 
 entity SocialPost {
     story: Story
-    status: draft | published | failed
-    post_text: String
+    status: draft | generating | publishing | published | failed
+    post_text: String                                    -- Instagram names this `caption`
     published_at: Timestamp?
     error: String?
-    channel: Bluesky | Mastodon                          -- discriminator
+    metrics_updated_at: Timestamp?
+    channel: Bluesky | Mastodon | Twitter
+           | Instagram | LinkedIn | Facebook             -- discriminator
 }
 
 variant Bluesky : SocialPost {
@@ -44,15 +64,74 @@ variant Mastodon : SocialPost {
     reply_count: Integer = 0
 }
 
+variant Twitter : SocialPost {
+    tweet_id: String?
+    tweet_url: String?
+    image_url: String?
+    like_count: Integer = 0
+    retweet_count: Integer = 0
+    reply_count: Integer = 0
+    quote_count: Integer = 0
+}
+
+variant Instagram : SocialPost {
+    instagram_post_id: String?
+    permalink: String?
+    image_url: String                                    -- cover slide, required
+    slide_urls: List<String> = []                        -- 1 = single image, 4 = carousel
+    like_count: Integer = 0
+    comment_count: Integer = 0
+}
+
+variant LinkedIn : SocialPost {
+    linkedin_post_id: String?
+    post_url: String?
+    slide_urls: List<String> = []                        -- multi-image gallery
+    like_count: Integer = 0
+    comment_count: Integer = 0
+    impression_count: Integer = 0
+}
+
+-- A Page post carries no image of its own: the platform renders a link card
+-- from the article's og:image. Uploading the image instead would produce a
+-- photo that does not click through to the article.
+variant Facebook : SocialPost {
+    facebook_post_id: String?                            -- "{page_id}_{post_id}"
+    permalink: String?
+    like_count: Integer = 0
+    comment_count: Integer = 0
+    share_count: Integer = 0
+}
+
 value ChannelConfig {
     name: String
     char_limit: Integer
     enabled: Boolean
     is_configured: Boolean
 
+    -- A retriable channel accepts edits and publishes from `failed`,
+    -- so a broken publish can be fixed in place instead of deleted
+    -- and regenerated. See RetrySemantics below.
+    is_retriable: Boolean
+
     -- Derived
     is_active: enabled and is_configured
 }
+
+-- Channel limits (counted at draft generation, enforced on assembly):
+--
+--   | Channel   | Limit | Unit      | Retriable |
+--   |-----------|-------|-----------|-----------|
+--   | Bluesky   |   300 | graphemes | no        |
+--   | Mastodon  |   500 | chars     | no        |
+--   | Twitter   |   275 | chars     | no        |
+--   | Instagram |  2200 | chars     | yes       |
+--   | LinkedIn  |  2900 | chars     | yes       |
+--   | Facebook  |  none | -         | yes       |
+--
+-- Facebook has no hard limit. The feed truncates after ~3 lines, so the
+-- constraint is attention, not the API, and it is enforced in the prompt
+-- (60-120 words) rather than by rejecting long text.
 
 value MetadataLine {
     issue_name: String?
@@ -105,12 +184,14 @@ rule PickBestStory {
             where story = pick and channel = channel.name
                 and status = published:
             ensures: GenerateDraft(pick, channel)
+    -- Per-channel failure is logged and never aborts the others.
 }
 
 -- ─── Draft Generation ──────────────────────────────────────────────
 
 rule GenerateDraft {
     when: GenerateDraft(story, channel)
+    requires: story.title != null                         -- must be fully analyzed
     requires: not exists SocialPost
         where story = story and channel = channel.name
 
@@ -136,6 +217,70 @@ rule GenerateDraft {
     -- Source URL first so Mastodon generates link preview from original article
 }
 
+-- Re-requesting a draft for a story that already has one is not an
+-- error on the retriable channels: the admin panel reopens the
+-- existing draft, and a failed post is discarded and rebuilt.
+-- A published post always blocks regeneration.
+rule RegenerateDraft {
+    when: GenerateDraft(story, channel)
+    let existing = SocialPost where story = story and channel = channel.name
+    requires: exists existing
+
+    if existing.status in [draft, generating]:
+        ensures: return existing                          -- idempotent reopen
+    else if existing.status = failed and channel.is_retriable:
+        ensures: not exists existing
+        ensures: GenerateDraft(story, channel)
+    else:
+        ensures: reject("Story already has a post on this channel")
+}
+
+-- Instagram builds its cover image, carousel slides and asset uploads
+-- before a draft is reviewable, which takes minutes. The record is
+-- created in `generating` and flipped to `draft` when the work lands,
+-- so the caller returns immediately and the row reserves the story.
+rule InstagramDraftGeneratesInBackground {
+    when: GenerateDraft(story, channel) and channel = Instagram
+
+    ensures: SocialPost.created(
+        story: story, channel: Instagram,
+        post_text: "", image_url: "", slide_urls: [],
+        status: generating
+    )
+    ensures: BuildInstagramAssets(post)
+}
+
+rule InstagramAssetsReady {
+    when: BuildInstagramAssets(post) completes
+    ensures: post.status = draft
+}
+
+rule InstagramAssetsFail {
+    when: BuildInstagramAssets(post) fails with error
+    ensures: post.status = failed
+    ensures: post.error = error
+}
+
+-- ─── Retry Semantics ───────────────────────────────────────────────
+-- Which statuses accept an edit or a publish is a per-channel
+-- contract, not an accident.
+--
+-- Retriable channels (Instagram, LinkedIn) accept `draft` and
+-- `failed`. Both edit and publish must accept the same set: the
+-- admin panel saves the text BEFORE publishing, so rejecting an edit
+-- on a failed post would make it unpublishable — the very case that
+-- needs fixing by hand.
+--
+-- Non-retriable channels (Bluesky, Mastodon, Twitter) accept only
+-- `draft`. Recovery there is delete-and-regenerate.
+--
+-- Transient states (`generating`, `publishing`) accept neither, and
+-- occur on Instagram only.
+--
+--   editable(post)    = post.status = draft
+--                       or (post.status = failed and post.channel.is_retriable)
+--   publishable(post) = editable(post)
+
 -- ─── Publishing ────────────────────────────────────────────────────
 
 rule PublishPost {
@@ -153,11 +298,258 @@ rule PublishFails {
     ensures: post.error = error
 }
 
+-- Instagram uploads each carousel slide separately, which outlives the
+-- edge proxy timeout and made a successful publish look failed. The
+-- post moves to `publishing` and returns; the upload finishes in the
+-- background and settles on `published` or `failed`.
+rule InstagramPublishesInBackground {
+    when: PublishPost(post) and post.channel = Instagram
+    requires: post.slide_urls.count > 0 or post.image_url != null
+
+    ensures: post.status = publishing
+    ensures: post.error = null
+    ensures: UploadInstagramSlides(post)
+}
+
 -- ─── Duplicate Prevention ──────────────────────────────────────────
 -- Invariant: at most one SocialPost per (story, channel).
 -- Enforced by database unique constraint on story_id per table,
 -- with application-level pre-check for friendlier error messages.
 -- Admins can delete a failed post and regenerate via the admin UI.
+
+-- ─── Channel Credentials ───────────────────────────────────────────
+-- Credential lifetime is domain behavior: when a channel's token
+-- dies, the channel goes silent, and silence is the failure mode that
+-- costs the most (July 2026: 12 days of dead Instagram posting with
+-- no alert). Two properties matter per channel — whether the token
+-- expires, and whether the system can renew it without a human.
+--
+--   | Channel   | Expires  | Self-renewing    | Recovery           |
+--   |-----------|----------|------------------|--------------------|
+--   | Instagram | 60 days  | yes, scheduled   | mint a new token   |
+--   | LinkedIn  | 60 days  | NO               | human OAuth reauth |
+--   | Facebook  | maybe    | NO               | mint a new token   |
+--   | Bluesky   | session  | yes, on re-login | none needed        |
+--   | Mastodon  | never    | n/a              | none needed        |
+--   | Twitter   | never    | n/a              | none needed        |
+--
+-- Facebook is "maybe" on purpose: a Page token derived from a user token
+-- expires, and one issued to a system user does not. The check has to handle
+-- both, and an absent expiry is not an expired token.
+--
+-- Bluesky derives a short-lived session from a long-lived app
+-- password and re-logs in when the session dies, so it renews
+-- without a human. Mastodon and Twitter hold static credentials.
+
+entity SocialToken {
+    provider: String                                     -- unique per channel
+    access_token: String
+    expires_at: Timestamp?
+    refreshed_at: Timestamp?
+    last_error: String?
+
+    -- Derived
+    days_left: expires_at != null
+        ? floor((expires_at - now) / 1.day)
+        : null                                           -- null = never renewed here
+}
+
+-- A renewed token is a NEW value, and the running process cannot
+-- rewrite its own deployment configuration. So the renewed value is
+-- stored, and storage wins over the configured value.
+--
+-- Invariant: the stored row is authoritative whenever it exists.
+-- A read failure falls back to configuration rather than leaving the
+-- channel dead.
+rule ResolveAccessToken {
+    when: ChannelNeedsCredential(provider)
+
+    let stored = SocialToken where provider = provider
+    if exists stored and stored.access_token != null:
+        ensures: use stored.access_token
+    else:
+        ensures: use configured_token(provider)          -- bootstrap value
+}
+
+-- Invariant (manual rotation): a hand-rotated credential must delete
+-- the stored row, or the stale stored value keeps beating the new
+-- configured one and the channel stays broken after the fix.
+rule ManualRotation {
+    when: OperatorRotatesToken(provider)
+    ensures: not exists SocialToken where provider = provider
+}
+
+-- ─── Instagram: self-renewing ──────────────────────────────────────
+-- Long-lived tokens last 60 days and the platform extends them by
+-- another 60 on request. The extension counts from the day of the
+-- call, so renewing daily buys nothing and spends quota: renew only
+-- inside the threshold window.
+--
+-- Two hard limits shape the rule. An expired token cannot be revived
+-- (a human must mint a new one), and a token younger than 24 hours
+-- cannot be extended yet.
+
+rule RefreshInstagramToken {
+    when: InstagramRefreshTokenJobRuns()                 -- daily
+    requires: Instagram.is_configured
+
+    let token = SocialToken where provider = "instagram"
+
+    -- No known expiry yet: still on the bootstrap value. Renew now to
+    -- take ownership of the cycle and record an expiry date.
+    if token.days_left = null:
+        ensures: RenewInstagramToken()
+
+    -- Already dead: renewal is impossible, fail loudly so the
+    -- job-failure alert fires and a human mints a new token.
+    else if token.days_left <= 0:
+        ensures: reject("Token expired, automatic refresh no longer possible")
+
+    else if token.days_left > config.token_refresh_threshold.days:
+        ensures: no_op                                   -- still fresh
+
+    else:
+        ensures: RenewInstagramToken()
+}
+
+rule RenewInstagramToken {
+    when: RenewInstagramToken()
+
+    let renewed = Platform.extend_token(current_token)
+    let lifetime = renewed.expires_in ?? config.token_nominal_lifetime
+
+    ensures: SocialToken.upserted(
+        provider: "instagram",
+        access_token: renewed.access_token,
+        expires_at: now + lifetime,
+        refreshed_at: now,
+        last_error: null                                 -- cleared on success
+    )
+}
+
+-- A token under 24 hours old is rejected with the same platform error
+-- code as a dead token, but it means the opposite: the token is fine,
+-- just new. Treating them alike would email a false alarm the night
+-- after a manual rotation, so this exits quietly and the next daily
+-- run picks it up.
+rule TokenTooYoungToRenew {
+    when: Platform.extend_token fails with too_young
+    ensures: no_op
+}
+
+rule TokenRenewalFails {
+    when: Platform.extend_token fails with error
+    ensures: SocialToken.last_error = error               -- token itself untouched
+    ensures: reject(error)                               -- propagate: job must fail
+}
+
+-- Auth failures are typed and distinct from a one-off image or
+-- network error: they mean the credential is dead, so every
+-- remaining item in a loop will fail the same way.
+--
+-- Invariant: a dead credential aborts the batch and propagates.
+-- Swallowing it per item lets the job report success over a silent
+-- outage, and burns quota re-failing on every post.
+rule AuthErrorAbortsBatch {
+    when: ChannelCallFails(post, error) and error is AuthError
+    ensures: abort remaining items
+    ensures: reject(error)                               -- job fails, alert fires
+}
+
+-- Not every rejection is a dead credential, and the distinction is a
+-- contract: a missing-scope refusal is not fixed by renewing or
+-- reauthorizing, so it must not abort the batch as if it were.
+-- Only "this credential is no longer valid" counts as an AuthError.
+
+-- ─── LinkedIn: cannot self-renew ───────────────────────────────────
+-- Programmatic refresh tokens are restricted to approved Marketing
+-- Developer Platform partners, so there is no renewal call available.
+-- The token simply expires and the only recovery is a human walking
+-- the OAuth authorization flow again.
+--
+-- That makes silence the default failure mode, and worse than
+-- Instagram's: nothing exercises the credential on a schedule.
+-- Organization metrics are a structural no-op for a person-owned
+-- account, so an expired token produces no failing job at all and
+-- surfaces only when someone tries to publish.
+--
+-- Contract: a channel that cannot self-renew needs a scheduled
+-- introspection that alerts with lead time, plus an admin-triggered
+-- reauthorization. Detection replaces renewal.
+
+-- Introspection authenticates with the app's own credentials rather
+-- than the token's scopes, so it works on a publish-only token and
+-- returns the exact expiry. That is why expiry is checked this way
+-- instead of inferring it from a failed API call.
+rule CheckLinkedInToken {
+    when: LinkedInCheckTokenJobRuns()                    -- daily
+    requires: LinkedIn.is_configured
+
+    -- Without app credentials there is no way to introspect. That is
+    -- not a token failure, so it records and exits without alerting.
+    requires: LinkedIn.oauth_is_configured
+
+    let status = Platform.introspect(current_token)
+
+    if not status.active:
+        ensures: reject("Token inactive, renewal impossible: reauthorize")
+
+    else if status.days_left <= config.token_expiry_warning.days:
+        ensures: reject("Token expires soon: reauthorize before it lapses")
+
+    else:
+        ensures: no_op                                   -- healthy
+    -- Both rejections repeat daily on purpose: the fix is human and
+    -- blocking, and reauthorizing is what silences the alert.
+}
+
+rule ReauthorizeLinkedIn {
+    when: AdminCompletesLinkedInOAuth(provider: "linkedin", token, expires_at)
+
+    ensures: SocialToken.upserted(
+        provider: "linkedin",
+        access_token: token,
+        expires_at: expires_at,
+        refreshed_at: now,
+        last_error: null
+    )
+}
+
+-- ─── Facebook: cannot self-renew, may not expire ────────────────────
+-- Same shape as LinkedIn (detection replaces renewal) with one twist that
+-- matters: a Page token derived from a user token expires, and one issued to
+-- a system user never does. So "no expiry date" is a healthy state here, not
+-- an unknown one, and alerting on it would mean a daily email about nothing.
+--
+-- Introspection authenticates with the app's own credentials, so it works on
+-- a publish-only token. Missing app credentials disable the check without
+-- disabling publishing, and that is not an alert either: it is not a token
+-- failure, it is a missing warning system.
+
+rule CheckFacebookToken {
+    when: FacebookCheckTokenJobRuns()                    -- daily
+    requires: Facebook.is_configured
+    requires: Facebook.app_is_configured
+
+    let status = Platform.debug_token(current_token)
+
+    if not status.is_valid:
+        ensures: reject("Page token invalid: mint a new one")
+
+    else if status.expires_at = null:
+        ensures: no_op                                   -- never expires
+
+    else if status.days_left <= config.token_expiry_warning.days:
+        ensures: reject("Page token expires soon: mint a new one")
+
+    else:
+        ensures: no_op                                   -- healthy
+}
+
+-- Invariant (Facebook groups): posting to a group is not expressible. The
+-- platform withdrew the capability in April 2024, so no rule here can grant
+-- it. Group distribution is a human sharing a link, and those visits carry
+-- no referrer, which is why they must be tagged to be measurable at all.
 
 -- ─── Weekly Agenda Digest (Incidencia Internacional, Fase 3) ───────
 -- A second, independent posting path. Unlike story auto-post, the weekly
@@ -185,7 +577,7 @@ rule PublishWeeklyAgendaDigest {
     -- Count-based teaser + section link, formatted per channel char limit.
     -- Bluesky: link in external card (body link-free). Mastodon/Twitter:
     -- link appended inline. Instagram: rendered brand card image + caption
-    -- (skipped when R2 is not configured, since it needs an image URL).
+    -- (skipped when the asset host is not configured, since it needs an image URL).
     let counts = count_by_type(items)
     for channel in enabled_agenda_digest_channels:
         ensures: channel.publish(teaser(counts, channel))
@@ -213,20 +605,70 @@ surface SocialPostManager {
         if post.channel = Mastodon:
             post.favourite_count
             post.boost_count
+        if post.channel = Twitter:
+            post.like_count
+            post.retweet_count
+        if post.channel = Instagram:
+            post.like_count
+            post.comment_count
+            post.slide_urls
+        if post.channel = LinkedIn:
+            post.like_count
+            post.comment_count
+            post.impression_count
+            post.slide_urls
+        if post.channel = Facebook:
+            post.like_count
+            post.comment_count
+            post.share_count
 
     provides:
         AdminEditsDraft(post, new_text)
-            when post.status = draft
+            when editable(post)
 
         AdminPublishesPost(post)
-            when post.status = draft
+            when publishable(post)
 
         AdminDeletesPost(post)
 
     guidance:
         "Character/grapheme counter should be visible during
         draft editing. Bluesky counts graphemes (300 limit),
-        Mastodon counts characters (500 default)."
+        Mastodon counts characters (500 default).
+
+        Instagram's transient states are polled, not waited on:
+        'generating' after requesting a draft, 'publishing' after
+        pressing publish. Both settle on their own.
+
+        On Instagram and LinkedIn a failed post stays editable, so
+        the fix-and-retry path is edit then publish, not delete then
+        regenerate."
+}
+
+surface SocialTokenStatus {
+    facing admin: auth/Admin
+
+    context token: SocialToken
+
+    exposes:
+        token.provider
+        token.expires_at
+        token.days_left
+        token.refreshed_at
+        token.last_error
+
+    provides:
+        AdminRotatesToken(provider)
+
+    guidance:
+        "A provider with no stored row is still running on its
+        bootstrap configuration value, which is expected until the
+        first renewal — not an error. days_left = null means the
+        expiry is unknown, not that the token is fine.
+
+        Channels that cannot self-renew need a visible reauthorize
+        action next to the countdown, because that action is the only
+        way to clear the recurring expiry alert."
 }
 
 surface SocialPostPicker {
