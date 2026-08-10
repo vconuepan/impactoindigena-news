@@ -35,6 +35,21 @@ const NARRATIVE_LABELS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 // Hero
 // ---------------------------------------------------------------------------
+
+/**
+ * Degradados del hero, especificados en DESIGN.md (seccion "Hero").
+ *
+ * El rgb 13,95,60 es el verde de marca #0D5F3C (brand-800 en tailwind.config).
+ * Van como constantes con nombre y no sueltos en el JSX para que las paradas
+ * de opacidad tengan un solo lugar donde cambiar: la base densa da legibilidad
+ * al titular y la cima casi limpia deja respirar la fotografia.
+ */
+const HERO_OVERLAY =
+  'linear-gradient(to top, rgba(13,95,60,0.88) 0%, rgba(13,95,60,0.42) 55%, rgba(13,95,60,0.06) 100%)'
+
+/** Relleno para cuando la historia destacada no trae imagen. */
+const HERO_FALLBACK = 'linear-gradient(150deg, rgba(13,95,60,0.8) 0%, #1a1a1a 60%)'
+
 function HeroSection({ story }: { story: PublicStory }) {
   const { i18n } = useTranslation()
   const issueSlug = story.issue?.slug ?? story.feed?.issue?.slug ?? 'general-news'
@@ -74,7 +89,7 @@ function HeroSection({ story }: { story: PublicStory }) {
         ) : (
           <div
             className="w-full h-full relative"
-            style={{ background: 'linear-gradient(150deg, rgba(13,95,60,0.8) 0%, #1a1a1a 60%)' }}
+            style={{ background: HERO_FALLBACK }}
           >
             {Pattern && <Pattern opacity={0.18} />}
           </div>
@@ -83,7 +98,7 @@ function HeroSection({ story }: { story: PublicStory }) {
         {/* Brand green gradient overlay */}
         <div
           className="absolute inset-0"
-          style={{ background: 'linear-gradient(to top, rgba(13,95,60,0.88) 0%, rgba(13,95,60,0.42) 55%, rgba(13,95,60,0.06) 100%)' }}
+          style={{ background: HERO_OVERLAY }}
         />
 
         {/* Geometric watermark — top right, opacity 0.04 */}

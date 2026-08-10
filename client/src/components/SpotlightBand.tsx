@@ -105,7 +105,7 @@ export default function SpotlightBand() {
           {/* Rotating headline */}
           <div className="flex-1 min-w-0">
             <div
-              className="transition-all duration-300 ease-out"
+              className="transition-[opacity,transform] duration-300 ease-out"
               style={{
                 opacity: visible ? 1 : 0,
                 transform: visible ? 'translateY(0)' : 'translateY(4px)',

@@ -47,7 +47,7 @@ export default function CasosSection({ cases }: Props) {
             <Link
               key={c.id}
               to={`/caso/${c.slug}`}
-              className="group flex-1 rounded-lg bg-white p-4 md:p-5 transition-all duration-200 ease-out focus-visible:ring-2 focus-visible:ring-amber-500"
+              className="group flex-1 rounded-lg bg-white p-4 md:p-5 transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-amber-500"
               style={{
                 borderTop: '2px solid #f59e0b',
                 boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',

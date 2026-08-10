@@ -97,7 +97,7 @@ export default function GuidesIndexPage() {
             <Link
               key={guide.href}
               to={guide.href}
-              className="block border border-neutral-200 rounded-xl p-6 hover:border-brand-300 hover:shadow-sm transition-all group focus-visible:ring-2 focus-visible:ring-brand-500"
+              className="block border border-neutral-200 rounded-xl p-6 hover:border-brand-300 hover:shadow-sm transition-colors duration-150 ease-out group focus-visible:ring-2 focus-visible:ring-brand-500"
             >
               <div className="flex items-start justify-between gap-4 mb-2">
                 <h2 className="text-lg font-bold text-neutral-900 group-hover:text-brand-800 transition-colors leading-snug">

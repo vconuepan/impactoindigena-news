@@ -9,6 +9,25 @@ const NARRATIVE_FRAME_SCHEMA = z
   .enum(["confrontacion", "resiliencia", "protagonismo", "alianza"])
   .describe(NARRATIVE_FRAME_SCHEMA_DESCRIPTION);
 
+/**
+ * Regla de capitalización compartida por títulos y etiquetas.
+ *
+ * "En minúsculas excepto nombres propios" a secas resultaba ambiguo: el modelo
+ * no trataba las siglas como nombres propios y publicaba "estudio de ufal",
+ * "conadi y corfo... en chile". El cliente solo aplica sentence case a la
+ * primera letra (`getHeadline`), así que una sigla a mitad de frase se queda en
+ * minúsculas y una al inicio sale peor todavía ("Conadi", "Mpf", "Ong").
+ *
+ * Vive en un solo lugar porque la regla aplica a cuatro campos en dos esquemas;
+ * duplicarla es cómo se desincronizan.
+ */
+const CAPITALIZATION_RULE =
+  "Capitalización estilo oración: minúsculas salvo nombres propios. " +
+  "Cuentan como nombres propios y conservan SIEMPRE su forma original: siglas y acrónimos " +
+  "(CONADI, CORFO, ONU, OIT, CIDH, CLPI, ONG, MPF, CEDH, INAI), topónimos (Chile, Sonora, " +
+  "Coahuila, La Araucanía, Wallmapu), instituciones y nombres de persona. " +
+  "Una sigla nunca va en minúsculas ni en forma capitalizada: escribe 'CONADI', no 'conadi' ni 'Conadi'. ";
+
 export const preAssessItemSchema = z.object({
   articleId: z
     .string()
@@ -111,7 +130,8 @@ export const assessResultSchema = z.object({
   titleLabel: z
     .string()
     .describe(
-      "Etiqueta de tema ultrabreve (1-3 palabras cortas), en español, en minúsculas excepto nombres propios. " +
+      "Etiqueta de tema ultrabreve (1-3 palabras cortas), en español. " +
+        CAPITALIZATION_RULE +
         "Una frase nominal corta — sin conjunciones, sin 'y'. Palabras simples y cortas. " +
         "La etiqueta y el título funcionan como par: la etiqueta establece el tema, el título cuenta la historia. " +
         "Ninguna palabra o frase debe aparecer en ambos. " +
@@ -121,7 +141,8 @@ export const assessResultSchema = z.object({
   relevanceTitle: z
     .string()
     .describe(
-      "Titular independiente en español, máximo 10 palabras, en minúsculas excepto nombres propios. " +
+      "Titular independiente en español, máximo 10 palabras. " +
+        CAPITALIZATION_RULE +
         "Escribe para un joven de 16 años inteligente — sin jerga ni términos especializados. " +
         "Debe entenderse sin contexto previo. " +
         "Una historia por titular. No repitas la etiqueta — usa ese espacio para decir algo nuevo. " +
@@ -130,7 +151,9 @@ export const assessResultSchema = z.object({
         "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado. " +
         "Terminología: no atribuyas pertenencia étnica que la fuente no afirme, y NUNCA uses 'araucano/a(s)' " +
         "como gentilicio de personas (exónimo colonial): si la fuente dice mapuche, escribe 'mapuche'; " +
-        "si solo menciona la región, escribe 'de La Araucanía'."
+        "si solo menciona la región, escribe 'de La Araucanía'. " +
+        "Bien: 'CONADI y CORFO financian proyectos productivos indígenas en Chile'. " +
+        "Mal: 'conadi y corfo financian proyectos productivos indígenas en chile'."
     ),
   marketingBlurb: z
     .string()
@@ -191,7 +214,8 @@ export const extractTitleLabelSchema = z.object({
   titleLabel: z
     .string()
     .describe(
-      "Etiqueta de tema ultrabreve en español (1-3 palabras cortas), en minúsculas excepto nombres propios. " +
+      "Etiqueta de tema ultrabreve en español (1-3 palabras cortas). " +
+        CAPITALIZATION_RULE +
         "Una frase nominal corta — sin conjunciones, sin 'y'. Palabras simples y cortas. " +
         "La etiqueta y el título funcionan como par: la etiqueta establece el tema, el título cuenta la historia. " +
         "Ninguna palabra o frase debe aparecer en ambos. " +
@@ -201,7 +225,8 @@ export const extractTitleLabelSchema = z.object({
   title: z
     .string()
     .describe(
-      "Titular independiente en español, máximo 10 palabras, en minúsculas excepto nombres propios. " +
+      "Titular independiente en español, máximo 10 palabras. " +
+        CAPITALIZATION_RULE +
         "Escribe para un joven de 16 años inteligente — sin jerga ni términos especializados. " +
         "Debe entenderse sin contexto previo. " +
         "Una historia por titular. No repitas la etiqueta — usa ese espacio para decir algo nuevo. " +
@@ -210,7 +235,9 @@ export const extractTitleLabelSchema = z.object({
         "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado. " +
         "Terminología: no atribuyas pertenencia étnica que la fuente no afirme, y NUNCA uses 'araucano/a(s)' " +
         "como gentilicio de personas (exónimo colonial): si la fuente dice mapuche, escribe 'mapuche'; " +
-        "si solo menciona la región, escribe 'de La Araucanía'."
+        "si solo menciona la región, escribe 'de La Araucanía'. " +
+        "Bien: 'CONADI y CORFO financian proyectos productivos indígenas en Chile'. " +
+        "Mal: 'conadi y corfo financian proyectos productivos indígenas en chile'."
     ),
 });
 

@@ -1,6 +1,6 @@
 import type { StoryStatus, EmotionTag, JobName } from '@shared/types'
 
-export type BadgeVariant = 'gray' | 'blue' | 'yellow' | 'green' | 'red' | 'purple' | 'pink' | 'orange'
+export type BadgeVariant = 'gray' | 'blue' | 'yellow' | 'green' | 'red' | 'purple' | 'orange'
 
 export const STATUS_VARIANTS: Record<StoryStatus, BadgeVariant> = {
   fetched: 'gray',

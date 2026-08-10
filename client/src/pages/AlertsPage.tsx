@@ -159,7 +159,7 @@ export default function AlertsPage() {
                       key={topic.id}
                       type="button"
                       onClick={() => toggleTopic(topic.id)}
-                      className={`px-3 py-2 rounded-lg text-sm font-medium text-left transition-all border ${
+                      className={`px-3 py-2 rounded-lg text-sm font-medium text-left transition-colors duration-150 ease-out border ${
                         selected
                           ? 'bg-brand-800 text-white border-brand-800'
                           : 'bg-white text-neutral-700 border-neutral-200 hover:border-brand-300 hover:text-brand-700'
