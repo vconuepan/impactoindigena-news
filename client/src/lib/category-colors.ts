@@ -5,13 +5,6 @@
 
 import type { CommunityType } from '@shared/types'
 
-/** Returns a Tailwind bg class for the community-type indicator dot. */
-export function communityDotColor(type: CommunityType): string {
-  if (type === 'PUEBLO') return 'bg-brand-600'
-  if (type === 'TERRITORIO') return 'bg-amber-500'
-  return 'bg-emerald-600'
-}
-
 export interface CategoryColor {
   /** Tailwind border class, e.g. "border-amber-500" */
   border: string
@@ -82,6 +75,19 @@ const VERDE_MARCA = {
   hex: '#0D5F3C',
   bgTint: 'bg-brand-50/60',
 } satisfies CategoryColor
+
+/**
+ * Punto de color para el tipo de comunidad.
+ *
+ * Sale de la misma paleta tierra que las categorias, en vez de los ambar y
+ * esmeralda sueltos que tenia antes: territorio va en ocre tierra y causa en
+ * terracota, que DESIGN.md ya asigna a derechos y urgencias.
+ */
+export function communityDotColor(type: CommunityType): string {
+  if (type === 'PUEBLO') return VERDE_MARCA.dotBg
+  if (type === 'TERRITORIO') return OCRE_TIERRA.dotBg
+  return TERRACOTA.dotBg
+}
 
 const CATEGORY_COLORS: Record<string, CategoryColor> = {
   'cambio-climatico': VERDE_BOSQUE,
