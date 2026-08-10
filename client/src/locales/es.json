@@ -184,5 +184,12 @@
     "successTitle": "¡Gracias por tu comentario!",
     "successMessage": "Apreciamos que te hayas tomado el tiempo de compartir tu opinión.",
     "done": "Listo"
+  },
+  "curationStats": {
+    "ariaLabel": "Estadísticas de curaduría",
+    "window": "Últimas 24 h:",
+    "analyzed": "artículos analizados",
+    "selected": "seleccionados",
+    "sources": "fuentes activas"
   }
 }

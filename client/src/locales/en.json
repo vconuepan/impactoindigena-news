@@ -184,5 +184,12 @@
     "successTitle": "Thanks for your feedback!",
     "successMessage": "We appreciate you taking the time to share your thoughts.",
     "done": "Done"
+  },
+  "curationStats": {
+    "ariaLabel": "Curation statistics",
+    "window": "Last 24 h:",
+    "analyzed": "articles analyzed",
+    "selected": "selected",
+    "sources": "active sources"
   }
 }
