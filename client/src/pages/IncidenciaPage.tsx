@@ -71,7 +71,7 @@ function AgendaCard({ item, color }: { item: PublicAgendaItem; color: string }) 
     : {}
 
   return (
-    <article className="bg-white border border-neutral-200 rounded-lg p-5 hover:border-neutral-300 hover:shadow-sm transition-all">
+    <article className="bg-white border border-neutral-200 rounded-lg p-5 hover:border-neutral-300 hover:shadow-sm transition-colors duration-150 ease-out">
       <div className="flex flex-wrap items-center gap-2 mb-2">
         {dateLine && (
           <span

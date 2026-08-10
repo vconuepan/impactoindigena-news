@@ -144,7 +144,9 @@ Estos colores se usan en: dots de categoría en nav, tags en cards, borders acti
   1. **Stats bar** — fondo `var(--brand)`, 32px de alto, DM Sans 10px
   2. **Header principal** — blanco puro `#FFFFFF`, 60px de alto
   3. **Category nav** — bajo el header, separado por `1px solid var(--border)`
-- **Stats bar** (nueva): muestra métricas de curación en tiempo real. Fondo `#0D5F3C`, texto `rgba(255,255,255,0.65)`, indicador de pulso verde `#4ade80`. Ejemplo: "Revisadas hoy: 847 · Seleccionadas: 23 · Fuentes activas: 214". Vincula a `/metodologia`.
+- **Stats bar** (nueva): muestra métricas de curación en tiempo real. Fondo `#0D5F3C`, texto `rgba(255,255,255,0.75)`, indicador de pulso verde `#4ade80`. Ejemplo: "Últimas 24 h: 847 artículos analizados · 23 seleccionados · 214 fuentes activas". Vincula a `/metodologia`.
+  - **Piso de contraste:** no bajar de `0.75`. A 11px el texto exige 4.5:1 (WCAG AA) y sobre `#0D5F3C` las opacidades dan: `0.65` → 4.26:1 **falla**, `0.70` → 4.68:1, `0.75` → 5.12:1. El documento decía `0.65` hasta el 2026-08-10; el código siempre usó `0.75`.
+  - **Ventana móvil, no día calendario:** el job de publicación corre 11:00 UTC, así que contar por día UTC dejaba el contador de seleccionadas en 0 entre medianoche y las 11:00 — de 20:00 a 07:00 en Chile. Se cuenta sobre las últimas 24 h para que un 0 signifique algo real.
 - **Background header:** Blanco puro (`#FFFFFF`)
 - **Altura header:** 60px
 - **Font:** DM Sans para todas las acciones del header
@@ -330,6 +332,7 @@ Grid interno: 3 columnas. Cards con `background: var(--surface)`, `border: 1px s
 | `#C8473A` sobre blanco | ~4.6:1 | ✓ AA |
 | `#1C1917` sobre `#FAFAF8` | ~16:1 | ✓ AAA |
 | `#78716C` sobre blanco | ~4.5:1 | ✓ AA |
+| Blanco 75% sobre `#0D5F3C` (stats bar) | 5.12:1 | ✓ AA |
 
 ## Decisiones
 

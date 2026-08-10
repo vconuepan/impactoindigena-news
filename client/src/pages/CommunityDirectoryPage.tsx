@@ -9,7 +9,7 @@ function CommunityCard({ community }: { community: Community }) {
   return (
     <Link
       to={`/comunidad/${community.slug}`}
-      className="group block bg-white border border-neutral-200 rounded-lg p-5 hover:border-brand-300 hover:shadow-sm transition-all focus-visible:ring-2 focus-visible:ring-brand-500"
+      className="group block bg-white border border-neutral-200 rounded-lg p-5 hover:border-brand-300 hover:shadow-sm transition-colors duration-150 ease-out focus-visible:ring-2 focus-visible:ring-brand-500"
     >
       <div className="flex items-start gap-3">
         <span

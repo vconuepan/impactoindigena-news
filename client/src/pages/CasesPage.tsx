@@ -20,14 +20,14 @@ function CaseCard({ item }: { item: CaseListItem }) {
   return (
     <Link
       to={`/caso/${item.slug}`}
-      className="group block bg-white border border-neutral-100 rounded-xl overflow-hidden hover:border-brand-200 hover:shadow-sm transition-all"
+      className="group block bg-white border border-neutral-100 rounded-xl overflow-hidden hover:border-brand-200 hover:shadow-sm transition-colors duration-150 ease-out"
     >
       {item.imageUrl && (
         <div className="aspect-video overflow-hidden bg-neutral-100">
           <img
             src={item.imageUrl}
             alt=""
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-500 ease-out"
           />
         </div>
       )}
