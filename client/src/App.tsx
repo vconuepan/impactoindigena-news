@@ -75,6 +75,8 @@ const InstagramPage = lazy(() => import('./pages/admin/InstagramPage'))
 const LinkedInPage = lazy(() => import('./pages/admin/LinkedInPage'))
 const TwitterPage = lazy(() => import('./pages/admin/TwitterPage'))
 const FacebookPage = lazy(() => import('./pages/admin/FacebookPage'))
+const BlueskyPage = lazy(() => import('./pages/admin/BlueskyPage'))
+const MastodonPage = lazy(() => import('./pages/admin/MastodonPage'))
 const FeedbackPage = lazy(() => import('./pages/admin/FeedbackPage'))
 const MembersPage = lazy(() => import('./pages/admin/MembersPage'))
 const CommunitiesAdminPage = lazy(() => import('./pages/admin/CommunitiesAdminPage'))
@@ -221,6 +223,8 @@ export default function App() {
         <Route path="linkedin" element={<LinkedInPage />} />
         <Route path="twitter" element={<TwitterPage />} />
         <Route path="facebook" element={<FacebookPage />} />
+        <Route path="bluesky" element={<BlueskyPage />} />
+        <Route path="mastodon" element={<MastodonPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="members" element={<MembersPage />} />
         <Route path="communities" element={<CommunitiesAdminPage />} />

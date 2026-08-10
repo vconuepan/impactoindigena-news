@@ -21,6 +21,8 @@ import {
   BriefcaseIcon,
   HashtagIcon,
   UsersIcon,
+  CloudIcon,
+  AtSymbolIcon,
 } from '@heroicons/react/24/outline'
 
 export interface NavItem {
@@ -67,6 +69,8 @@ export const NAV_SECTIONS: NavSection[] = [
       { name: 'LinkedIn', href: '/admin/linkedin', icon: BriefcaseIcon },
       { name: 'X/Twitter', href: '/admin/twitter', icon: HashtagIcon },
       { name: 'Facebook', href: '/admin/facebook', icon: UsersIcon },
+      { name: 'Bluesky', href: '/admin/bluesky', icon: CloudIcon },
+      { name: 'Mastodon', href: '/admin/mastodon', icon: AtSymbolIcon },
     ],
   },
   {
