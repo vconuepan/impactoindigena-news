@@ -142,11 +142,11 @@ Etiqueta del título + Título — estos dos campos funcionan como par
 - La etiqueta establece el tema; el título cuenta la historia.
 - Ninguna palabra o frase debe aparecer en ambos.
 
-Etiqueta del título (1-3 palabras cortas, en minúsculas excepto nombres propios)
+Etiqueta del título (1-3 palabras cortas)
 - Una etiqueta de tema ultrabreve que identifica el tema clave.
 - Debe ser una frase nominal corta — sin conjunciones, sin "y".
 
-Título (en minúsculas excepto nombres propios)
+Título
 - Un titular independiente. Máximo 10 palabras.
 - Escribe para un joven de 16 años inteligente, no para un experto.
 - Sé concreto: nombra al actor, la acción o las apuestas.

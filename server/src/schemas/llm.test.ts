@@ -69,3 +69,44 @@ describe('terminology guardrail in title guidance', () => {
     expect(desc).toContain('de La Araucanía')
   })
 })
+
+describe('capitalization guardrail in title guidance', () => {
+  // Regresión: se publicaron "Estudio de ufal reveló…" y "Conadi y corfo
+  // financian… en chile". La regla anterior decía solo "en minúsculas excepto
+  // nombres propios" y el modelo no contaba las siglas como tales. El cliente
+  // solo capitaliza la primera letra (`getHeadline`), así que nada corriente
+  // abajo repara una sigla en minúsculas.
+  const titleFields = [
+    ['assessResultSchema.relevanceTitle', assessResultSchema.shape.relevanceTitle],
+    ['assessResultSchema.titleLabel', assessResultSchema.shape.titleLabel],
+    ['extractTitleLabelSchema.title', extractTitleLabelSchema.shape.title],
+    ['extractTitleLabelSchema.titleLabel', extractTitleLabelSchema.shape.titleLabel],
+  ] as const
+
+  it.each(titleFields)('%s exige preservar siglas y topónimos', (_name, field) => {
+    const desc = field.description ?? ''
+    expect(desc).toContain('siglas y acrónimos')
+    expect(desc).toContain('topónimos')
+    expect(desc).toContain('CONADI')
+    // El fallo concreto: capitalizar la sigla en vez de dejarla intacta.
+    expect(desc).toContain("no 'conadi' ni 'Conadi'")
+  })
+
+  it.each(titleFields)('%s ya no usa la regla vaga anterior', (_name, field) => {
+    const desc = field.description ?? ''
+    expect(desc).not.toContain('en minúsculas excepto nombres propios')
+  })
+
+  it('el prompt de assess no reafirma la regla — el esquema es la fuente única', async () => {
+    // .context/prompting.md: duplicar guías de formato hace que el modelo gaste
+    // razonamiento reconciliándolas. La versión débil del prompt contradecía
+    // la fuerte del esquema.
+    const { buildAssessPrompt } = await import('../prompts/assess.js')
+    const prompt = buildAssessPrompt('t', 'c', 'publisher', 'https://e.test/a', {
+      factors: '',
+      topicLimitingFactors: '',
+      ratingGuidelines: '',
+    } as never)
+    expect(prompt).not.toContain('en minúsculas excepto nombres propios')
+  })
+})
