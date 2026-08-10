@@ -185,6 +185,15 @@
     "successMessage": "We appreciate you taking the time to share your thoughts.",
     "done": "Done"
   },
+  "colophon": {
+    "tagline": "The first AI‑native indigenous news outlet.",
+    "howItWorks": "Every day hundreds of articles are crawled from sources across the Americas and beyond. A language model assesses which ones matter to indigenous peoples, how relevant they are and why. The method is written down and the sources are listed: both can be audited.",
+    "principles": "Curated by indigenous peoples. Operated with artificial intelligence. No ads.",
+    "readMethod": "How we work",
+    "readSources": "Our sources",
+    "published": "Published from Chile.",
+    "rights": "© {{year}} Impacto Indígena"
+  },
   "curationStats": {
     "ariaLabel": "Curation statistics",
     "window": "Last 24 h:",

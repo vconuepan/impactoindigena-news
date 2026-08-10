@@ -76,6 +76,89 @@ const FOOTER_DISTRIBUTE = [
   { labelKey: "footer.sources", href: "/fuentes" },
 ];
 
+/** Enlaces de "Conectar". Mezcla rutas internas, la API y enlaces externos. */
+const FOOTER_CONNECT = [
+  { labelKey: "footer.newsletter", href: "/newsletter" },
+  { labelKey: "footer.rssFeed", href: `${API_BASE}/feed`, raw: true },
+  { labelKey: "footer.support", href: KOFI_URL, external: true },
+  { labelKey: "footer.contact", href: "/feedback" },
+];
+
+const SOCIAL_LINKS = [
+  {
+    href: INSTAGRAM_URL,
+    labelKey: "footer.followInstagram",
+    path: "M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z",
+  },
+  {
+    href: TWITTER_URL,
+    labelKey: "footer.followTwitter",
+    path: "M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.259 5.631L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z",
+  },
+  {
+    href: YOUTUBE_URL,
+    labelKey: "footer.followYoutube",
+    path: "M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z",
+  },
+  {
+    href: GITHUB_URL,
+    labelKey: "footer.viewGithub",
+    path: "M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z",
+  },
+];
+
+interface FooterLink {
+  labelKey: string
+  href: string
+  external?: boolean
+  raw?: boolean
+}
+
+/**
+ * Una fila del colofon: la etiqueta del grupo y sus enlaces en linea.
+ *
+ * Filas y no columnas a proposito. El footer anterior eran cinco columnas de
+ * enlaces — la forma generica de SaaS, que se lee igual en cualquier sitio. Un
+ * medio cierra con un colofon: primero quien edita y como, despues el indice.
+ * Los enlaces son los mismos, asi que no se pierde ningun enlace interno.
+ *
+ * `whitespace-nowrap` en cada enlace evita que una etiqueta quede partida en
+ * dos lineas al angostar la pantalla; el envoltorio flexible reacomoda filas
+ * enteras en su lugar.
+ */
+function FooterLinkRow({ label, links }: { label: string; links: readonly FooterLink[] }) {
+  const { t } = useTranslation();
+  const linkClass =
+    "text-sm text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5 whitespace-nowrap";
+
+  return (
+    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-4">
+      <p className="shrink-0 text-[10px] font-bold uppercase tracking-widest text-neutral-500 sm:w-24 font-dm-sans">
+        {label}
+      </p>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1.5">
+        {links.map((link) => (
+          <li key={link.labelKey}>
+            {link.external || link.raw ? (
+              <a
+                href={link.href}
+                {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                className={linkClass}
+              >
+                {t(link.labelKey)}
+              </a>
+            ) : (
+              <Link to={link.href} className={linkClass}>
+                {t(link.labelKey)}
+              </Link>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function BrandLogo({ onClick }: { onClick?: () => void }) {
   return (
     <Link to="/" onClick={onClick} className="flex items-center shrink-0">
@@ -402,141 +485,90 @@ function PublicLayoutInner() {
 
       <footer className="bg-neutral-900 text-neutral-300">
         <div className="max-w-5xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 gap-y-10 md:grid-cols-[2fr_1fr_1fr_1fr] md:gap-8">
-            {/* Brand column */}
-            <div>
-              <Link to="/" className="inline-block mb-3 font-fraunces text-xl font-bold text-white hover:text-brand-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
-                Impacto Indígena
+          {/* Colofon — el medio hablando antes que el indice de enlaces */}
+          <div className="max-w-2xl">
+            <Link to="/" className="inline-block mb-4 font-fraunces text-xl font-bold text-white hover:text-brand-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
+              Impacto Indígena
+            </Link>
+            {/* El guion de "AI‑native" en el locale es U+2011 (no separable):
+                el guion normal es punto de corte y partia la frase en dos lineas. */}
+            <p className="font-fraunces text-2xl md:text-[28px] font-semibold text-white leading-snug mb-4">
+              {t('colophon.tagline')}
+            </p>
+            <p className="text-sm text-neutral-400 leading-relaxed mb-4">
+              {t('colophon.howItWorks')}
+            </p>
+            <p className="text-sm text-neutral-500 leading-relaxed mb-5">
+              {t('colophon.principles')}
+            </p>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+              <Link
+                to="/methodology"
+                className="text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded whitespace-nowrap"
+              >
+                {t('colophon.readMethod')} →
               </Link>
-              <p className="font-fraunces text-lg font-semibold text-white leading-snug mb-1.5 max-w-xs">
-                El primer medio indígena <span className="text-brand-400">AI-native</span>.
-              </p>
-              <p className="text-xs text-neutral-400 leading-relaxed max-w-xs mb-3">
-                Curado por pueblos indígenas. Operado con inteligencia artificial. Sin publicidad.
-              </p>
-              <p className="text-sm text-neutral-400 leading-relaxed max-w-xs">
-                {t('footer.description')}
-              </p>
+              <Link
+                to="/fuentes"
+                className="text-sm font-medium text-brand-400 hover:text-brand-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded whitespace-nowrap"
+              >
+                {t('colophon.readSources')} →
+              </Link>
               <a
                 href={ECOSYSTEM_AI_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-brand-400 hover:text-brand-300 transition-colors focus-visible:ring-1 focus-visible:ring-brand-400 rounded"
+                className="inline-flex items-center gap-1 text-sm font-medium text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded whitespace-nowrap"
               >
                 impactoindigena.ai ↗
                 <span className="sr-only"> (abre en nueva pestaña)</span>
               </a>
-              <div className="flex gap-2 mt-4">
-                <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand-500" aria-label={t('footer.followInstagram')}>
-                  <svg className="w-[18px] h-[18px] text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-                  </svg>
-                </a>
-                <a href={TWITTER_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand-500" aria-label={t('footer.followTwitter')}>
-                  <svg className="w-[18px] h-[18px] text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.259 5.631L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/>
-                  </svg>
-                </a>
-                <a href={YOUTUBE_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand-500" aria-label={t('footer.followYoutube')}>
-                  <svg className="w-[18px] h-[18px] text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
-                </a>
-                <a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand-500" aria-label={t('footer.viewGithub')}>
-                  <svg className="w-[18px] h-[18px] text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                    <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                  </svg>
-                </a>
-              </div>
-            </div>
-
-            {/* Navigate */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 leading-none" role="presentation">{t('footer.navigate')}</p>
-              <ul className="space-y-2">
-                {FOOTER_NAV.map((link) => (
-                  <li key={link.labelKey}>
-                    <Link to={link.href} className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                      {t(link.labelKey)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Topics & Guides */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 leading-none" role="presentation">{t('footer.topics')}</p>
-              <ul className="space-y-2">
-                {ISSUE_LINKS.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                      {t(link.labelKey)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-5 mb-3 leading-none" role="presentation">{t('footer.guides')}</p>
-              <ul className="space-y-2">
-                {FOOTER_GUIDES.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                      {t(link.labelKey)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Connect & Tools */}
-            <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 leading-none" role="presentation">{t('footer.connect')}</p>
-              <ul className="space-y-2">
-                <li>
-                  <Link to="/newsletter" className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                    {t('footer.newsletter')}
-                  </Link>
-                </li>
-                <li>
-                  <a href={`${API_BASE}/feed`} className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                    {t('footer.rssFeed')}
-                  </a>
-                </li>
-                <li>
-                  <a href={KOFI_URL} target="_blank" rel="noopener noreferrer" className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                    {t('footer.support')}
-                  </a>
-                </li>
-                <li>
-                  <Link to="/feedback" className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                    {t('footer.contact')}
-                  </Link>
-                </li>
-              </ul>
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mt-5 mb-3 leading-none" role="presentation">{t('footer.distribute')}</p>
-              <ul className="space-y-2">
-                {FOOTER_DISTRIBUTE.map((link) => (
-                  <li key={link.href}>
-                    <Link to={link.href} className="text-sm leading-5 text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                      {t(link.labelKey)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
 
-          {/* Bottom bar */}
-          <div className="mt-10 pt-6 border-t border-neutral-800 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-neutral-500">
-              {t('footer.copyright', { year: new Date().getFullYear() })}
-            </p>
-            <ul className="flex gap-5">
-              {FOOTER_LEGAL.map((link) => (
-                <li key={link.labelKey}>
-                  <Link to={link.href} className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5">
-                    {t(link.labelKey)}
-                  </Link>
+          {/* Indice — filas densas, no columnas de SaaS */}
+          <nav
+            className="mt-10 pt-8 border-t border-neutral-800 flex flex-col gap-4"
+            aria-label={t('footer.navigate')}
+          >
+            <FooterLinkRow label={t('footer.navigate')} links={FOOTER_NAV} />
+            <FooterLinkRow label={t('footer.topics')} links={ISSUE_LINKS} />
+            <FooterLinkRow label={t('footer.guides')} links={FOOTER_GUIDES} />
+            <FooterLinkRow label={t('footer.connect')} links={FOOTER_CONNECT} />
+            <FooterLinkRow label={t('footer.distribute')} links={FOOTER_DISTRIBUTE} />
+          </nav>
+
+          {/* Cierre — entidad, legal y redes en una sola linea */}
+          <div className="mt-10 pt-6 border-t border-neutral-800 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-1">
+              <p className="text-xs text-neutral-500">
+                {t('colophon.rights', { year: new Date().getFullYear() })} · {t('colophon.published')}
+              </p>
+              <ul className="flex flex-wrap gap-x-4 gap-y-1">
+                {FOOTER_LEGAL.map((link) => (
+                  <li key={link.labelKey}>
+                    <Link to={link.href} className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5 whitespace-nowrap">
+                      {t(link.labelKey)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <ul className="flex gap-2">
+              {SOCIAL_LINKS.map((social) => (
+                <li key={social.labelKey}>
+                  <a
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center w-8 h-8 bg-neutral-800 hover:bg-neutral-700 rounded-lg transition-colors focus-visible:ring-2 focus-visible:ring-brand-500"
+                    aria-label={t(social.labelKey)}
+                  >
+                    <svg className="w-[18px] h-[18px] text-white" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                      <path d={social.path} />
+                    </svg>
+                  </a>
                 </li>
               ))}
             </ul>
