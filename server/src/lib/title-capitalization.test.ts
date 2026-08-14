@@ -1,15 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-
-// El script abre una conexion Prisma al importarse; en el test solo interesa
-// la funcion pura de reescritura.
-vi.mock('@prisma/client', () => ({
-  PrismaClient: class {
-    story = { findMany: async () => [], update: async () => ({}) }
-    $disconnect = async () => {}
-  },
-}))
-
-const { fixCapitalization } = await import('./fix-title-capitalization.js')
+import { describe, it, expect } from 'vitest'
+import { fixCapitalization, fixCapitalizationOrNull } from './title-capitalization.js'
 
 describe('fixCapitalization', () => {
   it('repara los titulares rotos que se encontraron en produccion', () => {
@@ -58,5 +48,32 @@ describe('fixCapitalization', () => {
   it('no altera un texto sin coincidencias', () => {
     const t = 'jóvenes defienden su territorio ancestral'
     expect(fixCapitalization(t)).toBe(t)
+  })
+
+  it('repara los titulos que el modelo siguio produciendo DESPUES del fix del esquema', () => {
+    // Medido en produccion el 14-ago, con la regla reforzada ya desplegada:
+    // 3 de 25 historias rastreadas despues del deploy seguian asi. La
+    // instruccion del esquema es blanda; esto es el guardarrail duro.
+    expect(fixCapitalization('universidad de chile impulsa congreso tecnológico indígena')).toBe(
+      'universidad de Chile impulsa congreso tecnológico indígena'
+    )
+    expect(fixCapitalization('líderes indígenas enfrentan retroceso de derechos en chile')).toBe(
+      'líderes indígenas enfrentan retroceso de derechos en Chile'
+    )
+    expect(fixCapitalization('violencia indígena en brasil creció un 22% en 2025')).toBe(
+      'violencia indígena en Brasil creció un 22% en 2025'
+    )
+  })
+})
+
+describe('fixCapitalizationOrNull', () => {
+  it('deja pasar null y cadena vacia sin romper', () => {
+    expect(fixCapitalizationOrNull(null)).toBeNull()
+    expect(fixCapitalizationOrNull(undefined)).toBeNull()
+    expect(fixCapitalizationOrNull('')).toBeNull()
+  })
+
+  it('normaliza igual que la version estricta', () => {
+    expect(fixCapitalizationOrNull('conadi financia proyectos')).toBe('CONADI financia proyectos')
   })
 })

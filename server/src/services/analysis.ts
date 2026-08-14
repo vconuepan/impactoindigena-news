@@ -18,6 +18,7 @@ import type { Guidelines } from '../prompts/shared.js'
 import { detectAndCluster } from './dedup.js'
 import { generateEmbeddingForContent } from './embedding.js'
 import { saveEmbeddingTx } from '../lib/vectors.js'
+import { fixCapitalizationOrNull } from '../lib/title-capitalization.js'
 
 const log = createLogger('analysis')
 
@@ -314,9 +315,13 @@ export async function assessStory(storyId: string): Promise<void> {
       ? parsedPubDate
       : undefined
 
+  // Guardarrail determinista sobre las siglas y toponimos. La regla equivalente
+  // en `schemas/llm.ts` es una restriccion blanda: se midio despues de
+  // reforzarla y el 12% de los titulos seguia saliendo con "en chile" o
+  // "universidad de chile". Ver lib/title-capitalization.ts.
   const analysisData = {
-    titleLabel: parsed.titleLabel || null,
-    title: parsed.relevanceTitle || null,
+    titleLabel: fixCapitalizationOrNull(parsed.titleLabel),
+    title: fixCapitalizationOrNull(parsed.relevanceTitle),
     summary: parsed.summary || null,
     quote: truncateQuote(parsed.quote),
     quoteAttribution: parsed.quoteAttribution || null,

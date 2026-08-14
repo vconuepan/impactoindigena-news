@@ -23,64 +23,10 @@
  */
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
+import { fixCapitalization } from '../../lib/title-capitalization.js'
 
 const APPLY = process.argv.includes('--apply')
 const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
-
-/**
- * Siglas y acronimos del dominio, en su forma canonica.
- *
- * Solo entran los que no colisionan con una palabra comun del espanol: una
- * sustitucion ciega de "ine" o "sal" romperia texto legitimo. Ante la duda,
- * se deja fuera — este script prefiere no tocar antes que tocar de mas.
- */
-const ACRONYMS = [
-  'CONADI', 'CORFO', 'CONAF', 'SERNAPESCA', 'INDAP', 'INAI', 'INPI',
-  'ONU', 'OIT', 'OEA', 'CIDH', 'CEPAL', 'UNESCO', 'UNICEF', 'ACNUR',
-  'FAO', 'PNUD', 'OMS', 'BID', 'CLPI', 'FPIC', 'REDD',
-  'MPF', 'CEDH', 'CNDH', 'FUNAI', 'INCRA', 'IBAMA', 'UFAL',
-  'ONG', 'ONGs', 'EE', 'UU', 'GIZ', 'USAID', 'IPBES', 'COP',
-]
-
-/**
- * Toponimos y gentilicios propios. La forma canonica lleva la capitalizacion
- * correcta, incluidas las particulas ("La Araucania").
- */
-const PROPER_NOUNS = [
-  'Chile', 'Argentina', 'Bolivia', 'Peru', 'Perú', 'Ecuador', 'Colombia',
-  'Brasil', 'Mexico', 'México', 'Guatemala', 'Honduras', 'Nicaragua',
-  'Panama', 'Panamá', 'Paraguay', 'Uruguay', 'Venezuela', 'Canada', 'Canadá',
-  'Sonora', 'Coahuila', 'Chihuahua', 'Oaxaca', 'Chiapas', 'Guerrero',
-  'Hidalgo', 'Yucatan', 'Yucatán', 'Michoacan', 'Michoacán', 'Sinaloa',
-  'Amazonia', 'Amazonía', 'Patagonia', 'Wallmapu', 'Araucania', 'Araucanía',
-  'Temuco', 'Santiago', 'Bariloche', 'Nariño', 'Cauca', 'Vichada',
-  'Mapuche', 'Aymara', 'Quechua', 'Rapa Nui', 'Yanomami', 'Guarani', 'Guaraní',
-]
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
-/**
- * Devuelve el texto con las siglas y nombres propios en su forma canonica.
- *
- * Compara sin distinguir mayusculas y exige limites de palabra, asi que
- * "chilena" o "conadiense" no se tocan. Si el texto ya trae la forma correcta,
- * la sustitucion es un no-op.
- */
-export function fixCapitalization(text: string): string {
-  let out = text
-
-  for (const canonical of [...ACRONYMS, ...PROPER_NOUNS]) {
-    const re = new RegExp(`\\b${escapeRegex(canonical)}\\b`, 'gi')
-    out = out.replace(re, canonical)
-  }
-
-  // "La Araucania" tras el paso anterior puede haber quedado como "la Araucania".
-  out = out.replace(/\bla (Araucan(?:i|í)a)\b/g, 'La $1')
-
-  return out
-}
 
 interface StoryTitles {
   id: string

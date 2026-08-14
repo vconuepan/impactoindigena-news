@@ -258,6 +258,47 @@ describe('assessStory', () => {
     )
   })
 
+  it('normaliza siglas y toponimos antes de guardar el titulo', async () => {
+    // Regresion medida en produccion el 14-ago: con la regla del esquema ya
+    // reforzada y desplegada, 3 de 25 historias rastreadas DESPUES del deploy
+    // seguian saliendo con "en chile" / "universidad de chile". El `.describe()`
+    // es una restriccion blanda; el guardarrail duro va en el codigo.
+    const story = storyWithRelations({ id: 'story-1' })
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.story.update.mockResolvedValue({})
+    mockGenerateEmbeddingForContent.mockResolvedValue({ embedding: [0.1], hash: 'h' })
+    mockSaveEmbeddingTx.mockResolvedValue(undefined)
+
+    mockGetMediumLLM.mockReturnValue({
+      withStructuredOutput: () => ({
+        invoke: vi.fn().mockResolvedValue({
+          publicationDate: '2024-01-15 00:00:00',
+          quote: '"Q" said X',
+          quoteAttribution: 'X',
+          summary: 'S',
+          factors: ['f'],
+          limitingFactors: ['l'],
+          relevanceCalculation: ['c'],
+          relevanceRating: 5,
+          relevanceSummary: 'r',
+          titleLabel: 'derechos en chile',
+          relevanceTitle: 'conadi y corfo financian proyectos en chile',
+          marketingBlurb: 'b',
+        }),
+      }),
+    })
+
+    await assessStory('story-1')
+
+    expect(mockPrisma.story.update).toHaveBeenCalledWith({
+      where: { id: 'story-1' },
+      data: expect.objectContaining({
+        title: 'CONADI y CORFO financian proyectos en Chile',
+        titleLabel: 'derechos en Chile',
+      }),
+    })
+  })
+
   it('throws when story not found', async () => {
     mockPrisma.story.findUnique.mockResolvedValue(null)
     await expect(assessStory('nonexistent')).rejects.toThrow('Story not found')
