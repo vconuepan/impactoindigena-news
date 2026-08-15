@@ -4,6 +4,7 @@ import { createLogger } from '../lib/logger.js'
 import { getSmallLLM, rateLimitDelay } from './llm.js'
 import prisma from '../lib/prisma.js'
 import { truncateQuote } from '../lib/truncateQuote.js'
+import { fixCapitalizationOrNull } from '../lib/title-capitalization.js'
 
 const log = createLogger('translation')
 
@@ -67,8 +68,13 @@ export async function translateStory(storyId: string): Promise<void> {
   await prisma.story.update({
     where: { id: storyId },
     data: {
-      titleEn: result.title || null,
-      titleLabelEn: result.titleLabel || null,
+      // Mismo guardarrail que la version en espanol: el traductor es otro LLM
+      // y comete el mismo error con siglas y toponimos. La lista blanca no
+      // depende del idioma — "CONADI" y "Mozambique" se escriben igual en los
+      // dos, y para los que cambian de grafia la lista ya trae las dos formas,
+      // con tilde y sin ella.
+      titleEn: fixCapitalizationOrNull(result.title),
+      titleLabelEn: fixCapitalizationOrNull(result.titleLabel),
       summaryEn: result.summary || null,
       quoteEn: truncateQuote(result.quote),
       marketingBlurbEn: result.marketingBlurb || null,
