@@ -17,8 +17,24 @@
  * cubre lo que la lista blanca no conoce. Esto es el cinturon, aquello los
  * tirantes.
  *
- * Se aplica en el unico punto donde el pipeline persiste un titulo
- * (`services/analysis.ts`) y en el script que repara el archivo historico.
+ * Se aplica en los dos puntos donde el pipeline persiste un titulo
+ * —`services/analysis.ts` (espanol) y `services/translation.ts` (ingles)— y
+ * en el script que repara el archivo historico. El segundo se sumo el
+ * 15-ago-2026: el traductor es otro LLM y comete el mismo error, pero escribia
+ * `titleEn`/`titleLabelEn` sin pasar por aca.
+ *
+ * SEGUNDA MEDICION, 15-ago-2026: el guardarrail tampoco alcanzo solo. De 12
+ * historias rastreadas despues del despliegue, 3 salieron con el defecto
+ * ("semarnat", "mozambique", "canada" en minuscula) contra una tasa base de
+ * 462/2000 = 23,1%. Dos causas distintas, las dos corregidas aca: el `\b` no
+ * entendia acentos (ver NOT_LETTER_BEFORE) y la lista no conocia esos
+ * terminos.
+ *
+ * CUIDADO AL MEDIR ESTE ARCHIVO: correr `fixCapitalization` sobre los titulos
+ * publicados para ver "cuantos quedan rotos" da siempre cero y no prueba nada
+ * — es la misma lista blanca que aplica el guardarrail, y una lista solo puede
+ * fallar en los terminos que no conoce. Hay que mirar la clase completa del
+ * defecto: siglas y toponimos en minuscula, esten o no en la lista.
  */
 
 /**
@@ -34,6 +50,7 @@ const ACRONYMS = [
   'FAO', 'PNUD', 'OMS', 'BID', 'CLPI', 'FPIC', 'REDD',
   'MPF', 'CEDH', 'CNDH', 'FUNAI', 'INCRA', 'IBAMA', 'UFAL',
   'ONG', 'ONGs', 'EE', 'UU', 'GIZ', 'USAID', 'IPBES', 'COP',
+  'FILAC', 'SEMARNAT', 'TEPJF', 'CJNG', 'FARC',
 ]
 
 /**
@@ -44,16 +61,47 @@ const PROPER_NOUNS = [
   'Chile', 'Argentina', 'Bolivia', 'Peru', 'Perú', 'Ecuador', 'Colombia',
   'Brasil', 'Mexico', 'México', 'Guatemala', 'Honduras', 'Nicaragua',
   'Panama', 'Panamá', 'Paraguay', 'Uruguay', 'Venezuela', 'Canada', 'Canadá',
+  'Costa Rica', 'Nueva York', 'Nueva Zelanda',
   'Sonora', 'Coahuila', 'Chihuahua', 'Oaxaca', 'Chiapas', 'Guerrero',
   'Hidalgo', 'Yucatan', 'Yucatán', 'Michoacan', 'Michoacán', 'Sinaloa',
-  'Amazonia', 'Amazonía', 'Patagonia', 'Wallmapu', 'Araucania', 'Araucanía',
-  'Temuco', 'Santiago', 'Bariloche', 'Nariño', 'Cauca', 'Vichada',
+  'Puebla', 'Tabasco', 'Chubut', 'Neuquen', 'Neuquén', 'Putumayo', 'Guajira',
+  'Tarapaca', 'Tarapacá', 'Biobío', 'Choco', 'Chocó', 'Ucayali',
+  'Amazonia', 'Amazonía', 'Amazonas', 'Patagonia', 'Wallmapu', 'Araucania', 'Araucanía',
+  'Temuco', 'Santiago', 'Bariloche', 'Nariño', 'Cauca', 'Vichada', 'Alaska',
+  'India', 'Nepal', 'Indonesia', 'Filipinas', 'Malasia', 'Camboya', 'Bangladesh',
+  'Papua', 'Papúa', 'Rusia', 'Australia', 'Kenia', 'Tanzania', 'Namibia',
+  'Nigeria', 'Congo', 'Mozambique',
   'Mapuche', 'Aymara', 'Quechua', 'Rapa Nui', 'Yanomami', 'Guarani', 'Guaraní',
 ]
+
+/**
+ * Toponimos que llevan articulo. Se corrigen despues de la pasada principal,
+ * que deja el nombre bien pero el articulo en minuscula ("la Araucania").
+ */
+const ARTICLED = ['Araucania', 'Araucanía', 'Guajira']
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
+
+/**
+ * Limites de palabra que entienden el espanol.
+ *
+ * NO se usa `\b`, y esa es la correccion del 15-ago-2026. El `\b` de
+ * JavaScript define "caracter de palabra" como `[A-Za-z0-9_]`, asi que una
+ * vocal acentuada cuenta como separador. Consecuencia medida en produccion:
+ * toda entrada que TERMINA en vocal acentuada —Peru, Panama, Canada,
+ * Guarani— nunca llegaba a coincidir, porque `\b` exigia un borde entre la
+ * vocal final y el espacio siguiente, y entre dos no-caracteres de palabra no
+ * hay borde. Se publico un titular con "canada" en minuscula el 15-ago a las
+ * 00:03 UTC, con Canada ya en la lista.
+ *
+ * Los lookarounds Unicode arreglan las dos direcciones y de paso cierran un
+ * falso positivo que `\b` tenia abierto: la palabra "bide" ya no se convierte
+ * en "BIDe".
+ */
+const NOT_LETTER_BEFORE = '(?<![\\p{L}\\p{N}])'
+const NOT_LETTER_AFTER = '(?![\\p{L}\\p{N}])'
 
 /**
  * Devuelve el texto con las siglas y nombres propios en su forma canonica.
@@ -66,12 +114,15 @@ export function fixCapitalization(text: string): string {
   let out = text
 
   for (const canonical of [...ACRONYMS, ...PROPER_NOUNS]) {
-    const re = new RegExp(`\\b${escapeRegex(canonical)}\\b`, 'gi')
+    const re = new RegExp(`${NOT_LETTER_BEFORE}${escapeRegex(canonical)}${NOT_LETTER_AFTER}`, 'giu')
     out = out.replace(re, canonical)
   }
 
   // "La Araucania" tras el paso anterior puede haber quedado como "la Araucania".
-  out = out.replace(/\bla (Araucan(?:i|í)a)\b/g, 'La $1')
+  for (const name of ARTICLED) {
+    const re = new RegExp(`${NOT_LETTER_BEFORE}la (${escapeRegex(name)})${NOT_LETTER_AFTER}`, 'gu')
+    out = out.replace(re, 'La $1')
+  }
 
   return out
 }
