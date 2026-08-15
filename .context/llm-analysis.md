@@ -40,6 +40,17 @@ The Zod schemas in `server/src/schemas/llm.ts` use `.describe()` to tell the LLM
 - **Plain text**: `summary`, `quote`, `relevanceTitle`, `marketingBlurb` remain plain text
 - **Emotion tags**: The five emotion definitions are embedded in the schema description
 
+## Title Capitalization Guardrail
+
+Titles go through `fixCapitalization()` (`server/src/lib/title-capitalization.ts`) before they are persisted. It is a deterministic whitelist of acronyms and proper nouns — no LLM involved — applied at both write points: `services/analysis.ts` (Spanish) and `services/translation.ts` (English).
+
+It exists because a `.describe()` is a **soft** constraint. Reinforcing the schema rule on 2026-08-10 had a measured effect of zero: 12% of titles kept shipping `en chile`, `estudio de ufal`. Binary rules need code, not instructions.
+
+Two traps when working on this file:
+
+- **Word boundaries must be Unicode-aware.** JavaScript's `\b` treats accented vowels as non-word characters, so entries ending in one (`Perú`, `Canadá`) never matched. Use the `NOT_LETTER_BEFORE` / `NOT_LETTER_AFTER` lookarounds, never `\b`.
+- **Never measure the guardrail with its own whitelist.** Running `fixCapitalization()` over published titles to count what's still broken always returns zero — a whitelist can only miss terms it doesn't know. Measure the whole defect class instead: acronyms and place names in lowercase, listed or not.
+
 ## Shared Batch Classification
 
 Both pre-assessment and reclassification use `runBatchClassification()` in `analysis.ts` — a generic helper that handles DB fetching, issue slug resolution, batching, semaphore-gated concurrent LLM calls, progress reporting, and DB transaction writes. Callers provide the LLM instance, schema, prompt builder, and an update function that determines which fields to write per story. The `fallbackToFeedIssue` option controls whether stories omitted from the LLM response get their `issueId` overwritten to the feed default (enabled for pre-assessment, disabled for reclassification to preserve existing assignments).

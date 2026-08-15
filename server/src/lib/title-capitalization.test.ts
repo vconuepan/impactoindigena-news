@@ -45,6 +45,64 @@ describe('fixCapitalization', () => {
     )
   })
 
+  it('corrige los nombres que TERMINAN en vocal acentuada', () => {
+    // El bug que dejo pasar un titular con "canada" en minuscula a produccion
+    // el 15-ago-2026:
+    // el `\b` de JS no reconoce la acentuada como caracter de palabra, asi que
+    // estas cuatro entradas de la lista no coincidian nunca. Los nombres con
+    // la tilde en el medio (Mexico, Michoacan) si funcionaban, por eso el
+    // defecto era invisible en los tests que habia.
+    expect(fixCapitalization('canadá avanzó en reclamación de tierras indígenas')).toBe(
+      'Canadá avanzó en reclamación de tierras indígenas'
+    )
+    expect(fixCapitalization('acuerdo en perú sobre consulta previa')).toBe(
+      'acuerdo en Perú sobre consulta previa'
+    )
+    expect(fixCapitalization('cumbre en panamá reúne a pueblos indígenas')).toBe(
+      'cumbre en Panamá reúne a pueblos indígenas'
+    )
+    expect(fixCapitalization('pueblo guaraní recupera territorio')).toBe(
+      'pueblo Guaraní recupera territorio'
+    )
+    expect(fixCapitalization('producción agrícola indígena en tarapacá')).toBe(
+      'producción agrícola indígena en Tarapacá'
+    )
+  })
+
+  it('no confunde una acentuada con el final de una sigla', () => {
+    // Contrapartida del fix: con `\b` la tilde abria un borde falso y "bidé"
+    // se convertia en "BIDé". Los lookarounds Unicode lo cierran.
+    expect(fixCapitalization('un bidé en la sala')).toBe('un bidé en la sala')
+  })
+
+  it('cubre los terminos que faltaban y se publicaron rotos el 15-ago', () => {
+    expect(fixCapitalization('semarnat exige consulta indígena en proyecto Xcaret')).toBe(
+      'SEMARNAT exige consulta indígena en proyecto Xcaret'
+    )
+    expect(fixCapitalization('mujeres rurales en mozambique')).toBe('mujeres rurales en Mozambique')
+    expect(fixCapitalization('derechos indígenas en india y nepal')).toBe(
+      'derechos indígenas en India y Nepal'
+    )
+    expect(fixCapitalization('funai crea grupo técnico en amazonas')).toBe(
+      'FUNAI crea grupo técnico en Amazonas'
+    )
+  })
+
+  it('normaliza los toponimos de varias palabras', () => {
+    expect(fixCapitalization('puente mejora la economía indígena en costa rica')).toBe(
+      'puente mejora la economía indígena en Costa Rica'
+    )
+    expect(fixCapitalization('narcotráfico amenaza la seguridad en rapa nui')).toBe(
+      'narcotráfico amenaza la seguridad en Rapa Nui'
+    )
+  })
+
+  it('normaliza el articulo de La Guajira igual que el de La Araucania', () => {
+    expect(fixCapitalization('foro une lideresas wayuu en la guajira')).toBe(
+      'foro une lideresas wayuu en La Guajira'
+    )
+  })
+
   it('no altera un texto sin coincidencias', () => {
     const t = 'jóvenes defienden su territorio ancestral'
     expect(fixCapitalization(t)).toBe(t)
