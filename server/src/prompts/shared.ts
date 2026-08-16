@@ -125,15 +125,32 @@ export interface IssueForPrompt {
   slug: string
   name: string
   description: string
+  /**
+   * Criterios de evaluacion del tema, tal como se publican en su pagina.
+   * Ya venian de la base de datos y se le mostraban al lector, pero NO
+   * llegaban al clasificador: hasta el 15-ago-2026 el modelo decidia el tema
+   * con el nombre y una linea de descripcion, menos informacion de la que ve
+   * el publico. Ver `.context/llm-analysis.md`.
+   */
+  evaluationCriteria?: string[]
 }
 
 /**
  * Format an array of issues as XML for prompt inclusion.
+ *
+ * Los criterios van dentro del mismo `<ISSUE>` para que el modelo no tenga que
+ * cruzar dos bloques. Si un tema no tiene criterios cargados, se omite la
+ * etiqueta en vez de emitirla vacia.
  */
 export function formatIssuesBlock(issues: IssueForPrompt[]): string {
   let block = '<ISSUES>\n'
   for (const issue of issues) {
-    block += `<ISSUE slug="${escapeXml(issue.slug)}" name="${escapeXml(issue.name)}">${escapeXml(issue.description)}</ISSUE>\n`
+    block += `<ISSUE slug="${escapeXml(issue.slug)}" name="${escapeXml(issue.name)}">\n`
+    block += `  <DESCRIPCION>${escapeXml(issue.description)}</DESCRIPCION>\n`
+    for (const criterion of issue.evaluationCriteria ?? []) {
+      block += `  <CRITERIO>${escapeXml(criterion)}</CRITERIO>\n`
+    }
+    block += '</ISSUE>\n'
   }
   block += '</ISSUES>'
   return block

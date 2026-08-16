@@ -92,11 +92,11 @@ describe('preAssessStories', () => {
 
     expect(mockPrisma.story.update).toHaveBeenCalledWith({
       where: { id: 'story-1' },
-      data: { issueId: issue.id, relevancePre: 4, emotionTag: 'calm', status: 'pre_analyzed' },
+      data: { issueId: issue.id, relevancePre: 4, emotionTag: 'calm', countryFocus: null, status: 'pre_analyzed' },
     })
     expect(mockPrisma.story.update).toHaveBeenCalledWith({
       where: { id: 'story-2' },
-      data: { issueId: issue.id, relevancePre: 2, emotionTag: 'calm', status: 'pre_analyzed' },
+      data: { issueId: issue.id, relevancePre: 2, emotionTag: 'calm', countryFocus: null, status: 'pre_analyzed' },
     })
   })
 
@@ -127,7 +127,7 @@ describe('preAssessStories', () => {
     // Falls back to feed's issueId
     expect(mockPrisma.story.update).toHaveBeenCalledWith({
       where: { id: 'story-1' },
-      data: { issueId: story.feed.issue.id, relevancePre: 5, emotionTag: 'calm', status: 'pre_analyzed' },
+      data: { issueId: story.feed.issue.id, relevancePre: 5, emotionTag: 'calm', countryFocus: null, status: 'pre_analyzed' },
     })
   })
 })

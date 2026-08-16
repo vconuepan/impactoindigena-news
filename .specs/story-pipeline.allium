@@ -50,7 +50,8 @@ entity Story {
     -- may be revisited by admins. No automated cleanup.
 
     -- Pre-assessment fields
-    issue: Issue?
+    issue: Issue?                                        -- subject, never a country
+    country_focus: String?                               -- ISO 3166-1 alpha-2, or null
     relevance_pre: Integer?                              -- 1-10 conservative
     emotion_tag: uplifting | frustrating | scary | calm | null
 
@@ -97,11 +98,40 @@ rule PreAssess {
     when: PreAssessJobRuns(story)
     -- Polls for stories where status = fetched.
 
-    -- LLM assigns issue + conservative rating + emotion
-    ensures: story.issue = LLM.classify_issue(story) ?? story.feed.issue
+    -- LLM assigns issue + conservative rating + emotion + country
+    -- Subject and geography are two axes, not one. The classifier only ever
+    -- sees subject issues: offering it a country-shaped issue while asking it
+    -- to classify by subject is a contradiction, and a story that picked the
+    -- country lost its subject.
+    ensures: story.issue = LLM.classify_issue(story, subject_issues) ?? story.feed.issue
+    ensures: story.country_focus = normalize_country(LLM.classify_country(story))
     ensures: story.relevance_pre = LLM.pre_rate(story)
     ensures: story.emotion_tag = LLM.tag_emotion(story)
     ensures: story.status = pre_analyzed
+
+    -- Country normalization is deterministic, not the model's job: it answers
+    -- with a name ("Chile") and code maps it to "CL". Anything unrecognized
+    -- becomes null, which is a legitimate and common value — most articles are
+    -- regional or global. Marking the wrong country files a story under
+    -- another nation; marking none merely leaves it out of its own section.
+}
+
+-- ─── Section membership ────────────────────────────────────────────
+
+-- A story belongs to a subject section through its issue, and to a
+-- geographic section through its country. The two are independent, so one
+-- story can appear in both — which is the point. Before this, 94 of the
+-- 2000 published stories carried Chilean markers while sitting in other
+-- sections, absent from their own.
+rule SectionMembership {
+    when: ReaderOpensSection(section)
+
+    ensures: section.stories = Story where
+        story.status = published and (
+            story.issue = section
+            or (story.issue = null and story.feed.issue = section)
+            or story.country_focus = section.country       -- geographic sections
+        )
 }
 
 -- ─── Stage 2: Full Assessment ──────────────────────────────────────

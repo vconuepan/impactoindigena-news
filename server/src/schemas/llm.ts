@@ -28,6 +28,23 @@ const CAPITALIZATION_RULE =
   "Coahuila, La Araucanía, Wallmapu), instituciones y nombres de persona. " +
   "Una sigla nunca va en minúsculas ni en forma capitalizada: escribe 'CONADI', no 'conadi' ni 'Conadi'. ";
 
+/**
+ * País del que trata el artículo, en nombre común y en español.
+ *
+ * Se pide el NOMBRE y no el código ISO a propósito: un modelo escribe "Chile"
+ * de forma fiable y "CL" no siempre, y de todos modos la respuesta pasa por
+ * `normalizeCountry()`, que la lleva al código de forma determinista. La
+ * lección del guardarraíl de títulos aplica igual acá: lo que se puede
+ * verificar en código no se le encarga al modelo.
+ */
+const COUNTRY_FOCUS_SCHEMA = z
+  .string()
+  .describe(
+    "País del que trata el artículo, en español y con su nombre común: 'Chile', 'Brasil', 'México'. " +
+    "Cadena vacía si el artículo es global, regional o no trata de un país en particular. " +
+    "Es el país de los hechos, NO el del medio que publica ni el de una fuente citada."
+  );
+
 export const preAssessItemSchema = z.object({
   articleId: z
     .string()
@@ -45,6 +62,7 @@ export const preAssessItemSchema = z.object({
     ),
   emotionTag: EMOTION_TAG_SCHEMA,
   narrativeFrame: NARRATIVE_FRAME_SCHEMA,
+  country: COUNTRY_FOCUS_SCHEMA,
 });
 
 export const preAssessResultSchema = z.object({

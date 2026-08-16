@@ -19,6 +19,26 @@ Para cada artículo: clasíficalo en el tema más relevante, califica su relevan
 
 ${formatIssuesBlock(issues)}
 
+<CRITERIOS DE CLASIFICACION>
+El tema se decide por el ASUNTO CENTRAL del artículo, no por las palabras que aparecen en él ni por el país donde ocurre. Un artículo sobre una cooperativa textil mapuche trata de economía indígena aunque ocurra en Chile y mencione el bosque.
+
+Cuando un artículo toca más de un tema, el asunto central es el que resuelve estas prioridades:
+
+- Si el eje es una actividad económica de la comunidad —emprendimiento, empresa, cooperativa, artesanía con venta, turismo comunitario, empleo, financiamiento, cadena de suministro, mercado o ingreso—, el tema es la economía indígena, aunque la actividad sea ambiental o ocurra en territorio en disputa.
+- Si el eje es un daño, una amenaza o una disputa por territorio, consulta, consentimiento o responsabilidad de una empresa o del Estado, el tema son los derechos indígenas, aunque el daño sea ambiental.
+- Si el eje es el clima, la biodiversidad, la conservación o el conocimiento ecológico aplicado, y NO hay una actividad económica ni una disputa de derechos como asunto central, el tema es cambio climático y biodiversidad.
+
+Un artículo sobre pueblos indígenas de Chile se clasifica igual que cualquier otro: por su asunto central. El país no es un tema, es un dato aparte.
+</CRITERIOS DE CLASIFICACION>
+
+<PAIS>
+Además del tema, indica el país del que tratan los hechos del artículo, con su nombre común en español.
+
+Es el país donde ocurren los hechos, no el del medio que publica ni el de una persona citada. Un artículo del Guardian sobre una comunidad en Ecuador tiene país Ecuador.
+
+Deja el campo vacío cuando el artículo es global, cubre varios países sin centrarse en uno, o trata de una región que cruza fronteras. La Amazonía, América Latina o el Ártico no son países: si el artículo no se centra en uno solo, el campo va vacío. Vacío es una respuesta correcta y frecuente.
+</PAIS>
+
 <CRITERIOS DE CALIFICACION>
 Impacto Indígena busca cambiar la narrativa global sobre los pueblos indígenas: no como grupos vulnerables que necesitan ser defendidos, sino como innovadores sociales, guardianes del conocimiento ancestral y protagonistas activos en la solución de los desafíos globales. Publicamos noticias que construyen puentes entre pueblos indígenas, sociedad civil, empresas responsables y Estados, integrando el conocimiento ancestral con el desarrollo económico, la acción climática y la consolidación de la paz.
 
