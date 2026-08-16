@@ -40,6 +40,21 @@ The Zod schemas in `server/src/schemas/llm.ts` use `.describe()` to tell the LLM
 - **Plain text**: `summary`, `quote`, `relevanceTitle`, `marketingBlurb` remain plain text
 - **Emotion tags**: The five emotion definitions are embedded in the schema description
 
+## Subject and Geography Are Two Axes
+
+`Story.issueId` holds the **subject**; `Story.countryFocus` holds the **country** (ISO 3166-1 alpha-2, or null). A story belongs to its subject section through the issue and to a geographic section through the country, so it can appear in both.
+
+Before 2026-08-16 the country was just another issue, competing for the same single slot: a Chilean story about land rights landed in Chile Intercultural and vanished from Derechos Indígenas. Measured across the 2000 published stories, **94 carried Chilean markers while sitting in other sections, absent from their own**, and the 367 inside Chile Intercultural had no subject at all.
+
+Rules that keep this working:
+
+- **The classifier never sees geographic issues.** `GEOGRAPHIC_ISSUE_SLUGS` (in `lib/country-focus.ts`) is filtered out of the `<ISSUES>` block. Offering a country-shaped option while instructing the model to classify by subject is a contradiction, and GPT-5 models burn reasoning tokens reconciling contradictions rather than ignoring one.
+- **Country normalization is code, not prompt.** The model answers with a name ("Chile"); `normalizeCountry()` maps it to `"CL"` and rejects non-countries ("global", "América Latina", "Amazonía"). Same lesson as the title guardrail: a binary rule belongs in code.
+- **Unrecognized means null, and null is fine.** Most articles are regional or global. A wrong country files a story under another nation; no country merely leaves it out of its own section. Prefer not marking.
+- **Section membership lives in one place**: `buildIssueCondition()` in `services/story.ts`. It already had two paths (own issue, feed issue); the country is a third.
+
+Backfill for stories predating the split: `npm run migration:backfill-country --prefix server` (simulation by default).
+
 ## Title Capitalization Guardrail
 
 Titles go through `fixCapitalization()` (`server/src/lib/title-capitalization.ts`) before they are persisted. It is a deterministic whitelist of acronyms and proper nouns — no LLM involved — applied at both write points: `services/analysis.ts` (Spanish) and `services/translation.ts` (English).
