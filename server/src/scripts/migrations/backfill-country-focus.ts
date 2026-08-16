@@ -30,16 +30,58 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { HumanMessage } from '@langchain/core/messages'
-import { getSmallLLM, rateLimitDelay } from '../../services/llm.js'
-import { buildPreassessPrompt } from '../../prompts/preassess.js'
-import { preAssessResultSchema } from '../../schemas/llm.js'
+import { getMediumLLM, rateLimitDelay } from '../../services/llm.js'
+import {
+  CLASSIFICATION_BLOCK,
+  UNTRUSTED_CONTENT_GUARD,
+  formatIssuesBlock,
+  sanitizeUntrustedContent,
+  type IssueForPrompt,
+} from '../../prompts/shared.js'
+import { z } from 'zod'
 import { withRetry } from '../../lib/retry.js'
 import { safeParseJson } from '../../services/issue.js'
-import {
-  normalizeCountry,
-  GEOGRAPHIC_ISSUE_SLUGS,
-  GEOGRAPHIC_ISSUE_COUNTRY,
-} from '../../lib/country-focus.js'
+import { normalizeCountry, GEOGRAPHIC_ISSUE_SLUGS } from '../../lib/country-focus.js'
+
+/**
+ * Prompt propio del backfill: pide SOLO tema y pais.
+ *
+ * No se reusa `buildPreassessPrompt` porque ese pide ademas puntuar, etiquetar
+ * la emocion y encuadrar la narrativa, y este script no escribe ninguna de las
+ * tres. Al intentarlo, el modelo devolvia esos campos y omitia el tema — el
+ * prompt hablaba de una tarea y el esquema de otra. Las REGLAS de
+ * clasificacion son las mismas de produccion: vienen de CLASSIFICATION_BLOCK.
+ *
+ * El contenido crawleado sigue siendo dato no confiable: se sanitiza y se
+ * precede del guard, igual que en produccion (.context/prompting.md).
+ */
+function buildBackfillPrompt(
+  stories: { id: string; title: string; content: string }[],
+  issues: IssueForPrompt[],
+): string {
+  const articles = stories
+    .map(
+      s => `<ARTICLE id="${s.id}">\n<TITLE>${sanitizeUntrustedContent(s.title)}</TITLE>\n<CONTENT>${sanitizeUntrustedContent(s.content.slice(0, 4000))}</CONTENT>\n</ARTICLE>`,
+    )
+    .join('\n')
+
+  return `<ROLE>
+Clasificas articulos de prensa sobre pueblos indigenas por su asunto central y por el pais del que tratan.
+</ROLE>
+
+<GOAL>
+Para cada articulo devuelve exactamente dos datos: el slug del tema que le corresponde y el pais. Nada mas.
+</GOAL>
+
+${formatIssuesBlock(issues)}
+
+${CLASSIFICATION_BLOCK}
+
+<ARTICLES>
+${UNTRUSTED_CONTENT_GUARD}
+${articles}
+</ARTICLES>`
+}
 
 const APPLY = process.argv.includes('--apply')
 const limitArg = process.argv.indexOf('--limit')
@@ -59,7 +101,11 @@ const BATCH_SIZE = 10
  * `--include-rejected` existe por si alguna vez hace falta, pero el default
  * correcto es este.
  */
-const LIVE_STATUSES = ['published', 'selected', 'analyzed', 'pre_analyzed', 'fetched'] as const
+// `fetched` tambien queda fuera: esas historias aun no pasan por el
+// pre-assessment, asi que el pipeline nuevo — ya desplegado — les asignara
+// tema y pais solo cuando les llegue el turno. Backfillearlas seria hacer el
+// mismo trabajo dos veces.
+const LIVE_STATUSES = ['published', 'selected', 'analyzed', 'pre_analyzed'] as const
 const INCLUDE_REJECTED = process.argv.includes('--include-rejected')
 
 const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
@@ -87,26 +133,28 @@ async function main() {
   }
 
   const slugToId = new Map(topicIssues.map(i => [i.slug, i.id]))
-  const countryByIssueId = new Map(
-    geographic.map(i => [i.id, GEOGRAPHIC_ISSUE_COUNTRY[i.slug]]),
-  )
-
   const where = {
     issueId: { in: geographic.map(i => i.id) },
     ...(INCLUDE_REJECTED ? {} : { status: { in: [...LIVE_STATUSES] } }),
   }
 
-  const [stories, totalConIssue] = await Promise.all([
+  const [all, totalConIssue] = await Promise.all([
     prisma.story.findMany({
       where,
-      select: { id: true, sourceTitle: true, sourceContent: true, issueId: true },
+      select: { id: true, sourceTitle: true, sourceContent: true, issueId: true, status: true },
       orderBy: { dateCrawled: 'desc' },
-      ...(LIMIT ? { take: LIMIT } : {}),
     }),
     prisma.story.count({ where: { issueId: { in: geographic.map(i => i.id) } } }),
   ])
 
-  const excluidas = totalConIssue - (await prisma.story.count({ where }))
+  // Publicadas primero: son las que el lector ve, asi que una muestra con
+  // --limit debe estar hecha de ellas y no de lo recien crawleado, que es
+  // mayormente ruido de relevancia 1-2.
+  const ORDER: Record<string, number> = { published: 0, selected: 1, analyzed: 2, pre_analyzed: 3 }
+  all.sort((a, b) => (ORDER[a.status] ?? 9) - (ORDER[b.status] ?? 9))
+  const stories = LIMIT ? all.slice(0, LIMIT) : all
+
+  const excluidas = totalConIssue - all.length
   if (excluidas > 0) {
     console.log(`Excluidas por estado (rechazadas o descartadas): ${excluidas}`)
     console.log('  Se conservan como registro historico; no se muestran, no necesitan tema.')
@@ -115,43 +163,116 @@ async function main() {
   console.log(`Historias a reclasificar: ${stories.length}`)
   console.log(`Temas de asunto disponibles: ${topicIssues.map(i => i.slug).join(', ')}\n`)
 
-  const llm = getSmallLLM()
-  const structured = llm.withStructuredOutput(preAssessResultSchema, { method: 'functionCalling' })
+  // El mismo modelo que usa el preassess de produccion (analysis.ts:199). El
+  // chico se probo primero y devolvia narrativeFrame invalido en articulos de
+  // relevancia 1-2, abortando el lote entero por validacion.
+  const llm = getMediumLLM()
+
+  // Esquema PROPIO del backfill: solo los dos campos que este script escribe.
+  // El de produccion exige ademas rating, emotionTag y narrativeFrame, y con
+  // el, UN articulo que respondiera narrativeFrame="calm" invalidaba el lote
+  // entero de 10 por un campo que aca ni se mira — paso dos veces al simular.
+  // `issueSlug` va como ENUM, y las dos alternativas se midieron sobre las 449
+  // historias reales el 16-ago:
+  //
+  //   string libre → 98 resueltas, 351 sin tema (el modelo responde "" y se
+  //                  descarta el articulo)
+  //   enum         → 308 resueltas, pero 14 de 45 lotes caidos: un solo ""
+  //                  invalida la respuesta entera y arrastra a sus 9 companeros
+  //
+  // El enum resuelve tres veces mas, asi que se queda, y el lote caido se
+  // arregla partiendolo en dos hasta aislar al articulo culpable (ver
+  // `clasificarLote`). Lo mejor de ambos: el modelo obligado a elegir, y la
+  // perdida acotada al articulo que falla.
+  const slugs = topicIssues.map(i => i.slug) as [string, ...string[]]
+  const backfillSchema = z.object({
+    articles: z.array(
+      z.object({
+        articleId: z.string(),
+        issueSlug: z.enum(slugs).describe('Slug del tema, tomado de la lista <ISSUES>'),
+        country: z.string().describe('Pais del que trata el articulo, en español; vacio si no trata de un pais'),
+      }),
+    ),
+  })
+  const structured = llm.withStructuredOutput(backfillSchema, { method: 'functionCalling' })
 
   const tally = new Map<string, number>()
   let moved = 0
   let countryKept = 0
   let unresolved = 0
 
-  for (let i = 0; i < stories.length; i += BATCH_SIZE) {
-    const batch = stories.slice(i, i + BATCH_SIZE)
-    const prompt = buildPreassessPrompt(
-      batch.map(s => ({ id: s.id, title: s.sourceTitle, content: s.sourceContent })),
+  let irresolubles = 0
+
+  type Item = { articleId: string; issueSlug: string; country: string }
+  type Story = (typeof stories)[number]
+
+  /**
+   * Clasifica un grupo y, si el modelo devuelve algo que el esquema rechaza,
+   * lo parte en dos y reintenta cada mitad.
+   *
+   * El enum obliga al modelo a elegir un tema real, pero basta UN articulo al
+   * que responda "" para invalidar la respuesta completa. Sin biseccion eso
+   * costaba las 10 historias del lote; con ella, la busqueda binaria aisla al
+   * culpable en ~4 llamadas y las otras 9 se procesan igual. Un grupo de 1 que
+   * falla es el articulo irresoluble: se deja como esta, porque mover a ciegas
+   * es peor que no mover.
+   */
+  async function clasificarLote(grupo: Story[]): Promise<{ items: Item[]; perdidas: Story[] }> {
+    const prompt = buildBackfillPrompt(
+      grupo.map(s => ({ id: s.id, title: s.sourceTitle, content: s.sourceContent })),
       topicIssues,
     )
 
     await rateLimitDelay()
-    const response = await withRetry(() => structured.invoke([new HumanMessage(prompt)]))
+    try {
+      const response = await withRetry(() => structured.invoke([new HumanMessage(prompt)]))
+      return { items: response.articles as Item[], perdidas: [] }
+    } catch (err) {
+      if (grupo.length === 1) {
+        const motivo = err instanceof Error ? err.message.split('\n')[0] : String(err)
+        console.log(`  ${grupo[0].id} · IRRESOLUBLE: ${motivo.slice(0, 90)}`)
+        return { items: [], perdidas: grupo }
+      }
+      const mitad = Math.floor(grupo.length / 2)
+      const [a, b] = await Promise.all([
+        clasificarLote(grupo.slice(0, mitad)),
+        clasificarLote(grupo.slice(mitad)),
+      ])
+      return { items: [...a.items, ...b.items], perdidas: [...a.perdidas, ...b.perdidas] }
+    }
+  }
+
+  for (let i = 0; i < stories.length; i += BATCH_SIZE) {
+    const batch = stories.slice(i, i + BATCH_SIZE)
+    const { items, perdidas } = await clasificarLote(batch)
+    irresolubles += perdidas.length
 
     const byId = new Map(batch.map(s => [s.id, s]))
-    for (const item of response.articles) {
+    for (const item of items) {
       const story = byId.get(item.articleId)
       if (!story) continue
 
       const newIssueId = slugToId.get(item.issueSlug)
       if (!newIssueId) {
-        // El modelo devolvio un tema que no existe. Se deja como esta: mover a
-        // ciegas es peor que no mover.
         unresolved++
         console.log(`  ${story.id} · SIN RESOLVER (tema desconocido: ${item.issueSlug})`)
         continue
       }
 
-      // El pais sale de la seccion de la que viene la historia, no del modelo:
-      // estas historias YA estaban clasificadas como de ese pais por un humano
-      // o por el pipeline, y ese dato es mejor que una relectura. Si el modelo
-      // ademas devuelve pais, solo se usa cuando la seccion no lo declara.
-      const country = countryByIssueId.get(story.issueId!) ?? normalizeCountry(item.country)
+      // El pais lo decide el MODELO, que lee el articulo.
+      //
+      // La primera version heredaba el pais de la seccion de origen, con el
+      // argumento de que esas historias "ya estaban clasificadas como de ese
+      // pais". La simulacion del 16-ago refuto esa premisa en la primera
+      // corrida: marcaba CL a "Renovaran comunidades indigenas ocho Consejos
+      // Regionales de Puebla" y a una nota del Senado peruano. La evidencia ya
+      // estaba en el diagnostico y no la lei bien — la seccion de Chile
+      // contenia una nota sobre un puente en Costa Rica. Heredar el pais era
+      // propagar precisamente el error que este trabajo viene a corregir.
+      //
+      // Si el modelo no reconoce pais, queda null: la historia no aparece en
+      // ninguna seccion de pais, que es preferible a aparecer en la equivocada.
+      const country = normalizeCountry(item.country)
       if (country) countryKept++
 
       tally.set(item.issueSlug, (tally.get(item.issueSlug) ?? 0) + 1)
@@ -171,6 +292,10 @@ async function main() {
   }
 
   console.log(`\nHistorias movidas a un tema: ${moved}`)
+  if (irresolubles > 0) {
+    console.log(`Irresolubles (quedaron intactas): ${irresolubles}`)
+    console.log('  El modelo no devolvio un tema valido ni al aislarlas de a una.')
+  }
   console.log(`Con pais asignado: ${countryKept}`)
   if (unresolved > 0) console.log(`Sin resolver (se quedan como estaban): ${unresolved}`)
   console.log('\nReparto por tema:')
