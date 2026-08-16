@@ -64,6 +64,12 @@ model Story {
   feed                   Feed         @relation(fields: [feedId], references: [id])
   issueId                String?      @map("issue_id")
   issue                  Issue?       @relation(fields: [issueId], references: [id])
+  // Eje geografico, ortogonal al tema. ISO 3166-1 alfa-2 ("CL"), o null si el
+  // articulo no trata de un pais en particular. Existe para que una noticia
+  // pueda estar en su tema Y en su seccion de pais a la vez: antes el pais era
+  // un tema mas, asi que una nota chilena de derechos caia solo en Chile y
+  // desaparecia de Derechos Indigenas.
+  countryFocus           String?      @map("country_focus")
   status                 StoryStatus  @default(fetched)
   dateCrawled            DateTime     @default(now()) @map("date_crawled")
   datePublished          DateTime?    @map("date_published")
@@ -112,6 +118,7 @@ model Story {
   @@index([status, relevance])
   @@index([datePublished])
   @@index([issueId])
+  @@index([countryFocus])
   @@index([clusterId])
   @@map("stories")
 }
