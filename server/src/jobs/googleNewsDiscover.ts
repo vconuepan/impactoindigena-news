@@ -70,6 +70,21 @@ const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
   { query: 'indigenous business',               region: 'US:en' },
   { query: 'indigenous procurement',            region: 'CA:en' },
   // Vertical jurídico — Corte IDH, C169 OIT, UNDRIP
+  // Vertical juridico CHILENO. Cubre el terreno que traia Diario
+  // Constitucional (493 historias) hasta que empezo a responder 403 a los
+  // crawlers, y El Libero (220) hasta que elimino su RSS. Las dos se
+  // desactivaron el 17-ago-2026 y no son recuperables como feed.
+  //
+  // OJO: el operador `site:` NO funciona en Bing News — `site:ellibero.cl
+  // indigena` devuelve CERO resultados, igual que las otras tres que se
+  // probaron. La unica via es tematica, y estas cuatro se verificaron ese dia
+  // con 5 a 11 resultados reales: "Corte Suprema falla en favor de comunidades
+  // indigenas", "Tercer Tribunal Ambiental rechaza reclamacion de comunidad
+  // indigena", "Suprema ordena someter a consulta indigena proyecto minero".
+  { query: 'sentencia indígena Chile',              region: 'CL:es' },
+  { query: 'Corte Suprema consulta indígena',       region: 'CL:es' },
+  { query: 'tribunal ambiental comunidad indígena', region: 'CL:es' },
+  { query: 'recurso de protección indígena',        region: 'CL:es' },
   { query: 'Corte Interamericana Derechos Humanos indigena', region: 'CL:es' },
   { query: 'Convenio 169 OIT pueblos indígenas',             region: 'CL:es' },
   { query: 'UNDRIP declaration indigenous peoples rights',   region: 'US:en' },
