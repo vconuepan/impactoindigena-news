@@ -9,6 +9,7 @@ import { searchByEmbedding, fetchStoryForEmbedding, saveEmbeddingTx } from '../l
 import { createLogger } from '../lib/logger.js'
 import { notifyJobFailure } from '../lib/notify.js'
 import { config } from '../config.js'
+import { GEOGRAPHIC_ISSUE_COUNTRY } from '../lib/country-focus.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { buildRelatedStoriesPrompt } from '../prompts/related-stories.js'
 import { relatedStoriesResultSchema } from '../schemas/llm.js'
@@ -635,9 +636,18 @@ const PUBLIC_STORY_SELECT = {
 } as const
 
 function buildIssueCondition(issueSlug: string): Prisma.StoryWhereInput {
-  return {
-    OR: [
-      {
+  const or: Prisma.StoryWhereInput[] = [
+    {
+      issue: {
+        OR: [
+          { slug: issueSlug },
+          { parent: { slug: issueSlug } },
+        ],
+      },
+    },
+    {
+      issue: null,
+      feed: {
         issue: {
           OR: [
             { slug: issueSlug },
@@ -645,19 +655,20 @@ function buildIssueCondition(issueSlug: string): Prisma.StoryWhereInput {
           ],
         },
       },
-      {
-        issue: null,
-        feed: {
-          issue: {
-            OR: [
-              { slug: issueSlug },
-              { parent: { slug: issueSlug } },
-            ],
-          },
-        },
-      },
-    ],
-  }
+    },
+  ]
+
+  // Tercera via, para las secciones que agrupan por pais: una historia entra
+  // por su `countryFocus` sin dejar de tener su tema. Es lo que permite que una
+  // nota chilena de derechos este en Derechos Indigenas Y en Chile
+  // Intercultural — antes elegia una y desaparecia de la otra.
+  //
+  // Las dos vias de arriba se conservan para el archivo anterior al backfill,
+  // que todavia tiene el pais guardado como issue.
+  const country = GEOGRAPHIC_ISSUE_COUNTRY[issueSlug]
+  if (country) or.push({ countryFocus: country })
+
+  return { OR: or }
 }
 
 const RRF_FETCH_LIMIT = 50
