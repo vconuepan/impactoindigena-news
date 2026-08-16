@@ -54,6 +54,21 @@ const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
   { query: 'indigenous communities land',      region: 'US:en' },
   { query: 'indigenous climate change',        region: 'US:en' },
   { query: 'first nations rights',             region: 'CA:en' },
+  // Economías indígenas — el descubrimiento no buscaba economía en absoluto.
+  // De las 21 queries anteriores, CERO mencionaban empresa, emprendimiento,
+  // comercio, empleo o financiamiento, y por eso Economías Indígenas era la
+  // categoría más chica: no le faltaban fuentes, le faltaba que alguien la
+  // buscara. Las seis se verificaron contra Bing News el 17-ago-2026 y todas
+  // devuelven entre 6 y 12 resultados reales: "Corfo anuncia fondo para
+  // empresas indígenas con línea de crédito", "CCIB Relaunches Indigenous
+  // Procurement Marketplace", "Turismo indígena: Misiones avanza en
+  // experiencias comunitarias".
+  { query: 'empresas indígenas',                region: 'CL:es' },
+  { query: 'emprendimiento indígena',           region: 'CL:es' },
+  { query: 'economía indígena',                 region: 'CL:es' },
+  { query: 'turismo indígena comunitario',      region: 'CL:es' },
+  { query: 'indigenous business',               region: 'US:en' },
+  { query: 'indigenous procurement',            region: 'CA:en' },
   // Vertical jurídico — Corte IDH, C169 OIT, UNDRIP
   { query: 'Corte Interamericana Derechos Humanos indigena', region: 'CL:es' },
   { query: 'Convenio 169 OIT pueblos indígenas',             region: 'CL:es' },
