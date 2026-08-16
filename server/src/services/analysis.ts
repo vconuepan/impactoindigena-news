@@ -9,6 +9,8 @@ import { splitIntoGroups } from '../lib/utils.js'
 import { createLogger } from '../lib/logger.js'
 import { taskRegistry } from '../lib/taskRegistry.js'
 import { getSmallLLM, getMediumLLM, getLLMByTier, rateLimitDelay } from './llm.js'
+import { safeParseJson } from './issue.js'
+import { normalizeCountry, GEOGRAPHIC_ISSUE_SLUGS } from '../lib/country-focus.js'
 import { withRetry } from '../lib/retry.js'
 import { truncateQuote } from '../lib/truncateQuote.js'
 import { buildPreassessPrompt, buildReclassifyPrompt, buildEmotionTagPrompt, buildAssessPrompt, buildSelectPrompt } from '../prompts/index.js'
@@ -55,11 +57,25 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
 ): Promise<{ storyId: string; item: T }[]> {
   const { storyIds, llm, schema, buildPrompt, buildUpdate, fallbackToFeedIssue = true, onProgress, batchSize, concurrency, label } = options
 
-  const issues = await prisma.issue.findMany({
-    select: { id: true, slug: true, name: true, description: true },
+  const issuesRaw = await prisma.issue.findMany({
+    select: { id: true, slug: true, name: true, description: true, evaluationCriteria: true },
   })
+  // `evaluationCriteria` se guarda como JSON serializado. El clasificador los
+  // necesita: sin ellos decide el tema con una linea de descripcion.
+  const issues = issuesRaw.map(i => ({
+    ...i,
+    evaluationCriteria: safeParseJson<string[]>(i.evaluationCriteria, []),
+  }))
 
   const slugToId = new Map(issues.map(i => [i.slug, i.id]))
+
+  // El clasificador solo ve los temas de asunto. Las secciones geograficas se
+  // alimentan de `Story.countryFocus`, asi que ofrecerlas aca contradiria la
+  // instruccion de clasificar por asunto central. `slugToId` conserva TODOS
+  // los temas a proposito: el fallback al issue del feed sigue pudiendo
+  // resolver una seccion geografica para las fuentes que la tienen por
+  // defecto.
+  const topicIssues = issues.filter(i => !GEOGRAPHIC_ISSUE_SLUGS.includes(i.slug as never))
 
   // Split IDs into batches — stories are loaded per-batch to avoid holding all sourceContent in memory
   const idBatches: string[][] = []
@@ -96,7 +112,7 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
 
         const prompt = buildPrompt(
           batch.map(s => ({ id: s.id, title: s.sourceTitle, content: s.sourceContent })),
-          issues,
+          topicIssues,
         )
 
         await rateLimitDelay()
@@ -188,6 +204,10 @@ export async function preAssessStories(
       relevancePre: Math.max(1, item.rating), // clamp: model may return 0 for very low relevance
       emotionTag: item.emotionTag as EmotionTag,
       narrativeFrame: item.narrativeFrame as NarrativeFrame,
+      // El modelo devuelve el nombre del pais; el codigo ISO lo decide
+      // `normalizeCountry`, que ademas descarta "global", "regional" y demas
+      // respuestas que no son un pais.
+      countryFocus: normalizeCountry(item.country),
       status: 'pre_analyzed',
     }),
     onProgress,
