@@ -1,6 +1,6 @@
 import { parseFeed } from './rssParser.js'
 import { extractContent } from './extractor.js'
-import { getExistingUrls, createStory } from './story.js'
+import { getExistingUrls, createStory, SourceTooOldError } from './story.js'
 import { getFeedById, getDueFeeds, updateCrawlStatus, updateFeedCacheHeaders } from './feed.js'
 import { createLogger } from '../lib/logger.js'
 import { Semaphore } from '../lib/semaphore.js'
@@ -167,6 +167,13 @@ export async function crawlFeed(feedId: string): Promise<CrawlResult> {
 
         result.newStories++
       } catch (err: any) {
+        // El techo de antiguedad no es un fallo: es una decision editorial. Se
+        // cuenta como omitido, no como error, para que un feed que devuelve
+        // archivo no aparezca como feed roto en el panel.
+        if (err instanceof SourceTooOldError) {
+          result.skipped++
+          return
+        }
         // Unique constraint violation = URL was inserted by a concurrent crawl; treat as skip
         if (err?.code === 'P2002') {
           log.info({ url: item.url }, 'story already exists (concurrent insert), skipping')

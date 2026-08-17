@@ -38,6 +38,8 @@
     "migration:backfill-old-story-titles:test": "tsx src/scripts/migrations/backfill-old-story-titles.ts --test",
     "migration:rescore-relevance": "tsx src/scripts/migrations/rescore-relevance.ts",
     "migration:rescore-relevance:dry": "tsx src/scripts/migrations/rescore-relevance.ts --dry-run --limit 20",
+    "migration:unpublish-old": "tsx src/scripts/migrations/unpublish-old-sources.ts",
+    "migration:unpublish-old:apply": "tsx src/scripts/migrations/unpublish-old-sources.ts --apply",
     "migration:backfill-country": "tsx src/scripts/migrations/backfill-country-focus.ts",
     "migration:backfill-country:apply": "tsx src/scripts/migrations/backfill-country-focus.ts --apply",
     "migration:fix-title-caps": "tsx src/scripts/migrations/fix-title-capitalization.ts",

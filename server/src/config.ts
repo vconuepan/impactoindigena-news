@@ -69,6 +69,24 @@ export const config = {
     rssItemLimit: parseInt(process.env.RSS_ITEM_LIMIT || "30", 10),
     /** Reject articles whose RSS pubDate is older than this many days (Google News resurfacing). 0 = no limit. */
     maxArticleAgeDays: parseInt(process.env.MAX_ARTICLE_AGE_DAYS || "60", 10),
+    /**
+     * Techo absoluto de antiguedad para CUALQUIER historia, en meses. Decision
+     * editorial del 17-ago-2026: no se publica material de mas de 18 meses.
+     *
+     * Existe aparte de `maxArticleAgeDays` porque cubren cosas distintas. Ese
+     * filtro vive en el crawler de feeds RSS y es mas estricto (60 dias) porque
+     * un feed que devuelve algo de hace tres meses esta haciendo resurfacing.
+     * Este es el techo que nadie puede cruzar, y se aplica tambien al
+     * descubrimiento por busqueda, donde una query tematica legitimamente puede
+     * traer un fallo o un informe del año pasado.
+     *
+     * Por que hizo falta: el discover NO aplicaba ningun filtro de fecha —crea
+     * las historias con `prisma.story.create` directo, sin pasar por el guardia
+     * del crawler— y de las 61 publicadas el 16 y 17 de agosto, **30 tenian el
+     * articulo original con mas de 18 meses**. La mas vieja era del 2 de mayo de
+     * 2011. 0 = sin limite.
+     */
+    maxSourceAgeMonths: parseInt(process.env.MAX_SOURCE_AGE_MONTHS || "18", 10),
     httpTimeoutMs: parseInt(process.env.HTTP_TIMEOUT_MS || "10000", 10),
     minContentLength: parseInt(process.env.MIN_CONTENT_LENGTH || "300", 10),
     staleAfterEmptyCrawls: parseInt(

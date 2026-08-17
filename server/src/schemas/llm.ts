@@ -170,6 +170,10 @@ export const assessResultSchema = z.object({
         "Terminología: no atribuyas pertenencia étnica que la fuente no afirme, y NUNCA uses 'araucano/a(s)' " +
         "como gentilicio de personas (exónimo colonial): si la fuente dice mapuche, escribe 'mapuche'; " +
         "si solo menciona la región, escribe 'de La Araucanía'. " +
+        "Años: no agregues un año que el artículo no afirme. Si mencionas uno, debe ser el año " +
+        "en que ocurrió el hecho y estar escrito en el texto del artículo. Cuando el hecho es del " +
+        "año en curso, no pongas el año: sobra. Y nunca cambies el tiempo verbal de la fuente para " +
+        "que un hecho futuro o en curso parezca consumado (si la fuente dice 'buscará', no escribas 'buscó'). " +
         "Bien: 'CONADI y CORFO financian proyectos productivos indígenas en Chile'. " +
         "Mal: 'conadi y corfo financian proyectos productivos indígenas en chile'."
     ),
