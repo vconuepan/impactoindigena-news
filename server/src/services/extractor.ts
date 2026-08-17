@@ -7,6 +7,7 @@ import { safeAxiosGet } from '../lib/safeHttp.js'
 import { summarizeError } from '../utils/errors.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
+import { extractAuthorFromHtml, normalizeAuthor } from '../lib/author.js'
 import { isAllowedByRobots } from '../lib/robots.js'
 import { withRetry, isRetryableError } from '../lib/retry.js'
 import { crawlLimiter } from '../lib/crawlLimiter.js'
@@ -31,6 +32,11 @@ class ThrottleAbortError extends Error {
 export interface ExtractionResult {
   title: string | null
   content: string
+  /**
+   * Autor del articulo original, o null si el medio no lo publica.
+   * Lo exige el art. 71 B de la Ley 17.336 ("fuente, titulo y autor").
+   */
+  author: string | null
   datePublished: string | null
   method: 'selector' | 'readability' | 'diffbot' | 'pipfeed'
 }
@@ -150,6 +156,7 @@ function extractBySelector(html: string, selector: string): ExtractionResult | n
     return {
       title: $('title').text().trim() || null,
       content: text,
+      author: extractAuthorFromHtml(html),
       datePublished: null,
       method: 'selector',
     }
@@ -169,6 +176,9 @@ function extractByReadability(html: string, url: string): ExtractionResult | nul
     return {
       title: article.title || null,
       content: article.textContent.trim(),
+      // Readability expone `byline` cuando lo detecta; si no, se cae a las
+      // meta tags del HTML, que es de donde sale en la mayoria de los medios.
+      author: normalizeAuthor(article.byline) ?? extractAuthorFromHtml(html),
       datePublished: null,
       method: 'readability',
     }
@@ -217,6 +227,8 @@ async function extractByDiffbot(url: string): Promise<ExtractionResult | null> {
   return {
     title: article.title || null,
     content: article.text,
+    // Diffbot devuelve `author` como cadena y `authors[]` como objetos.
+    author: normalizeAuthor(article.author) ?? normalizeAuthor(article.authors?.[0]?.name),
     datePublished: article.date || article.estimatedDate || null,
     method: 'diffbot',
   }
@@ -257,6 +269,7 @@ async function extractByPipfeed(url: string): Promise<ExtractionResult | null> {
   return {
     title: data.title || null,
     content: data.text,
+    author: normalizeAuthor(data.author),
     datePublished: data.date || null,
     method: 'pipfeed',
   }

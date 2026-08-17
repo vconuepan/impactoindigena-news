@@ -96,7 +96,9 @@
     "caveats": "Advertencias",
     "searchSimilar": "Buscar noticias similares →",
     "moreIn": "Más en {{issue}} →",
-    "opensInNewTab": "(abre en nueva pestaña)"
+    "opensInNewTab": "(abre en nueva pestaña)",
+    "byAuthor": "Por {{author}}",
+    "originalTitle": "Título original"
   },
   "storyCard": {
     "opensInNewTab": "(abre en nueva pestaña)"

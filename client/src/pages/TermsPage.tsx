@@ -27,7 +27,7 @@ export default function TermsPage() {
 
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 1.2 · vigente desde el 17 de agosto de 2026.
+            Versión 1.3 · vigente desde el 17 de agosto de 2026.
           </p>
           <h2 className="section-heading mt-8">1. Aceptación</h2>
           <p>
@@ -62,9 +62,13 @@ export default function TermsPage() {
             El Sitio enlaza y hace referencia a contenidos de terceros (medios,
             ONG, organismos públicos), cuyos derechos pertenecen a sus
             respectivos titulares. Impacto Indígena publica resúmenes propios y
-            citas breves al amparo del <strong>derecho de cita</strong>{" "}
-            reconocido en la Ley N° 17.336 sobre Propiedad Intelectual, siempre
-            identificando la fuente y enlazando al original. Los resúmenes,
+            citas breves al amparo del <strong>artículo 71 B de la Ley N° 17.336</strong>{" "}
+            sobre Propiedad Intelectual, que permite incluir fragmentos breves de
+            una obra lícitamente divulgada a título de cita, siempre que se
+            mencione su <strong>fuente, título y autor</strong>. Por eso cada
+            noticia identifica el medio, muestra el título con que este la
+            publicó, enlaza al artículo original y atribuye a su autor cuando el
+            medio lo publica. Los resúmenes,
             análisis, calificaciones, textos editoriales, marca, diseño y
             software del Sitio son propiedad de la Fundación Coñuepan-Millaquir o se usan
             bajo licencia.

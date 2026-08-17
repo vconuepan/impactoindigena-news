@@ -289,6 +289,8 @@ export async function createStory(data: {
   sourceUrl: string
   sourceTitle: string
   sourceContent: string
+  /** Autor del articulo original; null cuando el medio no lo publica. */
+  sourceAuthor?: string | null
   feedId: string
   sourceDatePublished?: string
   crawlMethod?: 'selector' | 'readability' | 'diffbot' | 'pipfeed'
@@ -303,6 +305,7 @@ export async function createStory(data: {
       sourceUrl: data.sourceUrl,
       sourceTitle: data.sourceTitle,
       sourceContent: data.sourceContent,
+      sourceAuthor: data.sourceAuthor ?? null,
       feedId: data.feedId,
       sourceDatePublished: data.sourceDatePublished ? new Date(data.sourceDatePublished) : null,
       crawlMethod: data.crawlMethod || null,
@@ -597,6 +600,9 @@ const PUBLIC_STORY_SELECT = {
   slug: true,
   sourceUrl: true,
   sourceTitle: true,
+  // La ficha muestra fuente, titulo original y autor: son las tres menciones
+  // que exige el art. 71 B de la Ley 17.336 para amparar la cita.
+  sourceAuthor: true,
   title: true,
   titleLabel: true,
   dateCrawled: true,

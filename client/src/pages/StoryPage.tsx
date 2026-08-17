@@ -245,11 +245,25 @@ export default function StoryPage() {
                     {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title)}
                   </span>
                 </span>
+                {/* El art. 71 B de la Ley 17.336 ampara la cita "siempre que se
+                    mencione su fuente, titulo y autor". La fuente es el medio de
+                    arriba; el autor va aca y el titulo original en el enlace.
+                    Cuando el medio no publica autor —8 de cada 25— se omite: la
+                    ley obliga a mencionarlo, no a inventarlo. */}
+                {story.sourceAuthor && (
+                  <>
+                    <span className="text-neutral-300" aria-hidden="true">·</span>
+                    <span className="text-neutral-600">
+                      {t('storyPage.byAuthor', { author: story.sourceAuthor })}
+                    </span>
+                  </>
+                )}
                 <span className="text-neutral-300" aria-hidden="true">·</span>
                 <a
                   href={story.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title={story.sourceTitle}
                   className="text-brand-800 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
                 >
                   {t('storyPage.originalArticle')}
@@ -263,6 +277,14 @@ export default function StoryPage() {
                   {t('storyPage.generatedByAI')}
                 </Link>
               </div>
+              {/* El titulo con que la fuente publico la nota, visible y no solo
+                  como tooltip: el art. 71 B de la Ley 17.336 pide mencionar el
+                  titulo, y ademas deja ver como titulo el medio frente a como
+                  titulamos nosotros. */}
+              <p className="mt-2 text-xs text-neutral-500 italic">
+                {t('storyPage.originalTitle')}: <span className="not-italic">{story.sourceTitle}</span>
+              </p>
+
               {/* Row 2: actions (bookmark + share) — visually lighter */}
               {story.slug && (
                 <div className="flex items-center gap-3">
