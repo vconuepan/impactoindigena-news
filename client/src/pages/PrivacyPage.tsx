@@ -10,7 +10,7 @@ export default function PrivacyPage() {
         <title>Política de Privacidad - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Política de privacidad de Impacto Indígena, conforme a la Ley 21.719 de Chile. Analítica sin cookies, datos mínimos y tus derechos ARCO+."
+          content="Política de privacidad de Impacto Indígena. Regida por la Ley 19.628 y en adecuación a la Ley 21.719, vigente desde diciembre de 2026. Analítica sin cookies, datos mínimos y tus derechos."
         />
         <meta
           property="og:title"
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         />
         <meta
           property="og:description"
-          content="Política de privacidad de Impacto Indígena, conforme a la Ley 21.719 de Chile."
+          content="Política de privacidad de Impacto Indígena, en adecuación a la Ley 21.719 de Chile."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/privacy`} />
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 2.7 · vigente desde el 25 de julio de 2026.
+            Versión 2.8 · vigente desde el 17 de agosto de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -54,9 +54,10 @@ export default function PrivacyPage() {
             medio <strong>impactoindigena.news</strong> como programa con fines
             exclusivamente informativos y educativos. Su representante legal es{" "}
             <strong>Venancio Coñuepan Mesías</strong>. No hemos designado un
-            delegado de protección de datos, figura de carácter facultativo
-            conforme al artículo 50 de la Ley 21.719; las consultas de privacidad
-            las atiende directamente el responsable. Para ejercer tus derechos o
+            delegado de protección de datos: la Ley 19.628 vigente no contempla esa
+            figura, y el artículo 50 de la Ley 21.719 la establece como
+            facultativa ("podrá designar"). Las consultas de privacidad las
+            atiende directamente el responsable. Para ejercer tus derechos o
             cualquier consulta de privacidad, escríbenos a{" "}
             <ObfuscatedEmail className="text-brand-800 hover:text-brand-700" />.
           </p>
@@ -64,15 +65,33 @@ export default function PrivacyPage() {
           {/* 2. Marco legal */}
           <h2 className="section-heading mt-10">Marco legal</h2>
           <p>
-            Tratamos tus datos conforme a la legislación chilena vigente, en
-            particular la <strong>Ley N° 21.719</strong> (que regula la
-            protección de los datos personales y crea la Agencia de Protección
-            de Datos Personales) y la <strong>Ley N° 19.628</strong> sobre
-            Protección de la Vida Privada en lo aplicable. Como medio dedicado a
-            pueblos indígenas, adherimos a los principios del Convenio 169 de la
-            OIT y de la Declaración de las Naciones Unidas sobre los Derechos de
-            los Pueblos Indígenas (UNDRIP), y a los principios de licitud,
-            lealtad, transparencia y minimización de datos.
+            La normativa de protección de datos personales vigente hoy en Chile
+            es la <strong>Ley N° 19.628</strong> sobre Protección de la Vida
+            Privada, y conforme a ella tratamos tus datos. El envío del boletín
+            y de las alertas se apoya en tu consentimiento (artículo 4°); el
+            origen étnico que puede revelar tu membresía a una comunidad de tipo{" "}
+            <em>pueblo</em>, en tu consentimiento expreso (artículo 10); y
+            nuestra labor editorial sobre noticias publicadas por medios de
+            acceso público, en el régimen que el artículo 9° reconoce a los datos
+            provenientes de fuentes accesibles al público.
+          </p>
+          <p className="mt-3">
+            La <strong>Ley N° 21.719</strong>, que regula la protección de los
+            datos personales y crea la Agencia de Protección de Datos Personales,{" "}
+            <strong>entrará en vigencia el 1 de diciembre de 2026</strong>.
+            Estamos adecuando la plataforma a lo que esa ley mandata, con el
+            objeto de cumplirla desde el día en que corresponda. Las referencias
+            que esta política hace a sus artículos describen el estándar al que
+            estamos migrando y la forma en que operaremos a partir de esa fecha;{" "}
+            <strong>no importan la asunción de obligaciones exigibles con
+            anterioridad a su entrada en vigencia</strong>.
+          </p>
+          <p className="mt-3">
+            Como medio dedicado a pueblos indígenas, adherimos además a los
+            principios del Convenio 169 de la OIT y de la Declaración de las
+            Naciones Unidas sobre los Derechos de los Pueblos Indígenas (UNDRIP),
+            y a los principios de licitud, lealtad, transparencia y minimización
+            de datos.
           </p>
 
           {/* 3. Fuente y datos */}
@@ -97,10 +116,11 @@ export default function PrivacyPage() {
             para divulgarlas. Ese contenido puede incluir datos personales de
             terceros que aparecen en las noticias (por ejemplo, autoridades,
             dirigentes y personas citadas): sus nombres, declaraciones y el texto
-            de los artículos. Conforme al artículo 14 ter letra j) de la Ley
-            21.719, te informamos que esta parte de los datos proviene de fuentes
-            de acceso público; su tratamiento queda igualmente sujeto a esta ley y
-            al deber de secreto del artículo 14 bis.
+            de los artículos. Te informamos que esta parte de los datos proviene de fuentes de acceso
+            público y la tratamos con deber de secreto. Desde el 1 de diciembre
+            de 2026, esa información al titular será exigida por el artículo 14
+            ter letra j) de la Ley 21.719 y el deber de secreto por su artículo
+            14 bis; nos estamos adecuando a ambos.
           </p>
           <p className="mt-3">
             El universo de personas comprendido abarca: suscriptores del boletín y
@@ -111,12 +131,17 @@ export default function PrivacyPage() {
 
           {/* 4. Finalidades y base de licitud */}
           <h2 className="section-heading mt-10">Finalidades y base de licitud</h2>
+          <p className="mt-2">
+            Para cada finalidad indicamos la base que la ampara bajo la ley
+            vigente y, cuando difiere, aquella en que se apoyará una vez que rija
+            la Ley 21.719.
+          </p>
           <ul className="list-disc pl-6 space-y-1 mt-2">
-            <li>Enviarte el boletín o las alertas que solicitaste — <strong>consentimiento</strong>.</li>
-            <li>Operar y asegurar el sitio (sesiones de miembros/administración) — <strong>interés legítimo</strong> en la seguridad de la información y la prevención de abuso.</li>
-            <li>Medir audiencia de forma agregada — <strong>interés legítimo</strong> en conocer el alcance de la divulgación (sin datos personales).</li>
-            <li>Rastrear, organizar y divulgar noticias de pueblos indígenas provenientes de medios de acceso público — <strong>interés legítimo</strong> en informar al público sobre asuntos indígenas de interés público, en cumplimiento de nuestra misión sin fines de lucro, informativa y educativa, junto con el tratamiento de datos provenientes de fuentes de acceso público.</li>
-            <li>Cumplir obligaciones legales — <strong>obligación legal</strong>.</li>
+            <li>Enviarte el boletín o las alertas que solicitaste — tu <strong>consentimiento</strong>, que puedes retirar cuando quieras. Es la misma base en ambos regímenes.</li>
+            <li>Operar y asegurar el sitio (sesiones de miembros y administración) — el tratamiento es <strong>necesario para prestarte el servicio que tú mismo solicitaste</strong> al iniciar sesión, y se limita a eso. Desde el 1 de diciembre de 2026 se apoyará además en el <strong>interés legítimo</strong> en la seguridad de la información y la prevención de abuso.</li>
+            <li>Medir audiencia de forma agregada — <strong>no tratamos datos personales para esto</strong>: no almacenamos tu IP ni tu navegador, y el identificador diario no es reversible ni permite seguirte entre días. Al no haber dato que permita identificarte, no se requiere una base de licitud.</li>
+            <li>Rastrear, organizar y divulgar noticias de pueblos indígenas publicadas por medios de acceso público — el <strong>artículo 9° de la Ley 19.628</strong>, que exceptúa a los datos provenientes de fuentes accesibles al público de la limitación de finalidad, en cumplimiento de nuestra misión sin fines de lucro, informativa y educativa. Desde el 1 de diciembre de 2026 se sumará el <strong>interés legítimo</strong> en informar sobre asuntos indígenas de interés público.</li>
+            <li>Cumplir obligaciones legales — <strong>obligación legal</strong>. Es la misma base en ambos regímenes.</li>
           </ul>
           <p className="mt-3">
             <strong>Tratamiento con apoyo de inteligencia artificial.</strong>{" "}
@@ -137,9 +162,10 @@ export default function PrivacyPage() {
             puede, en ciertos casos, revelar el <strong>origen étnico</strong> de
             personas identificables. Cuando ello ocurre respecto de declaraciones o
             información que la propia persona o la fuente hicieron{" "}
-            <strong>manifiestamente públicas</strong>, su tratamiento se ampara en
-            el artículo 16 letra a) de la Ley 21.719 y se realiza para los fines
-            informativos en que fueron publicadas. Aplicamos minimización: evitamos
+            <strong>manifiestamente públicas</strong>, el tratamiento se limita a los
+            fines informativos en que fueron publicadas. Desde el 1 de diciembre
+            de 2026 ese supuesto queda expresamente recogido en el artículo 16
+            letra a) de la Ley 21.719. Aplicamos minimización: evitamos
             exponer atributos sensibles de personas privadas más allá de lo que la
             noticia de interés público requiere, y atendemos solicitudes de
             rectificación o supresión.
@@ -149,8 +175,10 @@ export default function PrivacyPage() {
             membresía puede revelar tu propio <strong>origen étnico</strong>. Solo
             tratamos ese dato con tu <strong>consentimiento expreso</strong>, que te
             solicitamos de forma específica al unirte y que puedes retirar en cualquier
-            momento abandonando la comunidad; su base de licitud es el artículo 16 de
-            la Ley 21.719 (datos sensibles tratados con consentimiento).
+            momento abandonando la comunidad. Su base de licitud es el consentimiento
+            del titular, que hoy admite el artículo 10 de la Ley 19.628 y que
+            desde el 1 de diciembre de 2026 recogerá el artículo 16 de la Ley
+            21.719.
           </p>
 
           {/* 6. Encargados */}
@@ -245,9 +273,13 @@ export default function PrivacyPage() {
             rectificación, supresión (cancelación), oposición, portabilidad y
             bloqueo escribiéndonos a{" "}
             <ObfuscatedEmail className="text-brand-800 hover:text-brand-700" />.
-            Responderemos dentro de <strong>30 días corridos</strong> desde tu
-            solicitud, prorrogables por una sola vez hasta por 30 días corridos
-            adicionales (art. 11 Ley 21.719), y acusaremos recibo. El ejercicio de
+            Acusaremos recibo y <strong>nos pronunciaremos sobre tu solicitud
+            dentro de dos días hábiles</strong>, que es el plazo que hoy fija el
+            artículo 16 de la Ley 19.628; si no lo hiciéramos, puedes recurrir al
+            juez de letras en lo civil de nuestro domicilio. Desde el 1 de
+            diciembre de 2026, cuando rija la Ley 21.719, el plazo de respuesta
+            pasará a ser de <strong>30 días corridos</strong>, prorrogable por una
+            sola vez hasta por 30 días adicionales (artículo 11). El ejercicio de
             los derechos de rectificación, supresión y oposición es{" "}
             <strong>siempre gratuito</strong>; el acceso es gratuito al menos una
             vez por trimestre.
@@ -284,8 +316,8 @@ export default function PrivacyPage() {
             Nuestro servicio está dirigido a personas adultas. No recopilamos
             conscientemente datos personales de niños, niñas y adolescentes a
             través de los formularios del sitio. El tratamiento de datos de
-            menores se rige por las condiciones reforzadas del artículo 16 quáter
-            de la Ley 21.719. Si crees que un menor nos entregó datos sin la
+            menores se regirá por las condiciones reforzadas del artículo 16 quáter
+            de la Ley 21.719 desde su entrada en vigencia. Si crees que un menor nos entregó datos sin la
             debida autorización, escríbenos y los suprimiremos.
           </p>
 
@@ -295,7 +327,9 @@ export default function PrivacyPage() {
             Aplicamos medidas técnicas y organizativas razonables: cifrado en
             tránsito, contraseñas con hashing (bcrypt), control de acceso,
             rotación de tokens y registro de actividad. Ante un incidente que
-            afecte datos personales, notificaremos conforme a la Ley 21.719.
+            afecte datos personales, notificaremos sin dilaciones indebidas,
+            conforme al estándar que la Ley 21.719 exigirá desde el 1 de
+            diciembre de 2026.
           </p>
 
           {/* 12. Cookies / Términos */}
