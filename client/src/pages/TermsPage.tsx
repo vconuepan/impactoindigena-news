@@ -27,7 +27,7 @@ export default function TermsPage() {
 
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 1.0 · vigente desde el 19 de julio de 2026.
+            Versión 1.1 · vigente desde el 17 de agosto de 2026.
           </p>
           <h2 className="section-heading mt-8">1. Aceptación</h2>
           <p>
@@ -118,7 +118,56 @@ export default function TermsPage() {
             <Link to="/privacy" className="text-brand-800 hover:text-brand-700">Política de Privacidad</Link>.
           </p>
 
-          <h2 className="section-heading mt-8">10. Representación de pueblos indígenas</h2>
+          <h2 className="section-heading mt-8">10. Cuenta de miembro</h2>
+          <p>
+            Leer el Sitio no requiere cuenta. Puedes crear una para acceder a
+            funciones de miembro, y el acceso funciona con{" "}
+            <strong>enlace mágico</strong>: te enviamos un enlace de un solo uso
+            al correo que indiques, sin contraseña. Eres responsable de mantener
+            el control de esa casilla; quien acceda a ella puede entrar a tu
+            cuenta.
+          </p>
+          <p>
+            La cuenta es personal y gratuita. Puedes{" "}
+            <strong>descargar todos tus datos</strong> y{" "}
+            <strong>eliminarla en cualquier momento</strong> desde tu perfil; al
+            eliminarla se borran también tus membresías y preferencias asociadas.
+            Podemos suspender o cerrar una cuenta que se use para vulnerar estos
+            Términos, en particular el punto 7, informándote por el correo
+            asociado salvo que la ley lo impida.
+          </p>
+
+          <h2 className="section-heading mt-8">11. Comunidades</h2>
+          <p>
+            Las comunidades agrupan contenido del Sitio por pueblo, territorio o
+            causa. Unirte es voluntario y gratuito, y sirve para recibir el
+            resumen periódico de esa comunidad y ver sus noticias reunidas.
+            Puedes salir cuando quieras, con efecto inmediato.
+          </p>
+          <p>
+            <strong>Unirte a una comunidad de pueblo es una declaración tuya, no
+            una acreditación nuestra.</strong> No verificamos, certificamos ni
+            registramos la pertenencia de nadie a un pueblo indígena, y la
+            membresía en el Sitio{" "}
+            <strong>no confiere reconocimiento, representación ni vocería</strong>{" "}
+            de esa comunidad ni de sus organizaciones. La calidad indígena se
+            acredita por las vías que la ley chilena contempla, ajenas a este
+            Sitio.
+          </p>
+          <p>
+            Como esa membresía puede revelar tu origen étnico —un dato
+            sensible—, te pedimos tu <strong>consentimiento expreso</strong> al
+            unirte a una comunidad de pueblo, y puedes retirarlo abandonándola.
+            El detalle está en la{" "}
+            <Link to="/privacy" className="text-brand-800 hover:text-brand-700">Política de Privacidad</Link>.
+          </p>
+          <p>
+            Hoy las comunidades no admiten publicaciones de sus miembros: el
+            contenido que muestran proviene de nuestra curatoría editorial. Si
+            eso cambia, actualizaremos estos Términos antes de habilitarlo.
+          </p>
+
+          <h2 className="section-heading mt-8">12. Representación de pueblos indígenas</h2>
           <p>
             Buscamos una representación digna y respetuosa de los pueblos
             indígenas. Si una comunidad considera que un contenido o imagen es
@@ -130,10 +179,10 @@ export default function TermsPage() {
             .
           </p>
 
-          <h2 className="section-heading mt-8">11. Modificaciones del servicio</h2>
+          <h2 className="section-heading mt-8">13. Modificaciones del servicio</h2>
           <p>Podemos modificar, suspender o discontinuar el Sitio o cualquiera de sus funciones en cualquier momento, sin garantía de continuidad.</p>
 
-          <h2 className="section-heading mt-8">12. Ley aplicable y jurisdicción</h2>
+          <h2 className="section-heading mt-8">14. Ley aplicable y jurisdicción</h2>
           <p>
             Estos Términos se rigen por las leyes de la República de Chile.
             Cualquier controversia se someterá a los tribunales ordinarios de
@@ -141,7 +190,7 @@ export default function TermsPage() {
             de negociación de buena fe.
           </p>
 
-          <h2 className="section-heading mt-8">13. Modificación de los Términos</h2>
+          <h2 className="section-heading mt-8">15. Modificación de los Términos</h2>
           <p>Podemos actualizar estos Términos. Publicaremos la versión vigente en esta página. El uso continuado del Sitio implica la aceptación de los cambios.</p>
         </div>
       </div>
