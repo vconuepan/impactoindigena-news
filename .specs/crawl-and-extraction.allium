@@ -146,6 +146,12 @@ rule ProcessRSSItems {
 rule ExtractAndCreate {
     when: ExtractAndCreate(feed, item)
 
+    -- The source's robots.txt is honored before any tier runs. It gates ALL
+    -- three: a third-party extraction API does not launder a permission the
+    -- site never gave. Fail-open — no robots.txt, a 404 or a timeout all mean
+    -- allowed, because absence of rules is permission, not prohibition.
+    requires: robots_allows(item.url, "ImpactoIndigenaCrawler")
+
     -- Tiered extraction: each tier is tried in order, first success wins.
     --   Tier 1: CSS selector (if feed.html_selector is set)
     --   Tier 2: Readability (Mozilla's algorithm)

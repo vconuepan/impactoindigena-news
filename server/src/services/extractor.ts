@@ -7,6 +7,7 @@ import { safeAxiosGet } from '../lib/safeHttp.js'
 import { summarizeError } from '../utils/errors.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
+import { isAllowedByRobots } from '../lib/robots.js'
 import { withRetry, isRetryableError } from '../lib/retry.js'
 import { crawlLimiter } from '../lib/crawlLimiter.js'
 
@@ -296,6 +297,17 @@ export async function extractContent(
     await assertUrlAllowed(url)
   } catch (err) {
     log.warn({ url, reason: summarizeError(err) }, 'blocked disallowed URL')
+    return null
+  }
+
+  // El medio publica sus reglas en robots.txt y las respetamos, en las TRES
+  // vias de extraccion: si nos excluye, tampoco se manda la URL a Diffbot. Un
+  // tercero no lava un permiso que el sitio no dio.
+  //
+  // Fail-open por diseno (ver `lib/robots.ts`): sin robots.txt, o si no
+  // responde, se extrae igual. Solo una regla explicita que nos excluya corta.
+  if (!(await isAllowedByRobots(url))) {
+    log.info({ url }, 'robots.txt excluye este crawler, se omite la extraccion')
     return null
   }
 
