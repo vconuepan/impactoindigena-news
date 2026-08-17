@@ -37,13 +37,19 @@ describe('GET /api/stats/daily', () => {
       expect(dateFilter.lt).toBeUndefined()
       expect(dateFilter.gte).toBeInstanceOf(Date)
 
+      // Esto es lo que fija la regresion: la ventana empieza exactamente 24 h
+      // antes de AHORA. Un corte por dia calendario empezaria a la medianoche
+      // UTC, asi que a las 09:00 UTC arrancaria hace 9 h —no 24— y perderia la
+      // tanda de publicacion de las 11:00 UTC del dia anterior.
       const ageMs = Date.now() - dateFilter.gte.getTime()
       expect(ageMs).toBeGreaterThan(23.9 * 60 * 60 * 1000)
       expect(ageMs).toBeLessThan(24.1 * 60 * 60 * 1000)
 
-      // La regresion concreta: a las 09:00 UTC un corte por dia empezaria hace
-      // 9 h y perderia la tanda de las 11:00 UTC de ayer.
-      expect(dateFilter.gte.getUTCHours()).not.toBe(0)
+      // Aca habia un `expect(gte.getUTCHours()).not.toBe(0)` que intentaba
+      // probar lo mismo y era flaky una hora al dia: entre las 00:00 y las
+      // 00:59 UTC la ventana movil arranca, correctamente, en la hora 0 del dia
+      // anterior, y el assert fallaba. Reventó el CI el 17-ago a las 00:33 UTC.
+      // Los dos asserts de arriba ya cubren la regresion sin depender del reloj.
     }
   })
 
