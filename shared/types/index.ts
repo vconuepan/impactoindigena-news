@@ -74,6 +74,8 @@ export interface Story {
   sourceUrl: string
   sourceTitle: string
   sourceContent: string
+  /** Autor del artículo original; null si el medio no lo publica. Art. 71 B Ley 17.336. */
+  sourceAuthor?: string | null
   sourceDatePublished: string | null
   feedId: string
   issueId: string | null

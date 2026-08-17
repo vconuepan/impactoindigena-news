@@ -155,6 +155,10 @@ export async function crawlFeed(feedId: string): Promise<CrawlResult> {
         sourceUrl: item.url,
         sourceTitle: extracted.title || item.title,
         sourceContent: extracted.content,
+        // El art. 71 B de la Ley 17.336 exige mencionar "fuente, titulo y
+        // autor". Si el medio no publica el autor queda null, y la ficha
+        // muestra lo que hay: la ley obliga a mencionarlo, no a inventarlo.
+        sourceAuthor: extracted.author,
         feedId,
         sourceDatePublished: pubDateStr || undefined,
         crawlMethod: extracted.method,
@@ -259,6 +263,7 @@ export async function crawlUrl(url: string, feedId: string): Promise<{ storyId: 
     sourceUrl: url,
     sourceTitle: extracted.title || 'Untitled',
     sourceContent: extracted.content,
+    sourceAuthor: extracted.author,
     feedId,
     sourceDatePublished: extracted.datePublished || undefined,
     crawlMethod: extracted.method,

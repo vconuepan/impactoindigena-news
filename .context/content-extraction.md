@@ -15,6 +15,18 @@ Before any extraction tier runs, `isAllowedByRobots()` (`lib/robots.ts`) checks 
 
 Measured before shipping (2026-08-17): of the 80 most-crawled domains (1,432 of 2,000 published stories), tested against the real article URL of each, **zero block this crawler**. Worth knowing: 20 of those 80 — The Guardian, Al Jazeera, La Jornada, The Hindu, RNZ — explicitly block GPTBot and CCBot. Not us. This site does not train models on what it crawls.
 
+## Author attribution (art. 71 B)
+
+Every tier also captures the original article's author into `Story.sourceAuthor`, via `lib/author.ts`.
+
+**Why it is not optional.** Art. 71 B of Ley 17.336 is the *only* norm that covers what this site does — it allows including "fragmentos breves de obra protegida, que haya sido lícitamente divulgada … a título de cita", **"siempre que se mencione su fuente, título y autor"**. Verified 2026-08-17 against the official LeyChile XML (idNorma 28933). Chile has **no separate press/current-affairs exception** — searched for "prensa", "actualidad", "noticias del día" — so those four conditions are the whole doorway. The public story page shows all three: outlet, original title, and author.
+
+**Where it comes from**, in order: Diffbot `author`/`authors[0].name` → Readability `byline` → HTML meta tags and JSON-LD (`extractAuthorFromHtml`).
+
+**Why it needs cleaning.** Measured over the 25 most-crawled domains, 17 publish a detectable author and 8 don't. What they return is dirty, and these are real cases: `infobae.com` returns a profile URL, `elmostrador.cl` returns a Facebook URL, `telesurtv.net` returns `Javier Due\u00f1as` with unescaped JSON, `rnz.co.nz` returns `RNZ | Te Reo Irirangi o Aotearoa`. `normalizeAuthor()` rejects URLs and emails, resolves unicode escapes, strips `By`/`Por` prefixes and trailing outlet names.
+
+**null is a correct answer.** When the outlet doesn't publish an author, the field stays null and the page shows outlet + title only. The law requires mentioning the author, not inventing one.
+
 ## Extraction Chain
 
 ```

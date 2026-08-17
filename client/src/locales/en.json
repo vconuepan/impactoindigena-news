@@ -96,7 +96,9 @@
     "caveats": "Caveats",
     "searchSimilar": "Search similar stories →",
     "moreIn": "More in {{issue}} →",
-    "opensInNewTab": "(opens in new tab)"
+    "opensInNewTab": "(opens in new tab)",
+    "byAuthor": "By {{author}}",
+    "originalTitle": "Original title"
   },
   "storyCard": {
     "opensInNewTab": "(opens in new tab)"

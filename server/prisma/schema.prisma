@@ -59,6 +59,11 @@ model Story {
   sourceUrl              String       @unique @map("source_url")
   sourceTitle            String       @map("source_title")
   sourceContent          String       @map("source_content")
+  // Autor del articulo original. El art. 71 B de la Ley 17.336 —la unica norma
+  // que ampara la cita en Chile— exige mencionar "fuente, titulo y autor".
+  // Null cuando el medio no lo publica, que es 8 de cada 25: la ley obliga a
+  // mencionarlo, no a inventarlo.
+  sourceAuthor           String?      @map("source_author")
   sourceDatePublished    DateTime?    @map("source_date_published")
   feedId                 String       @map("feed_id")
   feed                   Feed         @relation(fields: [feedId], references: [id])
