@@ -27,7 +27,7 @@ export default function TermsPage() {
 
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 1.1 · vigente desde el 17 de agosto de 2026.
+            Versión 1.2 · vigente desde el 17 de agosto de 2026.
           </p>
           <h2 className="section-heading mt-8">1. Aceptación</h2>
           <p>
@@ -103,7 +103,19 @@ export default function TermsPage() {
           </p>
 
           <h2 className="section-heading mt-8">7. Uso aceptable</h2>
-          <p>Te comprometes a no: (a) reproducir masivamente el contenido del Sitio sin autorización; (b) realizar scraping o ingeniería inversa; (c) usar el contenido para desinformar o tergiversar a comunidades indígenas; (d) vulnerar derechos de terceros.</p>
+          <p>Te comprometes a no: (a) reproducir de forma masiva o sistemática el contenido del Sitio sin atribución ni autorización, ni presentarlo como propio; (b) usar medios automatizados que degraden el servicio, eludan nuestras medidas técnicas o ignoren nuestro archivo <code>robots.txt</code>; (c) realizar ingeniería inversa del software del Sitio; (d) usar el contenido para desinformar o tergiversar a comunidades indígenas; (e) vulnerar derechos de terceros.</p>
+          <p>
+            <strong>Cómo trabajamos nosotros.</strong> Este medio se nutre de
+            noticias que otros publican, y lo hacemos con las mismas reglas que
+            pedimos: partimos del canal de sindicación (RSS) que cada fuente
+            ofrece, <strong>respetamos su archivo <code>robots.txt</code></strong>,
+            nos identificamos con un agente propio que enlaza a este Sitio,
+            citamos y enlazamos siempre al artículo original, y no reproducimos
+            las notas completas. No usamos el contenido que rastreamos para
+            entrenar modelos de inteligencia artificial. Si eres un medio y
+            prefieres que no rastreemos tu sitio, basta con que lo declares en tu{" "}
+            <code>robots.txt</code> o nos escribas.
+          </p>
 
           <h2 className="section-heading mt-8">8. Atribución</h2>
           <p>
