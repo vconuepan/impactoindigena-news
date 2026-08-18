@@ -178,6 +178,26 @@ describe('fixTitleCapitalization', () => {
     expect(fixTitleCapitalization('2026')).toBe('2026')
   })
 
+  it('no toca un titular que empieza con una cifra', () => {
+    // Buscar "la primera letra" a secas saltaba los digitos y capitalizaba la
+    // palabra equivocada: «20% del pescado...» se convertia en «20% Del
+    // pescado...». Detectado en la simulacion sobre los 2648 titulos
+    // publicados, antes de escribir en la base.
+    const a = '20% del pescado vendido está mal identificado, alerta ONU'
+    expect(fixTitleCapitalization(a)).toBe(a)
+    const b = '13% de áreas biodiversas solapadas por proyectos de carbono'
+    expect(fixTitleCapitalization(b)).toBe(b)
+    expect(fixTitleCapitalization('2026 será el año de la consulta')).toBe(
+      '2026 será el año de la consulta'
+    )
+  })
+
+  it('capitaliza dentro de comillas de apertura', () => {
+    expect(fixTitleCapitalization('"citas" al inicio del titular')).toBe(
+      '"Citas" al inicio del titular'
+    )
+  })
+
   it('no capitaliza el gentilicio usado como adjetivo', () => {
     // En espanol "wayuu", "huilliche" o "pehuenche" van en minuscula cuando
     // funcionan como adjetivo. Capitalizarlos produce "rana Pehuenche".
