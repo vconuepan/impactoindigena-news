@@ -134,14 +134,25 @@ const NOT_LETTER_AFTER = '(?![\\p{L}\\p{N}])'
  * porque capitalizar ahi seria romper un nombre propio, no arreglarlo.
  */
 function capitalizeFirstLetter(text: string): string {
-  const i = text.search(/\p{L}/u)
+  // Se saltan espacios y signos de APERTURA (¿ ¡ comillas, parentesis), que en
+  // espanol preceden legitimamente a la primera palabra.
+  //
+  // NO se saltan los digitos, y esa distincion es el punto: buscar "la primera
+  // letra" a secas convertia «20% del pescado vendido...» en «20% Del pescado
+  // vendido...». Un titulo que arranca con una cifra ya empieza bien y no hay
+  // nada que capitalizar. Se detecto en la simulacion sobre los 2648 titulos
+  // publicados, antes de escribir en la base.
+  const i = text.search(/[^\s\u00A0¿¡"'“”‘’(\[«]/u)
   if (i === -1) return text
+
+  const primerCaracter = text[i]
+  if (!/\p{L}/u.test(primerCaracter)) return text
 
   // Si la primera palabra ya trae una mayuscula adentro, es intencional.
   const primeraPalabra = text.slice(i).split(/[\s\u00A0]/, 1)[0]
   if (/\p{Lu}/u.test(primeraPalabra)) return text
 
-  return text.slice(0, i) + text[i].toUpperCase() + text.slice(i + 1)
+  return text.slice(0, i) + primerCaracter.toUpperCase() + text.slice(i + 1)
 }
 
 /**
