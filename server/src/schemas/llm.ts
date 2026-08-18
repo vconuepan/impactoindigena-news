@@ -22,7 +22,8 @@ const NARRATIVE_FRAME_SCHEMA = z
  * duplicarla es cómo se desincronizan.
  */
 const CAPITALIZATION_RULE =
-  "Capitalización estilo oración: minúsculas salvo nombres propios. " +
+  "Capitalización estilo oración: la PRIMERA letra del título va SIEMPRE en mayúscula, " +
+  "y el resto en minúsculas salvo nombres propios. " +
   "Cuentan como nombres propios y conservan SIEMPRE su forma original: siglas y acrónimos " +
   "(CONADI, CORFO, ONU, OIT, CIDH, CLPI, ONG, MPF, CEDH, INAI), topónimos (Chile, Sonora, " +
   "Coahuila, La Araucanía, Wallmapu), instituciones y nombres de persona. " +

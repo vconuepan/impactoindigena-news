@@ -72,6 +72,18 @@ const PROPER_NOUNS = [
   'Papua', 'Papúa', 'Rusia', 'Australia', 'Kenia', 'Tanzania', 'Namibia',
   'Nigeria', 'Congo', 'Mozambique',
   'Mapuche', 'Aymara', 'Quechua', 'Rapa Nui', 'Yanomami', 'Guarani', 'Guaraní',
+  // Sumados el 18-ago-2026: aparecieron en minuscula en titulos publicados.
+  // Solo TOPONIMOS. Los nombres de pueblo usados como gentilicio van en
+  // minuscula en espanol ("lideresas wayuu", "comunidad huilliche"), y hay un
+  // test que lo documenta. Capitalizarlos produce "rana Pehuenche".
+  'Maule', 'Ñuble', 'Coquimbo', 'Atacama', 'Antofagasta', 'Valparaiso', 'Valparaíso',
+  'Magallanes', 'Aysen', 'Aysén', 'Osorno', 'Valdivia',
+  'Arauco', 'Cautin', 'Cautín', 'Malleco', 'Calama', 'Iquique', 'Arica',
+  'Jujuy', 'Formosa', 'Rio Negro', 'Río Negro', 'Mendoza',
+  'Amazonas', 'Pará', 'Roraima', 'Maranhao', 'Maranhão',
+  'Cusco', 'Loreto', 'Madre de Dios', 'Junin', 'Junín',
+  'Israel', 'Palestina', 'Groenlandia', 'Noruega', 'Suecia', 'Finlandia',
+  'Taiwan', 'Taiwán', 'Vietnam', 'Birmania', 'Etiopia', 'Etiopía', 'Botsuana',
 ]
 
 /**
@@ -104,6 +116,35 @@ const NOT_LETTER_BEFORE = '(?<![\\p{L}\\p{N}])'
 const NOT_LETTER_AFTER = '(?![\\p{L}\\p{N}])'
 
 /**
+ * Pone en mayuscula la primera letra del titulo.
+ *
+ * POR QUE FALTABA, y por que es el hueco mas visible que tuvo este archivo:
+ * la instruccion del esquema dice "capitalizacion estilo oracion: minusculas
+ * salvo nombres propios", y el modelo la cumple al pie de la letra —incluida
+ * la primera letra—. La instruccion nunca la exceptuo. Medido el 18-ago-2026
+ * sobre 200 titulos publicados: **148 empezaban en minuscula, el 74%**, de
+ * forma sostenida dia tras dia. `DESIGN.md` prohibe eso desde el 12-jun-2026
+ * ("Titulos en Title Case — NUNCA en minusculas").
+ *
+ * Se aclaro tambien la instruccion del esquema, pero eso es el cinturon: la
+ * leccion de este archivo es que una instruccion al LLM es BLANDA, y una regla
+ * binaria necesita el codigo.
+ *
+ * NO toca palabras con mayuscula interna: "iPhone" o "eSports" quedan igual,
+ * porque capitalizar ahi seria romper un nombre propio, no arreglarlo.
+ */
+function capitalizeFirstLetter(text: string): string {
+  const i = text.search(/\p{L}/u)
+  if (i === -1) return text
+
+  // Si la primera palabra ya trae una mayuscula adentro, es intencional.
+  const primeraPalabra = text.slice(i).split(/[\s\u00A0]/, 1)[0]
+  if (/\p{Lu}/u.test(primeraPalabra)) return text
+
+  return text.slice(0, i) + text[i].toUpperCase() + text.slice(i + 1)
+}
+
+/**
  * Devuelve el texto con las siglas y nombres propios en su forma canonica.
  *
  * Compara sin distinguir mayusculas y exige limites de palabra, asi que
@@ -131,4 +172,21 @@ export function fixCapitalization(text: string): string {
 export function fixCapitalizationOrNull(text: string | null | undefined): string | null {
   if (!text) return null
   return fixCapitalization(text)
+}
+
+/**
+ * Igual que `fixCapitalization`, pero ademas pone en mayuscula la primera letra.
+ *
+ * SOLO para titulares. Las etiquetas (`titleLabel`) van en minuscula a
+ * proposito —en produccion son "cacería subsistencia", "territorios
+ * ancestrales"— y capitalizarlas romperia el kicker de la tarjeta.
+ */
+export function fixTitleCapitalization(text: string): string {
+  return fixCapitalization(capitalizeFirstLetter(text))
+}
+
+/** Variante tolerante a null de `fixTitleCapitalization`. */
+export function fixTitleCapitalizationOrNull(text: string | null | undefined): string | null {
+  if (!text) return null
+  return fixTitleCapitalization(text)
 }

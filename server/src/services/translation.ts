@@ -4,7 +4,7 @@ import { createLogger } from '../lib/logger.js'
 import { getSmallLLM, rateLimitDelay } from './llm.js'
 import prisma from '../lib/prisma.js'
 import { truncateQuote } from '../lib/truncateQuote.js'
-import { fixCapitalizationOrNull } from '../lib/title-capitalization.js'
+import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/title-capitalization.js'
 
 const log = createLogger('translation')
 
@@ -73,7 +73,7 @@ export async function translateStory(storyId: string): Promise<void> {
       // depende del idioma — "CONADI" y "Mozambique" se escriben igual en los
       // dos, y para los que cambian de grafia la lista ya trae las dos formas,
       // con tilde y sin ella.
-      titleEn: fixCapitalizationOrNull(result.title),
+      titleEn: fixTitleCapitalizationOrNull(result.title),
       titleLabelEn: fixCapitalizationOrNull(result.titleLabel),
       summaryEn: result.summary || null,
       quoteEn: truncateQuote(result.quote),

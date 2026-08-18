@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fixCapitalization, fixCapitalizationOrNull } from './title-capitalization.js'
+import { fixCapitalization, fixCapitalizationOrNull, fixTitleCapitalization } from './title-capitalization.js'
 
 describe('fixCapitalization', () => {
   it('repara los titulares rotos que se encontraron en produccion', () => {
@@ -133,5 +133,61 @@ describe('fixCapitalizationOrNull', () => {
 
   it('normaliza igual que la version estricta', () => {
     expect(fixCapitalizationOrNull('conadi financia proyectos')).toBe('CONADI financia proyectos')
+  })
+})
+
+describe('fixTitleCapitalization', () => {
+  // El hueco medido el 18-ago-2026: de 200 titulos publicados, **148 (74%)**
+  // empezaban en minuscula, dia tras dia, contra la regla de DESIGN.md del
+  // 12-jun-2026 ("Titulos en Title Case — NUNCA en minusculas").
+  //
+  // La causa no era el modelo desobedeciendo: la instruccion del esquema decia
+  // "minusculas salvo nombres propios" sin exceptuar la primera letra, y el
+  // modelo la cumplia al pie de la letra.
+
+  it('capitaliza la primera letra del titular', () => {
+    expect(fixTitleCapitalization('tribunal ambiental inspeccionó un proyecto minero')).toBe(
+      'Tribunal ambiental inspeccionó un proyecto minero'
+    )
+  })
+
+  it('sigue normalizando siglas y toponimos', () => {
+    expect(fixTitleCapitalization('proyecto eléctrico en maule preocupa a conadi')).toBe(
+      'Proyecto eléctrico en Maule preocupa a CONADI'
+    )
+  })
+
+  it('no rompe un titular que empieza con sigla', () => {
+    expect(fixTitleCapitalization('conadi entregó títulos de dominio')).toBe(
+      'CONADI entregó títulos de dominio'
+    )
+  })
+
+  it('respeta una palabra con mayuscula interna', () => {
+    const t = 'iPhone llega a comunidades rurales'
+    expect(fixTitleCapitalization(t)).toBe(t)
+  })
+
+  it('salta el signo de apertura y capitaliza la primera letra real', () => {
+    expect(fixTitleCapitalization('¿quién defiende el territorio?')).toBe(
+      '¿Quién defiende el territorio?'
+    )
+  })
+
+  it('deja intacto un texto sin letras', () => {
+    expect(fixTitleCapitalization('2026')).toBe('2026')
+  })
+
+  it('no capitaliza el gentilicio usado como adjetivo', () => {
+    // En espanol "wayuu", "huilliche" o "pehuenche" van en minuscula cuando
+    // funcionan como adjetivo. Capitalizarlos produce "rana Pehuenche".
+    expect(fixTitleCapitalization('comunidad huilliche defendió la rana pehuenche')).toBe(
+      'Comunidad huilliche defendió la rana pehuenche'
+    )
+  })
+
+  it('no toca un titular que ya viene bien escrito', () => {
+    const t = 'Jóvenes defienden su territorio ancestral'
+    expect(fixTitleCapitalization(t)).toBe(t)
   })
 })

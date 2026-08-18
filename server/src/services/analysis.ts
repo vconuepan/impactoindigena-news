@@ -20,7 +20,7 @@ import type { Guidelines } from '../prompts/shared.js'
 import { detectAndCluster } from './dedup.js'
 import { generateEmbeddingForContent } from './embedding.js'
 import { saveEmbeddingTx } from '../lib/vectors.js'
-import { fixCapitalizationOrNull } from '../lib/title-capitalization.js'
+import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/title-capitalization.js'
 
 const log = createLogger('analysis')
 
@@ -341,7 +341,7 @@ export async function assessStory(storyId: string): Promise<void> {
   // "universidad de chile". Ver lib/title-capitalization.ts.
   const analysisData = {
     titleLabel: fixCapitalizationOrNull(parsed.titleLabel),
-    title: fixCapitalizationOrNull(parsed.relevanceTitle),
+    title: fixTitleCapitalizationOrNull(parsed.relevanceTitle),
     summary: parsed.summary || null,
     quote: truncateQuote(parsed.quote),
     quoteAttribution: parsed.quoteAttribution || null,
