@@ -31,14 +31,33 @@
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
 import { config } from '../../config.js'
-import { checkSourceAge } from '../../lib/source-age.js'
 
 const APPLY = process.argv.includes('--apply')
+
+/**
+ * Umbral en meses para ESTA limpieza, independiente del techo de publicacion.
+ *
+ * Por defecto usa `config.crawl.maxSourceAgeMonths` (18), pero se puede subir
+ * con `--months N`. La decision editorial del 17-ago-2026 fue justamente esa:
+ * el techo de 18 meses rige hacia adelante, y para el archivo ya publicado se
+ * despublico solo lo de mas de 36 meses. Una nota de 2008 sobre la promulgacion
+ * del Convenio 169 no es noticia, pero sigue siendo referencia; lo de 18 meses a
+ * 3 años se conserva. Y borrar 370 URLs indexadas de golpe cuesta mas en SEO de
+ * lo que aporta la coherencia formal.
+ */
+const monthsArg = process.argv.indexOf('--months')
+const UMBRAL_MESES = monthsArg !== -1
+  ? parseInt(process.argv[monthsArg + 1], 10)
+  : config.crawl.maxSourceAgeMonths
+
 const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
 
 async function main() {
   console.log(APPLY ? '== APLICANDO CAMBIOS ==' : '== SIMULACION (no escribe) ==\n')
-  console.log(`Techo de antiguedad: ${config.crawl.maxSourceAgeMonths} meses\n`)
+  console.log(`Umbral de esta limpieza: ${UMBRAL_MESES} meses` +
+    (UMBRAL_MESES !== config.crawl.maxSourceAgeMonths
+      ? `  (el techo de publicacion es ${config.crawl.maxSourceAgeMonths})\n`
+      : '\n'))
 
   const publicadas = await prisma.story.findMany({
     where: { status: 'published', sourceDatePublished: { not: null } },
@@ -53,9 +72,16 @@ async function main() {
     orderBy: { sourceDatePublished: 'asc' },
   })
 
+  const ahora = Date.now()
+  const MS_MES = 30.44 * 24 * 60 * 60 * 1000
   const viejas = publicadas
-    .map(s => ({ story: s, verdict: checkSourceAge(s.sourceDatePublished) }))
-    .filter(x => x.verdict.tooOld)
+    .map(s => {
+      const meses = s.sourceDatePublished
+        ? Math.round((ahora - s.sourceDatePublished.getTime()) / MS_MES)
+        : null
+      return { story: s, meses }
+    })
+    .filter(x => x.meses !== null && x.meses > UMBRAL_MESES)
 
   console.log(`Publicadas con fecha de origen: ${publicadas.length}`)
   console.log(`Superan el techo: ${viejas.length}\n`)
@@ -72,9 +98,9 @@ async function main() {
     porFeed.set(f, (porFeed.get(f) ?? 0) + 1)
   }
 
-  for (const { story, verdict } of viejas) {
+  for (const { story, meses } of viejas) {
     const fecha = story.sourceDatePublished?.toISOString().slice(0, 10) ?? '?'
-    console.log(`  ${fecha}  (${verdict.ageMonths} meses)  ${story.title?.slice(0, 62) ?? ''}`)
+    console.log(`  ${fecha}  (${meses} meses)  ${story.title?.slice(0, 62) ?? ''}`)
     if (APPLY) {
       await prisma.story.update({ where: { id: story.id }, data: { status: 'rejected' } })
     }
@@ -88,7 +114,7 @@ async function main() {
   console.log(`\n${APPLY ? 'Despublicadas' : 'Se despublicarian'}: ${viejas.length}`)
   if (!APPLY) {
     console.log('\nRevisa la lista. Si convence, corre:')
-    console.log('  npm run migration:unpublish-old:apply --prefix server')
+    console.log(`  npm run migration:unpublish-old:apply --prefix server${monthsArg !== -1 ? ` -- --months ${UMBRAL_MESES}` : ''}`)
   }
 }
 
