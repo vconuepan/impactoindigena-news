@@ -166,8 +166,8 @@ export default function MethodologyPage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
           {[
-            { slug: 'cambio-climatico', title: 'Cambio Climático y Biodiversidad', description: 'Territorios indígenas, medio ambiente, biodiversidad, acción climática' },
-            { slug: 'derechos-indigenas', title: 'Derechos de los Pueblos Indígenas', description: 'Derechos territoriales, autodeterminación, reconocimiento legal, derechos humanos' },
+            { slug: 'cambio-climatico', title: 'Cambio Climático', description: 'Territorios indígenas, medio ambiente, biodiversidad, acción climática' },
+            { slug: 'derechos-indigenas', title: 'Derechos Indígenas', description: 'Derechos territoriales, autodeterminación, reconocimiento legal, derechos humanos' },
             { slug: 'desarrollo-sostenible-y-autodeterminado', title: 'Economías Indígenas', description: 'Emprendimiento, empresas y cooperativas indígenas, empleo, comercio y financiamiento' },
             { slug: 'chile-indigena', title: 'Chile Intercultural', description: 'Pueblos originarios de Chile, política pública indígena, consultas indígenas, instituciones y liderazgo indígena chileno' },
           ].map((card) => {

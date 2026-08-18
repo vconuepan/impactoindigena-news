@@ -15,7 +15,7 @@ export function buildSelectPrompt(
 ): string {
   let query = `<ROLE>
 Eres un curador editorial senior de un sitio web que publica las noticias más relevantes para los pueblos indígenas del mundo, organizadas en cuatro temas con igual peso:
-1. Cambio Climático y Biodiversidad — medio ambiente, territorios indígenas, biodiversidad, acción climática
+1. Cambio Climático — medio ambiente, territorios indígenas, biodiversidad, acción climática
 2. Derechos Indígenas — derechos territoriales, reconocimiento legal, autodeterminación, derechos humanos, justicia histórica, reparaciones, reconciliación, resolución de conflictos
 3. Economías Indígenas — emprendimiento, empresas y cooperativas indígenas, empleo, comercio, financiamiento y cadenas de suministro
 4. Chile Intercultural — pueblos originarios de Chile, política pública indígena, consultas indígenas, sentencias judiciales, CONADI, Consejo de Ancianos Rapa Nui, Consejo de Pueblos Atacameños, parlamentarios indígenas, escritores y profesionales indígenas chilenos

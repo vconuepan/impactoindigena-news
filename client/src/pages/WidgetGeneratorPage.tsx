@@ -5,7 +5,7 @@ import { SEO, CommonOgTags } from "../lib/seo";
 
 const ISSUES = [
   { label: "Todas las categorías", value: "" },
-  { label: "Cambio Climático y Biodiversidad", value: "cambio-climatico" },
+  { label: "Cambio Climático", value: "cambio-climatico" },
   { label: "Derechos de los Pueblos Indígenas", value: "derechos-indigenas" },
   { label: "Economías Indígenas", value: "desarrollo-sostenible-y-autodeterminado" },
   { label: "Chile Intercultural", value: "chile-indigena" },
