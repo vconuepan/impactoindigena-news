@@ -211,3 +211,57 @@ describe('fixTitleCapitalization', () => {
     expect(fixTitleCapitalization(t)).toBe(t)
   })
 })
+
+describe('pais que tambien es gentilicio', () => {
+  // La reparacion del archivo del 18-ago-2026 dejo publicado "crisis
+  // humanitaria en comunidad Palestina": 1 falso positivo en 75 titulos. La
+  // lista blanca no distingue funcion gramatical, y "Palestina" es el pais y
+  // tambien el adjetivo.
+
+  it('deja el gentilicio en minuscula tras un sustantivo colectivo', () => {
+    expect(fixTitleCapitalization('bloqueo genera crisis en comunidad palestina indígena')).toBe(
+      'Bloqueo genera crisis en comunidad palestina indígena'
+    )
+    expect(fixTitleCapitalization('pueblos india enfrentan desalojos')).toBe(
+      'Pueblos india enfrentan desalojos'
+    )
+  })
+
+  it('mantiene el pais capitalizado cuando NO es adjetivo', () => {
+    expect(fixTitleCapitalization('bloqueo de palestina afecta la ayuda humanitaria')).toBe(
+      'Bloqueo de Palestina afecta la ayuda humanitaria'
+    )
+    expect(fixTitleCapitalization('programa tribal en india beneficia comunidades')).toBe(
+      'Programa tribal en India beneficia comunidades'
+    )
+  })
+
+  it('no aplica a paises cuyo gentilicio tiene otra forma', () => {
+    // "israeli" no colisiona con "Israel", asi que no hay nada que revertir.
+    const t = 'Estado israelí cómplice en demolición de hogares'
+    expect(fixTitleCapitalization(t)).toBe(t)
+  })
+})
+
+describe('toponimos e instituciones sumados el 19-ago', () => {
+  it('corrige los toponimos que faltaban', () => {
+    expect(fixTitleCapitalization('creció turismo indígena en latinoamérica y caribe en 2025')).toBe(
+      'Creció turismo indígena en Latinoamérica y Caribe en 2025'
+    )
+    expect(fixTitleCapitalization('comunidades indígenas frenan presa en borneo')).toBe(
+      'Comunidades indígenas frenan presa en Borneo'
+    )
+  })
+
+  it('corrige los nombres de institucion de varias palabras', () => {
+    expect(fixTitleCapitalization('primeras naciones mostraron poder económico')).toBe(
+      'Primeras Naciones mostraron poder económico'
+    )
+    expect(fixTitleCapitalization('corte suprema de Brasil puede cambiar derechos')).toBe(
+      'Corte Suprema de Brasil puede cambiar derechos'
+    )
+    expect(fixTitleCapitalization('deuda tras 30 años de convenio 169')).toBe(
+      'Deuda tras 30 años de Convenio 169'
+    )
+  })
+})

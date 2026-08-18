@@ -77,6 +77,9 @@ const PROPER_NOUNS = [
   // minuscula en espanol ("lideresas wayuu", "comunidad huilliche"), y hay un
   // test que lo documenta. Capitalizarlos produce "rana Pehuenche".
   'Maule', 'Ñuble', 'Coquimbo', 'Atacama', 'Antofagasta', 'Valparaiso', 'Valparaíso',
+  // Sumados el 19-ago-2026, medidos en titulos publicados:
+  'Latinoamerica', 'Latinoamérica', 'Caribe', 'Borneo', 'Sarayaku',
+  'Primeras Naciones', 'Corte Suprema', 'Senado', 'Convenio 169',
   'Magallanes', 'Aysen', 'Aysén', 'Osorno', 'Valdivia',
   'Arauco', 'Cautin', 'Cautín', 'Malleco', 'Calama', 'Iquique', 'Arica',
   'Jujuy', 'Formosa', 'Rio Negro', 'Río Negro', 'Mendoza',
@@ -91,6 +94,32 @@ const PROPER_NOUNS = [
  * que deja el nombre bien pero el articulo en minuscula ("la Araucania").
  */
 const ARTICLED = ['Araucania', 'Araucanía', 'Guajira']
+
+/**
+ * Paises cuyo nombre es IDENTICO a su gentilicio.
+ *
+ * "Palestina" es el pais y tambien el adjetivo, y ahi esta el problema: la lista
+ * blanca no distingue funcion gramatical. La reparacion del 18-ago-2026 dejo
+ * publicado "crisis humanitaria en comunidad Palestina" —medido: 1 falso
+ * positivo en 75 titulos—, cuando en espanol el gentilicio usado como adjetivo
+ * va en minuscula.
+ *
+ * No aplica a los paises cuyo gentilicio tiene otra forma: "israeli" nunca
+ * colisiona con "Israel", asi que Israel no necesita esta excepcion.
+ */
+const PAIS_Y_GENTILICIO = ['Palestina', 'India', 'Papua', 'Congo']
+
+/**
+ * Sustantivos que, delante de un `PAIS_Y_GENTILICIO`, lo convierten en adjetivo.
+ *
+ * "comunidad Palestina" es gentilicio; "el bloqueo de Palestina" es el pais. La
+ * senal fiable es el sustantivo colectivo o de pertenencia que lo precede.
+ */
+const ANTES_DE_GENTILICIO = [
+  'comunidad', 'comunidades', 'pueblo', 'pueblos', 'poblacion', 'población',
+  'familia', 'familias', 'territorio', 'territorios', 'mujeres', 'lideresas',
+  'lideres', 'líderes', 'juventud', 'niñez', 'cultura', 'origen', 'ascendencia',
+]
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -174,6 +203,17 @@ export function fixCapitalization(text: string): string {
   for (const name of ARTICLED) {
     const re = new RegExp(`${NOT_LETTER_BEFORE}la (${escapeRegex(name)})${NOT_LETTER_AFTER}`, 'gu')
     out = out.replace(re, 'La $1')
+  }
+
+  // Y se revierte lo que la lista blanca capitalizo de mas: un pais que tambien
+  // es gentilicio, cuando viene detras de un sustantivo que lo vuelve adjetivo.
+  for (const pais of PAIS_Y_GENTILICIO) {
+    const antes = ANTES_DE_GENTILICIO.join('|')
+    const re = new RegExp(
+      `${NOT_LETTER_BEFORE}(${antes}) ${escapeRegex(pais)}${NOT_LETTER_AFTER}`,
+      'giu',
+    )
+    out = out.replace(re, (_m, prev: string) => `${prev} ${pais.toLowerCase()}`)
   }
 
   return out
