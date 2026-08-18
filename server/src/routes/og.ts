@@ -288,7 +288,7 @@ router.get('/stories/:slug', async (req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=3600')
     // Scoped CSP for this bot-facing OG proxy page. We can't use 'self' alone
     // because the React shell's scripts and assets come from SITE_URL, which
-    // may differ from the backend origin (Render.com multi-service setup).
+    // may differ from the backend origin (Static Web App fronting the API).
     // Permissive enough for the shell to hydrate; more restrictive than no CSP.
     res.setHeader('Content-Security-Policy',
       `default-src 'self' ${SITE_URL}; script-src 'self' ${SITE_URL}; style-src 'self' ${SITE_URL} 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https:; font-src 'self' ${SITE_URL} https:`)

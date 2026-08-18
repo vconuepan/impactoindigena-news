@@ -22,7 +22,7 @@ const httpLog = createLogger('http')
 
 const app = express()
 
-// Trust proxy for correct IP detection behind reverse proxy (Render.com)
+// Trust proxy for correct IP detection behind reverse proxy (Azure App Service)
 app.set('trust proxy', 1)
 
 // Security headers

@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Vulnerabilidad de seguridad
+    url: https://github.com/vconuepan/impactoindigena-news/blob/main/SECURITY.md
+    about: No abras un issue público. Acá está el canal privado de reporte.
+  - name: Pregunta general o contacto
+    url: mailto:contact@impactoindigena.news
+    about: Para dudas que no son un error ni una propuesta concreta.
+  - name: Custodia institucional del proyecto
+    url: https://impactoindigena.news/stewardship
+    about: Si tu organización puede darle un hogar permanente a la plataforma.

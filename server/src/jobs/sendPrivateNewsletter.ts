@@ -7,7 +7,7 @@ import * as brevo from '../services/brevo.js'
 
 const log = createLogger('send_private_newsletter')
 
-const PRIVATE_EMAIL = process.env.PRIVATE_NEWSLETTER_EMAIL || 'venancio@conuepan.cl'
+const PRIVATE_EMAIL = process.env.PRIVATE_NEWSLETTER_EMAIL || ''
 
 const PRIVATE_INTERESTS = `
 1. Debida diligencia indígena en Latinoamérica
@@ -21,6 +21,14 @@ const PRIVATE_INTERESTS = `
 
 export async function runSendPrivateNewsletter(): Promise<void> {
   log.info('starting private newsletter job')
+
+  // Sin destinatario no hay nada que hacer, y se aborta ANTES de generar: armar
+  // el boletin cuesta llamadas al LLM que no se pueden entregar a nadie. Falla
+  // fuerte a proposito, para que quede visible en job_runs en vez de correr en
+  // vacio cada dia.
+  if (!PRIVATE_EMAIL) {
+    throw new Error('PRIVATE_NEWSLETTER_EMAIL no esta configurada: el boletin privado no tiene destinatario')
+  }
 
   // Verificar que no se haya enviado uno hoy
   const today = new Date()

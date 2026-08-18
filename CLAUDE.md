@@ -19,7 +19,7 @@ AI-curated news platform that evaluates article relevance to humanity using LLM 
 ## Project Structure
 
 ```
-actually-relevant/
+impactoindigena-news/
 ├── client/          # React frontend (Vite + TypeScript + Tailwind)
 ├── server/          # Express backend (Prisma + LangChain + OpenAI)
 ├── shared/          # Shared types and constants
@@ -38,7 +38,7 @@ actually-relevant/
 
 **Backend:** Express + TypeScript, PostgreSQL + pgvector (Prisma ORM), LangChain + OpenAI (structured output with Zod), node-cron, Zod
 
-**Deployment:** Render.com (static site + web service + PostgreSQL)
+**Deployment:** Azure App Service (backend) + Azure Static Web Apps (frontend) + Azure PostgreSQL Flexible Server
 
 ## Commands
 
@@ -123,7 +123,7 @@ Covers: story-pipeline, crawl-and-extraction, authentication, scheduler (include
 
 ## Context Files (`.context/`)
 
-Implementation reference docs. **Read the relevant file before modifying a subsystem.** See `.context/README.md` for conventions. Files with a spec counterpart include a cross-reference header; the spec is authoritative.
+Implementation reference docs. **Read the relevant file before modifying a subsystem.** See `.context/README.md` for conventions and the canonical index (this table mirrors it — if they diverge, that one wins). Files with a spec counterpart include a cross-reference header; the spec is authoritative.
 
 | File | Topic |
 |------|-------|
@@ -141,7 +141,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | `embeddings.md` | Trigger points, hybrid RRF search, backfill script |
 | `ui-conventions.md` | SEO checklist, CSS classes, bundle splitting, accessibility, spelling |
 | `accessibility.md` | Full WCAG 2.2 AA patterns, ARIA, forms, testing checklist |
-| `seo.md` | Sitemap, Render rewrites, robots.txt, route registration |
+| `seo.md` | Sitemap, Azure Static Web App rewrites, robots.txt, route registration |
 | `images.md` | WebP optimization, size presets, CLI commands |
 | `logging.md` | Pino config, error serialization, structured data, log levels |
 | `database-migrations.md` | SQL-first migration workflow, allowed/banned commands |
@@ -151,6 +151,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | `twitter.md` | OAuth 1.0a static creds, text reused from Bluesky, admin panel, draft-only retry |
 | `facebook.md` | Page token vs Instagram token, link-card posting, groups impossible, token check |
 | `linkedin.md` | Member token (60d, sin refresh automático), reautorización OAuth, job de chequeo |
+| `security-audit-2026-05-04.md` | Point-in-time security audit. Historical record, not current state |
 | `client/.context/skeletons.md` | Skeleton components for loading states (prevents CLS) |
 
 ## Memory

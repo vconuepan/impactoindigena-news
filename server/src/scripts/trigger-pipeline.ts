@@ -39,7 +39,7 @@ async function main() {
   }
 
   console.log('\n✅ Los tres jobs están corriendo en producción.')
-  console.log('   Puedes seguir el progreso en los logs de Render.com.')
+  console.log('   Puedes seguir el progreso en los logs del App Service en Azure.')
   console.log('   En ~10-15 min los artículos deberían estar publicados.')
 }
 

@@ -169,7 +169,7 @@ export const config = {
   // Operational alerts when a scheduled job fails (e.g. dead LLM key).
   alerts: {
     // Email that receives job-failure alerts. Empty disables email alerts.
-    failureEmail: process.env.ALERT_EMAIL || "venancio@conuepan.cl",
+    failureEmail: process.env.ALERT_EMAIL || "",
     // At most one email per job per this many hours, so a job that keeps
     // failing every cron tick doesn't flood the inbox.
     throttleHours: parseInt(process.env.ALERT_THROTTLE_HOURS || "6", 10),

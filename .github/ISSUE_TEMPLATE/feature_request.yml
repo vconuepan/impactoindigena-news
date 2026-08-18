@@ -1,0 +1,45 @@
+name: Propuesta de mejora
+description: Una idea para que la plataforma haga algo que hoy no hace
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Conviene abrir esto **antes** de escribir código: evita trabajo duplicado
+        y permite conversar si la idea calza con la dirección del proyecto.
+
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qué problema resuelve
+      description: >
+        Describe el problema, no la solución que ya tienes en mente. Es la parte
+        más útil del reporte: muchas veces hay un camino más corto que el
+        propuesto, y solo aparece si el problema está bien planteado.
+    validations:
+      required: true
+
+  - type: textarea
+    id: propuesta
+    attributes:
+      label: Qué propones
+      description: Cómo te imaginas que funcionaría.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternativas
+    attributes:
+      label: Qué otras opciones consideraste
+      description: Incluye "no hacer nada" si aplica.
+
+  - type: checkboxes
+    id: contexto
+    attributes:
+      label: Contexto del proyecto
+      options:
+        - label: >
+            Revisé si esto ya está en BACKLOG.md o en un plan de .plans/
+        - label: >
+            Entiendo que este es un proyecto sin fines de lucro con un solo
+            mantenedor, y que una propuesta puede quedar abierta mucho tiempo

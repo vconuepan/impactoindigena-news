@@ -33,7 +33,7 @@ function isSecureEnv(): boolean {
 
 function setRefreshCookie(res: any, token: string) {
   // sameSite: 'none' is required because the frontend (impactoindigena.news) and
-  // backend (vocesindigenas-backend.onrender.com) are on different origins.
+  // backend (the Azure App Service) are on different origins.
   // CSRF risk is mitigated by: (1) restrictive CORS allowing only FRONTEND_URL,
   // (2) cookie scoped to path '/api/auth' only, (3) access token kept in memory.
   res.cookie(REFRESH_COOKIE, token, {
