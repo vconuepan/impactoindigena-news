@@ -1,0 +1,61 @@
+name: Reporte de error
+description: Algo no funciona como debería
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **¿Encontraste una vulnerabilidad de seguridad?** No la reportes acá.
+        Los issues son públicos. Usa el canal privado de
+        [SECURITY.md](../blob/main/SECURITY.md).
+
+  - type: textarea
+    id: que-pasa
+    attributes:
+      label: Qué pasa
+      description: Qué observaste, y qué esperabas en su lugar.
+      placeholder: |
+        Al abrir una historia del archivo, la fecha aparece como "Invalid Date".
+        Esperaba la fecha de publicación original.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproducir
+    attributes:
+      label: Cómo reproducirlo
+      description: Los pasos exactos. Si es en el sitio público, incluye la URL.
+      placeholder: |
+        1. Ir a impactoindigena.news/archivo
+        2. Abrir cualquier historia anterior a 2024
+        3. Mirar la fecha bajo el título
+    validations:
+      required: true
+
+  - type: dropdown
+    id: donde
+    attributes:
+      label: Dónde ocurre
+      options:
+        - Sitio público
+        - Panel de administración
+        - API
+        - Correo (newsletter, alertas)
+        - Redes sociales (publicación automática)
+        - Entorno local de desarrollo
+        - No estoy seguro
+    validations:
+      required: true
+
+  - type: input
+    id: entorno
+    attributes:
+      label: Entorno
+      description: Navegador y sistema operativo. Si es local, además la versión de Node.
+      placeholder: Firefox 141 en macOS 15 · Node 22.11
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Cualquier otra cosa
+      description: Capturas, mensajes de la consola, logs. Arrastra las imágenes acá.

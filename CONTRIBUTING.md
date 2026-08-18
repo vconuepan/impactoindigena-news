@@ -6,9 +6,18 @@ Thanks for your interest in contributing to Impacto Indígena! This is a non-com
 
 See [README.md](README.md) for local development setup (prerequisites, database, environment variables, dev servers).
 
-Once you're up and running, check the `.context/` directory — it has detailed documentation for every subsystem (content extraction, LLM analysis, newsletter pipeline, authentication, and more). The `.context/README.md` lists all available files and what they cover.
+Once you're up and running, two directories are worth knowing before you change anything:
+
+- **`.context/`** documents how each subsystem is built — content extraction, LLM analysis, newsletter pipeline, authentication, the six social channels, and more. [`.context/README.md`](.context/README.md) indexes all 25 files by area. Read the relevant one before modifying a subsystem.
+- **`.specs/`** holds behavioral specifications in Allium. They define what the system *guarantees*: domain rules, entities, invariants. When a spec and a context file disagree, **the spec is authoritative** and the context file is what gets corrected.
+
+If your change alters domain behavior — a new rule, a modified transition, a new entity — update the affected spec too.
 
 ## How to Contribute
+
+### Security Vulnerabilities
+
+**Do not open an issue.** Report vulnerabilities privately — see [SECURITY.md](SECURITY.md) for how, what to expect, and what is in scope.
 
 ### Bug Reports
 
@@ -75,3 +84,5 @@ Harassment, personal attacks, and bad-faith behavior won't be tolerated.
 ## Questions?
 
 Open a [GitHub Issue](../../issues) or email [contact@impactoindigena.news](mailto:contact@impactoindigena.news).
+
+For security vulnerabilities, use the private channel in [SECURITY.md](SECURITY.md) instead.

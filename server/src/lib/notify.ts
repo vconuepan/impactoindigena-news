@@ -40,7 +40,13 @@ async function sendWebhook(jobName: string, error: string): Promise<void> {
 
 async function sendEmailAlert(jobName: string, error: string): Promise<void> {
   const to = config.alerts.failureEmail
-  if (!to) return
+  if (!to) {
+    // Sin destinatario no hay a quien avisar, y un fallo de job que nadie ve es
+    // peor que el fallo mismo: el token de Instagram estuvo muerto 12 dias
+    // porque el error se tragaba en silencio. Que quede en el log, siempre.
+    log.error({ jobName, error }, 'ALERT_EMAIL no esta configurada: la alerta de fallo NO se envio a nadie')
+    return
+  }
 
   // Throttle per job so a persistently failing job sends at most one email
   // per window instead of one per cron tick.

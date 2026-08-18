@@ -1,0 +1,89 @@
+# Dependabot — actualizaciones automáticas de dependencias
+#
+# POR QUE EXISTE. La auditoria de seguridad de mayo de 2026 detecto un CVE alto
+# en axios; se corrigio, y despues aparecieron avisos nuevos que nadie vio hasta
+# que alguien corrio `npm audit` a mano tres meses despues. Un aviso que depende
+# de que una persona se acuerde de mirar no es un control.
+#
+# COMO ESTA CALIBRADO. Este proyecto lo mantiene una sola persona, asi que la
+# configuracion prioriza no inundar: las actualizaciones se agrupan por tipo y
+# hay un techo de PRs abiertos. Las de seguridad no se agrupan ni esperan al dia
+# programado — GitHub las abre igual, aparte de este calendario.
+version: 2
+
+updates:
+  # --- Backend ---
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Santiago
+    open-pull-requests-limit: 5
+    labels: [dependencies, server]
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      # Parches y menores juntos: son las que casi siempre entran sin drama.
+      server-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      # Las de seguridad tambien agrupadas, para revisarlas de una sentada.
+      server-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # Las mayores se revisan a mano: Prisma y LangChain cambian API entre
+      # mayores y arrastran migraciones o reescrituras de prompts.
+      - dependency-name: "@prisma/client"
+        update-types: [version-update:semver-major]
+      - dependency-name: prisma
+        update-types: [version-update:semver-major]
+      - dependency-name: "langchain"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@langchain/*"
+        update-types: [version-update:semver-major]
+
+  # --- Frontend ---
+  - package-ecosystem: npm
+    directory: /client
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Santiago
+    open-pull-requests-limit: 5
+    labels: [dependencies, client]
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      client-minor-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+      client-security:
+        applies-to: security-updates
+        patterns: ["*"]
+    ignore:
+      # React mayor implica revisar todo el arbol de componentes.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+
+  # --- GitHub Actions ---
+  # Las acciones estan ancladas por SHA a proposito (ver ci.yml). Dependabot
+  # entiende el anclaje y actualiza el SHA manteniendo el comentario de version.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      actions:
+        patterns: ["*"]
