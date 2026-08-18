@@ -23,7 +23,7 @@
  */
 import 'dotenv/config'
 import { PrismaClient } from '@prisma/client'
-import { fixCapitalization } from '../../lib/title-capitalization.js'
+import { fixCapitalization, fixTitleCapitalization } from '../../lib/title-capitalization.js'
 
 const APPLY = process.argv.includes('--apply')
 const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
@@ -57,7 +57,10 @@ async function main() {
     for (const field of FIELDS) {
       const current = story[field]
       if (!current) continue
-      const fixed = fixCapitalization(current)
+      // Los titulares llevan mayuscula inicial; las etiquetas van en minuscula
+      // a proposito ("cacería subsistencia" es el kicker de la tarjeta).
+      const esTitular = field === 'title' || field === 'titleEn'
+      const fixed = esTitular ? fixTitleCapitalization(current) : fixCapitalization(current)
       if (fixed !== current) {
         updates[field] = fixed
         fieldEdits++
