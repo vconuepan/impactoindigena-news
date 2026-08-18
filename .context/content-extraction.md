@@ -15,6 +15,20 @@ Before any extraction tier runs, `isAllowedByRobots()` (`lib/robots.ts`) checks 
 
 Measured before shipping (2026-08-17): of the 80 most-crawled domains (1,432 of 2,000 published stories), tested against the real article URL of each, **zero block this crawler**. Worth knowing: 20 of those 80 — The Guardian, Al Jazeera, La Jornada, The Hindu, RNZ — explicitly block GPTBot and CCBot. Not us. This site does not train models on what it crawls.
 
+## Source age ceiling (18 months)
+
+Editorial rule: this is a news outlet and it does not publish material older than **18 months** (`config.crawl.maxSourceAgeMonths`). Enforced by `lib/source-age.ts` at two points — inside `googleNewsDiscover` **before extraction**, so old articles cost neither a fetch nor a model call, and inside `createStory` as the net every path crosses. `SourceTooOldError` is counted as *skipped*, never as an error: a feed returning archive is not a broken feed.
+
+**Why it was needed.** The age filter already existed and worked — `crawler.ts` drops anything past `maxArticleAgeDays` (60) — but the discovery job **never applied it**: it writes with `prisma.story.create` directly, bypassing that guard. Measured in the database on 2026-08-17: of the 61 stories published on Aug 16-17, **30 had a source article older than 18 months**, the oldest from **2 May 2011**. Nearly half of two days' output was archive presented as today's news.
+
+**Two ceilings, on purpose.** `maxArticleAgeDays` (60) stays stricter for RSS feeds, where an item from three months ago means the feed is resurfacing. `maxSourceAgeMonths` (18) is the absolute ceiling nobody crosses, and it also covers search discovery, where a thematic query can legitimately surface last year's ruling or report.
+
+**A null date is not "old".** Absence of evidence is not evidence of age, and discarding on suspicion would lose legitimate coverage — outlets that publish no date exist. That case passes through deliberately.
+
+**The diagnosis this corrected, which matters more than the fix.** Headlines like *"CORFO lanzó fondo para empresas indígenas con crédito largo en 2020"* looked like the model inventing years, since the source headline had none. It was false: Bing News **does** return `pubDate`, and that article **is** from 3 September 2020. The model was dating the event *correctly* — flagging, with the only tool it had, that the news was old. The defect was never in the headline; it was in publishing archive. Blaming the model would have buried the cause.
+
+Cleanup for what already shipped: `npm run migration:unpublish-old --prefix server` (simulation by default; moves affected stories to `rejected`, never deletes).
+
 ## Author attribution (art. 71 B)
 
 Every tier also captures the original article's author into `Story.sourceAuthor`, via `lib/author.ts`.

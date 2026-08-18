@@ -19,6 +19,8 @@ import { extractContent } from '../services/extractor.js'
 import { getExistingUrls } from '../services/story.js'
 import { normalizeUrl } from '../utils/urlNormalization.js'
 import { withRetry } from '../lib/retry.js'
+import { checkSourceAge } from '../lib/source-age.js'
+import { config } from '../config.js'
 
 const log = createLogger('google_news_discover')
 
@@ -108,6 +110,7 @@ export async function runGoogleNewsDiscover(): Promise<void> {
   let totalNew = 0
   let totalSkipped = 0
   let totalErrors = 0
+  let totalTooOld = 0
 
   for (const { query, region } of SEARCH_QUERIES) {
     try {
@@ -124,11 +127,37 @@ export async function runGoogleNewsDiscover(): Promise<void> {
         url: normalizeUrl(r.url),
       }))
 
-      // Filtrar las que ya están en la DB
-      const existingUrls = await getExistingUrls(normalized.map(r => r.url))
-      const newItems = normalized.filter(r => !existingUrls.has(r.url))
+      // Descartar el material viejo ANTES de extraer: cada artículo que pasa de
+      // acá cuesta una descarga, a veces una llamada a Diffbot y siempre una al
+      // modelo. Este job NO aplicaba ningún filtro de fecha —crea las historias
+      // con `prisma.story.create` directo, sin pasar por el guardia del
+      // crawler—, y por eso publicó noticias de hasta 2011 como si fueran del
+      // día: 30 de las 61 publicadas el 16 y 17 de agosto superaban los 18
+      // meses. Bing News SÍ entrega `pubDate`; el dato estaba, nadie lo miraba.
+      const fresh: typeof normalized = []
+      let tooOldCount = 0
+      for (const item of normalized) {
+        const { tooOld, ageMonths } = checkSourceAge(item.fechaPublicacion)
+        if (tooOld) {
+          tooOldCount++
+          log.debug({ url: item.url, ageMonths, query }, 'artículo más viejo que el techo, descartado')
+          continue
+        }
+        fresh.push(item)
+      }
+      if (tooOldCount > 0) {
+        log.info(
+          { query, region, tooOld: tooOldCount, limitMonths: config.crawl.maxSourceAgeMonths },
+          'descartados por antigüedad',
+        )
+        totalTooOld += tooOldCount
+      }
 
-      log.info({ query, region, found: results.length, new: newItems.length }, 'query processed')
+      // Filtrar las que ya están en la DB
+      const existingUrls = await getExistingUrls(fresh.map(r => r.url))
+      const newItems = fresh.filter(r => !existingUrls.has(r.url))
+
+      log.info({ query, region, found: results.length, fresh: fresh.length, new: newItems.length }, 'query processed')
 
       for (const item of newItems) {
         try {
@@ -150,6 +179,10 @@ export async function runGoogleNewsDiscover(): Promise<void> {
               sourceContent: extracted.content,
               feedId: feed.id,
               sourceDatePublished: item.fechaPublicacion ?? null,
+              // El PR #49 agregó la atribución de autor en `createStory`, pero
+              // este job escribe con `prisma.story.create` directo y se quedaba
+              // sin ella. El art. 71 B pide mencionar fuente, título y autor.
+              sourceAuthor: extracted.author,
               crawlMethod: extracted.method,
             },
           })
@@ -181,5 +214,5 @@ export async function runGoogleNewsDiscover(): Promise<void> {
     data: { lastCrawledAt: new Date(), lastSuccessfulCrawlAt: new Date() },
   })
 
-  log.info({ totalNew, totalSkipped, totalErrors }, 'discovery complete')
+  log.info({ totalNew, totalSkipped, totalTooOld, totalErrors }, 'discovery complete')
 }

@@ -10,11 +10,24 @@ import { createLogger } from '../lib/logger.js'
 import { notifyJobFailure } from '../lib/notify.js'
 import { config } from '../config.js'
 import { GEOGRAPHIC_ISSUE_COUNTRY } from '../lib/country-focus.js'
+import { checkSourceAge } from '../lib/source-age.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { buildRelatedStoriesPrompt } from '../prompts/related-stories.js'
 import { relatedStoriesResultSchema } from '../schemas/llm.js'
 
 const log = createLogger('story')
+
+/**
+ * El articulo original es mas viejo que el techo editorial (18 meses). No es un
+ * fallo: es una decision de publicacion, y el llamador la cuenta aparte de los
+ * errores.
+ */
+export class SourceTooOldError extends Error {
+  constructor(public readonly sourceUrl: string, public readonly ageMonths: number | null) {
+    super(`Source article is older than the editorial cutoff (${ageMonths ?? '?'} months): ${sourceUrl}`)
+    this.name = 'SourceTooOldError'
+  }
+}
 
 interface StoryFilters {
   status?: string
@@ -299,6 +312,22 @@ export async function createStory(data: {
   const feed = await prisma.feed.findUnique({ where: { id: data.feedId } })
   if (!feed) {
     throw new Error('Feed not found')
+  }
+
+  // Techo de antiguedad, aplicado en el punto donde TODA historia se crea. Es la
+  // red de seguridad: el crawler ya filtra antes (y mas estricto), y el discover
+  // tambien desde el 17-ago, pero este es el unico lugar por el que pasan todos
+  // los caminos. Sin fecha no se descarta: la ausencia de dato no prueba
+  // antiguedad. Ver `lib/source-age.ts`.
+  if (data.sourceDatePublished) {
+    const { tooOld, ageMonths } = checkSourceAge(data.sourceDatePublished)
+    if (tooOld) {
+      log.info(
+        { sourceUrl: data.sourceUrl, ageMonths, limitMonths: config.crawl.maxSourceAgeMonths },
+        'historia no creada: el articulo original supera el techo de antiguedad',
+      )
+      throw new SourceTooOldError(data.sourceUrl, ageMonths)
+    }
   }
   return prisma.story.create({
     data: {

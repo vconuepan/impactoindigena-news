@@ -15,6 +15,15 @@ vi.mock('./extractor.js', () => ({ extractContent: mockExtractContent }))
 vi.mock('./story.js', () => ({
   getExistingUrls: mockGetExistingUrls,
   createStory: mockCreateStory,
+  // La clase real, no un stub: el crawler hace `err instanceof SourceTooOldError`
+  // y un mock incompleto dejaba `undefined` a la derecha del instanceof, lo que
+  // revienta el catch ANTES de llegar al chequeo de P2002.
+  SourceTooOldError: class SourceTooOldError extends Error {
+    constructor(public readonly sourceUrl: string, public readonly ageMonths: number | null) {
+      super('too old')
+      this.name = 'SourceTooOldError'
+    }
+  },
 }))
 vi.mock('./feed.js', () => ({
   getFeedById: mockGetFeedById,
