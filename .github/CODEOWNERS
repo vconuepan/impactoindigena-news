@@ -1,0 +1,3 @@
+# Los workflows de despliegue tienen acceso a los secretos de produccion.
+# Cualquier cambio ahi exige revision del propietario del repositorio.
+/.github/ @vconuepan
