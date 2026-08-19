@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# El GITHUB_TOKEN queda en solo-lectura: ninguno de estos jobs escribe en el
+# repositorio. Los deploys se autentican contra Azure con sus propios
+# secretos. Sin esto hereda los permisos del repositorio, que hoy son de
+# escritura y con capacidad de aprobar pull requests.
+permissions:
+  contents: read
+
 jobs:
   secret-scan:
     name: Secret scan

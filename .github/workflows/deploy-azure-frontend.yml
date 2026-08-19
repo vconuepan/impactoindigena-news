@@ -8,6 +8,13 @@ on:
       - 'shared/**'
       - '.github/workflows/deploy-azure-frontend.yml'
 
+# El GITHUB_TOKEN queda en solo-lectura: ninguno de estos jobs escribe en el
+# repositorio. Los deploys se autentican contra Azure con sus propios
+# secretos. Sin esto hereda los permisos del repositorio, que hoy son de
+# escritura y con capacidad de aprobar pull requests.
+permissions:
+  contents: read
+
 jobs:
   deploy:
     name: Build & Deploy Frontend
@@ -41,7 +48,7 @@ jobs:
           PRERENDER_API_URL: "https://calm-pebble-039bfb80f.7.azurestaticapps.net"
 
       - name: Deploy to Azure Static Web Apps
-        uses: Azure/static-web-apps-deploy@v1
+        uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9  # v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
