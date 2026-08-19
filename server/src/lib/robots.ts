@@ -25,7 +25,7 @@
  * crawler y el `ApiThrottle`; sumar una tercera fuente de espera pediria
  * medirla antes. Queda anotado como lo siguiente si algun medio lo pide.
  */
-import axios from 'axios'
+import { safeAxiosGet } from './safeHttp.js'
 import { createLogger } from './logger.js'
 
 // `robots-parser` trae un `.d.ts` que abre con `declare module 'robots-parser';`
@@ -76,13 +76,24 @@ async function loadRobots(origin: string): Promise<Robot | null> {
   let robot: Robot | null = null
 
   try {
-    const res = await axios.get(robotsUrl, {
+    // `safeAxiosGet` y no `axios.get`: esta es la PRIMERA peticion que el
+    // servidor emite hacia un origen de tercero, y ocurre ANTES de que
+    // `fetchPage` valide la URL del articulo. Sin el guard, una URL con host
+    // interno —que el discover puede tomar de un resultado de Bing News—
+    // lograba una peticion a `http://<host-interno>/robots.txt` antes de ser
+    // rechazada: un SSRF ciego contra la red interna, limitado a una ruta fija.
+    //
+    // El guard resuelve DNS y revalida en cada redireccion, asi que tampoco
+    // sirve un robots.txt que redirija hacia adentro.
+    //
+    // Efecto secundario buscado: `safeAxiosGet` solo acepta 2xx/3xx, asi que un
+    // 404 —la respuesta mas comun, y que significa "sin reglas"— ahora lanza y
+    // cae en el `catch` de abajo. El resultado funcional es el mismo (fail-open,
+    // se permite) y el log sigue siendo `debug`, no ruido.
+    const res = await safeAxiosGet(robotsUrl, {
       timeout: FETCH_TIMEOUT_MS,
       maxContentLength: MAX_ROBOTS_BYTES,
       responseType: 'text',
-      // Un 404 es la respuesta mas comun y significa "sin reglas": no es un
-      // error que merezca ruido en los logs.
-      validateStatus: () => true,
       headers: { 'User-Agent': ROBOTS_USER_AGENT },
     })
     if (res.status === 200 && typeof res.data === 'string') {

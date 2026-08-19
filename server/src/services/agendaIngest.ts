@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { safeAxiosGet } from '../lib/safeHttp.js'
 import ical from 'node-ical'
 import { Prisma, type AgendaItemType, type ContentStatus } from '@prisma/client'
 import prisma from '../lib/prisma.js'
@@ -197,17 +198,20 @@ export function buildFromVevent(ev: VEventLike, source: AgendaSource, today: Dat
 }
 
 async function fetchIcs(url: string): Promise<string> {
-  const res = await axios.get<string>(url, {
+  // Defensa en profundidad: la URL viene de una fuente de agenda de la base,
+  // que hoy solo crea un administrador. Igual pasa por el guard, porque el
+  // costo es cero y el dia que esa fuente sea editable por alguien mas el
+  // agujero ya estaria cerrado.
+  const res = await safeAxiosGet(url, {
     timeout: config.crawl.httpTimeoutMs,
-    maxRedirects: 3,
     responseType: 'text',
     maxContentLength: 10 * 1024 * 1024,
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0; +https://impactoindigena.news)',
       'Accept': 'text/calendar, text/plain, */*',
     },
-  })
-  return res.data
+  }, { maxRedirects: 3 })
+  return res.data as string
 }
 
 /** Persist a draft create-if-absent (never clobbers admin edits to existing items). */

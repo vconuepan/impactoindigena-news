@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// Se mockea `safeAxiosGet`, no `axios`: la sonda de robots.txt pasa a proposito
+// por el guard SSRF, y mockear axios dejaria el guard fuera del test.
 const mockGet = vi.hoisted(() => vi.fn())
-vi.mock('axios', () => ({ default: { get: mockGet } }))
+vi.mock('./safeHttp.js', () => ({ safeAxiosGet: mockGet }))
 
 vi.mock('./logger.js', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
@@ -78,5 +80,35 @@ describe('isAllowedByRobots', () => {
     mockGet.mockResolvedValue(robotsTxt('User-agent: *\nAllow: /\n'))
     await isAllowedByRobots('https://medio.cl/seccion/nota-larga?x=1')
     expect(mockGet.mock.calls[0][0]).toBe('https://medio.cl/robots.txt')
+  })
+})
+
+describe('la sonda de robots.txt pasa por el guard SSRF', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    clearRobotsCache()
+  })
+
+  it('descarga robots.txt con safeAxiosGet, no con axios directo', async () => {
+    mockGet.mockResolvedValue({ status: 200, data: 'User-agent: *\nAllow: /\n' })
+    await isAllowedByRobots('https://medio.cl/nota')
+    expect(mockGet).toHaveBeenCalledWith(
+      'https://medio.cl/robots.txt',
+      expect.objectContaining({ responseType: 'text' }),
+    )
+  })
+
+  it('permite la URL cuando el guard rechaza el origen', async () => {
+    // Es el caso que motivo el cambio: sin el guard, el servidor emitia una
+    // peticion a http://<host-interno>/robots.txt antes de que `fetchPage`
+    // validara la URL del articulo. Ahora el guard corta ahi, y robots.ts
+    // mantiene su fail-open: no bloquea, solo deja de sondear.
+    mockGet.mockRejectedValue(new Error('Blocked host: 169.254.169.254'))
+    expect(await isAllowedByRobots('http://169.254.169.254/latest/meta-data/')).toBe(true)
+  })
+
+  it('sigue permitiendo cuando no hay robots.txt (404 ⇒ el guard lanza)', async () => {
+    mockGet.mockRejectedValue(new Error('Request failed with status code 404'))
+    expect(await isAllowedByRobots('https://medio.cl/nota')).toBe(true)
   })
 })
