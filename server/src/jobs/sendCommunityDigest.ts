@@ -6,7 +6,7 @@ import { StoryStatus } from '@prisma/client'
 
 const log = createLogger('send_community_digest')
 
-const SITE_URL = config.siteUrl || 'https://impactoindigena.news'
+const SITE_URL = config.siteUrl || 'https://vocesindigenas.org'
 const LOOKBACK_DAYS = 7
 
 interface DigestStory {
@@ -85,7 +85,7 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tu resumen de comunidades — Impacto Indígena</title>
+  <title>Tu resumen de comunidades — Voces Indígenas</title>
 </head>
 <body style="margin:0;padding:0;background:#f9f7f4;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f7f4;padding:32px 16px;">
@@ -95,7 +95,7 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
 
           <tr>
             <td style="background:#2d6a4f;padding:24px 32px;">
-              <a href="${SITE_URL}" style="color:#ffffff;font-family:Georgia,serif;font-size:22px;font-weight:700;text-decoration:none;">Impacto Indígena</a>
+              <a href="${SITE_URL}" style="color:#ffffff;font-family:Georgia,serif;font-size:22px;font-weight:700;text-decoration:none;">Voces Indígenas</a>
               <p style="margin:4px 0 0;color:#a8d5be;font-size:13px;font-family:sans-serif;">Noticias de tus comunidades</p>
             </td>
           </tr>
@@ -126,7 +126,7 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
             <td style="background:#f0ede8;padding:20px 32px;border-top:1px solid #e5e0d8;">
               <p style="margin:0 0 8px;font-size:12px;color:#8c7e6a;font-family:sans-serif;line-height:1.6;">
                 Recibes este correo porque te uniste a una o más comunidades en
-                <a href="${SITE_URL}" style="color:#2d6a4f;">impactoindigena.news</a>.
+                <a href="${SITE_URL}" style="color:#2d6a4f;">vocesindigenas.org</a>.
                 Para gestionar tus preferencias de digest, visita <a href="${SITE_URL}/perfil" style="color:#2d6a4f;">tu perfil</a>.
               </p>
               <p style="margin:0;font-size:12px;color:#8c7e6a;font-family:sans-serif;">

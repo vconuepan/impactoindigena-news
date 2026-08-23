@@ -8,11 +8,11 @@
     count: Math.min(5, Math.max(1, parseInt(script.getAttribute('data-count') || '3', 10) || 3)),
     issue: script.getAttribute('data-issue') || '',
     theme: script.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
-    title: script.getAttribute('data-title') || 'Impacto Indígena',
+    title: script.getAttribute('data-title') || 'Voces Indígenas',
   }
 
-  var API_BASE = 'https://api.impactoindigena.news/api'
-  var SITE_URL = 'https://impactoindigena.news'
+  var API_BASE = 'https://api.vocesindigenas.org/api'
+  var SITE_URL = 'https://vocesindigenas.org'
 
   // Create container with shadow DOM for style isolation
   var container = document.createElement('div')
@@ -114,7 +114,7 @@
         html += '</a></li>'
       })
       html += '</ul>'
-      html += '<div class="ar-footer"><a href="' + SITE_URL + '" target="_blank" rel="noopener noreferrer">Powered by Impacto Indígena</a></div>'
+      html += '<div class="ar-footer"><a href="' + SITE_URL + '" target="_blank" rel="noopener noreferrer">Powered by Voces Indígenas</a></div>'
       widget.innerHTML = html
     } catch (e) {
       widget.innerHTML = '<div class="ar-error">Could not load stories</div>'

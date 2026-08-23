@@ -95,18 +95,18 @@ export function getOpenAPIDocument(): any {
   return createDocument({
     openapi: '3.1.0',
     info: {
-      title: 'Impacto Indígena API',
+      title: 'Voces Indígenas API',
       version: '0.1.0',
       description:
-        'Public API for Impacto Indígena — an AI-curated news platform covering stories that matter to indigenous peoples. ' +
+        'Public API for Voces Indígenas — an AI-curated news platform covering stories that matter to indigenous peoples. ' +
         'Access published stories, issues, homepage data, and RSS feeds. No authentication required.',
       contact: {
-        name: 'Impacto Indígena',
-        url: 'https://impactoindigena.news',
+        name: 'Voces Indígenas',
+        url: 'https://vocesindigenas.org',
       },
     },
     servers: [
-      { url: process.env.API_URL || 'https://impactoindigena.news', description: 'Production' },
+      { url: process.env.API_URL || 'https://vocesindigenas.org', description: 'Production' },
     ],
     paths: {
       '/api/homepage': {

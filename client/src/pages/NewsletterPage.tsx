@@ -5,8 +5,8 @@ import StructuredData from '../components/StructuredData'
 import SubscribeForm from '../components/SubscribeForm'
 
 const META = {
-  title: 'Newsletter - Impacto Indígena',
-  description: 'Suscríbete al newsletter de Impacto Indígena. Las noticias que importan a los pueblos indígenas, curadas con inteligencia artificial y entregadas en tu correo cada semana.',
+  title: 'Newsletter - Voces Indígenas',
+  description: 'Suscríbete al newsletter de Voces Indígenas. Las noticias que importan a los pueblos indígenas, curadas con inteligencia artificial y entregadas en tu correo cada semana.',
   url: `${SEO.siteUrl}/newsletter`,
 }
 

@@ -2,7 +2,7 @@
  * GET /api/public/contrast
  *
  * Returns two parallel story lists for the "Por qué importa" page:
- *   - our: top 8 Impacto Indígena stories from the last 7 days (highest relevance score)
+ *   - our: top 8 Voces Indígenas stories from the last 7 days (highest relevance score)
  *   - mainstream: top 8 items from Google News Latinoamérica (Spanish, general)
  *
  * Both lists are cached for 30 minutes. Mainstream fetch fails gracefully —

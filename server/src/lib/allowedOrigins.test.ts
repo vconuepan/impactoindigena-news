@@ -9,7 +9,7 @@ describe('allowedOrigins', () => {
   const original = process.env.FRONTEND_URL
 
   beforeEach(() => {
-    process.env.FRONTEND_URL = 'https://impactoindigena.news'
+    process.env.FRONTEND_URL = 'https://vocesindigenas.org'
   })
 
   afterEach(() => {
@@ -19,7 +19,7 @@ describe('allowedOrigins', () => {
 
   it('includes FRONTEND_URL and localhost dev origins', () => {
     const origins = getAllowedOrigins()
-    expect(origins).toContain('https://impactoindigena.news')
+    expect(origins).toContain('https://vocesindigenas.org')
     expect(origins).toContain('http://localhost:5173')
   })
 
@@ -30,13 +30,13 @@ describe('allowedOrigins', () => {
   })
 
   it('accepts unsafe methods with an allowlisted Origin', () => {
-    expect(isTrustedOrigin(mkReq('POST', { origin: 'https://impactoindigena.news' }))).toBe(true)
+    expect(isTrustedOrigin(mkReq('POST', { origin: 'https://vocesindigenas.org' }))).toBe(true)
     expect(isTrustedOrigin(mkReq('DELETE', { origin: 'http://localhost:5173' }))).toBe(true)
   })
 
   it('rejects unsafe methods with a foreign Origin', () => {
     expect(isTrustedOrigin(mkReq('POST', { origin: 'https://evil.com' }))).toBe(false)
-    expect(isTrustedOrigin(mkReq('DELETE', { origin: 'https://impactoindigena.news.evil.com' }))).toBe(false)
+    expect(isTrustedOrigin(mkReq('DELETE', { origin: 'https://vocesindigenas.org.evil.com' }))).toBe(false)
   })
 
   it('rejects unsafe methods with no Origin or Referer', () => {
@@ -44,7 +44,7 @@ describe('allowedOrigins', () => {
   })
 
   it('falls back to the Referer origin when Origin is absent', () => {
-    expect(isTrustedOrigin(mkReq('POST', { referer: 'https://impactoindigena.news/comunidad/x' }))).toBe(true)
+    expect(isTrustedOrigin(mkReq('POST', { referer: 'https://vocesindigenas.org/comunidad/x' }))).toBe(true)
     expect(isTrustedOrigin(mkReq('POST', { referer: 'https://evil.com/attack' }))).toBe(false)
     expect(isTrustedOrigin(mkReq('POST', { referer: 'not-a-url' }))).toBe(false)
   })

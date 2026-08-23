@@ -33,7 +33,7 @@ export default function ShareButtons({ url, title, description }: ShareButtonsPr
   const encodedDesc = encodeURIComponent(description)
 
   // Org-friendly WhatsApp format: bold title + description + URL + attribution
-  const whatsappText = encodeURIComponent(`*${title}*\n\n${description}\n\n${url}\n_vía Impacto Indígena_`)
+  const whatsappText = encodeURIComponent(`*${title}*\n\n${description}\n\n${url}\n_vía Voces Indígenas_`)
 
   const supportsShare = typeof navigator !== 'undefined' && !!navigator.share
 

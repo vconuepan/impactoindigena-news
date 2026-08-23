@@ -41,7 +41,7 @@ export async function scrapeElMostrador(_url: string): Promise<ParseFeedResult> 
           timeout: 15_000,
           responseType: 'text',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0; +https://impactoindigena.news)',
+            'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://vocesindigenas.org)',
             'Accept': 'application/xml,text/xml,*/*',
           },
           validateStatus: (s) => s === 200,

@@ -9,7 +9,7 @@ vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
 vi.mock('../config.js', () => ({
   config: {
-    siteUrl: 'https://impactoindigena.news',
+    siteUrl: 'https://vocesindigenas.org',
     mastodon: { charLimit: 500 },
     agenda: {
       digest: {
@@ -72,7 +72,7 @@ describe('buildDigestText', () => {
 
   it('mastodon appends the section URL inline within 500', () => {
     const text = buildDigestText(c, 'mastodon')
-    expect(text).toContain(`https://impactoindigena.news${AGENDA_SECTION_PATH}`)
+    expect(text).toContain(`https://vocesindigenas.org${AGENDA_SECTION_PATH}`)
     expect([...text].length).toBeLessThanOrEqual(500)
   })
 
@@ -80,7 +80,7 @@ describe('buildDigestText', () => {
     const text = buildDigestText(c, 'twitter')
     expect(text).toContain(AGENDA_SECTION_PATH)
     // real URL is longer than 280 minus body, so the fixed-length budgeting matters
-    expect([...text].length).toBeLessThanOrEqual(280 + `https://impactoindigena.news${AGENDA_SECTION_PATH}`.length)
+    expect([...text].length).toBeLessThanOrEqual(280 + `https://vocesindigenas.org${AGENDA_SECTION_PATH}`.length)
   })
 
   it('instagram caption includes the teaser and hashtags', () => {

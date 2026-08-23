@@ -69,7 +69,7 @@ export async function generateDraft(storyId: string) {
 // then updates the record to 'draft'.
 async function runGeneration(postId: string, story: any): Promise<void> {
   const storyId: string = story.id
-  const storyUrl = `https://impactoindigena.news/stories/${story.slug}`
+  const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
 
   // Caption para Instagram generada con LLM
   await rateLimitDelay()

@@ -64,15 +64,15 @@ router.get('/feed.xml', async (_req, res) => {
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
   xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Impacto Indígena</title>
+    <title>Voces Indígenas</title>
     <description>Las noticias más importantes sobre pueblos indígenas del mundo y de Chile, curadas con inteligencia artificial.</description>
     <link>${siteUrl}</link>
     <language>es</language>
-    <copyright>© ${new Date().getFullYear()} Impacto Indígena</copyright>
+    <copyright>© ${new Date().getFullYear()} Voces Indígenas</copyright>
     <lastBuildDate>${now}</lastBuildDate>
     <atom:link href="${feedUrl}" rel="self" type="application/rss+xml" />
-    <itunes:title>Impacto Indígena</itunes:title>
-    <itunes:author>Impacto Indígena</itunes:author>
+    <itunes:title>Voces Indígenas</itunes:title>
+    <itunes:author>Voces Indígenas</itunes:author>
     <itunes:summary>Las noticias más importantes sobre pueblos indígenas del mundo y de Chile, curadas con inteligencia artificial.</itunes:summary>
     <itunes:explicit>false</itunes:explicit>
     <itunes:language>es</itunes:language>
@@ -81,7 +81,7 @@ router.get('/feed.xml', async (_req, res) => {
       <itunes:category text="Documentary" />
     </itunes:category>
     <itunes:owner>
-      <itunes:name>Impacto Indígena</itunes:name>
+      <itunes:name>Voces Indígenas</itunes:name>
       <itunes:email>${process.env.BREVO_FROM_EMAIL || ''}</itunes:email>
     </itunes:owner>
 ${items}

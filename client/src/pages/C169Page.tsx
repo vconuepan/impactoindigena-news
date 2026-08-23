@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'C169 OIT: los 24 países que ratificaron el Convenio | Impacto Indígena',
+  title: 'C169 OIT: los 24 países que ratificaron el Convenio | Voces Indígenas',
   description:
     'Mapa completo de ratificación del Convenio 169 de la OIT sobre pueblos indígenas: 24 países en 5 continentes. Fechas de ratificación y qué significa para los derechos indígenas en cada región.',
   url: `${SEO.siteUrl}/guia/c169-pais-por-pais`,

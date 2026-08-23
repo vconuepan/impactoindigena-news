@@ -56,10 +56,10 @@ export default function SavedPage() {
   return (
     <>
       <Helmet>
-        <title>Guardados - Impacto Indígena</title>
+        <title>Guardados - Voces Indígenas</title>
         <meta
           name="description"
-          content="Tus noticias guardadas en Impacto Indígena."
+          content="Tus noticias guardadas en Voces Indígenas."
         />
       </Helmet>
       <div className="page-section-wide">

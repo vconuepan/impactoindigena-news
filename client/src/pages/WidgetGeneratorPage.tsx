@@ -11,8 +11,8 @@ const ISSUES = [
   { label: "Chile Intercultural", value: "chile-indigena" },
 ];
 
-const WIDGET_URL = "https://impactoindigena.news/widget.js";
-const EMBED_URL = "https://impactoindigena.news/embed";
+const WIDGET_URL = "https://vocesindigenas.org/widget.js";
+const EMBED_URL = "https://vocesindigenas.org/embed";
 
 export default function WidgetGeneratorPage() {
   const [issue, setIssue] = useState("");
@@ -42,7 +42,7 @@ export default function WidgetGeneratorPage() {
   if (showSummary) iframeParams.set("summary", "true");
   if (upliftingOnly) iframeParams.set("mood", "uplifting");
   const qs = iframeParams.toString();
-  const iframeCode = `<iframe src="${EMBED_URL}${qs ? "?" + qs : ""}" width="100%" height="${showSummary ? 600 : 400}" frameborder="0" title="Impacto Indígena stories"></iframe>`;
+  const iframeCode = `<iframe src="${EMBED_URL}${qs ? "?" + qs : ""}" width="100%" height="${showSummary ? 600 : 400}" frameborder="0" title="Voces Indígenas stories"></iframe>`;
 
   function copyToClipboard(text: string, type: "script" | "iframe") {
     navigator.clipboard.writeText(text).then(() => {
@@ -54,12 +54,12 @@ export default function WidgetGeneratorPage() {
   return (
     <>
       <Helmet>
-        <title>For Your Website - Impacto Indígena</title>
+        <title>For Your Website - Voces Indígenas</title>
         <meta
           name="description"
           content="Add AI-curated relevant news to your website with embeddable widgets. Easy to set up, customizable, and always up to date."
         />
-        <meta property="og:title" content="For Your Website - Impacto Indígena" />
+        <meta property="og:title" content="For Your Website - Voces Indígenas" />
         <meta property="og:description" content="Add AI-curated relevant news to your website with embeddable widgets. Easy to set up, customizable, and always up to date." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/widgets`} />

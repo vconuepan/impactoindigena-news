@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Declaración de la ONU sobre Derechos de los Pueblos Indígenas (UNDRIP) | Impacto Indígena',
+  title: 'Declaración de la ONU sobre Derechos de los Pueblos Indígenas (UNDRIP) | Voces Indígenas',
   description:
     'Guía completa sobre la DNUDPI/UNDRIP: qué derechos reconoce, quiénes la adoptaron, cómo se diferencia del Convenio 169 y qué fuerza jurídica tiene en América Latina.',
   url: `${SEO.siteUrl}/guia/declaracion-onu-undrip`,

@@ -52,7 +52,7 @@
     "terms": "Términos y condiciones",
     "cookies": "Cookies",
     "noTracking": "Sin rastreo",
-    "copyright": "© {{year}} Impacto Indígena. Todos los derechos reservados.",
+    "copyright": "© {{year}} Voces Indígenas. Todos los derechos reservados.",
     "distribute": "Distribuir",
     "widgetForYourSite": "Para tu sitio web",
     "whyItMatters": "¿Por qué importa?",
@@ -105,8 +105,8 @@
   },
   "search": {
     "title": "Buscar: {{q}}",
-    "pageTitle": "Resultados de búsqueda para \"{{q}}\" en Impacto Indígena",
-    "defaultTitle": "Buscar historias en Impacto Indígena",
+    "pageTitle": "Resultados de búsqueda para \"{{q}}\" en Voces Indígenas",
+    "defaultTitle": "Buscar historias en Voces Indígenas",
     "results_one": "1 resultado",
     "results_other": "{{count}} resultados",
     "resultsFor": "Resultados para \"{{q}}\"",
@@ -194,7 +194,7 @@
     "readMethod": "Cómo trabajamos",
     "readSources": "Nuestras fuentes",
     "published": "Publicado desde Chile.",
-    "rights": "© {{year}} Impacto Indígena"
+    "rights": "© {{year}} Voces Indígenas"
   },
   "curationStats": {
     "ariaLabel": "Estadísticas de curaduría",

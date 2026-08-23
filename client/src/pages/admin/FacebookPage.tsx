@@ -116,7 +116,7 @@ export default function FacebookPage() {
   return (
     <>
       <Helmet>
-        <title>Facebook — Admin — Impacto Indígena</title>
+        <title>Facebook — Admin — Voces Indígenas</title>
       </Helmet>
 
       <FacebookDraftPanel

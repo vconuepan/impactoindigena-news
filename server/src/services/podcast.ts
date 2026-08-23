@@ -7,9 +7,9 @@ import { config } from '../config.js'
 
 const log = createLogger('podcast-service')
 
-const INTRO = `Bienvenidos a Impacto Indígena, el podcast donde cubrimos las noticias más importantes sobre pueblos indígenas alrededor del mundo. Soy tu presentador y hoy te traemos las historias más relevantes del día.`
+const INTRO = `Bienvenidos a Voces Indígenas, el podcast donde cubrimos las noticias más importantes sobre pueblos indígenas alrededor del mundo. Soy tu presentador y hoy te traemos las historias más relevantes del día.`
 
-const OUTRO = `Eso es todo por hoy en Impacto Indígena. Si quieres leer estas noticias completas, visita impactoindigena.news. Gracias por escucharnos y hasta la próxima.`
+const OUTRO = `Eso es todo por hoy en Voces Indígenas. Si quieres leer estas noticias completas, visita vocesindigenas.org. Gracias por escucharnos y hasta la próxima.`
 
 function createOpenAIClient(): OpenAI {
   if (config.llm.provider === 'azure') {
@@ -48,7 +48,7 @@ async function generateEpisodeScript(
     )
     .join('\n\n')
 
-  const prompt = `Eres el presentador del podcast "Impacto Indígena", un medio de noticias sobre pueblos indígenas.
+  const prompt = `Eres el presentador del podcast "Voces Indígenas", un medio de noticias sobre pueblos indígenas.
 
 Tienes ${stories.length} noticias para narrar en este episodio. Crea un script de podcast en español que:
 1. Sea natural y conversacional, como si hablaras directamente al oyente
@@ -79,13 +79,13 @@ Responde SOLO en JSON sin markdown:
   try {
     const parsed = JSON.parse(clean)
     return {
-      title: parsed.title || `Impacto Indígena - Episodio ${episodeNumber}`,
+      title: parsed.title || `Voces Indígenas - Episodio ${episodeNumber}`,
       description: parsed.description || 'Las noticias más importantes sobre pueblos indígenas.',
       script: parsed.script || '',
     }
   } catch {
     return {
-      title: `Impacto Indígena - Episodio ${episodeNumber}`,
+      title: `Voces Indígenas - Episodio ${episodeNumber}`,
       description: 'Las noticias más importantes sobre pueblos indígenas.',
       script: storiesText,
     }

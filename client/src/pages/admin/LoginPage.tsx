@@ -44,7 +44,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-neutral-50 px-4">
       <Helmet>
-        <title>Acceso admin — Impacto Indígena</title>
+        <title>Acceso admin — Voces Indígenas</title>
       </Helmet>
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center text-neutral-900 mb-8">Acceso admin</h1>

@@ -133,7 +133,7 @@ Responde SOLO con un JSON con este formato exacto, sin texto adicional:
   }
 
   // Crear newsletter privado
-  const title = `[PRIVADO] Impacto Indígena — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
+  const title = `[PRIVADO] Voces Indígenas — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
   const newsletter = await prisma.newsletter.create({
     data: {
       title,
@@ -190,7 +190,7 @@ Responde SOLO con JSON sin texto adicional:
       const story = storyMap.get(id)
       if (!story) continue
       const publisher = story.feed?.displayTitle || story.feed?.title || 'Fuente'
-      const relevanceUrl = story.slug ? `https://impactoindigena.news/stories/${story.slug}` : ''
+      const relevanceUrl = story.slug ? `https://vocesindigenas.org/stories/${story.slug}` : ''
       content += `## ${story.title || story.sourceTitle}\n`
       content += `${publisher} · [artículo original](${story.sourceUrl})`
       if (relevanceUrl) content += ` · [análisis](${relevanceUrl})`

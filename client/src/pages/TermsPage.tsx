@@ -9,12 +9,12 @@ export default function TermsPage() {
         <title>Términos y Condiciones - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Términos y condiciones de uso de Impacto Indígena: medio de noticias curado con IA, contenido de terceros, derecho de cita y responsabilidad."
+          content="Términos y condiciones de uso de Voces Indígenas: medio de noticias curado con IA, contenido de terceros, derecho de cita y responsabilidad."
         />
         <meta property="og:title" content={`Términos y Condiciones - ${SEO.siteName}`} />
         <meta
           property="og:description"
-          content="Términos y condiciones de uso de Impacto Indígena."
+          content="Términos y condiciones de uso de Voces Indígenas."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/terminos`} />
@@ -31,7 +31,7 @@ export default function TermsPage() {
           </p>
           <h2 className="section-heading mt-8">1. Aceptación</h2>
           <p>
-            El uso de <strong>impactoindigena.news</strong> (el "Sitio") implica
+            El uso de <strong>vocesindigenas.org</strong> (el "Sitio") implica
             la aceptación de estos Términos y Condiciones. Si no estás de
             acuerdo, no utilices el Sitio.
           </p>
@@ -48,7 +48,7 @@ export default function TermsPage() {
 
           <h2 className="section-heading mt-8">3. Descripción del servicio</h2>
           <p>
-            Impacto Indígena es un medio de noticias curado con inteligencia
+            Voces Indígenas es un medio de noticias curado con inteligencia
             artificial, enfocado en pueblos indígenas. Monitoreamos fuentes
             públicas, seleccionamos artículos relevantes y publicamos resúmenes
             y análisis generados por IA junto con un enlace a la fuente
@@ -61,7 +61,7 @@ export default function TermsPage() {
           <p>
             El Sitio enlaza y hace referencia a contenidos de terceros (medios,
             ONG, organismos públicos), cuyos derechos pertenecen a sus
-            respectivos titulares. Impacto Indígena publica resúmenes propios y
+            respectivos titulares. Voces Indígenas publica resúmenes propios y
             citas breves al amparo del <strong>artículo 71 B de la Ley N° 17.336</strong>{" "}
             sobre Propiedad Intelectual, que permite incluir fragmentos breves de
             una obra lícitamente divulgada a título de cita, siempre que se
@@ -124,7 +124,7 @@ export default function TermsPage() {
           <h2 className="section-heading mt-8">8. Atribución</h2>
           <p>
             Si reutilizas resúmenes o análisis del Sitio, debes atribuir a{" "}
-            <strong>"Impacto Indígena — impactoindigena.news"</strong> y enlazar a la noticia.
+            <strong>"Voces Indígenas — vocesindigenas.org"</strong> y enlazar a la noticia.
           </p>
 
           <h2 className="section-heading mt-8">9. Boletín y comunicaciones</h2>

@@ -15,7 +15,7 @@ import { crawlLimiter } from '../lib/crawlLimiter.js'
 const log = createLogger('extractor')
 // Use a browser-compatible User-Agent to avoid 403 blocks from sites that
 // detect and reject generic bot identifiers (e.g. UN agencies, IPBES).
-const USER_AGENT = 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0; +https://impactoindigena.news)'
+const USER_AGENT = 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://vocesindigenas.org)'
 
 function isQuotaError(err: unknown): boolean {
   if (err instanceof Error && 'isAxiosError' in err) {

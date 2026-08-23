@@ -1,11 +1,11 @@
-# Sistema de Diseño — Impacto Indígena
+# Sistema de Diseño — Voces Indígenas
 
 ## Producto
 
 - **Qué es:** Medio editorial de noticias curadas por IA sobre pueblos indígenas
 - **Para quién:** Lectores interesados en cobertura indígena, principalmente Chile y América Latina
 - **Categoría:** Editorial digital-native
-- **Sitio:** https://impactoindigena.news
+- **Sitio:** https://vocesindigenas.org
 
 ## Dirección estética
 

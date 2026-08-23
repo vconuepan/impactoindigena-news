@@ -41,7 +41,7 @@ export async function runGenerateNewsletter(): Promise<void> {
   }
 
   const today = new Date()
-  const title = `Impacto Indígena — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
+  const title = `Voces Indígenas — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
 
   // Skip if a newsletter was already generated today (e.g. from a partial run retry)
   const startOfDay = new Date(today)

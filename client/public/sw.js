@@ -1,4 +1,4 @@
-const CACHE_NAME = 'impacto-indigena-v2'
+const CACHE_NAME = 'voces-indigenas-v2'
 const STATIC_ASSETS = [
   '/',
   '/site.webmanifest',

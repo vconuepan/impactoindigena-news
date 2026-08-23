@@ -380,7 +380,7 @@ async function sendWelcomeEmail(
   userName: string,
   community: { name: string; slug: string; issueIds: string[]; keywords: string[] }
 ): Promise<void> {
-  const SITE_URL = config.siteUrl || 'https://impactoindigena.news'
+  const SITE_URL = config.siteUrl || 'https://vocesindigenas.org'
   const communityUrl = `${SITE_URL}/comunidad/${community.slug}`
 
   // Fetch the 3 most recent published stories for this community
@@ -435,7 +435,7 @@ async function sendWelcomeEmail(
 
         <tr>
           <td style="background:#2d6a4f;padding:24px 32px;">
-            <a href="${SITE_URL}" style="color:#ffffff;font-family:Georgia,serif;font-size:22px;font-weight:700;text-decoration:none;">Impacto Indígena</a>
+            <a href="${SITE_URL}" style="color:#ffffff;font-family:Georgia,serif;font-size:22px;font-weight:700;text-decoration:none;">Voces Indígenas</a>
           </td>
         </tr>
 
@@ -487,7 +487,7 @@ async function sendWelcomeEmail(
 
   await sendTransactional({
     to: email,
-    subject: `Bienvenido/a a ${community.name} — Impacto Indígena`,
+    subject: `Bienvenido/a a ${community.name} — Voces Indígenas`,
     body: html,
   })
 }

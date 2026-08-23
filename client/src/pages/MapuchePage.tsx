@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Pueblo Mapuche: territorio, derechos y cultura | Impacto Indígena',
+  title: 'Pueblo Mapuche: territorio, derechos y cultura | Voces Indígenas',
   description:
     'El pueblo Mapuche es el mayor pueblo indígena de Chile y Argentina. Conoce su historia, su lucha por el territorio del Wallmapu, sus derechos y las noticias más recientes.',
   url: `${SEO.siteUrl}/guia/pueblo-mapuche`,

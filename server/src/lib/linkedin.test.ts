@@ -235,7 +235,7 @@ describe('createUgcPost with a dead token', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(
-      createUgcPost('texto', 'https://impactoindigena.news/stories/x', 'Título', 'Resumen', [
+      createUgcPost('texto', 'https://vocesindigenas.org/stories/x', 'Título', 'Resumen', [
         'https://cdn/1.jpg',
         'https://cdn/2.jpg',
         'https://cdn/3.jpg',

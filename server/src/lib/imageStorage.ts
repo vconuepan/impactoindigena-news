@@ -77,7 +77,7 @@ export async function downloadExternalImage(imageUrl: string): Promise<Downloade
     const res = await safeAxiosGet(imageUrl, {
       responseType: 'arraybuffer',
       timeout: 10_000,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0)' },
       // Hard cap the response body; axios throws if the stream exceeds this.
       maxContentLength: MAX_REHOST_BYTES,
       maxBodyLength: MAX_REHOST_BYTES,

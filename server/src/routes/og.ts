@@ -5,7 +5,7 @@ import { createLogger } from '../lib/logger.js'
 const router = Router()
 const log = createLogger('og-proxy')
 
-const SITE_URL = 'https://impactoindigena.news'
+const SITE_URL = 'https://vocesindigenas.org'
 const FALLBACK_IMAGE = `${SITE_URL}/images/og-image.png`
 
 const BOT_UA = /bot|crawler|spider|crawling|facebookexternalhit|linkedinbot|twitterbot|slackbot|telegrambot|whatsapp|discordbot|curl|wget|python|java\/|go-http/i
@@ -145,13 +145,13 @@ router.get('/story-html', async (req, res) => {
       mainEntityOfPage: storyUrl,
       publisher: {
         '@type': 'Organization',
-        name: 'Impacto Indígena',
+        name: 'Voces Indígenas',
         url: SITE_URL,
       },
     })
 
     const headTags = `
-  <title>${fullTitle} - Impacto Indígena</title>
+  <title>${fullTitle} - Voces Indígenas</title>
   <meta name="description" content="${description}" />
   <link rel="canonical" href="${storyUrl}" />
   <meta property="og:title" content="${fullTitle}" />
@@ -159,7 +159,7 @@ router.get('/story-html', async (req, res) => {
   <meta property="og:image" content="${image}" />
   <meta property="og:url" content="${storyUrl}" />
   <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Impacto Indígena" />
+  <meta property="og:site_name" content="Voces Indígenas" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
@@ -239,13 +239,13 @@ router.get('/stories/:slug', async (req, res) => {
     if (shell) {
       // Inject story OG tags right after <head> — LinkedIn uses first occurrence
       const ogTags = `
-  <title>${fullTitle} - Impacto Indígena</title>
+  <title>${fullTitle} - Voces Indígenas</title>
   <meta property="og:title" content="${fullTitle}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${image}" />
   <meta property="og:url" content="${url}" />
   <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Impacto Indígena" />
+  <meta property="og:site_name" content="Voces Indígenas" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
@@ -269,13 +269,13 @@ router.get('/stories/:slug', async (req, res) => {
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>${fullTitle} - Impacto Indígena</title>
+  <title>${fullTitle} - Voces Indígenas</title>
   <meta property="og:title" content="${fullTitle}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${image}" />
   <meta property="og:url" content="${url}" />
   <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Impacto Indígena" />
+  <meta property="og:site_name" content="Voces Indígenas" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="${image}" />
   <meta http-equiv="refresh" content="0;url=${url}" />

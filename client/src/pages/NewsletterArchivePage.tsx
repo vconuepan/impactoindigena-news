@@ -68,10 +68,10 @@ export default function NewsletterArchivePage() {
   return (
     <>
       <Helmet>
-        <title>Archivo de boletines — Impacto Indígena</title>
+        <title>Archivo de boletines — Voces Indígenas</title>
         <meta
           name="description"
-          content="Todos los boletines semanales de Impacto Indígena. Noticias sobre pueblos indígenas, territorios y derechos."
+          content="Todos los boletines semanales de Voces Indígenas. Noticias sobre pueblos indígenas, territorios y derechos."
         />
       </Helmet>
 

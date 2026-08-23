@@ -2,11 +2,11 @@ import { ReactNode } from 'react'
 import { BRAND } from '../config'
 // Shared SEO constants
 export const SEO = {
-  siteName: 'Impacto Indígena',
-  siteUrl: 'https://impactoindigena.news',
-  defaultTitle: 'Impacto Indígena - Noticias que importan a los pueblos indígenas',
+  siteName: 'Voces Indígenas',
+  siteUrl: 'https://vocesindigenas.org',
+  defaultTitle: 'Voces Indígenas - Noticias que importan a los pueblos indígenas',
   defaultDescription: `${BRAND.claim} ${BRAND.claimSupport}`,
-  ogImage: 'https://impactoindigena.news/images/og-image.png',
+  ogImage: 'https://vocesindigenas.org/images/og-image.png',
   ogImageWidth: '1200',
   ogImageHeight: '630',
   twitterCard: 'summary_large_image' as const,

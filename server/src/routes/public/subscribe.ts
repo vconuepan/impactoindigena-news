@@ -43,7 +43,7 @@ router.post('/', subscribeLimiter, validateBody(subscribeSchema), async (req, re
 
 router.get('/confirm', async (req, res) => {
   const { token, email } = req.query as { token?: string; email?: string }
-  const clientUrl = process.env.CLIENT_URL || 'https://impactoindigena.news'
+  const clientUrl = process.env.CLIENT_URL || 'https://vocesindigenas.org'
 
   if (!token || !email) {
     res.redirect(`${clientUrl}/subscribed?error=invalid`)

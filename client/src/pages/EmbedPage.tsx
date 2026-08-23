@@ -52,7 +52,7 @@ export default function EmbedPage() {
       ref={containerRef}
       className={`font-sans text-sm leading-relaxed ${isDark ? 'bg-neutral-900 text-neutral-200' : 'bg-white text-neutral-700'}`}
     >
-      <h1 className="sr-only">Impacto Indígena Stories</h1>
+      <h1 className="sr-only">Voces Indígenas Stories</h1>
       {isLoading && (
         <div className={`px-4 py-8 text-center text-[13px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
           Loading...
@@ -100,18 +100,18 @@ export default function EmbedPage() {
 
       <div className={`px-4 py-2 border-t flex items-center justify-center ${isDark ? 'border-neutral-700' : 'border-neutral-200'}`}>
         <a
-          href="https://impactoindigena.news"
+          href="https://vocesindigenas.org"
           target="_blank"
           rel="noopener noreferrer"
           className={`inline-flex items-center gap-1.5 text-[11px] ${isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-500 hover:text-neutral-700'}`}
         >
           <img
-            src="https://impactoindigena.news/images/logo-no-text-square.png"
+            src="https://vocesindigenas.org/images/logo-no-text-square.png"
             alt=""
             className="w-5 h-5 rounded-sm"
             aria-hidden="true"
           />
-          Powered by Impacto Indígena
+          Powered by Voces Indígenas
         </a>
       </div>
     </main>

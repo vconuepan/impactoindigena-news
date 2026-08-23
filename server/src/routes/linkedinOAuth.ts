@@ -7,7 +7,7 @@ import { authLimiter } from '../middleware/rateLimit.js'
 const router = Router()
 const log = createLogger('linkedin-oauth')
 
-const ADMIN_LINKEDIN_URL = 'https://impactoindigena.news/admin/linkedin'
+const ADMIN_LINKEDIN_URL = 'https://vocesindigenas.org/admin/linkedin'
 
 /**
  * Callback del flujo OAuth de LinkedIn.

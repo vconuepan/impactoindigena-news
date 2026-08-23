@@ -26,7 +26,7 @@ export async function scrapeDOCIP(): Promise<void> {
   const response = await axios.get(DOCIP_NEWS_URL, {
     timeout: 15000,
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigena/1.0)',
+      'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenas/1.0)',
       'Accept-Language': 'en',
     }
   })

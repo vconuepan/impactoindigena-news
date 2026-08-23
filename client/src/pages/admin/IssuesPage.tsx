@@ -34,7 +34,7 @@ export default function IssuesPage() {
   return (
     <>
       <Helmet>
-        <title>Temas — Admin — Impacto Indígena</title>
+        <title>Temas — Admin — Voces Indígenas</title>
       </Helmet>
 
       <PageHeader

@@ -10,7 +10,7 @@ import { publicApi } from '../lib/api'
 import type { RegionStat, ComparisonStats } from '../lib/api'
 
 const META = {
-  title: 'Comparar fuentes de noticias \u2014 Impacto Ind\u00edgena',
+  title: 'Comparar fuentes de noticias \u2014 Voces Ind\u00edgenas',
   description:
     'Comparación directa entre Google News, Flipboard, Ground News, News Minimalist y más. Descubre cómo se diferencian en curación por IA, privacidad, transparencia de fuentes y coste.',
   url: `${SEO.siteUrl}/compare`,
@@ -52,7 +52,7 @@ function CellContent({ cell }: { cell: CellValue }) {
   )
 }
 
-// Each row: us = Impacto Indígena cell, them = one cell per competitor (same order as COMPETITORS)
+// Each row: us = Voces Indígenas cell, them = one cell per competitor (same order as COMPETITORS)
 // Sources: pm/references/marketing/competitors/*.md
 const ROWS: { us: CellValue; them: CellValue[] }[] = [
   {
@@ -281,10 +281,10 @@ export default function ComparePage() {
       <StructuredData data={[pageSchema, breadcrumb]} />
 
       <div className="page-section">
-        <h1 className="page-title">¿Cómo se compara Impacto Indígena?</h1>
+        <h1 className="page-title">¿Cómo se compara Voces Indígenas?</h1>
         <p className="text-lg text-neutral-600 leading-relaxed">
           La mayoría de los agregadores de noticias optimizan para el engagement: más clics, más
-          tiempo en el sitio, más impresiones publicitarias. Impacto Indígena hace algo distinto:
+          tiempo en el sitio, más impresiones publicitarias. Voces Indígenas hace algo distinto:
           usa IA para encontrar las noticias que más importan a la humanidad, sin publicidad, sin
           rastreo y con plena transparencia de fuentes.
         </p>
@@ -310,7 +310,7 @@ export default function ComparePage() {
           <thead>
             <tr>
               <th className="w-1/2 text-left py-3 px-4 font-bold bg-brand-50 text-brand-800 border-b border-brand-200 rounded-tl-lg">
-                Impacto Indígena
+                Voces Indígenas
               </th>
               <th className="w-1/2 text-left py-3 px-4 font-bold bg-neutral-50 text-neutral-700 border-b border-neutral-300 rounded-tr-lg">
                 <select
@@ -342,7 +342,7 @@ export default function ComparePage() {
         <p className="text-xs text-neutral-400 mt-2">A febrero de 2026.</p>
 
         {/* Who We're Best For — colored cards */}
-        <h2 className="section-heading mt-12">Para quién es Impacto Indígena</h2>
+        <h2 className="section-heading mt-12">Para quién es Voces Indígenas</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
           {PERSONAS.map((card) => (
             <div
@@ -366,7 +366,7 @@ export default function ComparePage() {
 
         <LandingCta
           heading="¿Listo para leer noticias que realmente importan?"
-          description="Visita impactoindigena.news o suscríbete al boletín para recibir un resumen seleccionado editorialmente en tu bandeja de entrada."
+          description="Visita vocesindigenas.org o suscríbete al boletín para recibir un resumen seleccionado editorialmente en tu bandeja de entrada."
         />
       </div>
     </>
@@ -442,7 +442,7 @@ function ComparisonSection() {
     <section className="mt-16">
       <h2 className="section-heading">Relevancia real: indígena vs. internacional</h2>
       <p className="text-neutral-600 mt-2 mb-8 text-sm leading-relaxed max-w-2xl">
-        La misma IA que puntúa las noticias de Impacto Indígena también analiza medios como BBC,
+        La misma IA que puntúa las noticias de Voces Indígenas también analiza medios como BBC,
         Al Jazeera o Der Spiegel. El resultado muestra cuánto priorizan las voces indígenas en
         su cobertura global. Puntuación media de relevancia indígena sobre{' '}
         {data?.periodDays ?? 30} días.
@@ -519,7 +519,7 @@ function CoverageSection() {
     <section className="mt-16">
       <h2 className="section-heading">Cobertura por región</h2>
       <p className="text-neutral-600 mt-2 mb-6 text-sm leading-relaxed max-w-2xl">
-        Impacto Indígena indexa {data?.totalFeeds ?? '—'} fuentes activas en {rows.length} regiones.
+        Voces Indígenas indexa {data?.totalFeeds ?? '—'} fuentes activas en {rows.length} regiones.
         Las puntuaciones de relevancia promedio reflejan qué tan bien cubre cada región los temas indígenas
         y de derechos humanos: puntuaciones más altas indican una cobertura más enfocada y sustantiva.
       </p>

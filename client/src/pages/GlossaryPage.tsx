@@ -6,7 +6,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Glosario de términos indígenas | Impacto Indígena',
+  title: 'Glosario de términos indígenas | Voces Indígenas',
   description:
     'Glosario de términos clave para entender las noticias sobre pueblos indígenas: palabras en mapuzungún, aymara, quechua y conceptos del derecho internacional indígena.',
   url: `${SEO.siteUrl}/glosario`,

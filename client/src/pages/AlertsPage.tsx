@@ -74,7 +74,7 @@ export default function AlertsPage() {
   return (
     <>
       <Helmet>
-        <title>Alertas de territorio — Impacto Indígena</title>
+        <title>Alertas de territorio — Voces Indígenas</title>
         <meta
           name="description"
           content="Suscríbete a alertas diarias sobre pueblos o temas específicos: Mapuche, litio, Amazonia, consulta previa y más."

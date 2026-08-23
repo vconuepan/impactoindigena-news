@@ -25,8 +25,8 @@ export function buildPodcastPrompt(stories: StoryForPodcast[]): string {
 Please write a script with the following elements:
 
 - Intro
--- Welcome the listeners to the 'Impacto Indígena Podcast'.
--- Explain that Impacto Indígena evaluated hundreds of stories this week on how relevant they are for indigenous peoples. The podcast highlights the most relevant ones.
+-- Welcome the listeners to the 'Voces Indígenas Podcast'.
+-- Explain that Voces Indígenas evaluated hundreds of stories this week on how relevant they are for indigenous peoples. The podcast highlights the most relevant ones.
 -- Introduce yourself in a light-hearted way as an AI-generated voice.
 
 - Sections (one for each category). In each section:
@@ -36,7 +36,7 @@ Please write a script with the following elements:
 --- Adjust the relevance analysis for the story to this podcast format.
 
 - Outro
--- Mention that Impacto Indígena is still in a prototype phase and that we're eager to receive feedback.
+-- Mention that Voces Indígenas is still in a prototype phase and that we're eager to receive feedback.
 -- Thank the listeners for listening.
 
 Make sure to include all the <STORIES> mentioned above.

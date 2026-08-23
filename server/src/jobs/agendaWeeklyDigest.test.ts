@@ -9,7 +9,7 @@ vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
 vi.mock('../config.js', () => ({
   config: {
-    siteUrl: 'https://impactoindigena.news',
+    siteUrl: 'https://vocesindigenas.org',
     agenda: {
       digest: {
         enabled: true,

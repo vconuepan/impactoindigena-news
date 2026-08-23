@@ -21,7 +21,7 @@ export default function VocesIndigenasPage() {
         <title>Voces Indígenas con Venancio Coñuepan — {SEO.siteName}</title>
         <meta
           name="description"
-          content="Editorial semanal de Venancio Coñuepan — mapuche, abogado de derechos territoriales, fundador de Impacto Indígena. Análisis de la intersección entre pueblos indígenas, territorios y la transición energética global."
+          content="Editorial semanal de Venancio Coñuepan — mapuche, abogado de derechos territoriales, fundador de Voces Indígenas. Análisis de la intersección entre pueblos indígenas, territorios y la transición energética global."
         />
         <meta property="og:title" content={`Voces Indígenas — ${SEO.siteName}`} />
         <meta property="og:type" content="website" />
@@ -40,7 +40,7 @@ export default function VocesIndigenasPage() {
             author: {
               '@type': 'Person',
               name: 'Venancio Coñuepan',
-              jobTitle: 'Abogado de derechos territoriales — Fundador de Impacto Indígena',
+              jobTitle: 'Abogado de derechos territoriales — Fundador de Voces Indígenas',
             },
           },
           buildBreadcrumbSchema([

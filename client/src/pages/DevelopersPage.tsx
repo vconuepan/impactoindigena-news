@@ -38,10 +38,10 @@ export default function DevelopersPage() {
   return (
     <>
       <Helmet>
-        <title>API Documentation - Impacto Indígena</title>
+        <title>API Documentation - Voces Indígenas</title>
         <meta
           name="description"
-          content="Public API documentation for Impacto Indígena. Access published stories, issues, and RSS feeds programmatically."
+          content="Public API documentation for Voces Indígenas. Access published stories, issues, and RSS feeds programmatically."
         />
       </Helmet>
       <div className="border-b border-neutral-200 bg-white px-4 py-3 flex items-center gap-3">
@@ -49,7 +49,7 @@ export default function DevelopersPage() {
           to="/"
           className="text-sm text-brand-800 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
         >
-          &larr; Impacto Indígena
+          &larr; Voces Indígenas
         </Link>
         <span className="text-neutral-300">|</span>
         <span className="text-sm font-medium text-neutral-700">

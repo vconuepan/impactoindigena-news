@@ -9,9 +9,9 @@ import { useSources } from '../hooks/useSources'
 import { getCategoryColor } from '../lib/category-colors'
 
 const META = {
-  title: 'Metodolog\u00eda \u2014 C\u00f3mo la IA cura las noticias | Impacto Ind\u00edgena',
+  title: 'Metodolog\u00eda \u2014 C\u00f3mo la IA cura las noticias | Voces Ind\u00edgenas',
   description:
-    'Fuentes especializadas, un pipeline de IA en m\u00faltiples etapas y total transparencia. Aprende exactamente c\u00f3mo Impacto Ind\u00edgena selecciona las noticias m\u00e1s relevantes para los pueblos ind\u00edgenas.',
+    'Fuentes especializadas, un pipeline de IA en m\u00faltiples etapas y total transparencia. Aprende exactamente c\u00f3mo Voces Ind\u00edgenas selecciona las noticias m\u00e1s relevantes para los pueblos ind\u00edgenas.',
   url: `${SEO.siteUrl}/methodology`,
 }
 
@@ -20,11 +20,11 @@ const techArticleSchema = {
   '@type': 'TechArticle',
   headline: 'Metodolog\u00eda \u2014 C\u00f3mo la IA cura las noticias',
   description:
-    'Explicaci\u00f3n detallada del pipeline de curaci\u00f3n de noticias con IA de Impacto Ind\u00edgena, cubriendo fuentes especializadas en pueblos ind\u00edgenas de todo el mundo.',
+    'Explicaci\u00f3n detallada del pipeline de curaci\u00f3n de noticias con IA de Voces Ind\u00edgenas, cubriendo fuentes especializadas en pueblos ind\u00edgenas de todo el mundo.',
   url: META.url,
   author: {
     '@type': 'Organization',
-    name: 'Impacto Indigena',
+    name: 'Voces Indigenas',
     url: SEO.siteUrl,
   },
   about: [
@@ -276,13 +276,13 @@ export default function MethodologyPage() {
 
           <h2 className="section-heading mt-10">Sobre este proyecto</h2>
           <p>
-            Impacto Indígena News es una iniciativa de{' '}
+            Voces Indígenas News es una iniciativa de{' '}
             <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
               Venancio Conuepan Mesias
             </a>
             , fundador de{' '}
             <a href="https://www.impactoindigena.com" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
-              Impacto Indígena SpA
+              Voces Indígenas SpA
             </a>
             , la empresa matriz de esta plataforma. El prototipo fue desarrollado en el marco de la
             cohorte <strong>LatAm AI 2025</strong> de{' '}
@@ -311,7 +311,7 @@ export default function MethodologyPage() {
 
         <LandingCta
           heading="Míralo en acción."
-          description="Visita impactoindigena.news para leer las noticias curadas de hoy, o suscríbete al boletín semanal."
+          description="Visita vocesindigenas.org para leer las noticias curadas de hoy, o suscríbete al boletín semanal."
         />
       </div>
     </>

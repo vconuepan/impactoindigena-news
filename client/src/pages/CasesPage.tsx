@@ -80,7 +80,7 @@ export default function CasesPage() {
   return (
     <>
       <Helmet>
-        <title>Casos en curso — Impacto Indígena</title>
+        <title>Casos en curso — Voces Indígenas</title>
         <meta
           name="description"
           content="Seguimiento editorial de conflictos y situaciones de largo aliento que afectan a pueblos indígenas: litio, Wallmapu, consulta previa y más."

@@ -169,7 +169,7 @@ function buildNewsSitemapXml(
     <loc>${baseUrl}/stories/${story.slug}</loc>
     <news:news>
       <news:publication>
-        <news:name>Impacto Indígena</news:name>
+        <news:name>Voces Indígenas</news:name>
         <news:language>es</news:language>
       </news:publication>
       <news:publication_date>${story.datePublished.toISOString()}</news:publication_date>

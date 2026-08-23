@@ -133,7 +133,7 @@ export default function BlueskyPage() {
   return (
     <>
       <Helmet>
-        <title>Bluesky — Admin — Impacto Indígena</title>
+        <title>Bluesky — Admin — Voces Indígenas</title>
       </Helmet>
 
       <PageHeader

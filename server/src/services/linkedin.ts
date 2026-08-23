@@ -113,7 +113,7 @@ async function buildCarouselSlides(story: {
       log.info({ storyId: story.id }, 'no image available — LinkedIn post will fall back to single image / article')
       return []
     }
-    const storyUrl = `https://impactoindigena.news/stories/${story.slug}`
+    const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
     const category = story.titleLabel || story.issue?.name || ''
     const slides = await generateCarousel(
       story.id,
@@ -204,7 +204,7 @@ export async function publishPost(postId: string) {
   if (post.status !== 'draft' && post.status !== 'failed') throw new Error('Can only publish draft posts')
 
   const story = post.story
-  const storyUrl = `https://impactoindigena.news/stories/${story.slug}`
+  const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
 
   // Prefer the carousel slides (multi-image gallery). Fall back to the
   // story's single image, then to an article link card.

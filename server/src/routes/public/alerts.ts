@@ -53,7 +53,7 @@ router.post('/subscribe', alertLimiter, validateBody(subscribeSchema), async (re
 
 router.get('/confirm', async (req, res) => {
   const { token, email } = req.query as { token?: string; email?: string }
-  const clientUrl = process.env.CLIENT_URL || 'https://impactoindigena.news'
+  const clientUrl = process.env.CLIENT_URL || 'https://vocesindigenas.org'
 
   if (!token || !email) {
     res.redirect(`${clientUrl}/alertas?confirmed=error`)

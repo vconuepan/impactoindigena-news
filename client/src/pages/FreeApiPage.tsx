@@ -9,7 +9,7 @@ import { API_BASE } from '../lib/api'
 import { useSources } from '../hooks/useSources'
 
 const META = {
-  title: 'API de noticias ind\u00edgenas \u2014 Gratis y sin clave | Impacto Ind\u00edgena',
+  title: 'API de noticias ind\u00edgenas \u2014 Gratis y sin clave | Voces Ind\u00edgenas',
   description:
     'API gratuita con noticias ind\u00edgenas y globales seleccionadas por IA. Sin clave de acceso, sin publicidad en los datos. Recibe notas sobre derechos ind\u00edgenas, medio ambiente y más.',
   url: `${SEO.siteUrl}/free-api`,
@@ -23,14 +23,14 @@ const pageSchema = {
   url: META.url,
   mainEntity: {
     '@type': 'WebAPI',
-    name: 'API de noticias de Impacto Ind\u00edgena',
+    name: 'API de noticias de Voces Ind\u00edgenas',
     description:
       'API gratuita y curada de noticias sobre derechos ind\u00edgenas, medio ambiente y temas globales. Sin autenticación requerida.',
     url: `${SEO.siteUrl}/developers`,
     documentation: `${SEO.siteUrl}/developers`,
     provider: {
       '@type': 'Organization',
-      name: 'Impacto Ind\u00edgena',
+      name: 'Voces Ind\u00edgenas',
       url: SEO.siteUrl,
     },
   },
@@ -41,7 +41,7 @@ const breadcrumb = buildBreadcrumbSchema([
   { name: 'API gratuita', url: META.url },
 ])
 
-const COMPARISON_HEADERS = ['', 'Impacto Ind\u00edgena', 'API de noticias típica (NewsAPI, GNews, etc.)']
+const COMPARISON_HEADERS = ['', 'Voces Ind\u00edgenas', 'API de noticias típica (NewsAPI, GNews, etc.)']
 
 const COMPARISON_ROWS = [
   {
@@ -133,7 +133,7 @@ const USE_CASES = [
   {
     title: 'Enriquecer tu propio pipeline de IA',
     description:
-      'Usa el resultado curado de Impacto Indígena como señal de alta calidad para tus propios sistemas de análisis, resumen o alertas.',
+      'Usa el resultado curado de Voces Indígenas como señal de alta calidad para tus propios sistemas de análisis, resumen o alertas.',
   },
 ]
 
@@ -166,7 +166,7 @@ export default function FreeApiPage() {
         <div className="prose max-w-none">
           <p className="text-lg text-neutral-600 leading-relaxed">
             La mayoría de las APIs de noticias te dan un flujo masivo: millones de artículos sin
-            procesar que tienes que filtrar tú mismo. Impacto Ind\u00edgena te da la señal: una
+            procesar que tienes que filtrar tú mismo. Voces Ind\u00edgenas te da la señal: una
             selección curada de noticias al día, elegidas por IA según su relevancia real
             desde{sources ? ` ${sources.totalCount}` : ''} fuentes curadas en múltiples idiomas.
           </p>

@@ -1,5 +1,5 @@
 /**
- * Regenerate HTML for all main "Impacto Indígena" newsletters that have content.
+ * Regenerate HTML for all main "Voces Indígenas" newsletters that have content.
  * Skips specialty newsletters ([PRIVADO], [CLPI], [ACUICULTURA], [CHILE INDÍGENA], Week XX).
  *
  * Usage: npx tsx src/scripts/regenerate-html.ts

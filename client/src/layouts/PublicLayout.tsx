@@ -164,7 +164,7 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
     <Link to="/" onClick={onClick} className="flex items-center shrink-0">
       <img
         src="/images/logo-horizontal.svg"
-        alt="Impacto Indígena"
+        alt="Voces Indígenas"
         width={337}
         height={96}
         className="h-16 md:h-20 w-auto"
@@ -274,7 +274,7 @@ function PublicLayoutInner() {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <link rel="alternate" type="application/rss+xml" title="Impacto Indígena RSS Feed" href={`${API_BASE}/feed`} />
+        <link rel="alternate" type="application/rss+xml" title="Voces Indígenas RSS Feed" href={`${API_BASE}/feed`} />
         <link rel="alternate" hrefLang="es" href={`${SEO.siteUrl}${location.pathname}`} />
         <link rel="alternate" hrefLang="x-default" href={`${SEO.siteUrl}${location.pathname}`} />
       </Helmet>
@@ -488,7 +488,7 @@ function PublicLayoutInner() {
           {/* Colofon — el medio hablando antes que el indice de enlaces */}
           <div className="max-w-2xl">
             <Link to="/" className="inline-block mb-4 font-fraunces text-xl font-bold text-white hover:text-brand-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
-              Impacto Indígena
+              Voces Indígenas
             </Link>
             {/* El guion de "AI‑native" en el locale es U+2011 (no separable):
                 el guion normal es punto de corte y partia la frase en dos lineas. */}

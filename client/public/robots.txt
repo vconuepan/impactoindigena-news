@@ -1,5 +1,5 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://impactoindigena.news/sitemap.xml
-Sitemap: https://impactoindigena.news/sitemap-news.xml
+Sitemap: https://vocesindigenas.org/sitemap.xml
+Sitemap: https://vocesindigenas.org/sitemap-news.xml

@@ -174,13 +174,13 @@ export default function StoryPage() {
       <Helmet>
         <title>{displayTitle} - {SEO.siteName}</title>
         <meta name="description" content={description.slice(0, 160)} />
-        <meta name="author" content="Impacto Indígena" />
+        <meta name="author" content="Voces Indígenas" />
         <meta property="og:title" content={displayTitle} />
         <meta property="og:description" content={description.slice(0, 200)} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`${SEO.siteUrl}/stories/${story.slug}`} />
         <link rel="canonical" href={`${SEO.siteUrl}/stories/${story.slug}`} />
-        <meta property="article:author" content="Impacto Indígena" />
+        <meta property="article:author" content="Voces Indígenas" />
         {story.datePublished && (
           <meta property="article:published_time" content={story.datePublished} />
         )}
@@ -413,7 +413,7 @@ export default function StoryPage() {
             <div className="mt-6 p-4 bg-neutral-950 border border-neutral-800 rounded-lg flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex-1">
                 <p className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-1">
-                  Impacto Indígena · IRI Verify
+                  Voces Indígenas · IRI Verify
                 </p>
                 <p className="text-sm text-neutral-200 leading-snug">
                   ¿Tu empresa opera en territorio indígena? Conoce el{' '}

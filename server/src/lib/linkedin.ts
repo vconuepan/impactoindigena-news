@@ -268,7 +268,7 @@ async function uploadImageAsset(imageUrl: string): Promise<string | null> {
     // 1. Download the image from the source URL
     const imgRes = await fetch(imageUrl, {
       signal: AbortSignal.timeout(15000),
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigena/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenas/1.0)' },
     })
     if (!imgRes.ok) {
       log.warn({ imageUrl, status: imgRes.status }, 'could not download image for LinkedIn upload')

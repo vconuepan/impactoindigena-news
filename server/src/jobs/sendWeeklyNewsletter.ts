@@ -3,7 +3,7 @@
  *
  * Runs every Monday (cron: 0 9 * * 1, ~9 AM Chile time).
  * Covers stories from the past 7 days, sends live to all subscribers.
- * Title format: "Impacto Indígena — Semana N° XX — Del DD al DD de MMMM de YYYY"
+ * Title format: "Voces Indígenas — Semana N° XX — Del DD al DD de MMMM de YYYY"
  */
 import { createLogger } from '../lib/logger.js'
 import prisma from '../lib/prisma.js'
@@ -26,7 +26,7 @@ function isoWeekNumber(date: Date): number {
   return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
 }
 
-/** Title for the weekly newsletter, e.g. "Impacto Indígena — Semana N° 21 (18–24 mayo 2026)" */
+/** Title for the weekly newsletter, e.g. "Voces Indígenas — Semana N° 21 (18–24 mayo 2026)" */
 function weeklyTitle(date: Date): string {
   const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
     'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
@@ -49,7 +49,7 @@ function weeklyTitle(date: Date): string {
     ? `${fromDay}–${toDay} de ${toMonth} de ${year}`
     : `${fromDay} de ${fromMonth} – ${toDay} de ${toMonth} de ${year}`
 
-  return `Impacto Indígena — Semana N° ${weekNo} (${range})`
+  return `Voces Indígenas — Semana N° ${weekNo} (${range})`
 }
 
 export async function runSendWeeklyNewsletter(): Promise<void> {

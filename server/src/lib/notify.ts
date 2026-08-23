@@ -65,12 +65,12 @@ async function sendEmailAlert(jobName: string, error: string): Promise<void> {
   try {
     await sendTransactional({
       to,
-      subject: `⚠️ Job falló: ${jobName} — Impacto Indígena`,
+      subject: `⚠️ Job falló: ${jobName} — Voces Indígenas`,
       body: `
         <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 560px;">
           <h2 style="color: #C8473A; margin: 0 0 8px;">Falló un job programado</h2>
           <p style="color: #1C1917; font-size: 15px; margin: 0 0 16px;">
-            El job <strong>${escapeHtml(jobName)}</strong> falló en el pipeline de Impacto Indígena.
+            El job <strong>${escapeHtml(jobName)}</strong> falló en el pipeline de Voces Indígenas.
           </p>
           <table style="font-size: 14px; color: #44403C; border-collapse: collapse;">
             <tr><td style="padding: 4px 12px 4px 0; color: #78716C;">Job</td><td><code>${escapeHtml(jobName)}</code></td></tr>

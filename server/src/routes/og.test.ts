@@ -12,8 +12,8 @@ import ogRouter from './og.js'
 
 // The og handler builds story HTML by fetching the home "shell" and injecting
 // per-story tags. Stub global fetch so getShell() returns a valid shell.
-const SHELL = '<!DOCTYPE html><html><head><title>Impacto Indígena</title>' +
-  '<link rel="canonical" href="https://impactoindigena.news/" data-rh="true"></head>' +
+const SHELL = '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
+  '<link rel="canonical" href="https://vocesindigenas.org/" data-rh="true"></head>' +
   '<body><div id="root">home content</div><script src="/app.js"></script></body></html>'
 
 const app = express()
@@ -24,7 +24,7 @@ const published = {
   title: 'A Real Story',
   titleLabel: 'news',
   summary: 'A summary of the story.',
-  imageUrl: 'https://impactoindigena.news/images/x.png',
+  imageUrl: 'https://vocesindigenas.org/images/x.png',
   datePublished: new Date('2026-07-13T00:00:00Z'),
   status: 'published',
 }
@@ -43,7 +43,7 @@ describe('GET /api/og/story-html — SEO status codes', () => {
     const res = await request(app).get('/api/og/story-html?slug=a-real-story')
     expect(res.status).toBe(200)
     expect(res.text).toContain('A Real Story')
-    expect(res.text).toContain('<link rel="canonical" href="https://impactoindigena.news/stories/a-real-story"')
+    expect(res.text).toContain('<link rel="canonical" href="https://vocesindigenas.org/stories/a-real-story"')
   })
 
   it('de-published story (exists but status!=published) → 404, NOT 200 (Soft 404 regression)', async () => {

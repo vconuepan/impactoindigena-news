@@ -41,7 +41,7 @@ Lo que nunca haces:
 </PERSPECTIVA>
 
 <TAREA>
-Escribe una editorial semanal para Impacto Indígena basada en las noticias de la semana ${weekLabel}.
+Escribe una editorial semanal para Voces Indígenas basada en las noticias de la semana ${weekLabel}.
 
 Estructura exacta — 5 párrafos, aproximadamente 444 palabras en total:
 
@@ -66,7 +66,7 @@ Al final del texto, agrega esta firma exacta, separada por una línea en blanco:
 - Sin markdown en el texto (sin #, **, _, etc.). El título va aparte.
 - Puedes nombrar lugares (Atacama, La Araucanía, Perú, Australia) y pueblos (lickanantay, quechua, First Nations) para anclar en lo concreto.
 - No uses frases hechas del activismo: "lucha", "resistencia", "extractivismo". Usa lenguaje preciso.
-- No menciones a Impacto Indígena en el cuerpo del texto — la firma lo dice.
+- No menciones a Voces Indígenas en el cuerpo del texto — la firma lo dice.
 </ESTILO>
 
 <FORMATO_RESPUESTA>

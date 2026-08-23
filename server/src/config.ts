@@ -1,6 +1,6 @@
 export const config = {
   /** Canonical public URL for the site — used in social media posts, RSS feeds, sitemaps, etc. */
-  siteUrl: process.env.SITE_URL || 'https://impactoindigena.news',
+  siteUrl: process.env.SITE_URL || 'https://vocesindigenas.org',
   llm: {
     // Set LLM_PROVIDER to switch providers:
     //   openai (default) — uses OPENAI_API_KEY directly
@@ -163,7 +163,7 @@ export const config = {
   brevo: {
     apiKey: process.env.BREVO_API_KEY || "",
     fromEmail: process.env.BREVO_FROM_EMAIL || "",
-    fromName: process.env.BREVO_FROM_NAME || "Impacto Indígena",
+    fromName: process.env.BREVO_FROM_NAME || "Voces Indígenas",
     testSegmentId: process.env.BREVO_TEST_SEGMENT_ID || "",
   },
   // Operational alerts when a scheduled job fails (e.g. dead LLM key).

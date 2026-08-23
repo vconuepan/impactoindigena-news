@@ -54,7 +54,7 @@ export default function PodcastsPage() {
   return (
     <>
       <Helmet>
-        <title>Podcasts — Admin — Impacto Indígena</title>
+        <title>Podcasts — Admin — Voces Indígenas</title>
       </Helmet>
 
       <PageHeader

@@ -16,7 +16,7 @@ export async function runSendNewsletter(): Promise<void> {
 
   // Crear newsletter con fecha de hoy
   const today = new Date()
-  const title = `Impacto Indígena — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
+  const title = `Voces Indígenas — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
 
   // Verificar que no se haya enviado uno hoy ya
   const startOfDay = new Date(today)

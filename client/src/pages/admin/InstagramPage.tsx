@@ -127,7 +127,7 @@ export default function InstagramPage() {
   return (
     <>
       <Helmet>
-        <title>Instagram — Admin — Impacto Indígena</title>
+        <title>Instagram — Admin — Voces Indígenas</title>
       </Helmet>
 
       <InstagramDraftPanel

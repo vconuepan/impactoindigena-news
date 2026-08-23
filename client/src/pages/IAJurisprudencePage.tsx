@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Jurisprudencia indígena de la Corte IDH: casos clave | Impacto Indígena',
+  title: 'Jurisprudencia indígena de la Corte IDH: casos clave | Voces Indígenas',
   description:
     'Índice de los fallos más importantes de la Corte Interamericana de Derechos Humanos sobre pueblos indígenas: derechos territoriales, consulta previa, recursos naturales y reparaciones.',
   url: `${SEO.siteUrl}/guia/jurisprudencia-interamericana`,

@@ -10,7 +10,7 @@ export default function PrivacyPage() {
         <title>Política de Privacidad - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Política de privacidad de Impacto Indígena. Regida por la Ley 19.628 y en adecuación a la Ley 21.719, vigente desde diciembre de 2026. Analítica sin cookies, datos mínimos y tus derechos."
+          content="Política de privacidad de Voces Indígenas. Regida por la Ley 19.628 y en adecuación a la Ley 21.719, vigente desde diciembre de 2026. Analítica sin cookies, datos mínimos y tus derechos."
         />
         <meta
           property="og:title"
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
         />
         <meta
           property="og:description"
-          content="Política de privacidad de Impacto Indígena, en adecuación a la Ley 21.719 de Chile."
+          content="Política de privacidad de Voces Indígenas, en adecuación a la Ley 21.719 de Chile."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/privacy`} />
@@ -51,7 +51,7 @@ export default function PrivacyPage() {
             El responsable del tratamiento de datos personales de este sitio es la{" "}
             <strong>Fundación Coñuepan-Millaquir</strong> (RUT 65.191.983-5),
             organización sin fines de lucro con domicilio en Chile, que opera el
-            medio <strong>impactoindigena.news</strong> como programa con fines
+            medio <strong>vocesindigenas.org</strong> como programa con fines
             exclusivamente informativos y educativos. Su representante legal es{" "}
             <strong>Venancio Coñuepan Mesías</strong>. No hemos designado un
             delegado de protección de datos: la Ley 19.628 vigente no contempla esa

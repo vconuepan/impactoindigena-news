@@ -185,7 +185,7 @@ function footerUrl(ctx: any, slideNum: number, total: number): void {
   ctx.textAlign = 'left'
   ctx.fillStyle = C.mute
   ctx.font = `500 ${26 * SCALE}px '${FONT}'`
-  ctx.fillText('impactoindigena.news', M, RH - M)
+  ctx.fillText('vocesindigenas.org', M, RH - M)
   ctx.textAlign = 'right'
   ctx.fillStyle = C.accent
   ctx.font = `700 ${24 * SCALE}px '${FONT}'`
@@ -215,7 +215,7 @@ async function generateSlide1(title: string, category: string, aiImageUrl: strin
   bottomGradient(ctx)
   await drawLogo(ctx, M, M, 100 * SCALE)
 
-  const cat = (category || 'IMPACTO INDÍGENA').toUpperCase()
+  const cat = (category || 'VOCES INDÍGENAS').toUpperCase()
   drawPill(ctx, cat, M, RH - 560 * SCALE, 24 * SCALE, C.accent, C.white)
 
   ctx.font = `700 ${70 * SCALE}px '${FONT}'`
@@ -364,7 +364,7 @@ async function generateSlide4(): Promise<Buffer> {
   ctx.fillText('Sin publicidad.', RW / 2, 1060 * SCALE)
 
   // url pill centered
-  const t = 'impactoindigena.news'
+  const t = 'vocesindigenas.org'
   ctx.font = `700 ${30 * SCALE}px '${FONT}'`
   const tw = ctx.measureText(t).width
   const padX = 36 * SCALE, h = 84 * SCALE

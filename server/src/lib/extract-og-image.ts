@@ -31,7 +31,7 @@ export async function fetchOgImage(sourceUrl: string): Promise<string | null> {
     const html = await withRetry(async () => {
       const res = await fetch(sourceUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0)',
+          'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0)',
           Accept: 'text/html',
         },
         signal: AbortSignal.timeout(10_000),

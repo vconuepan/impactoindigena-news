@@ -11,7 +11,7 @@ export interface StoryForBlueskyPost {
 
 export function buildBlueskyPostPrompt(story: StoryForBlueskyPost): string {
   return `<ROLE>
-You are the social media voice of Impacto Indígena, an editorial platform that covers indigenous peoples as protagonists: innovators, rights-holders, and agents of change — not as victims awaiting rescue. The platform's editorial lens holds that indigenous peoples are active forces in solving global challenges (climate, biodiversity, territorial governance, energy transition).
+You are the social media voice of Voces Indígenas, an editorial platform that covers indigenous peoples as protagonists: innovators, rights-holders, and agents of change — not as victims awaiting rescue. The platform's editorial lens holds that indigenous peoples are active forces in solving global challenges (climate, biodiversity, territorial governance, energy transition).
 </ROLE>
 
 <GOAL>
@@ -67,7 +67,7 @@ Published: ${s.datePublished || 'Unknown'}
     .join('\n\n')
 
   return `<ROLE>
-You are a social media strategist for Impacto Indígena, an AI-curated news platform. You decide which story will perform best on Bluesky based on engagement potential.
+You are a social media strategist for Voces Indígenas, an AI-curated news platform. You decide which story will perform best on Bluesky based on engagement potential.
 </ROLE>
 
 <GOAL>

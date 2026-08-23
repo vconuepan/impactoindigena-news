@@ -207,7 +207,7 @@ async function fetchIcs(url: string): Promise<string> {
     responseType: 'text',
     maxContentLength: 10 * 1024 * 1024,
     headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0; +https://impactoindigena.news)',
+      'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://vocesindigenas.org)',
       'Accept': 'text/calendar, text/plain, */*',
     },
   }, { maxRedirects: 3 })

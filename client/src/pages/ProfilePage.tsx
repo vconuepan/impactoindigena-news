@@ -87,7 +87,7 @@ export default function ProfilePage() {
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = 'mis-datos-impactoindigena.json'
+      a.download = 'mis-datos-vocesindigenas.json'
       document.body.appendChild(a)
       a.click()
       a.remove()

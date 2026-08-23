@@ -115,7 +115,7 @@ export default function TwitterPage() {
   return (
     <>
       <Helmet>
-        <title>X/Twitter — Admin — Impacto Indígena</title>
+        <title>X/Twitter — Admin — Voces Indígenas</title>
       </Helmet>
 
       <TwitterDraftPanel

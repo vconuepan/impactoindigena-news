@@ -31,7 +31,7 @@ export default function NewsletterDetailPage() {
     enabled: !!id,
   })
 
-  const title = data ? `${data.title} — Impacto Indígena` : 'Boletín — Impacto Indígena'
+  const title = data ? `${data.title} — Voces Indígenas` : 'Boletín — Voces Indígenas'
 
   return (
     <>
@@ -40,7 +40,7 @@ export default function NewsletterDetailPage() {
         {data && (
           <meta
             name="description"
-            content={`Boletín semanal de Impacto Indígena del ${formatDate(data.sentAt)}. ${data.storyCount} noticias sobre pueblos indígenas.`}
+            content={`Boletín semanal de Voces Indígenas del ${formatDate(data.sentAt)}. ${data.storyCount} noticias sobre pueblos indígenas.`}
           />
         )}
       </Helmet>

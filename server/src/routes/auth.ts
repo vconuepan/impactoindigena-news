@@ -32,7 +32,7 @@ function isSecureEnv(): boolean {
 }
 
 function setRefreshCookie(res: any, token: string) {
-  // sameSite: 'none' is required because the frontend (impactoindigena.news) and
+  // sameSite: 'none' is required because the frontend (vocesindigenas.org) and
   // backend (the Azure App Service) are on different origins.
   // CSRF risk is mitigated by: (1) restrictive CORS allowing only FRONTEND_URL,
   // (2) cookie scoped to path '/api/auth' only, (3) access token kept in memory.
@@ -331,7 +331,7 @@ router.get('/export', requireMember, async (req, res) => {
 
     const exportData = {
       exportedAt: new Date().toISOString(),
-      responsable: 'Fundación Coñuepan-Millaquir (impactoindigena.news)',
+      responsable: 'Fundación Coñuepan-Millaquir (vocesindigenas.org)',
       profile: user,
       communityMemberships: memberships,
       digestExclusions,
@@ -344,7 +344,7 @@ router.get('/export', requireMember, async (req, res) => {
     await writeAuditLog({ actor: req.user, action: 'data.export', targetType: 'user', targetId: userId })
 
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
-    res.setHeader('Content-Disposition', 'attachment; filename="mis-datos-impactoindigena.json"')
+    res.setHeader('Content-Disposition', 'attachment; filename="mis-datos-vocesindigenas.json"')
     res.send(JSON.stringify(exportData, null, 2))
   } catch (err) {
     log.error({ err }, 'failed to export user data')

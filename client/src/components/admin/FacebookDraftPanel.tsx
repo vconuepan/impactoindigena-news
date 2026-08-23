@@ -64,7 +64,7 @@ export function FacebookDraftPanel({
   }
 
   const storyUrl = draft?.story?.slug
-    ? `https://impactoindigena.news/stories/${draft.story.slug}`
+    ? `https://vocesindigenas.org/stories/${draft.story.slug}`
     : null
 
   return (
@@ -139,7 +139,7 @@ export function FacebookDraftPanel({
                 )}
                 <div className="px-3 py-2 bg-neutral-50">
                   <p className="text-[11px] uppercase tracking-wide text-neutral-400">
-                    impactoindigena.news
+                    vocesindigenas.org
                   </p>
                   <p className="text-sm font-medium text-neutral-800 line-clamp-2">
                     {draft.story?.title || 'Sin título'}

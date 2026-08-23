@@ -50,7 +50,7 @@ const log = createLogger('robots')
  * pero la identificacion real —nombre del bot y URL de contacto— viaja igual,
  * y es la que un robots.txt puede nombrar para permitirnos o excluirnos.
  */
-export const ROBOTS_USER_AGENT = 'ImpactoIndigenaCrawler'
+export const ROBOTS_USER_AGENT = 'VocesIndigenasCrawler'
 
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000 // 12 h: robots.txt cambia poco
 const FETCH_TIMEOUT_MS = 8_000

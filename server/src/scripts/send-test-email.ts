@@ -20,7 +20,7 @@ const prisma = new PrismaClient()
 
 const BREVO_API_KEY = process.env.BREVO_API_KEY!
 const FROM_EMAIL = process.env.BREVO_FROM_EMAIL || 'venancio@impactoindigena.com'
-const FROM_NAME = process.env.BREVO_FROM_NAME || 'Impacto Indígena'
+const FROM_NAME = process.env.BREVO_FROM_NAME || 'Voces Indígenas'
 const TO_EMAIL = process.argv[2] || 'venancio.conuepan@empresasindigenas.org'
 
 async function main() {

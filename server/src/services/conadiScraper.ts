@@ -86,7 +86,7 @@ export async function scrapeConadi(_url: string): Promise<ParseFeedResult> {
           maxRedirects: 3,
           responseType: 'text',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0; +https://impactoindigena.news)',
+            'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://vocesindigenas.org)',
             'Accept': 'text/html,application/xhtml+xml,*/*',
             'Accept-Language': 'es-CL,es;q=0.9',
           },

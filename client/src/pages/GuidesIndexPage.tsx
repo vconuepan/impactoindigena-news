@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Guías sobre pueblos indígenas | Impacto Indígena',
+  title: 'Guías sobre pueblos indígenas | Voces Indígenas',
   description:
     'Guías editoriales sobre los pueblos indígenas de América Latina: historia, territorios, derechos y cultura. Contexto profundo para entender las noticias que cubrimos.',
   url: `${SEO.siteUrl}/guia`,

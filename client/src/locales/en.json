@@ -52,7 +52,7 @@
     "terms": "Terms & conditions",
     "cookies": "Cookies",
     "noTracking": "No tracking",
-    "copyright": "© {{year}} Impacto Indígena. All rights reserved.",
+    "copyright": "© {{year}} Voces Indígenas. All rights reserved.",
     "distribute": "Distribute",
     "widgetForYourSite": "For your website",
     "whyItMatters": "Why it matters",
@@ -105,8 +105,8 @@
   },
   "search": {
     "title": "Search: {{q}}",
-    "pageTitle": "Search results for \"{{q}}\" on Impacto Indígena",
-    "defaultTitle": "Search stories on Impacto Indígena",
+    "pageTitle": "Search results for \"{{q}}\" on Voces Indígenas",
+    "defaultTitle": "Search stories on Voces Indígenas",
     "results_one": "1 result",
     "results_other": "{{count}} results",
     "resultsFor": "Results for \"{{q}}\"",
@@ -194,7 +194,7 @@
     "readMethod": "How we work",
     "readSources": "Our sources",
     "published": "Published from Chile.",
-    "rights": "© {{year}} Impacto Indígena"
+    "rights": "© {{year}} Voces Indígenas"
   },
   "curationStats": {
     "ariaLabel": "Curation statistics",

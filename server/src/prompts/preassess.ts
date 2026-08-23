@@ -22,7 +22,7 @@ ${formatIssuesBlock(issues)}
 ${CLASSIFICATION_BLOCK}
 
 <CRITERIOS DE CALIFICACION>
-Impacto Indígena busca cambiar la narrativa global sobre los pueblos indígenas: no como grupos vulnerables que necesitan ser defendidos, sino como innovadores sociales, guardianes del conocimiento ancestral y protagonistas activos en la solución de los desafíos globales. Publicamos noticias que construyen puentes entre pueblos indígenas, sociedad civil, empresas responsables y Estados, integrando el conocimiento ancestral con el desarrollo económico, la acción climática y la consolidación de la paz.
+Voces Indígenas busca cambiar la narrativa global sobre los pueblos indígenas: no como grupos vulnerables que necesitan ser defendidos, sino como innovadores sociales, guardianes del conocimiento ancestral y protagonistas activos en la solución de los desafíos globales. Publicamos noticias que construyen puentes entre pueblos indígenas, sociedad civil, empresas responsables y Estados, integrando el conocimiento ancestral con el desarrollo económico, la acción climática y la consolidación de la paz.
 
 REGLA FUNDAMENTAL — SIN EXCEPCIÓN: Para recibir calificación 3 o superior, el artículo debe mencionar explícitamente a pueblos indígenas, comunidades indígenas, territorios indígenas, culturas indígenas, o personas indígenas identificadas como tales. Si los pueblos indígenas no aparecen en el artículo, la calificación es siempre 1-2, sin importar el tema (clima, medio ambiente, derechos humanos, economía, política, etc.).
 

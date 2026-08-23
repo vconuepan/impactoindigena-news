@@ -108,7 +108,7 @@ export function composeBrandedStoryCard(img: Image, title: string): Buffer {
   // Eyebrow wordmark.
   ctx.fillStyle = C.white
   ctx.font = `700 ${18 * SCALE}px '${FONT}'`
-  const eyebrow = 'IMPACTO INDÍGENA'
+  const eyebrow = 'VOCES INDÍGENAS'
   ctx.save()
   // Letter-spacing isn't supported directly; draw char by char with tracking.
   let ex = M

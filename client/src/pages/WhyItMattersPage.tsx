@@ -1,7 +1,7 @@
 /**
  * /por-que-importa — editorial contrast page
  *
- * Shows this week's top Impacto Indígena stories (highest AI relevance score)
+ * Shows this week's top Voces Indígenas stories (highest AI relevance score)
  * alongside what Google News Latinoamérica is covering. The contrast makes
  * the platform's value proposition visible without needing a tagline.
  */
@@ -15,7 +15,7 @@ import { formatDate } from '../lib/format'
 import { SEO, CommonOgTags } from '../lib/seo'
 
 const META = {
-  title: '¿Por qué importa? — Impacto Indígena vs. el mainstream',
+  title: '¿Por qué importa? — Voces Indígenas vs. el mainstream',
   description:
     'Lo que los medios masivos no cubren esta semana: las noticias más relevantes para los pueblos indígenas, curadas por IA.',
   url: `${SEO.siteUrl}/por-que-importa`,
@@ -141,7 +141,7 @@ export default function WhyItMattersPage() {
           <h1 className="page-title mb-3">¿Por qué importa?</h1>
           <p className="text-base text-neutral-600 leading-relaxed">
             Esta semana, los medios masivos en Latinoamérica cubrieron esto. Mientras tanto,
-            la IA de Impacto Indígena identificó estas noticias como las más relevantes para
+            la IA de Voces Indígenas identificó estas noticias como las más relevantes para
             los pueblos indígenas, sus territorios y sus derechos.
           </p>
           <p className="text-sm text-neutral-400 mt-2">
@@ -159,7 +159,7 @@ export default function WhyItMattersPage() {
             <div className="flex items-center gap-2 mb-5">
               <span className="w-2 h-2 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />
               <h2 className="text-xs font-bold uppercase tracking-widest text-brand-700">
-                Impacto Indígena esta semana
+                Voces Indígenas esta semana
               </h2>
             </div>
 

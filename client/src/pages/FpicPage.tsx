@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Consulta Previa y CLPI: qué son y por qué importan | Impacto Indígena',
+  title: 'Consulta Previa y CLPI: qué son y por qué importan | Voces Indígenas',
   description:
     'La Consulta Previa y el Consentimiento Libre, Previo e Informado (CLPI) son derechos fundamentales de los pueblos indígenas. Conoce qué son, cómo funcionan y por qué los Estados deben respetarlos.',
   url: `${SEO.siteUrl}/guia/consulta-previa-fpic`,

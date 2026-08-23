@@ -12,7 +12,7 @@ export default function NewsletterDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{newsletter?.title || 'Boletín'} — Admin — Impacto Indígena</title>
+        <title>{newsletter?.title || 'Boletín'} — Admin — Voces Indígenas</title>
       </Helmet>
 
       {isLoading && <div className="flex justify-center py-12"><LoadingSpinner /></div>}

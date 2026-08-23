@@ -68,7 +68,7 @@ export default function EditorialsPage() {
   return (
     <>
       <Helmet>
-        <title>Voces Indígenas — Admin — Impacto Indígena</title>
+        <title>Voces Indígenas — Admin — Voces Indígenas</title>
       </Helmet>
 
       <PageHeader

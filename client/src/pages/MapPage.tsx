@@ -14,7 +14,7 @@ const NoCoordsList = lazy(() =>
 )
 
 const META = {
-  title: 'Mapa de pueblos indígenas de Chile | Impacto Indígena',
+  title: 'Mapa de pueblos indígenas de Chile | Voces Indígenas',
   description:
     'Mapa interactivo de los territorios ancestrales y ubicación de los diez pueblos indígenas reconocidos en Chile: mapuche, aymara, rapanui, atacameño, quechua, colla, diaguita, kawésqar, yagán y lafkenche.',
   url: `${SEO.siteUrl}/mapa`,
@@ -120,7 +120,7 @@ export default function MapPage() {
       {/* ── Dynamic communities map ────────────────────────────────────────── */}
       <div className="page-section">
         <div className="mb-6">
-          <h2 className="section-heading">Comunidades en Impacto Indígena</h2>
+          <h2 className="section-heading">Comunidades en Voces Indígenas</h2>
           <p className="text-sm text-neutral-600 mt-1 leading-relaxed max-w-2xl">
             Pueblos y territorios con cobertura de noticias curadas por IA.
             {!isLoading && !isError && (

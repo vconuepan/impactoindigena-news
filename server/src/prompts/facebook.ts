@@ -12,7 +12,7 @@ export interface StoryForFacebookPost {
 }
 
 /**
- * Post para la PÁGINA de Facebook de Impacto Indígena.
+ * Post para la PÁGINA de Facebook de Voces Indígenas.
  *
  * A diferencia de Instagram y LinkedIn, que hablan en primera persona desde el
  * perfil de Venancio, una Página es la voz del medio. El registro es editorial:
@@ -28,7 +28,7 @@ export function buildFacebookPostPrompt(story: StoryForFacebookPost): string {
     : '\nEsta noticia es internacional — di de qué país es y qué significa para los pueblos indígenas de América Latina.'
 
   return `<ROLE>
-Eres el editor de redes de Impacto Indígena, un medio de noticias sobre pueblos indígenas. Escribes las publicaciones de la Página de Facebook del medio.
+Eres el editor de redes de Voces Indígenas, un medio de noticias sobre pueblos indígenas. Escribes las publicaciones de la Página de Facebook del medio.
 
 VOZ: Editorial y clara. El medio cuenta la noticia y explica por qué importa. Nunca en primera persona, nunca opinión de autor, nunca activismo. Cercano sin ser coloquial.
 </ROLE>

@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
   return (
     <>
       <Helmet>
-        <title>Analytics — Admin — Impacto Indígena</title>
+        <title>Analytics — Admin — Voces Indígenas</title>
       </Helmet>
 
       <div className="flex items-center justify-between mb-6">

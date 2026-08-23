@@ -197,7 +197,7 @@ describe('requireMember (CSRF Origin check for cookie sessions)', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    process.env.FRONTEND_URL = 'https://impactoindigena.news'
+    process.env.FRONTEND_URL = 'https://vocesindigenas.org'
     jsonFn = vi.fn()
     statusFn = vi.fn().mockReturnValue({ json: jsonFn })
     req = { headers: {}, method: 'POST' }
@@ -212,7 +212,7 @@ describe('requireMember (CSRF Origin check for cookie sessions)', () => {
   })
 
   it('allows a cookie session with a trusted Origin on a mutating request', () => {
-    req = { headers: { origin: 'https://impactoindigena.news' }, method: 'POST', cookies: { member_token: 'tok' } } as any
+    req = { headers: { origin: 'https://vocesindigenas.org' }, method: 'POST', cookies: { member_token: 'tok' } } as any
     requireMember(req as Request, res as Response, next)
     expect(next).toHaveBeenCalled()
   })

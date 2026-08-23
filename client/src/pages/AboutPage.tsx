@@ -12,12 +12,12 @@ export default function AboutPage() {
         <title>Quiénes Somos - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Impacto Indígena nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT."
+          content="Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT."
         />
         <meta property="og:title" content={`Quiénes Somos - ${SEO.siteName}`} />
         <meta
           property="og:description"
-          content="Impacto Indígena nace de la historia de un pueblo que nunca fue conquistado."
+          content="Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/about`} />
@@ -31,7 +31,7 @@ export default function AboutPage() {
             "@type": "WebPage",
             name: `Quiénes Somos - ${SEO.siteName}`,
             description:
-              "Impacto Indígena nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT.",
+              "Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT.",
             url: `${SEO.siteUrl}/about`,
             isPartOf: {
               "@type": "WebSite",
@@ -79,7 +79,7 @@ export default function AboutPage() {
             más poderoso del mundo a negociar.
           </p>
           <p>
-            Esa resistencia no es solo historia: es el punto de partida de Impacto Indígena.
+            Esa resistencia no es solo historia: es el punto de partida de Voces Indígenas.
             Los pueblos indígenas no son grupos vulnerables que esperan ser defendidos. Son,
             y han sido siempre, protagonistas de su propio futuro. Representan menos del 5&nbsp;%
             de la población mundial, pero protegen más del 80&nbsp;% de la biodiversidad del
@@ -92,7 +92,7 @@ export default function AboutPage() {
             <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
               <strong>Venancio Conuepan Mesías</strong>
             </a>{" "}
-            es abogado mapuche, fundador de Impacto Indígena SpA y director ejecutivo de la
+            es abogado mapuche, fundador de Voces Indígenas SpA y director ejecutivo de la
             Fundación Empresas Indígenas. Su trabajo se ha centrado en la gobernanza
             territorial, la mediación intercultural y el emprendimiento indígena — en construir
             instituciones propias, más que en pedir que otros las construyan por nosotros.
@@ -118,7 +118,7 @@ export default function AboutPage() {
           </div>
 
           <p>
-            Impacto Indígena no opera en el vacío. Existe al amparo de dos marcos internacionales
+            Voces Indígenas no opera en el vacío. Existe al amparo de dos marcos internacionales
             que protegen los derechos de los pueblos indígenas y generan obligaciones concretas
             para los Estados:
           </p>
@@ -162,15 +162,15 @@ export default function AboutPage() {
             <strong>Declaración de las Naciones Unidas sobre los Derechos de los Pueblos
             Indígenas (UNDRIP)</strong>, adoptada en 2007, que establece los derechos
             colectivos e individuales de los pueblos indígenas en materia de cultura, identidad,
-            educación, salud, empleo y territorio. Impacto Indígena cubre activamente la
+            educación, salud, empleo y territorio. Voces Indígenas cubre activamente la
             jurisprudencia que estos marcos generan y su implementación en los países signatarios.
           </p>
 
-          <h3 className="section-heading mt-8">Impacto Indígena SpA</h3>
+          <h3 className="section-heading mt-8">Voces Indígenas SpA</h3>
           <p>
             Esta plataforma es parte de{" "}
             <a href="https://www.impactoindigena.com" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
-              Impacto Indígena SpA
+              Voces Indígenas SpA
             </a>
             , una Empresa Social Indígena constituida en Chile en 2023 que promueve un
             cuádruple impacto positivo — económico, social, ambiental y cultural — para
@@ -187,7 +187,7 @@ export default function AboutPage() {
             <li>Fundación Konwepang-Millakir por el respeto del mapu</li>
             <li>Fundación Empresas Indígenas</li>
             <li>Sociedad de Profesionales Conuepan y Millaquir Limitada</li>
-            <li>Impacto Indígena SpA</li>
+            <li>Voces Indígenas SpA</li>
           </ul>
 
           <h3 className="section-heading mt-8">El Modelo R · E · D Indígena</h3>
@@ -261,7 +261,7 @@ export default function AboutPage() {
             intencionada, invisibiliza su liderazgo y los excluye de las decisiones que los afectan.
           </p>
           <p>
-            <strong>Impacto Indígena News</strong> nace para cambiar esa narrativa. Usamos
+            <strong>Voces Indígenas News</strong> nace para cambiar esa narrativa. Usamos
             inteligencia artificial para monitorear fuentes especializadas en todo el mundo,
             analizar el impacto real de las noticias en los pueblos indígenas y presentar esa
             información de forma clara, accesible y sin publicidad. La elección es concreta:

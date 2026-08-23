@@ -1,7 +1,7 @@
 /**
  * /fuentes — editorial source profiles
  *
- * Shows all active feeds indexed by Impacto Indígena, with quality stats
+ * Shows all active feeds indexed by Voces Indígenas, with quality stats
  * computed over the last 90 days: avg relevance score, story count, and
  * date of last published story.
  *
@@ -128,7 +128,7 @@ export default function SourcesPage() {
     staleTime: 2 * 60 * 60 * 1000,
   })
 
-  const title = lang === 'es' ? 'Nuestras fuentes — Impacto Indígena' : 'Our sources — Impacto Indígena'
+  const title = lang === 'es' ? 'Nuestras fuentes — Voces Indígenas' : 'Our sources — Voces Indígenas'
   const heading = lang === 'es' ? 'Nuestras fuentes' : 'Our sources'
   const subtitle = lang === 'es'
     ? 'Indexamos medios especializados y organismos internacionales que cubren derechos, territorios y culturas indígenas. La relevancia promedio refleja qué tan frecuente y pertinentemente cubre cada fuente estos temas.'
@@ -141,8 +141,8 @@ export default function SourcesPage() {
         <meta
           name="description"
           content={lang === 'es'
-            ? 'Conoce los medios y organismos que Impacto Indígena monitorea: relevancia editorial, cobertura temática y actividad reciente.'
-            : 'Explore the media outlets and organizations monitored by Impacto Indígena: editorial relevance, thematic coverage, and recent activity.'}
+            ? 'Conoce los medios y organismos que Voces Indígenas monitorea: relevancia editorial, cobertura temática y actividad reciente.'
+            : 'Explore the media outlets and organizations monitored by Voces Indígenas: editorial relevance, thematic coverage, and recent activity.'}
         />
       </Helmet>
 

@@ -12,7 +12,7 @@ export default function JobsPage() {
   return (
     <>
       <Helmet>
-        <title>Trabajos — Admin — Impacto Indígena</title>
+        <title>Trabajos — Admin — Voces Indígenas</title>
       </Helmet>
 
       <PageHeader

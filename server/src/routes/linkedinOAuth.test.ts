@@ -24,7 +24,7 @@ const { default: router } = await import('./linkedinOAuth.js')
 const app = express()
 app.use('/api/linkedin', router)
 
-const ADMIN = 'https://impactoindigena.news/admin/linkedin'
+const ADMIN = 'https://vocesindigenas.org/admin/linkedin'
 
 describe('GET /api/linkedin/oauth/callback', () => {
   beforeEach(() => {

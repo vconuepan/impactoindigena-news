@@ -113,7 +113,7 @@ export default function UsersPage() {
   return (
     <>
       <Helmet>
-        <title>Usuarios — Admin — Impacto Indígena</title>
+        <title>Usuarios — Admin — Voces Indígenas</title>
       </Helmet>
 
       <PageHeader

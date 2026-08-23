@@ -1,7 +1,7 @@
 import { Helmet } from 'react-helmet-async'
 import { SEO, CommonOgTags } from '../lib/seo'
 
-const BASE_URL = 'https://impactoindigena.news'
+const BASE_URL = 'https://vocesindigenas.org'
 const API_BASE = `${BASE_URL}/api/opendata`
 
 export default function OpenDataPage() {
@@ -11,7 +11,7 @@ export default function OpenDataPage() {
         <title>Datos abiertos \u2014 {SEO.siteName}</title>
         <meta
           name="description"
-          content="API pública de Impacto Indígena para investigadores, periodistas y ONGs. Acceso libre a datos sobre pueblos indígenas en América Latina."
+          content="API pública de Voces Indígenas para investigadores, periodistas y ONGs. Acceso libre a datos sobre pueblos indígenas en América Latina."
         />
         <meta property="og:title" content={`Datos abiertos \u2014 ${SEO.siteName}`} />
         <meta
@@ -109,7 +109,7 @@ export default function OpenDataPage() {
   "data": [
     {
       "title": "...",
-      "url": "https://impactoindigena.news/stories/...",
+      "url": "https://vocesindigenas.org/stories/...",
       "sourceUrl": "https://...",
       "publishedAt": "2025-06-01T00:00:00.000Z",
       "summary": "...",
@@ -126,7 +126,7 @@ export default function OpenDataPage() {
     "limit": 25,
     "totalPages": 34
   },
-  "attribution": "Datos de Impacto Indígena (impactoindigena.news). ..."
+  "attribution": "Datos de Voces Indígenas (vocesindigenas.org). ..."
 }`}</code>
           </pre>
 
@@ -174,7 +174,7 @@ export default function OpenDataPage() {
             cita como:
           </p>
           <blockquote className="border-l-4 border-brand-800 pl-4 text-neutral-600 italic my-4">
-            Impacto Indígena. <em>Open Data API</em>. {new Date().getFullYear()}.{' '}
+            Voces Indígenas. <em>Open Data API</em>. {new Date().getFullYear()}.{' '}
             <a href={`${BASE_URL}/opendata`} className="text-brand-800 hover:text-brand-700">
               {`${BASE_URL}/opendata`}
             </a>
@@ -184,7 +184,7 @@ export default function OpenDataPage() {
           <p>
             Los datos son de uso libre para investigación, periodismo, y trabajo de ONGs, con
             atribución requerida. No se permite redistribución comercial de los datos sin autorización.
-            Los metadatos de análisis IA son propios de Impacto Indígena; las noticias fuente pertenecen
+            Los metadatos de análisis IA son propios de Voces Indígenas; las noticias fuente pertenecen
             a sus respectivos autores.
           </p>
 

@@ -7,7 +7,7 @@ import LandingCta from '../components/LandingCta'
 import { getCategoryColor } from '../lib/category-colors'
 
 const META = {
-  title: 'El Cansancio Informativo Es un Problema de Diseño — Hay una Mejor Manera | Impacto Indígena',
+  title: 'El Cansancio Informativo Es un Problema de Diseño — Hay una Mejor Manera | Voces Indígenas',
   description:
     'Casi el 40% de las personas evita activamente las noticias. El problema no eres tú — es cómo se entregan. Un resumen curado de las historias que importan, sin ruido.',
   url: `${SEO.siteUrl}/news-fatigue`,
@@ -21,7 +21,7 @@ const pageSchema = {
   url: META.url,
   author: {
     '@type': 'Organization',
-    name: 'Impacto Indígena',
+    name: 'Voces Indígenas',
     url: SEO.siteUrl,
   },
   about: [
@@ -199,7 +199,7 @@ export default function NewsFatiguePage() {
         {/* Un Enfoque Diferente — tarjetas de características */}
         <h2 className="section-heading mt-12">Un Enfoque Diferente</h2>
         <p className="text-neutral-600 mt-2 leading-relaxed">
-          Impacto Indígena se construye en torno a una idea simple: ¿qué pasaría si pudieras mantenerte
+          Voces Indígenas se construye en torno a una idea simple: ¿qué pasaría si pudieras mantenerte
           informado/a sobre lo que importa sin el ruido?
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
@@ -220,7 +220,7 @@ export default function NewsFatiguePage() {
         {/* Cómo Mantenerse Informado */}
         <h2 className="section-heading mt-12">Infórmate en 5 Minutos</h2>
         <p className="text-neutral-600 mt-3 leading-relaxed">
-          Abre Impacto Indígena o el boletín. Revisa 10–20 historias curadas organizadas por
+          Abre Voces Indígenas o el boletín. Revisa 10–20 historias curadas organizadas por
           área temática. Lee las que te interesen — cada una enlaza a la fuente original. Listo.
           Cinco minutos, y estás genuinamente informado/a sobre lo que pasó hoy.
         </p>
@@ -278,7 +278,7 @@ export default function NewsFatiguePage() {
 
         <LandingCta
           heading="Infórmate sin el agotamiento."
-          description="Visita impactoindigena.news para las historias de hoy — o recibe el resumen en tu bandeja de entrada."
+          description="Visita vocesindigenas.org para las historias de hoy — o recibe el resumen en tu bandeja de entrada."
         />
       </div>
     </>

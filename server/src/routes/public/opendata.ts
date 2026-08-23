@@ -2,7 +2,7 @@
  * Open Data API — public, rate-limited, no auth required.
  *
  * Designed for researchers, journalists, and NGOs who want to use
- * Impacto Indígena data in their work. When cited in papers or reports,
+ * Voces Indígenas data in their work. When cited in papers or reports,
  * this API generates institutional backlinks that build domain authority.
  *
  * Rate limits:
@@ -174,7 +174,7 @@ router.get('/stories', resolveRateLimiter, async (req, res) => {
         limit,
         totalPages: Math.ceil(total / limit),
       },
-      attribution: 'Datos de Impacto Indígena (impactoindigena.news). Reutilización libre con atribución — cite como: Impacto Indígena, Open Data API, https://impactoindigena.news/opendata',
+      attribution: 'Datos de Voces Indígenas (vocesindigenas.org). Reutilización libre con atribución — cite como: Voces Indígenas, Open Data API, https://vocesindigenas.org/opendata',
     })
   } catch (err) {
     log.error({ err }, 'opendata query failed')

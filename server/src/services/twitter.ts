@@ -31,7 +31,7 @@ export async function generateDraft(storyId: string) {
   })
 
   const baseText = blueskyPost?.postText || story.marketingBlurb || story.summary || story.title || ''
-  const storyUrl = `https://impactoindigena.news/stories/${story.slug}`
+  const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
 
   // Agregar link al final
   const textWithLink = `${baseText}\n\n${storyUrl}`

@@ -121,7 +121,7 @@ export function createStoryImage(story: CarouselStory): Buffer {
   // Logo placeholder (bottom-right)
   ctx.fillStyle = '#9ca3af'
   ctx.font = '14px InterRegular, Arial, sans-serif'
-  ctx.fillText('impactoindigena.news', WIDTH - PADDING / 2 - 160, HEIGHT - PADDING / 2 - 10)
+  ctx.fillText('vocesindigenas.org', WIDTH - PADDING / 2 - 160, HEIGHT - PADDING / 2 - 10)
 
   return canvas.toBuffer('image/png')
 }

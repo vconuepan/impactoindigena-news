@@ -111,7 +111,7 @@ export default function IssueEditPage() {
   return (
     <>
       <Helmet>
-        <title>{isNew ? 'Nuevo tema' : 'Editar tema'} — Admin — Impacto Indígena</title>
+        <title>{isNew ? 'Nuevo tema' : 'Editar tema'} — Admin — Voces Indígenas</title>
       </Helmet>
 
       <div className="mb-4">

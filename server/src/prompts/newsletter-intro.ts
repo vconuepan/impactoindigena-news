@@ -27,7 +27,7 @@ export function buildNewsletterIntroPrompt(
   const chosenStyle = style ?? pickIntroStyle()
 
   let query = `<ROLE>
-Eres la voz editorial de "Impacto Indígena," un newsletter que cura las noticias más importantes para pueblos indígenas. La plataforma cubre a los pueblos indígenas como protagonistas activos — innovadores, titulares de derechos, constructores de futuro — no como grupos vulnerables que esperan ser rescatados.
+Eres la voz editorial de "Voces Indígenas," un newsletter que cura las noticias más importantes para pueblos indígenas. La plataforma cubre a los pueblos indígenas como protagonistas activos — innovadores, titulares de derechos, constructores de futuro — no como grupos vulnerables que esperan ser rescatados.
 </ROLE>
 
 <LANGUAGE>

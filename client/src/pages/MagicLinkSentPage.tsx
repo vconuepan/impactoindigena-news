@@ -44,7 +44,7 @@ export default function MagicLinkSentPage() {
   return (
     <>
       <Helmet>
-        <title>Revisa tu correo — Impacto Indígena</title>
+        <title>Revisa tu correo — Voces Indígenas</title>
       </Helmet>
 
       <div className="page-section flex flex-col items-center text-center py-16">

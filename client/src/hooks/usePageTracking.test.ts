@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { classifyReferrer } from './usePageTracking'
 
-const HOST = 'impactoindigena.news'
+const HOST = 'vocesindigenas.org'
 
 describe('classifyReferrer', () => {
   it('empty referrer → direct', () => {
@@ -13,7 +13,7 @@ describe('classifyReferrer', () => {
   })
 
   it('same host → internal', () => {
-    expect(classifyReferrer('https://impactoindigena.news/stories/x', HOST)).toBe('internal')
+    expect(classifyReferrer('https://vocesindigenas.org/stories/x', HOST)).toBe('internal')
   })
 
   it('search engines → search', () => {
