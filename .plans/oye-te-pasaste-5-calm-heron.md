@@ -235,9 +235,18 @@ la consultora, y la biografía del fundador en los prompts (fundó Impacto Indí
 3. Variables en Azure y en `server/.env` local: `SITE_URL`, `FRONTEND_URL`, `CLIENT_URL`,
    `API_URL`. **Hoy el `.env` local todavía tiene el dominio viejo**, y por eso 3 tests de
    sitemap fallan localmente y pasan con la variable correcta.
-4. El 301 desde `impactoindigena.news` — **no como se planteó antes**, ver hallazgo H2.
-5. Empujar. `main` despliega solo.
+4. Empujar. `main` despliega solo. Verificar que el sitio responde en el dominio nuevo.
+5. **Recién ahora** el 301 desde `impactoindigena.news`: pasarlo a naranja y crear la
+   Redirect Rule. Ver H2 — el orden es deliberado, encender el proxy sobre un sitio vivo
+   tiene riesgo y para este momento el dominio viejo ya no sirve nada.
 6. Search Console: cambio de dirección y sitemap nuevo.
+
+**Estado del DNS al 24-ago:** `vocesindigenas.org` ya propagó a Cloudflare (`ivan`/`melody`,
+el mismo par que los demás) y está **en naranja sirviendo todavía el WordPress de
+HostGator**. Para que Azure valide el dominio propio conviene ponerlo **en gris**, igual que
+`impactoindigena.news`, que es la configuración que hoy funciona. El MX de HostGator **no
+sobrevivió a la importación** y `mail` quedó proxeado: el correo de `@vocesindigenas.org`
+está apagado. Confirmar que no había buzón vivo ahí.
 
 ### Fase 2 · Modelo de datos, backfill y filtro tenant · **con el gate apagado**
 
@@ -360,20 +369,44 @@ ruta. Un `"route": "/*", "redirect": "https://vocesindigenas.org/"` mandaría la
 la portada, y Google lee eso como soft 404 masivo. **Es exactamente el problema que ya
 costó un arreglo en el PR #18.**
 
-**Corrección:** el 301 se hace en el backend, por cabecera `Host`, preservando la ruta. Está
-disponible sin trabajo extra porque `client/public/staticwebapp.config.json:16-18` ya
-reescribe `/stories/*` a `/api/og/story-html`, o sea el backend ya ve esas peticiones.
+**Corrección 1 (descartada):** hacerlo en el backend por cabecera `Host`. **No sirve.**
+Azure SWA sirve el estático directo desde el CDN y solo enruta al backend lo que
+`staticwebapp.config.json` reescribe: `/stories/*`, `/sitemap.xml`, `/sitemap-news.xml`,
+`/feed` y `/podcast/feed.xml`. La portada, `/issues`, las seis guías y los 26 HTML
+prerenderizados **nunca llegan al backend**, así que un 301 ahí cubriría una fracción del
+sitio y el resto seguiría respondiendo 200 en el dominio viejo.
 
 ```
+  petición a impactoindigena.news/guia/pueblo-mapuche
+        │
+        ▼
+  SWA  ──► estático desde el CDN ──► 200          ✗ el backend nunca lo ve
+
   petición a impactoindigena.news/stories/foo
         │
         ▼
-  SWA (dominio viejo, mismo despliegue)
-        │  rewrite /stories/* → /api/og/story-html
-        ▼
-  backend: if (host === 'impactoindigena.news')
-             return 301 → https://vocesindigenas.org + req.originalUrl
+  SWA  ──► rewrite a /api/og/story-html ──► backend  ✓ solo esta rama
 ```
+
+**Corrección 2 (la buena): Redirect Rule de Cloudflare**, que actúa en el borde y ve
+**todas** las rutas.
+
+```
+  (http.host eq "impactoindigena.news")
+     → concat("https://vocesindigenas.org", http.request.uri.path)
+     → 301 permanente, preserve query string
+```
+
+Requisito: `impactoindigena.news` debe estar **proxeado (naranja)**; hoy está en gris, con
+el A apuntando directo a Azure, así que el tráfico no toca el borde de Cloudflare y la regla
+no dispararía.
+
+**Y el orden importa, porque encender el proxy sobre un sitio vivo tiene riesgo** (Azure SWA
+detrás del proxy exige modo SSL «Full (strict)» o da bucles y 526):
+
+1. Primero `vocesindigenas.org` sirve el sitio desde Azure.
+2. Recién entonces `impactoindigena.news` pasa a naranja. Para ese momento ya no sirve nada,
+   solo redirige, así que el riesgo de encender el proxy es mínimo.
 
 Verificación obligatoria: la ruta se conserva en el destino, no solo el dominio.
 
