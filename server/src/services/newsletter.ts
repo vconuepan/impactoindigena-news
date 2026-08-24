@@ -730,7 +730,7 @@ ${flashSection}
           <tr>
             <td style="padding: 20px 32px; text-align: center; border-top: 1px solid #e5e7eb;">
               <p style="margin: 0 0 4px; font-size: 13px; font-style: italic; color: #9ca3af;">Curado y redactado con cuidado por IA</p>
-              <p style="margin: 0; font-size: 12px; color: #d1d5db; line-height: 1.5;">La IA puede equivocarse. Si algo parece incorrecto, <a href="mailto:contacto@impactoindigena.news" style="color: #6b7280; text-decoration: underline;">av&iacute;sanos</a>.</p>
+              <p style="margin: 0; font-size: 12px; color: #d1d5db; line-height: 1.5;">La IA puede equivocarse. Si algo parece incorrecto, <a href="mailto:contacto@fundacionkm.org" style="color: #6b7280; text-decoration: underline;">av&iacute;sanos</a>.</p>
             </td>
           </tr>
 
