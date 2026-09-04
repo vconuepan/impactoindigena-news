@@ -55,6 +55,21 @@ Rules that keep this working:
 
 Backfill for stories predating the split: `npm run migration:backfill-country --prefix server` (simulation by default).
 
+## No Topic Is the Fallback Bin
+
+The four subject topics are Cambio Climático, Derechos Indígenas, Economías Indígenas and — since 2026-09-01 — Cultura y Conocimientos Ancestrales. The fifth issue, Chile Intercultural, is geographic and the classifier never sees it.
+
+Culture was added because the pipeline was already collecting that material and had nowhere to file it. `preassess.ts` explicitly rates language, art, literature, archaeology and heritage at 5 or above, but the classifier was offered only three destinations, and Economías Indígenas was the one whose stored criteria admitted anything: its first criterion read *"Impacto económico **y social** en comunidades indígenas"*. Measured on 2026-09-01 over the 200 most recent stories in that section: **62 were economic, 31 borderline, 107 were not** — poetry, museums, powwows, film, sport.
+
+Rules that keep this from happening again:
+
+- **Economics requires the economic activity to be the central subject.** Selling something is not enough. A food festival, an art fair or a museum show is culture, even with ticketing and crafts on sale. `CLASSIFICATION_BLOCK` states this as a cut rule, not as a hint.
+- **Nothing is the destination by default, and Economías least of all.** An article that fits none of the four goes to Derechos Indígenas, the most general one. This is written into the prompt because a taxonomy with no declared fallback grows one by itself, and it picks the loosest description.
+- **The stored criteria reach the classifier.** `formatIssuesBlock()` sends `Issue.evaluationCriteria` into the prompt, so editing that DB field changes classification behavior. It is prompt surface, not just reader-facing copy.
+- **Reclassification carries the same rules.** `buildReclassifyPrompt()` includes `CLASSIFICATION_BLOCK`. Until 2026-09-01 it did not: the tool for fixing wrong topics ran without the criteria that define the right one.
+
+Migrations: `npm run migration:seed-cultura --prefix server` creates the topic and tightens Economías; `npm run migration:retema --prefix server` re-files existing stories. Both simulate by default.
+
 ## Title Capitalization Guardrail
 
 Titles go through `fixCapitalization()` (`server/src/lib/title-capitalization.ts`) before they are persisted. It is a deterministic whitelist of acronyms and proper nouns — no LLM involved — applied at both write points: `services/analysis.ts` (Spanish) and `services/translation.ts` (English).

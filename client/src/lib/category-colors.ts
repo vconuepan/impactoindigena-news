@@ -66,6 +66,24 @@ const PIZARRA = {
   bgTint: 'bg-sky-50/60',
 } satisfies CategoryColor
 
+/**
+ * Cafe tostado — Cultura y Conocimientos Ancestrales.
+ *
+ * Quinta familia de la paleta tierra. Se eligio marron oscuro y no un quinto
+ * verde ni un segundo azul porque los dots de categoria conviven en la nav: un
+ * verde mas al lado de VERDE_BOSQUE haria indistinguibles clima y cultura de un
+ * vistazo. Contra TERRACOTA se separa por luminosidad y saturacion.
+ */
+const CAFE_TOSTADO = {
+  border: 'border-amber-900',
+  borderThick: 'border-l-[6px] border-amber-900',
+  dot: 'text-amber-900',
+  bg: 'bg-amber-50',
+  dotBg: 'bg-amber-900',
+  hex: '#7A4A2B',
+  bgTint: 'bg-amber-50/60',
+} satisfies CategoryColor
+
 const VERDE_MARCA = {
   border: 'border-brand-800',
   borderThick: 'border-l-[6px] border-brand-800',
@@ -93,6 +111,7 @@ const CATEGORY_COLORS: Record<string, CategoryColor> = {
   'cambio-climatico': VERDE_BOSQUE,
   'derechos-indigenas': TERRACOTA,
   'desarrollo-sostenible-y-autodeterminado': OCRE_TIERRA,
+  'cultura-y-conocimientos-ancestrales': CAFE_TOSTADO,
   'chile-indigena': PIZARRA,
   'human-development': OCRE_TIERRA,
   'planet-climate': VERDE_BOSQUE,

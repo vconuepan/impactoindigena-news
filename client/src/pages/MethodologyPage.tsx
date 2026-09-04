@@ -158,9 +158,9 @@ export default function MethodologyPage() {
             </div>
           </div>
 
-          <h2 className="section-heading mt-8">Cuatro Temas Principales</h2>
+          <h2 className="section-heading mt-8">Cinco Temas Principales</h2>
           <p>
-            Cubrimos cuatro áreas temáticas, cada una con criterios de evaluación adaptados al
+            Cubrimos cinco áreas temáticas, cada una con criterios de evaluación adaptados al
             contexto indígena específico.
           </p>
         </div>
@@ -168,7 +168,8 @@ export default function MethodologyPage() {
           {[
             { slug: 'cambio-climatico', title: 'Cambio Climático', description: 'Territorios indígenas, medio ambiente, biodiversidad, acción climática' },
             { slug: 'derechos-indigenas', title: 'Derechos Indígenas', description: 'Derechos territoriales, autodeterminación, reconocimiento legal, derechos humanos' },
-            { slug: 'desarrollo-sostenible-y-autodeterminado', title: 'Economías Indígenas', description: 'Emprendimiento, empresas y cooperativas indígenas, empleo, comercio y financiamiento' },
+            { slug: 'desarrollo-sostenible-y-autodeterminado', title: 'Economías Indígenas', description: 'Empresas y cooperativas indígenas, emprendimiento, empleo, comercio, financiamiento y compras públicas' },
+            { slug: 'cultura-y-conocimientos-ancestrales', title: 'Cultura y Conocimientos Ancestrales', description: 'Lenguas, arte, literatura, música, cine, patrimonio, memoria, educación intercultural y medicina ancestral' },
             { slug: 'chile-indigena', title: 'Chile Intercultural', description: 'Pueblos originarios de Chile, política pública indígena, consultas indígenas, instituciones y liderazgo indígena chileno' },
           ].map((card) => {
             const colors = getCategoryColor(card.slug)

@@ -18,6 +18,7 @@ const HOMEPAGE_ISSUE_SLUGS = [
   'cambio-climatico',
   'derechos-indigenas',
   'desarrollo-sostenible-y-autodeterminado',
+  'cultura-y-conocimientos-ancestrales',
 ]
 
 router.get('/', async (req, res) => {

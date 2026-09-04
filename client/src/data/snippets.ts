@@ -31,10 +31,18 @@ export const SNIPPETS_BY_ISSUE: Record<string, Snippet[]> = {
     { text: 'La libre determinación de los pueblos indígenas está reconocida en el derecho internacional desde 1966, con los Pactos Internacionales de Derechos Humanos.' },
   ],
   'desarrollo-sostenible-y-autodeterminado': [
-    { text: 'Los modelos económicos indígenas llevan siglos integrando sostenibilidad y comunidad como principios fundamentales.' },
-    { text: 'El conocimiento tradicional indígena contiene soluciones para una agricultura más resiliente frente al clima.' },
+    { text: 'Las empresas indígenas reinvierten en su comunidad una proporción de sus utilidades que las empresas convencionales destinan a sus accionistas.' },
     { text: 'La autonomía económica y la identidad cultural no son excluyentes: las comunidades indígenas que controlan sus territorios suelen tener mejores indicadores de bienestar.' },
+    { text: 'Las cadenas de suministro son una de las pocas vías por las que una comunidad indígena negocia con una empresa de igual a igual: como proveedora, no como afectada.' },
+    { text: 'Los marcos que ordenan la relación entre empresas y proveedores indígenas son IFC PS7, ICMM y GRI 204.' },
     { text: 'La gestión comunitaria del agua, el bosque y la tierra por parte de pueblos indígenas produce resultados ambientales superiores a los modelos industriales en la misma área.', source: 'Rights and Resources Initiative' },
+  ],
+  'cultura-y-conocimientos-ancestrales': [
+    { text: 'Los pueblos indígenas del mundo hablan la mayor parte de las lenguas vivas del planeta, y muchas de ellas no se escriben en ningún otro lugar.' },
+    { text: 'El mapudungun, idioma del pueblo mapuche, es hablado por más de 200.000 personas en Chile y Argentina.' },
+    { text: 'El conocimiento ancestral no es folclore: es un cuerpo de saber sobre suelos, plantas, ciclos del agua y medicina que se transmite y se corrige generación tras generación.' },
+    { text: 'Una lengua que deja de hablarse se lleva consigo la clasificación de un territorio: los nombres de sus plantas, sus vientos y sus lugares.' },
+    { text: 'Los pueblos indígenas escriben, filman, componen y exponen su propia obra. La cultura indígena es producción contemporánea, no solo herencia.' },
   ],
   'chile-indigena': [
     { text: 'Chile tiene diez pueblos indígenas reconocidos oficialmente, que representan cerca del 13% de la población.', source: 'Censo 2017, INE' },

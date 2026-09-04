@@ -125,11 +125,22 @@ export const NARRATIVE_FRAME_SCHEMA_DESCRIPTION =
 export const CLASSIFICATION_BLOCK = `<CRITERIOS DE CLASIFICACION>
 El tema se decide por el ASUNTO CENTRAL del artículo, no por las palabras que aparecen en él ni por el país donde ocurre. Un artículo sobre una cooperativa textil mapuche trata de economía indígena aunque ocurra en Chile y mencione el bosque.
 
-Cuando un artículo toca más de un tema, el asunto central es el que resuelve estas prioridades:
+Cuando un artículo toca más de un tema, el asunto central es el que resuelve estas prioridades, en este orden:
 
-- Si el eje es una actividad económica de la comunidad —emprendimiento, empresa, cooperativa, artesanía con venta, turismo comunitario, empleo, financiamiento, cadena de suministro, mercado o ingreso—, el tema es la economía indígena, aunque la actividad sea ambiental o ocurra en territorio en disputa.
+- Si el eje es una actividad económica de la comunidad —empresa, cooperativa, emprendimiento, empleo, ingreso, comercio, exportación, financiamiento, inversión, compras públicas, cadena de suministro, mercado, turismo comunitario como actividad productiva—, el tema es la economía indígena, aunque la actividad sea ambiental, cultural, o ocurra en territorio en disputa.
 - Si el eje es un daño, una amenaza o una disputa por territorio, consulta, consentimiento o responsabilidad de una empresa o del Estado, el tema son los derechos indígenas, aunque el daño sea ambiental.
+- Si el eje es la lengua, el arte, la literatura, la música, el cine, el patrimonio, la arqueología, la memoria, la espiritualidad, el deporte tradicional, la gastronomía como tradición, la educación intercultural o la medicina y el conocimiento ancestral, el tema es la cultura y los conocimientos ancestrales.
 - Si el eje es el clima, la biodiversidad, la conservación o el conocimiento ecológico aplicado, y NO hay una actividad económica ni una disputa de derechos como asunto central, el tema es cambio climático y biodiversidad.
+
+CUATRO REGLAS DE CORTE, porque son la fuente de error más frecuente. Las dos primeras van en direcciones opuestas y las dos se equivocan seguido: hay que aplicar ambas.
+
+1. La economía indígena exige que el asunto central sea la actividad económica en sí. Que en el artículo se venda algo no basta. Un festival gastronómico, una feria de arte, una exposición de museo, un concurso literario o un powwow son CULTURA, no economía, aunque haya entradas, artesanía a la venta o público que viaja. La economía entra cuando el artículo trata del negocio, del ingreso, del empleo, del financiamiento o del acceso al mercado.
+
+2. Y al revés: un artículo cuyo eje es una empresa, una empresaria o un empresario, un crédito, un banco, una licitación, una compra pública, una exportación, la facturación, el empleo, un mercado o una feria comercial ES ECONOMÍA, aunque el texto hable de identidad, de tradición o de cultura. Casi toda empresa indígena describe su identidad cultural al presentarse; eso no la convierte en un artículo de cultura. Una empresaria indígena y la banca es economía. Un mercado indígena que consigue local permanente es economía. Una cooperativa que rescata una técnica ancestral y la vende es economía.
+
+3. La salud, la vivienda, la infraestructura y el acceso a los servicios del Estado NO son conocimiento ancestral. Una campaña de vacunación, un hospital, un centro de tratamiento o una carretera van a derechos indígenas. La cultura entra solo cuando el eje es el saber propio: la medicina ancestral como conocimiento, o la pertinencia cultural de un servicio.
+
+4. Ningún tema es el destino por descarte, y la economía indígena menos que ninguno. Si un artículo no encaja con claridad en ninguno de los cuatro, clasifícalo en derechos indígenas, que es el tema más general. Nunca uses la economía indígena para un artículo que solo comparte con ella la palabra "desarrollo".
 
 Un artículo sobre pueblos indígenas de Chile se clasifica igual que cualquier otro: por su asunto central. El país no es un tema, es un dato aparte.
 </CRITERIOS DE CLASIFICACION>

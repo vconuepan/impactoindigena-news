@@ -21,11 +21,12 @@ const ISSUE_DOT_COLORS: Record<string, string> = {
   'cambio-climatico': '#2dd4bf',
   'derechos-indigenas': '#f87171',
   'desarrollo-sostenible-y-autodeterminado': '#fbbf24',
+  'cultura-y-conocimientos-ancestrales': '#a06a3f',
 }
 const DEFAULT_DOT_COLOR = '#f472b6'
 
 /** Fixed display order for top-level issues in the newsletter */
-const ISSUE_ORDER = ['cambio-climatico', 'derechos-indigenas', 'desarrollo-sostenible-y-autodeterminado', 'chile-indigena']
+const ISSUE_ORDER = ['cambio-climatico', 'derechos-indigenas', 'desarrollo-sostenible-y-autodeterminado', 'cultura-y-conocimientos-ancestrales', 'chile-indigena']
 
 function getIssueDotColor(slug: string): string {
   return ISSUE_DOT_COLORS[slug] ?? DEFAULT_DOT_COLOR

@@ -427,6 +427,7 @@ const ISSUE_ORDER = [
   'cambio-climatico',
   'derechos-indigenas',
   'desarrollo-sostenible-y-autodeterminado',
+  'cultura-y-conocimientos-ancestrales',
 ]
 
 const LAYOUTS: LayoutVariant[] = ['A', 'B', 'C']
