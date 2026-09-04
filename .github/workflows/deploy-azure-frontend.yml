@@ -46,6 +46,12 @@ jobs:
         env:
           VITE_API_URL: ""
           PRERENDER_API_URL: "https://calm-pebble-039bfb80f.7.azurestaticapps.net"
+          # El dominio publico del sitio, que alimenta canonicas, og:image y el
+          # sitemap. Va aca y no en el codigo: hasta el 4-sep-2026 estaba escrito
+          # a mano en `seo.tsx` apuntando a un dominio que todavia devolvia el 403
+          # de HostGator, asi que cualquier despliegue habria publicado canonicas
+          # rotas. Cambiar de dominio no deberia exigir un commit de codigo.
+          VITE_SITE_URL: "https://vocesindigenas.org"
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9  # v1
