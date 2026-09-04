@@ -323,6 +323,43 @@
   }
 
   /*
+   * El nombre del logo, en dos lineas.
+   *
+   * "Voces" en la recta y "Indigenas" en cursiva, casi al mismo cuerpo. Una
+   * version previa dejaba la segunda linea en DM Sans a 12px —la tipografia de
+   * los botones, a menos de la mitad del cuerpo de la primera— y la palabra que
+   * carga el sentido se leia como una etiqueta.
+   *
+   * La cursiva no es adorno: sin ella, dos palabras del mismo tamaño una encima
+   * de otra se leen como una lista. Inclinada, la segunda linea se lee como
+   * continuacion de la primera.
+   */
+  .brand-voces {
+    font-family: 'Fraunces', Georgia, ui-serif, serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    /* Negro calido de DESIGN.md. Va en hex y no en variable porque el proyecto
+       no define variables CSS de color: la paleta vive en tailwind.config. */
+    color: #1C1917;
+  }
+
+  .brand-indigenas {
+    font-family: 'Fraunces', Georgia, ui-serif, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-size: 19px;
+    letter-spacing: -0.01em;
+    color: #0D5F3C; /* brand-800, el verde de la marca */
+    margin-top: 2px;
+  }
+
+  @media (min-width: 768px) {
+    .brand-voces { font-size: 27px; }
+    .brand-indigenas { font-size: 23px; }
+  }
+
+  /*
    * Verticales geograficas. Deliberadamente MAS CHICA que .issue-nav-link:
    * el eje geografico orienta, el tematico es el que se navega. Si las dos
    * barras pesaran igual, el lector no sabria cual mirar primero.

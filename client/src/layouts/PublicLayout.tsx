@@ -181,16 +181,43 @@ function FooterLinkRow({ label, links }: { label: string; links: readonly Footer
   );
 }
 
+/**
+ * El logo: el sello como imagen, el nombre como TEXTO.
+ *
+ * Antes era un solo SVG con la palabra vectorizada, heredado de Impacto
+ * Indigena: el `alt` decia "Voces Indigenas" y la imagen decia otra cosa, asi
+ * que quien usa lector de pantalla oia el nombre nuevo y quien miraba veia el
+ * viejo. Y como el texto eran 22 trazos y ni una etiqueta <text>, no se podia
+ * corregir editando el archivo.
+ *
+ * El sello no se redibujo: es el mismo archivo recortado por `viewBox` de
+ * `-8 -8 337 96` a `-8 -8 96 96`. El circulo exterior termina en x=81,6 y la
+ * palabra empezaba en x=113, asi que el corte los separa sin tocar un trazo.
+ *
+ * Separarlos deja el nombre como texto real —seleccionable, leible por
+ * lectores de pantalla, nitido a cualquier tamaño— y hace que cambiarlo no
+ * exija un archivo nuevo.
+ */
 function BrandLogo({ onClick }: { onClick?: () => void }) {
   return (
-    <Link to="/" onClick={onClick} className="flex items-center shrink-0">
+    <Link
+      to="/"
+      onClick={onClick}
+      className="flex items-center gap-3 md:gap-3.5 shrink-0 no-underline"
+      aria-label="Voces Indígenas"
+    >
       <img
-        src="/images/logo-horizontal.svg"
-        alt="Voces Indígenas"
-        width={337}
+        src="/images/logo-sello.svg"
+        alt=""
+        aria-hidden="true"
+        width={96}
         height={96}
-        className="h-16 md:h-20 w-auto"
+        className="h-14 md:h-16 w-auto shrink-0"
       />
+      <span className="flex flex-col justify-center leading-none">
+        <span className="brand-voces">Voces</span>
+        <span className="brand-indigenas">Indígenas</span>
+      </span>
     </Link>
   );
 }
