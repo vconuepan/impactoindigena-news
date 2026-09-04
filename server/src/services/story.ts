@@ -9,7 +9,7 @@ import { searchByEmbedding, fetchStoryForEmbedding, saveEmbeddingTx } from '../l
 import { createLogger } from '../lib/logger.js'
 import { notifyJobFailure } from '../lib/notify.js'
 import { config } from '../config.js'
-import { GEOGRAPHIC_ISSUE_COUNTRY } from '../lib/country-focus.js'
+import { GEOGRAPHIC_ISSUE_COUNTRIES } from '../lib/country-focus.js'
 import { checkSourceAge } from '../lib/source-age.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { buildRelatedStoriesPrompt } from '../prompts/related-stories.js'
@@ -700,8 +700,12 @@ function buildIssueCondition(issueSlug: string): Prisma.StoryWhereInput {
   //
   // Las dos vias de arriba se conservan para el archivo anterior al backfill,
   // que todavia tiene el pais guardado como issue.
-  const country = GEOGRAPHIC_ISSUE_COUNTRY[issueSlug]
-  if (country) or.push({ countryFocus: country })
+  // Una seccion geografica puede agrupar varios paises: Chile es uno,
+  // Latinoamerica son veinticuatro. Con uno solo se filtra por igualdad, que es
+  // lo que el indice de `country_focus` resuelve mas rapido.
+  const countries = GEOGRAPHIC_ISSUE_COUNTRIES[issueSlug]
+  if (countries?.length === 1) or.push({ countryFocus: countries[0] })
+  else if (countries?.length) or.push({ countryFocus: { in: [...countries] } })
 
   return { OR: or }
 }
@@ -1180,6 +1184,13 @@ export async function getClusterMembers(slug: string): Promise<{
 
 const NEGATIVE_EMOTIONS: EmotionTag[] = [EmotionTag.frustrating, EmotionTag.scary]
 
+/**
+ * Cuantas filas se traen por seccion, como multiplo de las que se muestran por
+ * cubo emocional. Ver la nota dentro de `getHomepageData`: cambia el reparto
+ * entre una consulta amplia y tres angostas, no lo que ve el lector.
+ */
+const HOMEPAGE_FETCH_MULTIPLIER = 10
+
 export async function getHomepageData(issueSlugs: string[], storiesPerIssue = 7) {
   const buildIssueCondition = (slug: string) => ({
     OR: [
@@ -1201,20 +1212,42 @@ export async function getHomepageData(issueSlugs: string[], storiesPerIssue = 7)
       ...buildIssueCondition(slug),
     }
 
-    const [uplifting, calm, negative] = await Promise.all([
-      prisma.story.findMany({
-        where: { ...baseWhere, emotionTag: EmotionTag.uplifting },
-        select: PUBLIC_STORY_SELECT, orderBy, take: storiesPerIssue,
-      }),
-      prisma.story.findMany({
-        where: { ...baseWhere, emotionTag: EmotionTag.calm },
-        select: PUBLIC_STORY_SELECT, orderBy, take: storiesPerIssue,
-      }),
-      prisma.story.findMany({
-        where: { ...baseWhere, emotionTag: { in: NEGATIVE_EMOTIONS } },
-        select: PUBLIC_STORY_SELECT, orderBy, take: storiesPerIssue,
-      }),
-    ])
+    // UNA consulta por seccion, no tres.
+    //
+    // Antes se lanzaba una por cubo emocional, asi que la portada emitia
+    // `secciones x 3` consultas simultaneas por cada fallo de cache: 15 con las
+    // cinco secciones de hoy, y 36 con las ocho previstas mas las verticales.
+    // Prisma abre por defecto `cpus x 2 + 1` conexiones —tres a cinco en un App
+    // Service chico—, asi que esas consultas se encolaban de a cinco y el primer
+    // visitante despues de cada minuto pagaba la cola entera.
+    //
+    // Ahora se traen las mas recientes de la seccion una sola vez y se reparten
+    // en memoria. El multiplicador da holgura para que cada cubo llegue a su
+    // cuota: con 7 por cubo se piden 70 filas, diez veces lo que necesita el
+    // cubo mas chico. Si una seccion no tiene 7 historias de un tono entre sus
+    // 70 mas recientes, ese cubo sale corto — que es exactamente lo que pasaba
+    // antes cuando la seccion no tenia 7 de ese tono.
+    const rows = await prisma.story.findMany({
+      where: baseWhere,
+      select: PUBLIC_STORY_SELECT,
+      orderBy,
+      take: storiesPerIssue * HOMEPAGE_FETCH_MULTIPLIER,
+    })
+
+    const uplifting: typeof rows = []
+    const calm: typeof rows = []
+    const negative: typeof rows = []
+    for (const row of rows) {
+      const tag = (row as { emotionTag?: EmotionTag | null }).emotionTag
+      if (tag === EmotionTag.uplifting) {
+        if (uplifting.length < storiesPerIssue) uplifting.push(row)
+      } else if (tag === EmotionTag.calm) {
+        if (calm.length < storiesPerIssue) calm.push(row)
+      } else if (tag && NEGATIVE_EMOTIONS.includes(tag)) {
+        if (negative.length < storiesPerIssue) negative.push(row)
+      }
+      if (uplifting.length >= storiesPerIssue && calm.length >= storiesPerIssue && negative.length >= storiesPerIssue) break
+    }
 
     return { slug, uplifting, calm, negative }
   })

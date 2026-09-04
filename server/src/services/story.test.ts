@@ -32,7 +32,7 @@ const mockPrisma = vi.hoisted(() => ({
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
-const { getStoryIdsByStatus, generateUniqueSlugs, getStories, deleteStory, dissolveCluster, getClusterRedirectSlug } = await import('./story.js')
+const { getStoryIdsByStatus, generateUniqueSlugs, getStories, deleteStory, dissolveCluster, getClusterRedirectSlug, getPublishedStories, getHomepageData } = await import('./story.js')
 
 describe('getStories', () => {
   beforeEach(() => {
@@ -540,5 +540,127 @@ describe('getClusterRedirectSlug', () => {
     const result = await getClusterRedirectSlug('member-slug')
 
     expect(result).toBeNull()
+  })
+})
+
+/**
+ * La jerarquia madre -> hija.
+ *
+ * De esto depende el modelo entero de subcategorias: una historia archivada en
+ * "Territorio y Tierras" tiene que aparecer al consultar su madre. `buildIssueCondition`
+ * ya lo resolvia con `{ parent: { slug } }` desde el eje geografico de agosto,
+ * pero ni un test lo cubria: los tests de portada construyen issues con
+ * `parentId: null` siempre. Sin esto, romper la herencia no falla ninguna suite.
+ */
+describe('secciones con subcategorias (jerarquia madre/hija)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma.story.findMany.mockResolvedValue([])
+    mockPrisma.story.count.mockResolvedValue(0)
+  })
+
+  /** Aplana el `where` a texto para poder afirmar sobre su forma sin acoplarse al orden de las claves. */
+  const condicionDe = (where: unknown) => JSON.stringify(where)
+
+  it('una seccion incluye las historias de sus subcategorias', async () => {
+    await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'derechos-indigenas' })
+
+    const { where } = mockPrisma.story.findMany.mock.calls[0][0]
+    const texto = condicionDe(where)
+    // La via directa: la historia esta en la madre.
+    expect(texto).toContain('"slug":"derechos-indigenas"')
+    // La via heredada: la historia esta en una hija cuya madre es esta seccion.
+    expect(texto).toContain('"parent":{"slug":"derechos-indigenas"}')
+  })
+
+  it('la portada tambien hereda de las subcategorias', async () => {
+    await getHomepageData(['derechos-indigenas'], 7)
+
+    const { where } = mockPrisma.story.findMany.mock.calls[0][0]
+    expect(condicionDe(where)).toContain('"parent":{"slug":"derechos-indigenas"}')
+  })
+
+  it('una seccion no absorbe las hijas de otra', async () => {
+    await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'cultura-y-conocimientos-ancestrales' })
+
+    const texto = condicionDe(mockPrisma.story.findMany.mock.calls[0][0].where)
+    expect(texto).toContain('"parent":{"slug":"cultura-y-conocimientos-ancestrales"}')
+    expect(texto).not.toContain('derechos-indigenas')
+  })
+
+  it('la portada emite UNA consulta por seccion, no una por tono emocional', async () => {
+    // El costo de la portada es `secciones x consultas`. Con tres consultas por
+    // seccion, ocho secciones mas las verticales emitian 36 simultaneas contra
+    // un pool de tres a cinco conexiones. Este test fija el reparto en una.
+    await getHomepageData(['a', 'b', 'c'], 7)
+    expect(mockPrisma.story.findMany).toHaveBeenCalledTimes(3)
+  })
+
+  it('reparte los tres tonos desde una sola consulta', async () => {
+    const fila = (id: string, emotionTag: string) => ({ id, emotionTag })
+    mockPrisma.story.findMany.mockResolvedValue([
+      fila('u1', 'uplifting'), fila('c1', 'calm'), fila('n1', 'frustrating'),
+      fila('n2', 'scary'), fila('u2', 'uplifting'),
+    ])
+
+    const { storiesByIssue } = await getHomepageData(['derechos-indigenas'], 7)
+    const seccion = storiesByIssue['derechos-indigenas']
+
+    expect(seccion.uplifting.map((s: any) => s.id)).toEqual(['u1', 'u2'])
+    expect(seccion.calm.map((s: any) => s.id)).toEqual(['c1'])
+    expect(seccion.negative.map((s: any) => s.id)).toEqual(['n1', 'n2'])
+  })
+
+  it('no devuelve mas historias por tono de las que se piden', async () => {
+    mockPrisma.story.findMany.mockResolvedValue(
+      Array.from({ length: 20 }, (_, i) => ({ id: `u${i}`, emotionTag: 'uplifting' })),
+    )
+
+    const { storiesByIssue } = await getHomepageData(['derechos-indigenas'], 7)
+    expect(storiesByIssue['derechos-indigenas'].uplifting).toHaveLength(7)
+  })
+})
+
+/**
+ * Secciones geograficas de uno y de varios paises.
+ *
+ * `GEOGRAPHIC_ISSUE_COUNTRIES` paso de un pais por seccion a una lista, porque
+ * Latinoamerica agrupa veinticuatro. Con un solo pais se filtra por igualdad
+ * —lo que el indice de `country_focus` resuelve mas rapido— y con varios por
+ * `IN`. Los dos caminos son distintos y los dos tienen que funcionar.
+ */
+describe('secciones geograficas', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma.story.findMany.mockResolvedValue([])
+    mockPrisma.story.count.mockResolvedValue(0)
+  })
+
+  it('Chile filtra por igualdad, no por IN', async () => {
+    await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'chile-indigena' })
+
+    const texto = JSON.stringify(mockPrisma.story.findMany.mock.calls[0][0].where)
+    expect(texto).toContain('"countryFocus":"CL"')
+    expect(texto).not.toContain('"countryFocus":{"in"')
+  })
+
+  it('Latinoamerica filtra por IN e incluye a Chile, Mexico y Brasil', async () => {
+    await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'latinoamerica' })
+
+    const where = mockPrisma.story.findMany.mock.calls[0][0].where
+    const texto = JSON.stringify(where)
+    expect(texto).toContain('"countryFocus":{"in"')
+    for (const pais of ['CL', 'MX', 'BR', 'GT', 'PE']) {
+      expect(texto).toContain(`"${pais}"`)
+    }
+    // Y NO arrastra paises de fuera de la region.
+    expect(texto).not.toContain('"CA"')
+    expect(texto).not.toContain('"AU"')
+  })
+
+  it('una seccion tematica no filtra por pais', async () => {
+    await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'derechos-indigenas' })
+
+    expect(JSON.stringify(mockPrisma.story.findMany.mock.calls[0][0].where)).not.toContain('countryFocus')
   })
 })

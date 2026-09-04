@@ -39,3 +39,7 @@ pm/
 .claude/settings.local.json
 .claude/to-add-for-batches.txt
 .gstack/
+
+# Registros de reversion de las migraciones. Son de la corrida, no del repo:
+# dicen que historia se movio y a donde, para poder deshacerla sin el modelo.
+.migraciones-log/

@@ -43,6 +43,62 @@ const PUBLIC_STORY_SELECT = {
   },
 }
 
+/**
+ * Como se decide que historias pertenecen a una comunidad.
+ *
+ * EL PROBLEMA QUE REPARA. La condicion era `issueId IN (issue_ids)` Y las
+ * palabras clave, las dos obligatorias. Los `issue_ids` se cargaron en el seed
+ * con identificadores que ya no existen —`issue-chile-005`, `issue-paz-004`—,
+ * asi que al 4-sep-2026 ONCE de las dieciseis comunidades apuntaban a algun
+ * tema fantasma y dos mostraban CERO historias. "Pueblo Mapuche" sobrevivia de
+ * casualidad: de sus tres identificadores, uno seguia vivo.
+ *
+ * Y el problema se repite: cada vez que cambia la taxonomia, los
+ * identificadores guardados quedan viejos. Con las ocho categorias previstas
+ * vuelven a romperse todas.
+ *
+ * COMO SE DECIDE AHORA. Una comunidad es un PUEBLO o un TERRITORIO, y eso se
+ * reconoce por como se lo nombra, no por el cajon tematico donde cayo la nota:
+ *
+ *   1. Si la comunidad tiene palabras clave, MANDAN ellas. Una nota que dice
+ *      "mapuche" pertenece al Pueblo Mapuche este en derechos, en cultura o en
+ *      economia. Asi la comunidad deja de depender de la taxonomia.
+ *   2. Si no tiene palabras clave —las secciones tipo CAUSA, que son temas
+ *      disfrazados de comunidad— se cae a los temas, descartando los que ya no
+ *      existen.
+ *   3. Si no queda ninguna via, no se inventa: devuelve una condicion que no
+ *      encaja con nada, y la comunidad se muestra vacia de forma explicita.
+ */
+export function buildCommunityCondition(
+  keywords: string[],
+  issueIds: string[],
+  temasVivos: Set<string>,
+): { where: Record<string, unknown>; via: 'keywords' | 'temas' | 'ninguna' } {
+  if (keywords.length > 0) {
+    return {
+      via: 'keywords',
+      where: {
+        OR: keywords.flatMap((kw: string) => [
+          { title: { contains: kw, mode: 'insensitive' as const } },
+          { summary: { contains: kw, mode: 'insensitive' as const } },
+          { sourceTitle: { contains: kw, mode: 'insensitive' as const } },
+        ]),
+      },
+    }
+  }
+
+  const vivos = issueIds.filter(id => temasVivos.has(id))
+  if (vivos.length > 0) return { via: 'temas', where: { issueId: { in: vivos } } }
+
+  return { via: 'ninguna', where: { id: { in: [] } } }
+}
+
+/** Identificadores de tema que existen hoy. Se consulta por corrida, no por historia. */
+async function temasVivos(): Promise<Set<string>> {
+  const issues = await prisma.issue.findMany({ select: { id: true } })
+  return new Set(issues.map(i => i.id))
+}
+
 // GET /api/communities — list active communities
 router.get('/', async (_req, res) => {
   try {
@@ -96,21 +152,12 @@ router.get('/:slug/stories', async (req, res) => {
     const pageSize = Math.min(50, Math.max(1, parseInt(req.query.pageSize as string, 10) || 20))
     const minRelevance = 3
 
-    const keywordFilter = keywords.length > 0
-      ? {
-          OR: keywords.flatMap((kw: string) => [
-            { title: { contains: kw, mode: 'insensitive' as const } },
-            { summary: { contains: kw, mode: 'insensitive' as const } },
-            { sourceTitle: { contains: kw, mode: 'insensitive' as const } },
-          ]),
-        }
-      : {}
+    const cond = buildCommunityCondition(keywords, community.issueIds, await temasVivos())
 
     const where = {
       status: StoryStatus.published,
-      issueId: { in: community.issueIds },
       relevance: { gte: minRelevance },
-      ...keywordFilter,
+      ...cond.where,
     }
 
     const [total, stories] = await Promise.all([
@@ -162,21 +209,14 @@ router.get('/:slug/signals', async (req, res) => {
     const now7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     const now30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-    const keywordFilter = keywords.length > 0
-      ? {
-          OR: keywords.flatMap((kw) => [
-            { title: { contains: kw, mode: 'insensitive' as const } },
-            { summary: { contains: kw, mode: 'insensitive' as const } },
-            { sourceTitle: { contains: kw, mode: 'insensitive' as const } },
-          ]),
-        }
-      : {}
+    // Misma regla que en /stories: una comunidad se reconoce por como se la
+    // nombra, no por el cajon tematico. Ver `buildCommunityCondition`.
+    const cond = buildCommunityCondition(keywords, issueIds, await temasVivos())
 
     const baseWhere = {
       status: StoryStatus.published,
-      issueId: { in: issueIds },
       relevance: { gte: 3 },
-      ...keywordFilter,
+      ...cond.where,
     }
 
     const [

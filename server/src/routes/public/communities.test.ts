@@ -21,6 +21,11 @@ const mockPrisma = vi.hoisted(() => ({
     count: vi.fn(),
     findMany: vi.fn(),
   },
+  // `buildCommunityCondition` consulta los temas que existen hoy, para
+  // descartar los identificadores fantasma que dejo el seed.
+  issue: {
+    findMany: vi.fn(),
+  },
   user: {
     findUnique: vi.fn(),
   },
@@ -127,6 +132,9 @@ describe('Communities API', () => {
       mockPrisma.$queryRaw.mockResolvedValue([
         { id: 'comm-1', issue_ids: ['issue-1'], keywords: [] },
       ])
+      // Sin palabras clave, la comunidad se resuelve por tema; `issue-1` tiene
+      // que existir para no caer en la via vacia.
+      mockPrisma.issue.findMany.mockResolvedValue([{ id: 'issue-1' }])
       mockPrisma.story.count.mockResolvedValue(1)
       mockPrisma.story.findMany.mockResolvedValue([
         {
