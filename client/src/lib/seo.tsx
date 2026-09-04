@@ -1,12 +1,12 @@
 import { ReactNode } from 'react'
-import { BRAND } from '../config'
+import { BRAND, SITE_URL } from '../config'
 // Shared SEO constants
 export const SEO = {
   siteName: 'Voces Indígenas',
-  siteUrl: 'https://vocesindigenas.org',
+  siteUrl: SITE_URL,
   defaultTitle: 'Voces Indígenas - Noticias que importan a los pueblos indígenas',
   defaultDescription: `${BRAND.claim} ${BRAND.claimSupport}`,
-  ogImage: 'https://vocesindigenas.org/images/og-image.png',
+  ogImage: `${SITE_URL}/images/og-image.png`,
   ogImageWidth: '1200',
   ogImageHeight: '630',
   twitterCard: 'summary_large_image' as const,

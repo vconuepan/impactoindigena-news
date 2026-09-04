@@ -15,11 +15,19 @@
     "searchLabel": "Buscar noticias",
     "support": "Apóyanos"
   },
+  "verticals": {
+    "label": "Navegación geográfica",
+    "wallmapu": "Wallmapu",
+    "chile": "Chile Indígena",
+    "latinoamerica": "Latinoamérica",
+    "mundo": "Mundo"
+  },
   "issues": {
-    "climaBiodiversidad": "Cambio Climático",
-    "derechosIndigenas": "Derechos Indígenas",
-    "desarrolloSostenible": "Economías Indígenas",
-    "chileIndigena": "Chile Intercultural"
+    "climaBiodiversidad": "Clima",
+    "derechosIndigenas": "Derechos",
+    "desarrolloSostenible": "Economías",
+    "culturaAncestral": "Cultura",
+    "chileIndigena": "Chile"
   },
   "footer": {
     "description": "Noticias sobre los pueblos indígenas que generan impacto en sus territorios y derechos, y el impacto de los pueblos indígenas en el mundo.",

@@ -15,11 +15,19 @@
     "searchLabel": "Search stories",
     "support": "Support us"
   },
+  "verticals": {
+    "label": "Geographic navigation",
+    "wallmapu": "Wallmapu",
+    "chile": "Indigenous Chile",
+    "latinoamerica": "Latin America",
+    "mundo": "World"
+  },
   "issues": {
-    "climaBiodiversidad": "Climate Change",
-    "derechosIndigenas": "Indigenous Rights",
-    "desarrolloSostenible": "Indigenous Economies",
-    "chileIndigena": "Intercultural Chile"
+    "climaBiodiversidad": "Climate",
+    "derechosIndigenas": "Rights",
+    "desarrolloSostenible": "Economies",
+    "culturaAncestral": "Culture",
+    "chileIndigena": "Chile"
   },
   "footer": {
     "description": "News about indigenous peoples that impacts their territories and rights, and the impact of indigenous peoples on the world.",

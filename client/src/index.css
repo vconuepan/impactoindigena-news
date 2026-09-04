@@ -322,6 +322,17 @@
     background-color: var(--card-hover-color);
   }
 
+  /*
+   * Verticales geograficas. Deliberadamente MAS CHICA que .issue-nav-link:
+   * el eje geografico orienta, el tematico es el que se navega. Si las dos
+   * barras pesaran igual, el lector no sabria cual mirar primero.
+   */
+  .vertical-nav-link {
+    @apply inline-flex items-center px-4 py-2 text-[11px] font-bold uppercase tracking-[0.1em] whitespace-nowrap transition-colors;
+    @apply focus-visible:ring-2 focus-visible:ring-brand-500 min-h-[36px];
+    font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  }
+
   .issue-nav-link {
     @apply inline-flex items-center gap-2 px-3 py-3 text-sm font-bold uppercase tracking-wide whitespace-nowrap transition-colors;
     @apply focus-visible:ring-2 focus-visible:ring-brand-500 border-b-2 border-transparent text-neutral-400;

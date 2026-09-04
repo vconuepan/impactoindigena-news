@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { EditPanel, PANEL_BODY, PANEL_FOOTER } from './EditPanel'
 import { Button } from '../ui/Button'
 import { LoadingSpinner } from '../ui/LoadingSpinner'
+import { SITE_URL, SITE_HOST } from '../../config'
 import type { FacebookPost } from '@shared/types'
 
 /**
@@ -64,7 +65,7 @@ export function FacebookDraftPanel({
   }
 
   const storyUrl = draft?.story?.slug
-    ? `https://vocesindigenas.org/stories/${draft.story.slug}`
+    ? `${SITE_URL}/stories/${draft.story.slug}`
     : null
 
   return (
@@ -139,7 +140,7 @@ export function FacebookDraftPanel({
                 )}
                 <div className="px-3 py-2 bg-neutral-50">
                   <p className="text-[11px] uppercase tracking-wide text-neutral-400">
-                    vocesindigenas.org
+                    {SITE_HOST}
                   </p>
                   <p className="text-sm font-medium text-neutral-800 line-clamp-2">
                     {draft.story?.title || 'Sin título'}

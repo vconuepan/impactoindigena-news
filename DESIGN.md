@@ -86,17 +86,20 @@ Inter, Roboto, Arial, Helvetica, Montserrat, Poppins, Raleway — no usar como d
 
 ### Colores de categoría (paleta tierra editorial)
 
-Cuatro familias derivadas de la marca. Sin violeta ni naranja brillante — todos los tonos son tierra, bosque, agua o terracota.
+Cinco familias derivadas de la marca. Sin violeta ni naranja brillante — todos los tonos son tierra, bosque, agua o terracota.
 
 | Familia | Hex | Categorías |
 |---------|-----|-----------|
 | Verde bosque | `#15803D` | Cambio Climático y Biodiversidad, Planeta/Clima |
 | Terracota | `#B84236` | Derechos de los Pueblos Indígenas, Amenazas urgentes |
-| Ocre tierra | `#8A6A28` | Empresas Indígenas, Desarrollo sostenible |
+| Ocre tierra | `#8A6A28` | Economías Indígenas |
+| Café tostado | `#7A4A2B` | Cultura y Conocimientos Ancestrales |
 | Pizarra (azul agua) | `#1A6B8A` | Chile Intercultural, Ciencia y tecnología |
 | Verde marca (default) | `#0D5F3C` | General, Comunidades, fallback |
 
-Implementación: `client/src/lib/category-colors.ts` — los cinco objetos base (`VERDE_BOSQUE`, `TERRACOTA`, `OCRE_TIERRA`, `PIZARRA`, `VERDE_MARCA`) asignados por slug.
+Café tostado se sumó el 1-sep-2026 con la categoría Cultura y Conocimientos Ancestrales, y el director lo aprobó el 3-sep-2026. Se descartó un quinto verde y un segundo azul porque los dots de categoría conviven en la nav: otro verde junto a verde bosque haría indistinguibles clima y cultura de un vistazo.
+
+Implementación: `client/src/lib/category-colors.ts` — los seis objetos base (`VERDE_BOSQUE`, `TERRACOTA`, `OCRE_TIERRA`, `CAFE_TOSTADO`, `PIZARRA`, `VERDE_MARCA`) asignados por slug.
 
 Estos colores se usan en: dots de categoría en nav, tags en cards, borders activos en `.issue-nav-link`, gradientes de cards sin imagen.
 
@@ -176,14 +179,21 @@ El hero principal es el primer elemento debajo del header. Es tratamiento de **p
 
 ```css
 font-family: DM Sans;
-font-size: 10px;
+font-size: 14px;          /* text-sm */
 font-weight: 700;
-letter-spacing: 0.10em;
+letter-spacing: 0.35px;   /* tracking-wide */
 text-transform: uppercase;
 white-space: nowrap;
-padding: 12px 12px; /* px-3 */
+padding: 12px 12px;       /* px-3 */
+gap: 8px;                 /* separacion con el dot */
 border-bottom: 2px solid transparent;
 ```
+
+**Las etiquetas de la nav van en UNA PALABRA.** Clima, Derechos, Economías, Cultura, Chile. El nombre completo del tema vive en el título de la sección y en el desplegable, no en la barra.
+
+Es una restriccion medida, no una preferencia: el contenedor es `max-w-6xl` con `px-4`, o sea **1.120 px utiles**. Medido el 3-sep-2026 con esta misma tipografia, las ocho categorias previstas piden **1.933 px** con nombres descriptivos y **924 px** con una palabra cada una. Con cinco secciones y nombres largos ya se pasaba —1.149 px— y la barra caia a dos lineas por el `flex-wrap`.
+
+Este bloque decia 10px y `letter-spacing: 0.10em` hasta el 3-sep-2026. El codigo siempre uso 14px y `tracking-wide`; el documento estaba desactualizado, y esa diferencia del 40% es justo la que decide si las ocho caben.
 
 ### `.ruled-section` (encabezados de sección en homepage)
 

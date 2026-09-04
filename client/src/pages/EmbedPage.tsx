@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { publicApi } from '../lib/api'
+import { SITE_URL } from '../config'
 import { formatRelativeTime } from '../lib/constants'
 
 export default function EmbedPage() {
@@ -100,7 +101,7 @@ export default function EmbedPage() {
 
       <div className={`px-4 py-2 border-t flex items-center justify-center ${isDark ? 'border-neutral-700' : 'border-neutral-200'}`}>
         <a
-          href="https://vocesindigenas.org"
+          href={SITE_URL}
           target="_blank"
           rel="noopener noreferrer"
           className={`inline-flex items-center gap-1.5 text-[11px] ${isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-500 hover:text-neutral-700'}`}

@@ -43,6 +43,28 @@ const ISSUE_LINKS = [
     slug: "desarrollo-sostenible-y-autodeterminado",
     href: "/issues/desarrollo-sostenible-y-autodeterminado",
   },
+  {
+    labelKey: "issues.culturaAncestral",
+    slug: "cultura-y-conocimientos-ancestrales",
+    href: "/issues/cultura-y-conocimientos-ancestrales",
+  },
+];
+
+/**
+ * Verticales geograficas: el eje "donde", separado del eje "que".
+ *
+ * Es un zoom de escala, de lo propio a lo general, y cada nivel se resuelve de
+ * una fuente distinta: Wallmapu por comunidad (`Community`), Chile y
+ * Latinoamerica por `Story.countryFocus` a traves de sus secciones
+ * geograficas, y Mundo es la portada sin filtro. Una historia puede estar en
+ * varios a la vez sin dejar su tema, que es lo que permitio separar los dos
+ * ejes en agosto.
+ */
+const VERTICAL_LINKS = [
+  { labelKey: "verticals.wallmapu", href: "/comunidades/mapuche" },
+  { labelKey: "verticals.chile", href: "/issues/chile-indigena" },
+  { labelKey: "verticals.latinoamerica", href: "/issues/latinoamerica" },
+  { labelKey: "verticals.mundo", href: "/" },
 ];
 
 const FOOTER_NAV = [
@@ -333,6 +355,28 @@ function PublicLayoutInner() {
             </div>
           </div>
         </div>
+
+        {/* Verticales geograficas: donde. Va sobre las categorias, que son el que. */}
+        <nav className="hidden lg:block bg-neutral-50 border-b border-neutral-200" aria-label={t('verticals.label')}>
+          <ul className="max-w-6xl mx-auto px-4 flex items-center justify-center">
+            {VERTICAL_LINKS.map((link, i) => {
+              const active = link.href === "/"
+                ? location.pathname === "/"
+                : location.pathname.startsWith(link.href);
+              return (
+                <li key={link.href} className={i > 0 ? "border-l border-neutral-200" : ""}>
+                  <Link
+                    to={link.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`vertical-nav-link ${active ? "text-brand-800" : "text-neutral-500 hover:text-brand-700"}`}
+                  >
+                    {t(link.labelKey)}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
 
         <nav className="hidden lg:block border-b border-neutral-200" aria-label={t('nav.thematicCategories')}>
           <ul className="max-w-6xl mx-auto px-4 flex flex-wrap items-center justify-center gap-0">
