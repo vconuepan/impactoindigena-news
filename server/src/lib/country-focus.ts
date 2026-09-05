@@ -46,10 +46,24 @@ export const GEOGRAPHIC_ISSUE_SLUGS = ['chile-indigena', 'latinoamerica'] as con
  * leccion que `normalizeCountry` y el guardarrail de capitalizacion.
  */
 export const REGIONS = {
-  latinoamerica: [
-    'MX', 'GT', 'BZ', 'SV', 'HN', 'NI', 'CR', 'PA',
-    'CO', 'VE', 'EC', 'PE', 'BO', 'CL', 'AR', 'PY', 'UY', 'BR',
-    'GY', 'SR', 'CU', 'DO', 'HT', 'PR',
+  /**
+   * Abya Yala: el continente americano completo.
+   *
+   * El nombre es guna y designa America entera, no solo su mitad de habla
+   * hispana y portuguesa, asi que la seccion incluye a Canada y Estados
+   * Unidos. Recortarla a America Latina dejaria fuera a las Primeras Naciones,
+   * los inuit, los metis y los pueblos nativos de Estados Unidos, que este
+   * medio cubre: el nombre prometeria mas de lo que entrega.
+   */
+  abyaYala: [
+    // America del Norte
+    'CA', 'US', 'MX',
+    // Centroamerica
+    'GT', 'BZ', 'SV', 'HN', 'NI', 'CR', 'PA',
+    // Sudamerica
+    'CO', 'VE', 'EC', 'PE', 'BO', 'CL', 'AR', 'PY', 'UY', 'BR', 'GY', 'SR',
+    // Caribe
+    'CU', 'DO', 'HT', 'PR',
   ],
 } as const satisfies Record<string, readonly string[]>
 
@@ -62,7 +76,7 @@ export const REGIONS = {
  */
 export const GEOGRAPHIC_ISSUE_COUNTRIES: Record<string, readonly string[]> = {
   'chile-indigena': ['CL'],
-  latinoamerica: REGIONS.latinoamerica,
+  latinoamerica: REGIONS.abyaYala,
 }
 
 /**

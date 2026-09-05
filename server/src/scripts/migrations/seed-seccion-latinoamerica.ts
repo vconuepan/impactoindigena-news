@@ -10,7 +10,7 @@
  * `GEOGRAPHIC_ISSUE_SLUGS` la filtra— porque ofrecerle un tema con forma de
  * pais mientras se le pide clasificar por asunto es una contradiccion.
  *
- * Los paises que la alimentan viven en `REGIONS.latinoamerica`, en el codigo.
+ * Los paises que la alimentan viven en `REGIONS.abyaYala`, en el codigo.
  *
  * Correr:
  *   npm run migration:seed-latam --prefix server           # simulacion
@@ -28,7 +28,7 @@ const LATAM = {
   // que ya existen ni montar un 301 para una ruta que sigue siendo descriptiva.
   name: 'Abya Yala',
   slug: 'latinoamerica',
-  description: 'Pueblos indígenas de América Latina y el Caribe',
+  description: 'Pueblos indígenas del continente americano, de Alaska a Tierra del Fuego',
   intro:
     'Los pueblos indígenas de América Latina y el Caribe son más de ochocientos, hablan cientos de lenguas y sostienen algunos de los territorios mejor conservados del continente. Esta sección reúne lo que ocurre en la región completa: las mismas historias que aparecen en su tema, vistas desde el mapa.',
   evaluationIntro: 'Esta sección agrupa por geografía, no por tema. Una historia entra cuando los hechos ocurren en un país de la región:',
@@ -46,10 +46,10 @@ async function main() {
   const existente = await prisma.issue.findUnique({ where: { slug: LATAM.slug } })
   console.log(existente ? `Seccion: YA EXISTE (${existente.id}) — se actualizan sus textos` : 'Seccion: se CREA')
   console.log(`  nombre: ${LATAM.name}`)
-  console.log(`  paises que la alimentan: ${REGIONS.latinoamerica.length} — ${REGIONS.latinoamerica.join(', ')}`)
+  console.log(`  paises que la alimentan: ${REGIONS.abyaYala.length} — ${REGIONS.abyaYala.join(', ')}`)
 
   const alcance = await prisma.story.count({
-    where: { status: 'published', slug: { not: null }, countryFocus: { in: [...REGIONS.latinoamerica] } },
+    where: { status: 'published', slug: { not: null }, countryFocus: { in: [...REGIONS.abyaYala] } },
   })
   console.log(`  historias publicadas que mostraria: ${alcance}`)
 

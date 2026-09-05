@@ -644,18 +644,19 @@ describe('secciones geograficas', () => {
     expect(texto).not.toContain('"countryFocus":{"in"')
   })
 
-  it('Latinoamerica filtra por IN e incluye a Chile, Mexico y Brasil', async () => {
+  it('Abya Yala filtra por IN y abarca el continente entero, de Canada a Chile', async () => {
     await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'latinoamerica' })
 
     const where = mockPrisma.story.findMany.mock.calls[0][0].where
     const texto = JSON.stringify(where)
     expect(texto).toContain('"countryFocus":{"in"')
-    for (const pais of ['CL', 'MX', 'BR', 'GT', 'PE']) {
+    // Abya Yala es America entera: el norte cuenta tanto como el sur.
+    for (const pais of ['CA', 'US', 'MX', 'GT', 'BR', 'PE', 'CL']) {
       expect(texto).toContain(`"${pais}"`)
     }
-    // Y NO arrastra paises de fuera de la region.
-    expect(texto).not.toContain('"CA"')
+    // Y no arrastra pueblos indigenas de otros continentes.
     expect(texto).not.toContain('"AU"')
+    expect(texto).not.toContain('"NZ"')
   })
 
   it('una seccion tematica no filtra por pais', async () => {
