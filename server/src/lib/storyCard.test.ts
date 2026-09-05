@@ -23,6 +23,19 @@ function pngBuffer(w: number, h: number): Buffer {
   return c.toBuffer('image/png')
 }
 
+/**
+ * JPEG plano de un solo color. Un gris uniforme comprime tan bien que
+ * reencodearlo no lo achica: sirve justo para el caso en que el rehospedaje
+ * debe conservar los bytes originales.
+ */
+function jpegBuffer(w: number, h: number): Buffer {
+  const c = createCanvas(w, h)
+  const ctx = c.getContext('2d')
+  ctx.fillStyle = '#888'
+  ctx.fillRect(0, 0, w, h)
+  return c.toBuffer('image/jpeg', 82)
+}
+
 /** Read width/height from a PNG buffer's IHDR chunk. */
 function pngSize(buf: Buffer): { w: number; h: number } {
   return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) }
@@ -103,17 +116,32 @@ describe('rehostOrComposeStoryImage', () => {
     expect(mockUpload).not.toHaveBeenCalled()
   })
 
-  it('rehosts verbatim when the source is >= 1200px wide', async () => {
+  it('caps a >= 1200px source at 1200 wide and stores it as JPEG', async () => {
     const buffer = pngBuffer(1400, 700)
     mockDownload.mockResolvedValue({ buffer, contentType: 'image/png', ext: 'png' })
 
     const url = await rehostOrComposeStoryImage('https://src/og.png', 'id2', 'Título')
 
     expect(mockUpload).toHaveBeenCalledTimes(1)
+    const [passedBuf, filename, ct] = mockUpload.mock.calls[0]
+    expect(filename).toBe('oghero-id2.jpg')
+    expect(ct).toBe('image/jpeg')
+    expect(passedBuf).not.toBe(buffer) // re-encoded, not the original bytes
+    expect(jpegSize(passedBuf).w).toBe(1200) // 1400 -> 1200, the Discover minimum
+    expect(passedBuf.length).toBeLessThan(buffer.length)
+    expect(url).toBe('https://cdn.r2/oghero-id2.jpg')
+  })
+
+  it('keeps the original bytes when re-encoding would not make it smaller', async () => {
+    // A 1200px source is already at the cap, so the JPEG buys nothing.
+    const buffer = jpegBuffer(1200, 630)
+    mockDownload.mockResolvedValue({ buffer, contentType: 'image/jpeg', ext: 'jpg' })
+
+    await rehostOrComposeStoryImage('https://src/og.jpg', 'id2b', 'Título')
+
     const [passedBuf, filename] = mockUpload.mock.calls[0]
-    expect(filename).toBe('oghero-id2.png')
-    expect(passedBuf).toBe(buffer) // original bytes, not recomposed
-    expect(url).toBe('https://cdn.r2/oghero-id2.png')
+    expect(filename).toBe('oghero-id2b.jpg')
+    expect(passedBuf).toBe(buffer)
   })
 
   it('composes a branded card when the source is < 1200px wide', async () => {

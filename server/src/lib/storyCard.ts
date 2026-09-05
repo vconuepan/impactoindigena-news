@@ -168,6 +168,31 @@ export function composeBrandedStoryCard(img: Image, title: string): Buffer {
  */
 const STORY_CARD_JPEG_QUALITY = 82
 
+/**
+ * Ancho maximo con el que se guarda una imagen rehospedada.
+ *
+ * Antes se subia el original tal cual cuando ya media 1200 px o mas, y eso puso
+ * en R2 fotos de 6000x3376 y 5 MB para tarjetas que en movil se ven a 400 px:
+ * medido el 4-sep-2026, 1.478 de los 2.842 objetos del bucket eran PNG y
+ * pesaban el 88% del total. 1200 es el minimo que Google Discover exige para la
+ * tarjeta grande (STORY_CARD_MIN_WIDTH), asi que servir mas no gana nada.
+ */
+const REHOST_MAX_WIDTH = 1200
+
+/**
+ * Normaliza una imagen ya decodificada a JPEG con ancho acotado. Devuelve null
+ * si el original ya es mas liviano, para no reencodear en balde.
+ */
+function normalizarParaRehospedaje(img: Image, original: Buffer): Buffer | null {
+  const escala = Math.min(1, REHOST_MAX_WIDTH / img.width)
+  const w = Math.round(img.width * escala)
+  const h = Math.round(img.height * escala)
+  const canvas = createCanvas(w, h)
+  canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+  const jpeg = canvas.toBuffer('image/jpeg', STORY_CARD_JPEG_QUALITY)
+  return jpeg.length < original.length ? jpeg : null
+}
+
 export async function rehostOrComposeStoryImage(
   imageUrl: string,
   storyId: string,
@@ -178,12 +203,15 @@ export async function rehostOrComposeStoryImage(
 
   const img = await loadImage(dl.buffer).catch(() => null)
 
-  // Big enough already, or undecodable (can't measure or draw it) → rehost as-is.
+  // Big enough already, or undecodable (can't measure or draw it) → rehost.
   if (!img || img.width >= STORY_CARD_MIN_WIDTH) {
+    const normalizada = img ? normalizarParaRehospedaje(img, dl.buffer) : null
     try {
-      return await uploadImageToR2(dl.buffer, `oghero-${storyId}.${dl.ext}`, dl.contentType)
+      return normalizada
+        ? await uploadImageToR2(normalizada, `oghero-${storyId}.jpg`, 'image/jpeg')
+        : await uploadImageToR2(dl.buffer, `oghero-${storyId}.${dl.ext}`, dl.contentType)
     } catch (err) {
-      log.warn({ err, storyId }, 'story image: verbatim rehost upload failed')
+      log.warn({ err, storyId }, 'story image: rehost upload failed')
       return null
     }
   }
