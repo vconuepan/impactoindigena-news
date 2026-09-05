@@ -38,7 +38,7 @@
 | Sección | Fraunces | 28px | 600 | Titular de sección en homepage |
 | Card principal | Fraunces | 20–22px | 600 | Card destacada |
 | Card secundaria | Fraunces | 15–16px | 600 | Sidebar, cards pequeñas |
-| Body | Lora | 16px | 400 | Texto de artículo, line-height 1.75 |
+| Body | Lora | 18px | 400 | Texto de artículo, line-height 1.63 |
 | Body muted | Lora | 15–16px | 400 italic | Bajadas, leads, pull quotes |
 | Label nav | DM Sans | 10px | 700 | Categorías en nav y cards, uppercase, tracking 0.12em |
 | Metadata | DM Sans | 11–12px | 400–500 | Fuente, fecha, tiempo de lectura |
@@ -52,37 +52,54 @@ Inter, Roboto, Arial, Helvetica, Montserrat, Poppins, Raleway — no usar como d
 
 ### Paleta principal
 
-| Variable | Hex | Uso |
-|----------|-----|-----|
-| `--brand` | `#0D5F3C` | Verde editorial principal — brand, iconos, headings activos |
-| `--brand-mid` | `#166940` | Hover sobre elementos brand |
-| `--brand-light` | `#1a7a4a` | Estados secundarios brand |
-| `--brand-pale` | `#E8F2EC` | Superficies brand (badges, backgrounds de sección) |
-| `--accent` | `#C8473A` | Terracota — CTAs principales, botón Suscribirse, estados activos de alta prioridad |
-| `--accent-pale` | `#FBEFEE` | Superficie acento |
-| `--bg` | `#FAFAF8` | Background global (blanco cálido, no puro) |
-| `--surface` | `#FFFFFF` | Cards, modales, superficies elevadas |
-| `--surface-2` | `#F5F5F2` | Superficies secundarias, inputs |
-| `--text` | `#1C1917` | Texto principal (negro cálido) |
-| `--text-muted` | `#78716C` | Texto secundario, body text en secciones |
-| `--text-subtle` | `#A8A29E` | Metadata, placeholders, labels inactivos |
-| `--border` | `#E7E5E4` | Bordes de cards, separadores |
-| `--border-strong` | `#D6D3D1` | Bordes de inputs, divisores con más peso |
+**Cómo se declaran los colores.** No hay tokens `--brand` / `--text` / `--bg`:
+los colores viven en la escala de Tailwind (`client/tailwind.config.js`) y se
+usan por clase — `text-brand-800`, `bg-paper`, `border-neutral-200`. Hasta el
+5-sep-2026 esta sección documentaba catorce variables CSS que **nunca
+existieron en el código**, y eso costó tiempo cada vez que alguien las buscó.
+
+| Clase Tailwind | Hex | Uso |
+|----------------|-----|-----|
+| `brand-800` | `#0D5F3C` | Verde editorial principal — marca, iconos, encabezados activos |
+| `brand-700` | `#156040` | Hover sobre elementos de marca |
+| `brand-600` | `#1a7a4a` | Estados secundarios de marca |
+| `brand-50` | `#f0f9f4` | Superficies de marca (insignias, fondos de sección) |
+| `accent-500` | `#C8473A` | Terracota — CTA principal, botón Suscribirse |
+| `accent-50` | `#fdf2f1` | Superficie de acento |
+| `paper` | `#FAFAF8` | Fondo global, blanco cálido. Token propio, no un escalón de la neutral |
+| `white` | `#FFFFFF` | Tarjetas, modales, superficies elevadas |
+
+### Neutrales
+
+Tailwind resuelve su escala `neutral` contra variables `--n-*` declaradas en
+`:root` (`client/src/index.css`). Son la escala **stone**, cálida, para
+acompañar al negro `#1C1917`.
+
+| Clase | Hex | Contraste sobre el papel | Uso |
+|-------|-----|--------------------------|-----|
+| `neutral-900` | `#1C1917` | 17,0:1 | Texto principal (negro cálido) |
+| `neutral-600` | `#57534E` | 7,3:1 | Texto secundario con énfasis |
+| `neutral-500` | `#6B645F` | 5,6:1 | Texto secundario, cuerpo de sección |
+| `neutral-400` | `#78716C` | 4,6:1 | Metadata, etiquetas — **el gris más claro que lleva texto** |
+| `neutral-300` | `#D6D3D1` | 1,4:1 | Bordes con peso, divisores. **Nunca texto** |
+| `neutral-200` | `#E7E5E4` | — | Bordes de tarjetas, separadores |
+
+**El piso es `neutral-400`.** Del 300 hacia arriba los grises son decorativos.
+`neutral-400` se desvía a propósito del stone-400 real (`#A8A29E`), que da
+2,5:1 y no se lee; y `neutral-500` baja un escalón para no cruzarse con él.
+
+**El contraste se mide contra el papel `#FAFAF8`, no contra blanco puro.** El
+papel es más oscuro, así que un color que pasa AA sobre `#FFF` puede no pasar
+aquí: `#7C756E` da 4,54:1 sobre blanco y 4,34:1 sobre el papel.
+`client/src/lib/neutrals.test.ts` lo verifica en cada corrida.
 
 ### Modo oscuro
 
-| Variable | Hex oscuro |
-|----------|------------|
-| `--bg` | `#111110` |
-| `--surface` | `#1C1917` |
-| `--surface-2` | `#292524` |
-| `--text` | `#FAFAF8` |
-| `--text-muted` | `#A8A29E` |
-| `--text-subtle` | `#78716C` |
-| `--border` | `#292524` |
-| `--border-strong` | `#3D3836` |
-| `--brand-pale` | `#0a3d26` |
-| `--accent-pale` | `#3d1512` |
+**No implementado.** Cero clases `dark:` en el cliente, sin `darkMode` en la
+configuración de Tailwind y sin `prefers-color-scheme` en el CSS (verificado el
+5-sep-2026). Esta sección documentaba una tabla completa de valores oscuros que
+no existían. Si algún día se construye, los valores de partida son los de la
+escala stone invertida.
 
 ### Colores de categoría (paleta tierra editorial)
 
@@ -146,7 +163,10 @@ Estos colores se usan en: dots de categoría en nav, tags en cards, borders acti
 - **Enfoque:** Grid editorial — disciplinado pero con espacio para pull quotes y elementos tipográficos
 - **Ancho máximo de contenido:** `max-w-4xl` (896px) para homepage, `max-w-2xl` (672px) para artículos
 - **Grid homepage:** 2/3 + 1/3 para sección principal, columna única para el hero
-- **Ancho máximo del cuerpo de artículo:** 580–640px (optimizado para ~70 chars/línea)
+- **Ancho máximo del cuerpo de artículo:** 640px. Con Lora a 18px eso da
+  **71 caracteres por línea** — medido en vivo el 5-sep-2026, y es la medida
+  que se persigue. El documento decía 16px / 1.75 hasta esa fecha; el código
+  siempre usó 18px / 1.63, y llega antes al objetivo.
 
 ### Border radius
 
