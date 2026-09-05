@@ -125,10 +125,23 @@ export default defineConfig(async () => {
             renderedRoute.html = '<!DOCTYPE html>' + renderedRoute.html
           }
 
-          // Preload homepage API data to avoid JS→API chain
-          const apiUrl = process.env.VITE_API_URL
-          if (renderedRoute.route === '/' && apiUrl) {
-            const preloadTag = `<link rel="preload" href="${apiUrl}/api/homepage" as="fetch" crossorigin />`
+          // Preload de los datos de la portada, para romper la cadena
+          // HTML → JS → API.
+          //
+          // Ruta RELATIVA y sin `crossorigin`. Estaba escrito como
+          // `${VITE_API_URL}/api/homepage` con `crossorigin`, y las dos cosas
+          // estaban mal: `VITE_API_URL` vale "" a proposito -la API es del
+          // mismo origen y se proxea- asi que la condicion `&& apiUrl` era
+          // falsa y el preload NUNCA se emitio; y `crossorigin` en una peticion
+          // same-origin hace que el navegador descarte el preload y descargue
+          // dos veces.
+          //
+          // Importa porque el LCP no lo decide la imagen sino los DATOS: React
+          // reconstruye el DOM y solo pinta el hero cuando llega la respuesta.
+          // Medido el 5-sep-2026: el JS llega a los 1.434 ms y la peticion
+          // arranca a los 1.476, o sea recien cuando el JS la dispara.
+          if (renderedRoute.route === '/') {
+            const preloadTag = `<link rel="preload" href="/api/homepage" as="fetch" />`
             renderedRoute.html = renderedRoute.html.replace('</head>', preloadTag + '\n</head>')
           }
 
