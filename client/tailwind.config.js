@@ -37,6 +37,10 @@ export default {
         // neutrals) by setting these vars under `.admin-warm` (see index.css),
         // which makes the internal panel feel like the same product as the
         // warm editorial site without editing hundreds of class names.
+        // El papel del sitio: #FAFAF8 de DESIGN.md, blanco calido. Es un token
+        // propio y no `stone-50` porque el fondo es una decision del sistema,
+        // no un escalon de la escala neutral.
+        paper: '#FAFAF8',
         neutral: {
           50:  'rgb(var(--n-50, 250 250 250) / <alpha-value>)',
           100: 'rgb(var(--n-100, 245 245 245) / <alpha-value>)',
