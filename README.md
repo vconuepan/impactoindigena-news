@@ -32,6 +32,23 @@ Alrededor de ese núcleo hay funcionalidad que el pipeline alimenta:
 
 El programador in-process ejecuta **28 jobs** distintos, desde el pipeline hasta la renovación de tokens de redes sociales y la limpieza de datos por retención legal.
 
+## Cómo se organiza la cobertura
+
+Cada historia se ubica en **dos ejes independientes**: de qué trata y dónde ocurre. Una nota sobre una licitación pública en Temuco está a la vez en Economías y en Chile, sin duplicarse.
+
+El **eje geográfico** es la barra superior del sitio, con cuatro verticales:
+
+| Vertical | Alcance |
+|---|---|
+| **Wallmapu / Mapuche** | El pueblo mapuche y su territorio |
+| **Chile Indígena** | Los diez pueblos reconocidos en Chile |
+| **Latinoamérica** | Veinticuatro países de la región |
+| **Mundo** | Las siete regiones que cubre el crawler |
+
+El **eje temático** son las categorías bajo esa barra: Cambio Climático, Chile Intercultural, Cultura y Conocimientos Ancestrales, Derechos Indígenas, Economías Indígenas y Latinoamérica.
+
+El país no lo decide el modelo. Un detector determinista lo resuelve en código, por capas de especificidad —institución, gentilicio, nombre del país, topónimo—, y solo cae al modelo lo que ese detector no alcanza. Ver `server/src/lib/country-detect.ts`.
+
 ## Tech Stack
 
 - **Frontend:** Vite + React 18 + TypeScript + Tailwind CSS + react-helmet-async
@@ -187,7 +204,7 @@ impactoindigena-news/
 ├── server/          # Express backend (Prisma + LangChain + Azure OpenAI)
 ├── shared/          # Tipos y constantes compartidos
 ├── .specs/          # Especificaciones de comportamiento (Allium) — qué garantiza el sistema
-├── .context/        # Documentación de implementación (25 archivos) — cómo está construido
+├── .context/        # Documentación de implementación (26 archivos) — cómo está construido
 ├── .plans/          # Planes de desarrollo activos
 │   └── completed/   # Planes completados (archivo)
 ├── .github/
