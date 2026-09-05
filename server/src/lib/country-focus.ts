@@ -98,33 +98,39 @@ export const REGIONS = {
   ],
 
   /**
-   * Asia y el Pacifico. El grupo de la ONU, que incluye las islas del Pacifico
-   * -Fiji, Papua Nueva Guinea, Salomon, Vanuatu, Samoa, Tonga, Kiribati- pero
-   * NO a Australia ni a Nueva Zelandia, que alli figuran en WEOG y aqui tienen
-   * seccion propia.
+   * Asia.
+   *
+   * Es el grupo "Asia y el Pacifico" de la ONU al que se le quitaron las islas
+   * del Pacifico, que estan en `oceania`. Sin ellas el nombre corto es el
+   * exacto: llamarla "Asia y el Pacifico" sin Australia habria prometido un
+   * Pacifico que la seccion no contiene, que es el mismo defecto por el que se
+   * descarto WEOG.
    */
-  asiaPacifico: [
-    'AF', 'SA', 'BH', 'BD', 'BT', 'BN', 'KH', 'CN', 'CY', 'AE', 'FJ', 'PH',
-    'IN', 'ID', 'IR', 'IQ', 'MH', 'JP', 'JO', 'KZ', 'KI', 'KW', 'LA', 'LB',
-    'MY', 'MV', 'FM', 'MN', 'MM', 'NR', 'NP', 'OM', 'PK', 'PW', 'PG', 'QA',
-    'KR', 'KP', 'SB', 'WS', 'SG', 'LK', 'TJ', 'TH', 'TL', 'TO', 'TM', 'TV',
-    'UZ', 'VN', 'YE', 'SY', 'PS', 'IL', 'TR', 'VU',
-    // No son Estados miembros de la ONU y por eso no figuran en ningun grupo,
-    // pero sus pueblos son parte de lo que cubrimos: los kanak de Kanaky /
-    // Nueva Caledonia, los ma'ohi de la Polinesia francesa y los pueblos
-    // aborigenes de Taiwan. Un territorio sin asiento en la Asamblea General
-    // no es un territorio sin pueblo.
-    'NC', 'PF', 'TW',
+  asia: [
+    'AF', 'SA', 'BH', 'BD', 'BT', 'BN', 'KH', 'CN', 'CY', 'AE', 'PH', 'IN',
+    'ID', 'IR', 'IQ', 'JP', 'JO', 'KZ', 'KW', 'LA', 'LB', 'MY', 'MV', 'MN',
+    'MM', 'NP', 'OM', 'PK', 'QA', 'KR', 'KP', 'SG', 'LK', 'TJ', 'TH', 'TL',
+    'TM', 'UZ', 'VN', 'YE', 'SY', 'PS', 'IL', 'TR', 'KG', 'TW',
   ],
 
   /**
-   * Australia y Aotearoa. Fuera del "y otros Estados" de la ONU.
+   * Oceania entera: Australia, Aotearoa y las islas del Pacifico.
    *
-   * Aotearoa es el nombre maori de Nueva Zelandia. Son 69 historias de pueblos
-   * aborigenes, isleños del Estrecho de Torres y maories: agruparlas con
-   * Alemania y Suiza no las describe.
+   * Los grupos de la ONU la parten -las islas van en "Asia y el Pacifico" y
+   * Australia y Nueva Zelandia en WEOG-, y esa division no describe nada de lo
+   * que aqui se cubre. Papua Nueva Guinea, Fiji y Kanaky comparten con
+   * Australia y Aotearoa la pregunta del Pacifico: descolonizacion pendiente,
+   * alza del mar y mineria en aguas profundas. No la comparten con Nepal.
+   *
+   * Aotearoa es el nombre maori de Nueva Zelandia. Kanaky lo es de Nueva
+   * Caledonia; ni ella ni la Polinesia francesa son Estados miembros de la ONU,
+   * y por eso no figuran en ningun grupo.
    */
-  australiaAotearoa: ['AU', 'NZ'],
+  oceania: [
+    'AU', 'NZ',
+    'PG', 'FJ', 'SB', 'VU', 'NC',
+    'WS', 'TO', 'TV', 'KI', 'NR', 'PW', 'FM', 'MH', 'PF',
+  ],
 
   /**
    * Sapmi: el territorio sami, que cruza cuatro Estados sin coincidir con
@@ -171,8 +177,8 @@ export const GEOGRAPHIC_ISSUE_COUNTRIES: Record<string, readonly string[]> = {
   // romper los enlaces que ya existen por un renombre.
   latinoamerica: REGIONS.abyaYala,
   africa: REGIONS.africa,
-  'asia-pacifico': REGIONS.asiaPacifico,
-  'australia-aotearoa': REGIONS.australiaAotearoa,
+  asia: REGIONS.asia,
+  oceania: REGIONS.oceania,
   sapmi: REGIONS.sapmi,
   'europa-occidental': REGIONS.europaOccidental,
   'europa-oriental': REGIONS.europaOriental,

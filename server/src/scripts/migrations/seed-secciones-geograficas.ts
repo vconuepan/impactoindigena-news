@@ -53,44 +53,31 @@ const SECCIONES: Seccion[] = [
     paises: REGIONS.africa,
   },
   {
-    name: 'Asia y el Pacífico',
-    slug: 'asia-pacifico',
-    description: 'Pueblos indígenas y tribales de Asia y de las islas del Pacífico',
+    name: 'Asia',
+    slug: 'asia',
+    description: 'Pueblos indígenas y tribales del continente asiático',
     intro:
-      'Asia concentra la mayor población indígena del planeta: los adivasi de India, los pueblos de las cordilleras de Filipinas, los dayak de Borneo, los ainu de Japón, los montañeses del sudeste asiático. A ellos se suman las naciones de las islas del Pacífico, cuyos pueblos enfrentan la desaparición física de su territorio por el alza del mar. Esta sección reúne las dos realidades, como lo hace el grupo regional de la ONU.',
+      'Asia concentra la mayor población indígena del planeta: los adivasi de India, los pueblos de las cordilleras de Filipinas, los dayak de Borneo, los ainu de Japón, los montañeses del sudeste asiático, los pueblos originarios de Taiwán. Casi ninguno de esos Estados usa la palabra «indígena» en su derecho interno, y esa negativa es en sí misma parte de lo que esta sección cubre.',
     criterios: [
-      'Los hechos ocurren en un país de Asia o en una nación insular del Pacífico',
+      'Los hechos ocurren en un país del continente asiático',
       'Cada historia conserva su tema: aparece aquí y en su sección temática a la vez',
-      'Australia y Aotearoa tienen sección propia y no entran aquí',
+      'Las islas del Pacífico están en Oceanía, aunque el grupo regional de la ONU las agrupe con Asia',
     ],
-    paises: REGIONS.asiaPacifico,
+    paises: REGIONS.asia,
   },
   {
-    name: 'Australia y Aotearoa',
-    slug: 'australia-aotearoa',
+    name: 'Oceanía',
+    slug: 'oceania',
     description:
-      'Pueblos aborígenes, isleños del Estrecho de Torres y maoríes',
+      'Pueblos aborígenes, isleños del Estrecho de Torres, maoríes y pueblos de las islas del Pacífico',
     intro:
-      'Los pueblos aborígenes y los isleños del Estrecho de Torres sostienen la cultura viva más antigua documentada del planeta, y el pueblo maorí de Aotearoa cuenta con un tratado fundacional, el de Waitangi, cuya interpretación sigue disputándose. Aotearoa es el nombre maorí de Nueva Zelandia. Esta sección los reúne porque comparten la misma pregunta abierta: qué obliga a un Estado el acuerdo que firmó con el pueblo al que llegó.',
+      'Los pueblos aborígenes y los isleños del Estrecho de Torres sostienen la cultura viva más antigua documentada del planeta; el pueblo maorí de Aotearoa cuenta con un tratado fundacional, el de Waitangi, cuya interpretación sigue disputándose; y los pueblos de las islas enfrentan la desaparición física de su territorio por el alza del mar, además de una descolonización que en Kanaky sigue abierta. Aotearoa es el nombre maorí de Nueva Zelandia y Kanaky el kanak de Nueva Caledonia.',
     criterios: [
-      'Los hechos ocurren en Australia o en Aotearoa / Nueva Zelandia',
+      'Los hechos ocurren en Australia, en Aotearoa o en una nación o territorio de las islas del Pacífico',
       'Cada historia conserva su tema: aparece aquí y en su sección temática a la vez',
-      'La sección existe porque el grupo regional de la ONU los coloca en «Europa Occidental y otros Estados», que no describe a estos pueblos',
+      'La región va completa: los grupos de la ONU la parten entre «Asia y el Pacífico» y «Europa Occidental y otros Estados», y esa división no describe a estos pueblos',
     ],
-    paises: REGIONS.australiaAotearoa,
-  },
-  {
-    name: 'Sápmi',
-    slug: 'sapmi',
-    description: 'El pueblo sami y su territorio, que cruza Noruega, Suecia y Finlandia',
-    intro:
-      'El pueblo sami es el único pueblo indígena reconocido dentro de la Unión Europea. Su territorio, Sápmi, atraviesa Noruega, Suecia, Finlandia y la península de Kola sin coincidir con ninguna frontera estatal, y sus parlamentos propios negocian con tres Estados a la vez sobre pastoreo de renos, minería y energía eólica. La sección se nombra por el territorio del pueblo, con el mismo criterio que Wallmapu.',
-    criterios: [
-      'Los hechos ocurren en Noruega, Suecia o Finlandia',
-      'Cada historia conserva su tema: aparece aquí y en su sección temática a la vez',
-      'Una historia sami de la península de Kola aparece también en Europa Oriental, porque el territorio cruza esa frontera',
-    ],
-    paises: REGIONS.sapmi,
+    paises: REGIONS.oceania,
   },
   {
     name: 'Europa Occidental',
@@ -128,24 +115,26 @@ async function main(): Promise<void> {
     const cuantas = await prisma.story.count({
       where: { status: 'published', countryFocus: { in: [...s.paises] } },
     })
-    if (existentes.has(s.slug)) {
-      console.log(`  YA EXISTE  ${s.name}`)
-      continue
-    }
+    // Idempotente: si la seccion existe se le actualiza el texto en vez de
+    // saltarla. Asi el archivo es la fuente de lo que dice cada seccion y no
+    // solo el molde con que se creo una vez.
+    const existe = existentes.has(s.slug)
     console.log(
-      `  ${APLICAR ? 'creando ' : 'crearia '} ${s.name.padEnd(22)} ${String(cuantas).padStart(5)} historias · ${s.paises.length} paises`,
+      `  ${APLICAR ? (existe ? 'actualiza' : 'crea     ') : existe ? 'actualizaria' : 'crearia  '} ` +
+        `${s.name.padEnd(22)} ${String(cuantas).padStart(5)} historias · ${s.paises.length} paises`,
     )
     if (!APLICAR) continue
-    await prisma.issue.create({
-      data: {
-        name: s.name,
-        slug: s.slug,
-        description: s.description,
-        intro: s.intro,
-        evaluationIntro: EVAL_INTRO,
-        evaluationCriteria: JSON.stringify(s.criterios),
-        makeADifference: '[]',
-      },
+    const datos = {
+      name: s.name,
+      description: s.description,
+      intro: s.intro,
+      evaluationIntro: EVAL_INTRO,
+      evaluationCriteria: JSON.stringify(s.criterios),
+    }
+    await prisma.issue.upsert({
+      where: { slug: s.slug },
+      update: datos,
+      create: { ...datos, slug: s.slug, makeADifference: '[]' },
     })
   }
 
