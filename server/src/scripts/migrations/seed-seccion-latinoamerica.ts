@@ -24,7 +24,9 @@ const APPLY = process.argv.includes('--apply')
 const prisma = new PrismaClient({ datasourceUrl: process.env.DATABASE_URL })
 
 const LATAM = {
-  name: 'Latinoamérica',
+  // El slug se conserva: renombrar la seccion no justifica romper los enlaces
+  // que ya existen ni montar un 301 para una ruta que sigue siendo descriptiva.
+  name: 'Abya Yala',
   slug: 'latinoamerica',
   description: 'Pueblos indígenas de América Latina y el Caribe',
   intro:
