@@ -132,6 +132,33 @@ export default defineConfig(async () => {
             renderedRoute.html = renderedRoute.html.replace('</head>', preloadTag + '\n</head>')
           }
 
+          // Y la imagen del hero, que es el elemento que mide el LCP.
+          //
+          // Ya viaja en el HTML prerenderizado, pero enterrada a ~100 KB del
+          // inicio: el navegador solo la descubre cuando el parser llega hasta
+          // ella. Medido el 5-sep-2026, empezaba a bajar a los 892 ms — 1.327 ms
+          // de "load delay" sobre un LCP de 7,2 s. Un preload en el <head> la
+          // pide en cuanto llega el HTML.
+          //
+          // La URL se saca del HTML ya renderizado y no de la API, porque es la
+          // imagen que ESA compilacion horneo: la portada cambia de destacada
+          // cada dia y un preload que apunte a otra cosa es una descarga
+          // desperdiciada. `fetchpriority="high"` para que gane al resto de
+          // imagenes de la portada.
+          if (renderedRoute.route === '/') {
+            const hero = renderedRoute.html.match(
+              /<img[^>]+fetchpriority="high"[^>]*src="([^"]+)"|<img[^>]+src="([^"]+)"[^>]*fetchpriority="high"/i,
+            )
+            const src = hero?.[1] ?? hero?.[2]
+            if (src) {
+              const tag = `<link rel="preload" href="${src}" as="image" fetchpriority="high" />`
+              renderedRoute.html = renderedRoute.html.replace('</head>', tag + '\n</head>')
+              console.log(`[prerender] preload del hero: ${src.split('/').pop()}`)
+            } else {
+              console.warn('[prerender] no se encontro la imagen del hero para precargar')
+            }
+          }
+
           return renderedRoute
         },
       }),
