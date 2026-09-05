@@ -61,7 +61,23 @@ export default function OpenDataPage() {
                 <tr className="border-b border-neutral-100">
                   <td className="py-2 pr-4 font-mono text-xs">topic</td>
                   <td className="py-2 pr-4">string</td>
-                  <td className="py-2">Slug del tema. Valores: <code>derechos-indigenas</code>, <code>cambio-climatico</code>, <code>desarrollo-sostenible-y-autodeterminado</code>, <code>cultura-y-conocimientos-ancestrales</code>, <code>chile-indigena</code></td>
+                  <td className="py-2">
+                    Slug del tema. Las ocho categorías: <code>territorio-y-tierras</code>,{" "}
+                    <code>cambio-climatico</code>, <code>consulta-y-consentimiento</code>,{" "}
+                    <code>economias-indigenas</code>, <code>derechos-indigenas</code>,{" "}
+                    <code>defensores-y-proteccion</code>, <code>mujeres-indigenas</code>,{" "}
+                    <code>cultura-y-conocimientos-ancestrales</code>.
+                    <br />
+                    Y las secciones geográficas: <code>chile-indigena</code>,{" "}
+                    <code>latinoamerica</code> (Abya Yala), <code>africa</code>, <code>asia</code>,{" "}
+                    <code>oceania</code>, <code>sapmi</code>, <code>europa-occidental</code>,{" "}
+                    <code>europa-oriental</code>.
+                    <br />
+                    <span className="text-neutral-500">
+                      El slug antiguo <code>desarrollo-sostenible-y-autodeterminado</code> se sigue
+                      aceptando y resuelve a <code>economias-indigenas</code>.
+                    </span>
+                  </td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="py-2 pr-4 font-mono text-xs">community</td>

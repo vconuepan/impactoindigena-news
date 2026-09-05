@@ -168,7 +168,7 @@ export default function MethodologyPage() {
           {[
             { slug: 'cambio-climatico', title: 'Cambio Climático', description: 'Territorios indígenas, medio ambiente, biodiversidad, acción climática' },
             { slug: 'derechos-indigenas', title: 'Derechos Indígenas', description: 'Derechos territoriales, autodeterminación, reconocimiento legal, derechos humanos' },
-            { slug: 'desarrollo-sostenible-y-autodeterminado', title: 'Economías Indígenas', description: 'Empresas y cooperativas indígenas, emprendimiento, empleo, comercio, financiamiento y compras públicas' },
+            { slug: 'economias-indigenas', title: 'Economías Indígenas', description: 'Empresas y cooperativas indígenas, emprendimiento, empleo, comercio, financiamiento y compras públicas' },
             { slug: 'cultura-y-conocimientos-ancestrales', title: 'Cultura y Conocimientos Ancestrales', description: 'Lenguas, arte, literatura, música, cine, patrimonio, memoria, educación intercultural y medicina ancestral' },
             { slug: 'chile-indigena', title: 'Chile Intercultural', description: 'Pueblos originarios de Chile, política pública indígena, consultas indígenas, instituciones y liderazgo indígena chileno' },
           ].map((card) => {

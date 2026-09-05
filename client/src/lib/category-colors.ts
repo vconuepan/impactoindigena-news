@@ -187,7 +187,7 @@ const CATEGORY_COLORS: Record<string, CategoryColor> = {
   'territorio-y-tierras': OLIVA,
   'cambio-climatico': VERDE_BOSQUE,
   'consulta-y-consentimiento': PIZARRA,
-  'desarrollo-sostenible-y-autodeterminado': OCRE_TIERRA,
+  'economias-indigenas': OCRE_TIERRA,
   // Anillo de la gente
   'derechos-indigenas': TERRACOTA,
   'defensores-y-proteccion': GRANATE,

@@ -7,7 +7,7 @@ const ISSUES = [
   { label: "Todas las categorías", value: "" },
   { label: "Cambio Climático", value: "cambio-climatico" },
   { label: "Derechos de los Pueblos Indígenas", value: "derechos-indigenas" },
-  { label: "Economías Indígenas", value: "desarrollo-sostenible-y-autodeterminado" },
+  { label: "Economías Indígenas", value: "economias-indigenas" },
   { label: "Cultura y Conocimientos Ancestrales", value: "cultura-y-conocimientos-ancestrales" },
   { label: "Chile Intercultural", value: "chile-indigena" },
 ];

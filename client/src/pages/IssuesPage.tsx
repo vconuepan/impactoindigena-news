@@ -134,7 +134,7 @@ function IssueAccordion({ issue }: { issue: PublicIssue }) {
 const ISSUE_ORDER = [
   'cambio-climatico',
   'derechos-indigenas',
-  'desarrollo-sostenible-y-autodeterminado',
+  'economias-indigenas',
   'cultura-y-conocimientos-ancestrales',
   'chile-indigena',
 ]

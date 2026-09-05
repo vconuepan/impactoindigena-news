@@ -37,7 +37,7 @@ const STORY_GUIDES: Record<string, { label: string; href: string }[]> = {
 }
 
 // Issues where corporate territorial impact is high — show IRI widget
-const IRI_ISSUES = new Set(['derechos-indigenas', 'cambio-climatico', 'desarrollo-sostenible-y-autodeterminado'])
+const IRI_ISSUES = new Set(['derechos-indigenas', 'cambio-climatico', 'economias-indigenas'])
 
 // ---------------------------------------------------------------------------
 // Analysis section with ruled heading + numbered points

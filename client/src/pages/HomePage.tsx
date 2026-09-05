@@ -426,7 +426,7 @@ const ISSUE_ORDER = [
   'chile-indigena',
   'cambio-climatico',
   'derechos-indigenas',
-  'desarrollo-sostenible-y-autodeterminado',
+  'economias-indigenas',
   'cultura-y-conocimientos-ancestrales',
 ]
 

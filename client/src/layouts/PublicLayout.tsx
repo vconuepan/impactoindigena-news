@@ -52,8 +52,8 @@ export const ISSUE_LINKS = [
   },
   {
     labelKey: "issues.desarrolloSostenible",
-    slug: "desarrollo-sostenible-y-autodeterminado",
-    href: "/issues/desarrollo-sostenible-y-autodeterminado",
+    slug: "economias-indigenas",
+    href: "/issues/economias-indigenas",
   },
   {
     labelKey: "issues.derechosIndigenas",

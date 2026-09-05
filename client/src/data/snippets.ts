@@ -30,7 +30,7 @@ export const SNIPPETS_BY_ISSUE: Record<string, Snippet[]> = {
     { text: 'El derecho a la tierra no es solo una demanda política: es la base material de la identidad, la cultura y la supervivencia de los pueblos indígenas.' },
     { text: 'La libre determinación de los pueblos indígenas está reconocida en el derecho internacional desde 1966, con los Pactos Internacionales de Derechos Humanos.' },
   ],
-  'desarrollo-sostenible-y-autodeterminado': [
+  'economias-indigenas': [
     { text: 'Las empresas indígenas reinvierten en su comunidad una proporción de sus utilidades que las empresas convencionales destinan a sus accionistas.' },
     { text: 'La autonomía económica y la identidad cultural no son excluyentes: las comunidades indígenas que controlan sus territorios suelen tener mejores indicadores de bienestar.' },
     { text: 'Las cadenas de suministro son una de las pocas vías por las que una comunidad indígena negocia con una empresa de igual a igual: como proveedora, no como afectada.' },

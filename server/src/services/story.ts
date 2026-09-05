@@ -14,6 +14,7 @@ import { checkSourceAge } from '../lib/source-age.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { buildRelatedStoriesPrompt } from '../prompts/related-stories.js'
 import { relatedStoriesResultSchema } from '../schemas/llm.js'
+import { canonicalIssueSlug } from '../lib/issue-slug.js'
 
 const log = createLogger('story')
 
@@ -670,7 +671,11 @@ const PUBLIC_STORY_SELECT = {
   },
 } as const
 
-function buildIssueCondition(issueSlug: string): Prisma.StoryWhereInput {
+function buildIssueCondition(slugEntrante: string): Prisma.StoryWhereInput {
+  // El slug legado sigue resolviendo: viaja en los datos abiertos y en widgets
+  // que terceros ya pegaron en sus paginas, y esas llamadas no pasan por las
+  // redirecciones del sitio. Ver `lib/issue-slug.ts`.
+  const issueSlug = canonicalIssueSlug(slugEntrante)
   const or: Prisma.StoryWhereInput[] = [
     {
       issue: {

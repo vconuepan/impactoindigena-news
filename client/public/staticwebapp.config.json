@@ -1,6 +1,11 @@
 {
   "routes": [
     {
+      "route": "/issues/desarrollo-sostenible-y-autodeterminado",
+      "redirect": "/issues/economias-indigenas",
+      "statusCode": 301
+    },
+    {
       "route": "/assets/*",
       "headers": {
         "Cache-Control": "public, max-age=31536000, immutable"

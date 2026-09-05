@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js'
+import { canonicalIssueSlug } from '../lib/issue-slug.js'
 import type { Issue } from '@prisma/client'
 
 // --- JSON field helpers ---
@@ -86,7 +87,7 @@ export async function getIssueById(id: string) {
 }
 
 export async function getIssueBySlug(slug: string): Promise<Issue | null> {
-  return prisma.issue.findUnique({ where: { slug } })
+  return prisma.issue.findUnique({ where: { slug: canonicalIssueSlug(slug) } })
 }
 
 export async function createIssue(data: {
@@ -203,7 +204,7 @@ export async function getPublicIssues() {
 
 export async function getPublicIssueBySlug(slug: string) {
   const issue = await prisma.issue.findFirst({
-    where: { slug },
+    where: { slug: canonicalIssueSlug(slug) },
     select: {
       ...PUBLIC_ISSUE_SELECT,
       feeds: { select: { title: true, displayTitle: true, active: true } },
