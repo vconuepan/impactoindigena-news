@@ -1,5 +1,5 @@
 /**
- * Recomprime a JPEG las imagenes PNG que ya estan en R2.
+ * Recomprime y redimensiona las imagenes que ya estan en R2.
  *
  * El problema que resuelve, medido el 4-sep-2026 sobre la portada en vivo:
  * de 70 imagenes referenciadas, 30 son PNG y pesan 66,92 MB - un promedio de
@@ -48,7 +48,16 @@ const MIN_BYTES = 300_000
  */
 const CONCURRENCIA = 8
 const PREFIX = 'social/'
-const BACKUP_PREFIX = 'social/original-png/'
+/**
+ * Donde viven los originales. Son dos porque la primera corrida (1.421 PNG,
+ * 4-sep) uso el nombre viejo y migrar esos objetos para renombrar el prefijo no
+ * valdria nada. Se escribe en el primero; se leen los dos para saber que ya
+ * paso por aca.
+ */
+const BACKUP_PREFIX = 'social/original/'
+const BACKUP_PREFIXES = [BACKUP_PREFIX, 'social/original-png/']
+/** Formatos que vale la pena recomprimir. Un WebP ya esta donde queremos. */
+const RECOMPRIMIBLES = /\.(png|jpe?g)$/i
 
 const args = process.argv.slice(2)
 const APLICAR = args.includes('--apply')
@@ -90,7 +99,7 @@ async function bajar(Key: string): Promise<Buffer> {
 }
 
 async function revertir(): Promise<void> {
-  const copias = await listarTodo(BACKUP_PREFIX)
+  const copias = (await Promise.all(BACKUP_PREFIXES.map(listarTodo))).flat()
   console.log(`${copias.length} originales guardados`)
   for (const { Key } of copias) {
     const destino = PREFIX + path.basename(Key)
@@ -101,7 +110,7 @@ async function revertir(): Promise<void> {
         Bucket,
         Key: destino,
         CopySource: `${Bucket}/${Key}`,
-        ContentType: 'image/png',
+        ContentType: /\.png$/i.test(Key) ? 'image/png' : 'image/jpeg',
         CacheControl: 'public, max-age=31536000',
         MetadataDirective: 'REPLACE',
       }),
@@ -118,12 +127,14 @@ async function main(): Promise<void> {
   // veces Y pisaria el respaldo con la version ya comprimida, perdiendo el
   // original para siempre. Este conjunto es lo que hace la corrida reanudable.
   const yaHechos = new Set(
-    todos.filter((o) => o.Key.startsWith(BACKUP_PREFIX)).map((o) => path.basename(o.Key)),
+    todos
+      .filter((o) => BACKUP_PREFIXES.some((p) => o.Key.startsWith(p)))
+      .map((o) => path.basename(o.Key)),
   )
 
   const elegibles = todos
-    .filter((o) => !o.Key.startsWith(BACKUP_PREFIX))
-    .filter((o) => o.Key.toLowerCase().endsWith('.png') && o.Size >= MIN_BYTES)
+    .filter((o) => !BACKUP_PREFIXES.some((p) => o.Key.startsWith(p)))
+    .filter((o) => RECOMPRIMIBLES.test(o.Key) && o.Size >= MIN_BYTES)
     .filter((o) => !yaHechos.has(path.basename(o.Key)))
     .sort((a, b) => b.Size - a.Size)
   const candidatos = elegibles.slice(0, LIMITE)
@@ -133,7 +144,7 @@ async function main(): Promise<void> {
   console.log(`${todos.length} objetos en ${PREFIX} (${(pesoTotal / 2 ** 20).toFixed(1)} MB)`)
   if (yaHechos.size) console.log(`${yaHechos.size} ya recomprimidas en corridas anteriores`)
   console.log(
-    `${elegibles.length} PNG de mas de ${MIN_BYTES / 1024} KB (${(pesoElegible / 2 ** 20).toFixed(0)} MB)` +
+    `${elegibles.length} imagenes de mas de ${MIN_BYTES / 1024} KB (${(pesoElegible / 2 ** 20).toFixed(0)} MB)` +
       (candidatos.length < elegibles.length ? ` - este lote toma ${candidatos.length}` : ''),
   )
   console.log(APLICAR ? '=== APLICANDO ===' : '=== SIMULACION (sin --apply no escribe) ===\n')
