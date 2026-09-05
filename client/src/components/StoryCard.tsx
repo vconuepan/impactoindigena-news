@@ -120,6 +120,19 @@ function CardImage({
       src={src}
       alt={alt}
       className={className}
+      /*
+       * width y height NO fijan el tamaño -eso lo hace el CSS del contenedor-
+       * sino la PROPORCION, que es lo que el navegador necesita para reservar
+       * el hueco antes de descargar la imagen. Sin ellos, Lighthouse marca
+       * "media element lacking an explicit size" y la tarjeta salta cuando la
+       * imagen llega: 0,0169 del CLS de la portada, medido el 5-sep-2026.
+       *
+       * 1200x630 es lo que compone `composeBrandedStoryCard` y el ancho al que
+       * se normaliza todo lo rehospedado (REHOST_MAX_WIDTH). Las que no tienen
+       * esa proporcion exacta se recortan igual con object-cover.
+       */
+      width={1200}
+      height={630}
       loading="lazy"
       onError={() => setError(true)}
     />

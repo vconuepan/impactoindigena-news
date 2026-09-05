@@ -261,7 +261,11 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
         aria-hidden="true"
         width={96}
         height={96}
-        className="h-14 md:h-16 w-auto shrink-0"
+        /* Ancho explicito, no `w-auto`: el sello es cuadrado (viewBox 96x96) y
+           dejarlo en auto obliga al navegador a resolver el ancho despues de
+           cargar el SVG. El header se reajustaba entonces y arrastraba al
+           contenido: 0,0211 del CLS, medido el 5-sep-2026. */
+        className="h-14 w-14 md:h-16 md:w-16 shrink-0"
       />
       <span className="flex flex-col justify-center leading-none">
         <span className="brand-voces">Voces</span>
