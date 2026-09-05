@@ -28,13 +28,60 @@ function pngSize(buf: Buffer): { w: number; h: number } {
   return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) }
 }
 
+/**
+ * Lee el tamaño de un JPEG recorriendo sus marcadores hasta el SOF.
+ *
+ * La tarjeta se genera en JPEG desde el 4-sep-2026 (ver `storyCard.ts`), asi que
+ * `pngSize` ya no sirve para medirla: un JPEG no tiene IHDR.
+ */
+function jpegSize(buf: Buffer): { w: number; h: number } {
+  let i = 2 // saltar SOI
+  while (i < buf.length) {
+    if (buf[i] !== 0xff) { i++; continue }
+    const marker = buf[i + 1]
+    // SOF0..SOF3 y SOF5..SOF15 llevan alto y ancho; DHT/DQT y demas se saltan.
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc) {
+      return { h: buf.readUInt16BE(i + 5), w: buf.readUInt16BE(i + 7) }
+    }
+    i += 2 + buf.readUInt16BE(i + 2)
+  }
+  throw new Error('no se encontro el marcador SOF del JPEG')
+}
+
+/** Un JPEG empieza con FF D8 FF. */
+function esJpeg(buf: Buffer): boolean {
+  return buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff
+}
+
 describe('composeBrandedStoryCard', () => {
-  it('produces a 1200×630 card at 2× (2400×1260 PNG)', async () => {
+  it('produces a 1200×630 card at 2× (2400×1260 JPEG)', async () => {
     const img = await loadImage(pngBuffer(600, 400))
     const out = composeBrandedStoryCard(img, 'Consulta previa en territorio mapuche')
-    const { w, h } = pngSize(out)
+    const { w, h } = jpegSize(out)
     expect(w).toBe(2400)
     expect(h).toBe(1260)
+  })
+
+  /**
+   * El formato es parte del contrato, no un detalle.
+   *
+   * En PNG estas tarjetas pesaban cerca de 4 MB y eran la mitad del peso de la
+   * portada. Y no puede ser WebP: esta imagen termina siendo el `og:image` de la
+   * historia, y las vistas previas de WhatsApp, Facebook y LinkedIn no lo
+   * renderizan de forma confiable.
+   */
+  it('la tarjeta sale en JPEG, no en PNG ni WebP', async () => {
+    const img = await loadImage(pngBuffer(600, 400))
+    const out = composeBrandedStoryCard(img, 'Título')
+    expect(esJpeg(out)).toBe(true)
+  })
+
+  it('el JPEG pesa una fraccion de lo que pesaria en PNG', async () => {
+    const img = await loadImage(pngBuffer(600, 400))
+    const jpeg = composeBrandedStoryCard(img, 'Título')
+    // Una tarjeta de 2400x1260 en PNG supera holgadamente el megabyte; en JPEG
+    // de calidad 82 se queda muy por debajo.
+    expect(jpeg.length).toBeLessThan(1_000_000)
   })
 
   it('handles a very long title without throwing', async () => {
@@ -77,11 +124,11 @@ describe('rehostOrComposeStoryImage', () => {
 
     expect(mockUpload).toHaveBeenCalledTimes(1)
     const [passedBuf, filename, ct] = mockUpload.mock.calls[0]
-    expect(filename).toBe('storycard-id3.png')
-    expect(ct).toBe('image/png')
+    expect(filename).toBe('storycard-id3.jpg')
+    expect(ct).toBe('image/jpeg')
     expect(passedBuf).not.toBe(buffer) // a freshly composed card
-    expect(pngSize(passedBuf).w).toBe(2400)
-    expect(url).toBe('https://cdn.r2/storycard-id3.png')
+    expect(jpegSize(passedBuf).w).toBe(2400)
+    expect(url).toBe('https://cdn.r2/storycard-id3.jpg')
   })
 
   it('STORY_CARD_MIN_WIDTH matches Google Discover’s 1200px threshold', () => {

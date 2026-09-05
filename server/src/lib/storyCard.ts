@@ -136,7 +136,20 @@ export function composeBrandedStoryCard(img: Image, title: string): Buffer {
     ty += lineGap
   }
 
-  return canvas.toBuffer('image/png')
+  // JPEG y no PNG.
+  //
+  // Medido con Lighthouse el 4-sep-2026 sobre la portada en movil: dos de estas
+  // tarjetas pesaban 4.226 KB y 1.594 KB, y entre las imagenes de la pagina
+  // sumaban casi 9 MB. PNG guarda una fotografia sin compresion con perdida —
+  // es el formato correcto para un logo, el peor posible para una foto.
+  //
+  // NO se usa WebP, que ahorraria un 25% mas, porque esta imagen termina siendo
+  // el `og:image` de la historia: la vista previa que se ve al compartir en
+  // WhatsApp, Facebook o LinkedIn. Esas plataformas no renderizan WebP de forma
+  // confiable, y una vista previa rota cuesta mas que los kilobytes que ahorra.
+  // Para la web, la version moderna corresponde a un <picture> con variantes,
+  // que es otro trabajo.
+  return canvas.toBuffer('image/jpeg', STORY_CARD_JPEG_QUALITY)
 }
 
 /**
@@ -145,6 +158,16 @@ export function composeBrandedStoryCard(img: Image, title: string): Buffer {
  * so the story stays eligible for Google Discover's large-image card. Returns
  * the R2 public URL, or null on failure (caller falls back to the raw URL).
  */
+/**
+ * Calidad JPEG de la tarjeta compuesta.
+ *
+ * 82 es el punto donde la diferencia visual con el original deja de notarse en
+ * una fotografia y el archivo ya bajo un orden de magnitud. Por encima de 90 el
+ * peso sube rapido sin que se vea mejor; por debajo de 75 aparecen artefactos
+ * en los degradados, que en estas tarjetas son justamente el fondo.
+ */
+const STORY_CARD_JPEG_QUALITY = 82
+
 export async function rehostOrComposeStoryImage(
   imageUrl: string,
   storyId: string,
@@ -169,7 +192,7 @@ export async function rehostOrComposeStoryImage(
   // the small original rather than leaving the story imageless.
   try {
     const card = composeBrandedStoryCard(img, title)
-    const url = await uploadImageToR2(card, `storycard-${storyId}.png`, 'image/png')
+    const url = await uploadImageToR2(card, `storycard-${storyId}.jpg`, 'image/jpeg')
     log.info({ storyId, sourceWidth: img.width }, 'composed branded story card for small source image')
     return url
   } catch (err) {

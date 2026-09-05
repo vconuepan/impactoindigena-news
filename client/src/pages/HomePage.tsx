@@ -490,12 +490,20 @@ export default function HomePage() {
       {/* Issue sections with rotating layouts */}
       <div className="page-section-wide md:-mt-14 min-h-screen">
         {isLoading ? (
-          // Show skeleton sections while data loads
+          // Un esqueleto POR SECCION, derivado de ISSUE_ORDER.
+          //
+          // Antes eran cuatro fijos y las secciones reales son cinco: al llegar
+          // los datos, la pagina crecia una seccion entera y todo lo de abajo
+          // saltaba. Medido con Lighthouse el 4-sep-2026, ese salto era 0,160 de
+          // un CLS total de 0,218 — el 73%. Y cada categoria nueva lo empeoraba,
+          // porque el numero estaba escrito a mano en un lugar distinto del que
+          // define cuantas secciones hay.
+          //
+          // Atado a ISSUE_ORDER, agregar una categoria ya no desajusta nada.
           <>
-            <IssueSectionSkeleton layout="A" />
-            <IssueSectionSkeleton layout="B" />
-            <IssueSectionSkeleton layout="C" />
-            <IssueSectionSkeleton layout="A" />
+            {ISSUE_ORDER.map((slug, i) => (
+              <IssueSectionSkeleton key={slug} layout={LAYOUTS[i % LAYOUTS.length]} />
+            ))}
           </>
         ) : sortedIssues.length > 0 ? (
           sortedIssues.map((issue, idx) => {
