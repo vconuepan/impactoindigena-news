@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 2.8 · vigente desde el 17 de agosto de 2026.
+            Versión 2.9 · vigente desde el 4 de septiembre de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -200,9 +200,15 @@ export default function PrivacyPage() {
               <tbody className="text-neutral-600">
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Microsoft Azure</td>
-                  <td className="align-top py-2 pr-4">Hospedaje y base de datos</td>
+                  <td className="align-top py-2 pr-4">Base de datos y servidor de la API</td>
                   <td className="align-top py-2 pr-4">Chile (Región Chile Central)</td>
                   <td className="align-top py-2">Toda la base, incluidos correos de suscriptores</td>
+                </tr>
+                <tr className="border-b border-neutral-100">
+                  <td className="align-top py-2 pr-4">Azure Static Web Apps</td>
+                  <td className="align-top py-2 pr-4">Entrega de las páginas del sitio</td>
+                  <td className="align-top py-2 pr-4">EE.&nbsp;UU. (red de distribución global)</td>
+                  <td className="align-top py-2">Archivos estáticos del sitio. Como en toda entrega por internet, la conexión expone tu dirección IP al servidor que te sirve la página; no la almacenamos</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Microsoft Azure OpenAI</td>
@@ -241,11 +247,15 @@ export default function PrivacyPage() {
           {/* 7. Transferencias */}
           <h2 className="section-heading mt-10">Transferencias internacionales</h2>
           <p>
-            Nuestra base de datos y el hospedaje principal permanecen en{" "}
-            <strong>Chile</strong> (Microsoft Azure, Región Chile Central). Solo
-            algunos servicios auxiliares operan fuera de Chile, según la tabla
-            anterior: en <strong>EE.&nbsp;UU.</strong> los servicios de IA de
-            Azure OpenAI, Cloudflare (imágenes) y Diffbot (extracción); y en la{" "}
+            <strong>Tus datos viven en Chile</strong>: la base de datos y el
+            servidor de la API están en Microsoft Azure, Región Chile Central.
+            Las páginas del sitio, en cambio, se entregan desde una red de
+            distribución global cuyo punto de origen está en{" "}
+            <strong>EE.&nbsp;UU.</strong>, como es habitual en la web; esa
+            entrega no involucra datos de suscriptores. Los demás servicios
+            auxiliares operan fuera de Chile según la tabla anterior: en{" "}
+            <strong>EE.&nbsp;UU.</strong> los servicios de IA de Azure OpenAI,
+            Cloudflare (imágenes) y Diffbot (extracción); y en la{" "}
             <strong>Unión Europea</strong> Brevo y la generación de imágenes en
             Suecia. Para los destinos respecto de los cuales no exista una
             declaración de nivel adecuado de protección, las transferencias se
@@ -350,8 +360,9 @@ export default function PrivacyPage() {
           </p>
 
           <p className="text-sm text-neutral-400 not-prose mt-10 border-t border-neutral-200 pt-4">
-            Este texto es un borrador de cumplimiento fundado en la Ley 21.719; no
-            constituye asesoría legal.
+            Esta política se funda en la Ley 19.628, vigente hoy, y anticipa el
+            estándar de la Ley 21.719 para cuando rija. No constituye asesoría
+            legal.
           </p>
         </div>
       </div>
