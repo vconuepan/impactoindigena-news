@@ -30,7 +30,8 @@
  * le pide clasificar por asunto central seria una contradiccion, y los modelos
  * gastan razonamiento tratando de reconciliarlas (`.context/prompting.md`).
  */
-export const GEOGRAPHIC_ISSUE_SLUGS = ['chile-indigena', 'latinoamerica'] as const
+// GEOGRAPHIC_ISSUE_SLUGS se declara mas abajo, derivada de
+// GEOGRAPHIC_ISSUE_COUNTRIES, que es la fuente de que secciones son geograficas.
 
 /**
  * Regiones, como listas de paises en ISO 3166-1 alfa-2.
@@ -185,6 +186,20 @@ export const GEOGRAPHIC_ISSUE_COUNTRIES: Record<string, readonly string[]> = {
 }
 
 /**
+ * Las secciones geograficas, derivadas del mapa de arriba.
+ *
+ * Se deriva y no se escribe a mano porque escrita a mano se desincronizo: el
+ * 5-sep-2026 se crearon seis secciones nuevas -Africa, Asia, Oceania, Sapmi y
+ * las dos Europas- y esta lista se quedo con las dos viejas. El clasificador
+ * las vio como temas de asunto y alcanzo a archivar diez historias en ellas
+ * antes de que se notara. Una lista que enumera lo mismo que otra es una lista
+ * que se desincroniza.
+ */
+export const GEOGRAPHIC_ISSUE_SLUGS = Object.keys(
+  GEOGRAPHIC_ISSUE_COUNTRIES,
+) as readonly string[]
+
+/**
  * Compatibilidad: el primer pais de la seccion.
  *
  * Se conserva porque el codigo viejo esperaba un solo valor. Para filtrar,
@@ -273,6 +288,29 @@ export const BY_NAME: Record<string, string> = {
   guinea: 'GN', 'sierra leona': 'SL', liberia: 'LR', mauritania: 'MR',
   madagascar: 'MG', 'republica centroafricana': 'CF', burundi: 'BI',
   'republica democratica del congo': 'CD',
+  // Agregados el 5-sep-2026 al cerrar el mapa geografico: son paises de las
+  // regiones nuevas que el mapa no tenia, asi que el modelo no podia
+  // devolverlos por nombre y sus historias no habrian entrado en ninguna
+  // seccion.
+  // "congo" a secas ya estaba resuelto arriba como CD, la Republica
+  // Democratica, que es la que este medio cubre. Aqui solo se agrega la
+  // Republica del Congo con su nombre largo, para no pisar esa decision.
+  'cabo verde': 'CV', comoras: 'KM', 'republica del congo': 'CG',
+  yibuti: 'DJ', djibouti: 'DJ', esuatini: 'SZ', suazilandia: 'SZ',
+  gambia: 'GM', 'guinea-bisau': 'GW', 'guinea bissau': 'GW',
+  'guinea ecuatorial': 'GQ', lesoto: 'LS', lesotho: 'LS', mauricio: 'MU',
+  'santo tome y principe': 'ST', seychelles: 'SC', 'sahara occidental': 'EH',
+  // Asia
+  barein: 'BH', bahrein: 'BH', chipre: 'CY', 'emiratos arabes unidos': 'AE',
+  kuwait: 'KW', maldivas: 'MV', oman: 'OM', catar: 'QA', qatar: 'QA',
+  // Europa occidental
+  andorra: 'AD', liechtenstein: 'LI', luxemburgo: 'LU', malta: 'MT',
+  monaco: 'MC', 'san marino': 'SM',
+  // Europa oriental
+  albania: 'AL', eslovaquia: 'SK', montenegro: 'ME', 'macedonia del norte': 'MK',
+  bielorrusia: 'BY', 'bosnia y herzegovina': 'BA', bosnia: 'BA', bulgaria: 'BG',
+  croacia: 'HR', chequia: 'CZ', 'republica checa': 'CZ', hungria: 'HU',
+  moldavia: 'MD', serbia: 'RS', eslovenia: 'SI',
 
   // Asia
   china: 'CN', myanmar: 'MM', birmania: 'MM', laos: 'LA', 'sri lanka': 'LK',
@@ -340,13 +378,25 @@ export function normalizeCountry(value: string | null | undefined): string | nul
   if (!value) return null
 
   const folded = fold(value)
+
+  // Namibia antes que "no aplica". Su codigo ISO es NA, que es tambien la
+  // abreviatura que el modelo usa para decir que no hay pais, y como
+  // NOT_A_COUNTRY se consultaba primero, "NA" en mayusculas -escrito asi solo
+  // por el codigo, nunca por el modelo- se descartaba y las historias de
+  // Namibia se quedaban sin seccion. Un valor que llega EXACTAMENTE como codigo
+  // ISO en mayusculas es un codigo, no una abreviatura: eso lo desambigua sin
+  // tocar el caso real, porque el modelo escribe "n/a" o "na", no "NA".
+  const asCode = value.trim()
+  if (/^[A-Z]{2}$/.test(asCode) && Object.values(BY_NAME).includes(asCode)) {
+    return asCode
+  }
+
   if (NOT_A_COUNTRY.has(folded)) return null
 
   const byName = BY_NAME[folded]
   if (byName) return byName
 
-  // Ya viene como codigo ISO.
-  const upper = value.trim().toUpperCase()
+  const upper = asCode.toUpperCase()
   if (/^[A-Z]{2}$/.test(upper) && Object.values(BY_NAME).includes(upper)) {
     return upper
   }
