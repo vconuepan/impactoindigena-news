@@ -34,7 +34,7 @@ const GITHUB_URL = GITHUB_REPO_URL;
  * `client/src/lib/category-colors.ts`; las etiquetas son de una palabra porque
  * con nombres largos la barra medida pedia 1.933 px y hay 1.120.
  */
-const ISSUE_LINKS = [
+export const ISSUE_LINKS = [
   {
     labelKey: "issues.territorio",
     slug: "territorio-y-tierras",
@@ -86,14 +86,16 @@ const ISSUE_LINKS = [
  * varios a la vez sin dejar su tema, que es lo que permitio separar los dos
  * ejes en agosto.
  */
-const VERTICAL_LINKS = [
-  { labelKey: "verticals.wallmapu", href: "/comunidades/mapuche" },
+export const VERTICAL_LINKS = [
+  // Singular: la ruta de una comunidad es `/comunidad/:slug`. `/comunidades` es
+  // el directorio y no acepta slug, asi que el plural aqui daba un 404.
+  { labelKey: "verticals.wallmapu", href: "/comunidad/mapuche" },
   { labelKey: "verticals.chile", href: "/issues/chile-indigena" },
   { labelKey: "verticals.latinoamerica", href: "/issues/latinoamerica" },
   { labelKey: "verticals.mundo", href: "/" },
 ];
 
-const FOOTER_NAV = [
+export const FOOTER_NAV = [
   { labelKey: "footer.about", href: "/about" },
   { labelKey: "footer.methodology", href: "/methodology" },
   { labelKey: "footer.communities", href: "/comunidades" },
