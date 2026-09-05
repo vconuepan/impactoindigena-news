@@ -125,22 +125,38 @@ export const NARRATIVE_FRAME_SCHEMA_DESCRIPTION =
 export const CLASSIFICATION_BLOCK = `<CRITERIOS DE CLASIFICACION>
 El tema se decide por el ASUNTO CENTRAL del artículo, no por las palabras que aparecen en él ni por el país donde ocurre. Un artículo sobre una cooperativa textil mapuche trata de economía indígena aunque ocurra en Chile y mencione el bosque.
 
-Cuando un artículo toca más de un tema, el asunto central es el que resuelve estas prioridades, en este orden:
+Hay ocho temas. Cuando un artículo toca más de uno, el asunto central es el que resuelve estas prioridades, EN ESTE ORDEN. La lista va de lo más específico a lo más general: se baja por ella y se detiene en la primera que calce.
 
-- Si el eje es una actividad económica de la comunidad —empresa, cooperativa, emprendimiento, empleo, ingreso, comercio, exportación, financiamiento, inversión, compras públicas, cadena de suministro, mercado, turismo comunitario como actividad productiva—, el tema es la economía indígena, aunque la actividad sea ambiental, cultural, o ocurra en territorio en disputa.
-- Si el eje es un daño, una amenaza o una disputa por territorio, consulta, consentimiento o responsabilidad de una empresa o del Estado, el tema son los derechos indígenas, aunque el daño sea ambiental.
-- Si el eje es la lengua, el arte, la literatura, la música, el cine, el patrimonio, la arqueología, la memoria, la espiritualidad, el deporte tradicional, la gastronomía como tradición, la educación intercultural o la medicina y el conocimiento ancestral, el tema es la cultura y los conocimientos ancestrales.
-- Si el eje es el clima, la biodiversidad, la conservación o el conocimiento ecológico aplicado, y NO hay una actividad económica ni una disputa de derechos como asunto central, el tema es cambio climático y biodiversidad.
+1. MUJERES INDÍGENAS — si el eje es la condición de mujer o niña indígena: su liderazgo y organización propia, o una violencia que las alcanza por ser ambas cosas (desaparición, trata, esterilización forzada, violencia sexual, salud materna).
+2. DEFENSORES Y PROTECCIÓN — si el eje es una persona o un grupo atacado, amenazado, asesinado, detenido o procesado por defender territorio o derechos indígenas, o los mecanismos que deberían protegerlos.
+3. CONSULTA Y CONSENTIMIENTO — si el eje es el PROCESO de consulta previa o de consentimiento libre, previo e informado: que se abra, que se haga mal, que falte, que un tribunal la anule u ordene, o el protocolo propio con que una comunidad la enfrenta.
+4. TERRITORIO Y TIERRAS — si el eje es la tierra misma: demarcación, titulación, restitución, ampliación, despojo, desalojo, invasión, o el gobierno del territorio por su propio pueblo.
+5. ECONOMÍAS INDÍGENAS — si el eje es una actividad económica de la comunidad: empresa, cooperativa, emprendimiento, empleo, ingreso, comercio, exportación, financiamiento, inversión, compras públicas, cadena de suministro, mercado, turismo comunitario como actividad productiva.
+6. CLIMA Y NATURALEZA — si el eje es el clima, la biodiversidad, la conservación o el conocimiento ecológico aplicado, y no hay ninguno de los anteriores como asunto central.
+7. CULTURA Y CONOCIMIENTOS ANCESTRALES — si el eje es la lengua, el arte, la literatura, la música, el cine, el patrimonio, la arqueología, la memoria, la espiritualidad, el deporte tradicional, la gastronomía como tradición, la educación intercultural o la medicina y el conocimiento ancestral.
+8. DERECHOS INDÍGENAS — el tema general: reconocimiento, política pública, justicia, salud, vivienda, servicios del Estado, y todo lo que no calza con claridad en los siete anteriores.
 
-CUATRO REGLAS DE CORTE, porque son la fuente de error más frecuente. Las dos primeras van en direcciones opuestas y las dos se equivocan seguido: hay que aplicar ambas.
+DIEZ REGLAS DE CORTE, porque son la fuente de error más frecuente. Varias van en direcciones opuestas y todas se equivocan seguido: hay que aplicarlas todas.
 
 1. La economía indígena exige que el asunto central sea la actividad económica en sí. Que en el artículo se venda algo no basta. Un festival gastronómico, una feria de arte, una exposición de museo, un concurso literario o un powwow son CULTURA, no economía, aunque haya entradas, artesanía a la venta o público que viaja. La economía entra cuando el artículo trata del negocio, del ingreso, del empleo, del financiamiento o del acceso al mercado.
 
-2. Y al revés: un artículo cuyo eje es una empresa, una empresaria o un empresario, un crédito, un banco, una licitación, una compra pública, una exportación, la facturación, el empleo, un mercado o una feria comercial ES ECONOMÍA, aunque el texto hable de identidad, de tradición o de cultura. Casi toda empresa indígena describe su identidad cultural al presentarse; eso no la convierte en un artículo de cultura. Una empresaria indígena y la banca es economía. Un mercado indígena que consigue local permanente es economía. Una cooperativa que rescata una técnica ancestral y la vende es economía.
+2. Y al revés: un artículo cuyo eje es una empresa, una empresaria o un empresario, un crédito, un banco, una licitación, una compra pública, una exportación, la facturación, el empleo, un mercado o una feria comercial ES ECONOMÍA, aunque el texto hable de identidad, de tradición o de cultura. Casi toda empresa indígena describe su identidad cultural al presentarse; eso no la convierte en un artículo de cultura.
 
-3. La salud, la vivienda, la infraestructura y el acceso a los servicios del Estado NO son conocimiento ancestral. Una campaña de vacunación, un hospital, un centro de tratamiento o una carretera van a derechos indígenas. La cultura entra solo cuando el eje es el saber propio: la medicina ancestral como conocimiento, o la pertinencia cultural de un servicio.
+3. La salud, la vivienda, la infraestructura y el acceso a los servicios del Estado NO son conocimiento ancestral. Una campaña de vacunación, un hospital, una clínica, un centro de tratamiento o de recuperación de adicciones, una carretera o un programa de agua potable van a DERECHOS, aunque el servicio lo abra una nación indígena, lleve nombre en lengua propia o se presente como sanación. La cultura entra solo cuando el eje es el saber propio: la medicina ancestral como conocimiento, o la pertinencia cultural de un servicio.
 
-4. Ningún tema es el destino por descarte, y la economía indígena menos que ninguno. Si un artículo no encaja con claridad en ninguno de los cuatro, clasifícalo en derechos indígenas, que es el tema más general. Nunca uses la economía indígena para un artículo que solo comparte con ella la palabra "desarrollo".
+4. TERRITORIO frente a DERECHOS. Un conflicto, una sentencia o una política cuyo objeto es la TIERRA va a territorio, no a derechos, aunque se describa como una violación de derechos. Casi todo lo territorial también es un derecho; eso no lo manda a derechos. Derechos se queda con lo que no tiene un objeto territorial: reconocimiento constitucional, salud, vivienda, educación, discriminación, representación política.
+
+5. TERRITORIO frente a CONSULTA. Si el artículo trata del PROCESO —se consultó, no se consultó, se hizo mal, un tribunal la ordenó— es consulta. Si trata del RESULTADO sobre la tierra —se tituló, se ocupó, se desalojó, se amplió— es territorio. Un proyecto minero sin consulta previa es CONSULTA; el mismo proyecto ocupando tierra titulada es TERRITORIO.
+
+6. DEFENSORES exige una persona o un grupo concreto en riesgo. Que un artículo trate de un conflicto territorial peligroso no basta: entra cuando el eje es quién fue atacado, amenazado, asesinado, detenido o procesado, o la protección y la impunidad que siguen. Un desalojo es territorio; el dirigente baleado durante ese desalojo es defensores.
+
+7. MUJERES exige que su condición sea el EJE, no que aparezcan. Una dirigenta que encabeza una demanda territorial no manda el artículo a mujeres: eso es territorio. Entra cuando el artículo trata de las mujeres indígenas como sujeto —su organización, su representación, una violencia dirigida a ellas, su salud materna—, no cuando una mujer es quien protagoniza otro asunto.
+
+8. Las notas protocolares no tienen tema propio: un obituario, un pésame, una condolencia, un nombramiento, una elección de autoridad, una visita oficial o un aniversario institucional van a DERECHOS. Que la persona fallecida o nombrada sea un dirigente indígena no las convierte en defensores, y que se mencione su cultura no las convierte en cultura. Defensores exige una agresión; cultura exige que el eje sea el saber o la obra.
+
+9. Los derechos de la naturaleza —el reconocimiento de un río, un bosque o un lago como sujeto de derecho, y los litigios que lo persiguen— van a TERRITORIO. Es tierra y agua defendidas por vía jurídica, no patrimonio ni cosmovisión, aunque el argumento del caso invoque la relación espiritual del pueblo con ese lugar.
+
+10. Ningún tema es el destino por descarte, y la economía indígena menos que ninguno. Si un artículo no encaja con claridad en ninguno de los ocho, clasifícalo en DERECHOS INDÍGENAS, que es el tema más general. Nunca uses la economía indígena para un artículo que solo comparte con ella la palabra "desarrollo".
 
 Un artículo sobre pueblos indígenas de Chile se clasifica igual que cualquier otro: por su asunto central. El país no es un tema, es un dato aparte.
 </CRITERIOS DE CLASIFICACION>
