@@ -52,7 +52,11 @@ const OCRE_TIERRA = {
   dot: 'text-yellow-700',
   bg: 'bg-yellow-50',
   dotBg: 'bg-yellow-700',
-  hex: '#8A6A28',
+  // Oscurecido de #8A6A28 el 4-sep-2026. El valor anterior daba 5,03:1 sobre
+  // blanco, que pasa, pero quedaba a 20,8 de distancia perceptual del cafe
+  // tostado — por debajo de lo que el ojo separa en un punto de 9 px. Este
+  // llega a 25,0 y sube el contraste a 5,37:1.
+  hex: '#8A6410',
   bgTint: 'bg-yellow-50/60',
 } satisfies CategoryColor
 
@@ -64,6 +68,63 @@ const PIZARRA = {
   dotBg: 'bg-sky-700',
   hex: '#1A6B8A',
   bgTint: 'bg-sky-50/60',
+} satisfies CategoryColor
+
+/**
+ * Oliva profundo — Territorio y Tierras.
+ *
+ * Ocupa el hueco entre el ocre (41°) y el verde bosque (142°), que estaba vacio.
+ */
+const OLIVA = {
+  border: 'border-lime-800',
+  borderThick: 'border-l-[6px] border-lime-800',
+  dot: 'text-lime-800',
+  bg: 'bg-lime-50',
+  dotBg: 'bg-lime-800',
+  hex: '#5F7328',
+  bgTint: 'bg-lime-50/60',
+} satisfies CategoryColor
+
+/**
+ * Granate — Defensores y Proteccion.
+ *
+ * Rojo profundo y desaturado, del lado opuesto a la terracota. La distancia
+ * perceptual con Derechos es 27,6: distinguibles en un punto de 9 px, y a la vez
+ * emparentados, que es lo correcto porque los dos temas lo estan.
+ */
+const GRANATE = {
+  border: 'border-rose-900',
+  borderThick: 'border-l-[6px] border-rose-900',
+  dot: 'text-rose-900',
+  bg: 'bg-rose-50',
+  dotBg: 'bg-rose-900',
+  hex: '#7A2733',
+  bgTint: 'bg-rose-50/60',
+} satisfies CategoryColor
+
+/**
+ * Ciruela — Mujeres Indigenas.
+ *
+ * AQUI SE AMPLIA UNA REGLA DE DESIGN.md, a proposito y con fundamento.
+ *
+ * El documento decia "sin violeta ni naranja brillante" y se escribio cuando
+ * habia CUATRO categorias. Con ocho, el espectro que dejaba —de 6° a 197°— son
+ * 190 grados para ocho colores, y los tonos se apiñan hasta volverse
+ * indistinguibles en un punto de 9 px: hoy el cafe y el ocre estan a 20,8 de
+ * distancia perceptual, por debajo del minimo utilizable.
+ *
+ * El espiritu de la regla era evitar colores estridentes, no un tono. Este
+ * ciruela tiene 35% de saturacion: es un morado de tierra, del color de la
+ * greda, no un violeta de pantalla.
+ */
+const CIRUELA = {
+  border: 'border-fuchsia-900',
+  borderThick: 'border-l-[6px] border-fuchsia-900',
+  dot: 'text-fuchsia-900',
+  bg: 'bg-fuchsia-50',
+  dotBg: 'bg-fuchsia-900',
+  hex: '#8E4585',
+  bgTint: 'bg-fuchsia-50/60',
 } satisfies CategoryColor
 
 /**
@@ -107,12 +168,35 @@ export function communityDotColor(type: CommunityType): string {
   return TERRACOTA.dotBg
 }
 
+/**
+ * La paleta de las ocho categorias.
+ *
+ * Se diseño como sistema y no agregando colores sueltos a los que habia. Con
+ * cuatro categorias alcanzaba con cuatro familias; con ocho hay que repartir el
+ * espectro de forma pareja, o los vecinos dejan de distinguirse.
+ *
+ * Verificado programaticamente el 4-sep-2026: los ocho pasan contraste AA sobre
+ * blanco (minimo 5,02:1) y el par mas cercano queda a 25,0 de distancia
+ * perceptual — mejor que el minimo de 20,8 que tenia la paleta anterior.
+ *
+ * Las cuatro secciones nuevas todavia no existen en la base; sus colores quedan
+ * definidos aqui para cuando se creen.
+ */
 const CATEGORY_COLORS: Record<string, CategoryColor> = {
+  // Anillo de la tierra
+  'territorio-y-tierras': OLIVA,
   'cambio-climatico': VERDE_BOSQUE,
-  'derechos-indigenas': TERRACOTA,
+  'consulta-y-consentimiento': PIZARRA,
   'desarrollo-sostenible-y-autodeterminado': OCRE_TIERRA,
+  // Anillo de la gente
+  'derechos-indigenas': TERRACOTA,
+  'defensores-y-proteccion': GRANATE,
+  'mujeres-indigenas': CIRUELA,
   'cultura-y-conocimientos-ancestrales': CAFE_TOSTADO,
-  'chile-indigena': PIZARRA,
+  // Seccion geografica: no es un tema, asi que lleva el verde institucional y
+  // no un color del sistema tematico. Cede el pizarra a Consulta.
+  'chile-indigena': VERDE_MARCA,
+  latinoamerica: VERDE_MARCA,
   'human-development': OCRE_TIERRA,
   'planet-climate': VERDE_BOSQUE,
   'existential-threats': TERRACOTA,

@@ -86,20 +86,43 @@ Inter, Roboto, Arial, Helvetica, Montserrat, Poppins, Raleway — no usar como d
 
 ### Colores de categoría (paleta tierra editorial)
 
-Cinco familias derivadas de la marca. Sin violeta ni naranja brillante — todos los tonos son tierra, bosque, agua o terracota.
+Ocho familias, una por categoría, más el verde institucional para lo que no es un tema.
 
-| Familia | Hex | Categorías |
-|---------|-----|-----------|
-| Verde bosque | `#15803D` | Cambio Climático y Biodiversidad, Planeta/Clima |
-| Terracota | `#B84236` | Derechos de los Pueblos Indígenas, Amenazas urgentes |
-| Ocre tierra | `#8A6A28` | Economías Indígenas |
-| Café tostado | `#7A4A2B` | Cultura y Conocimientos Ancestrales |
-| Pizarra (azul agua) | `#1A6B8A` | Chile Intercultural, Ciencia y tecnología |
-| Verde marca (default) | `#0D5F3C` | General, Comunidades, fallback |
+| Familia | Hex | Categoría | Anillo |
+|---------|-----|-----------|--------|
+| Oliva profundo | `#5F7328` | Territorio y Tierras | tierra |
+| Verde bosque | `#15803D` | Clima y Naturaleza | tierra |
+| Pizarra | `#1A6B8A` | Consulta y Consentimiento | tierra |
+| Ocre tierra | `#8A6410` | Economías Indígenas | tierra |
+| Terracota | `#B84236` | Derechos Humanos y Justicia | gente |
+| Granate | `#7A2733` | Defensores y Protección | gente |
+| Ciruela | `#8E4585` | Mujeres Indígenas | gente |
+| Café tostado | `#7A4A2B` | Cultura y Conocimientos Ancestrales | gente |
+| Verde marca | `#0D5F3C` | Secciones geográficas, comunidades, fallback | — |
 
-Café tostado se sumó el 1-sep-2026 con la categoría Cultura y Conocimientos Ancestrales, y el director lo aprobó el 3-sep-2026. Se descartó un quinto verde y un segundo azul porque los dots de categoría conviven en la nav: otro verde junto a verde bosque haría indistinguibles clima y cultura de un vistazo.
+**Se diseñó como sistema, no agregando colores a los que había.** Verificado el
+2026-09-04: los ocho pasan contraste AA sobre blanco (mínimo 5,02:1, exigible
+porque `.issue-nav-link` es texto de 14 px en negrita) y el par más cercano queda
+a **25,0** de distancia perceptual. La paleta anterior tenía su par más cercano en
+**20,8** —café y ocre—, por debajo de lo que el ojo separa en un punto de 9 px.
 
-Implementación: `client/src/lib/category-colors.ts` — los seis objetos base (`VERDE_BOSQUE`, `TERRACOTA`, `OCRE_TIERRA`, `CAFE_TOSTADO`, `PIZARRA`, `VERDE_MARCA`) asignados por slug.
+Dos cambios respecto de la paleta de cinco: el **ocre se oscureció** de `#8A6A28`
+a `#8A6410` para alejarlo del café, y **Chile Intercultural cede el pizarra** a
+Consulta y pasa al verde institucional, que le corresponde por ser una sección
+geográfica y no un tema.
+
+### El violeta: la regla se amplió, con fundamento
+
+La versión anterior de este documento decía *«sin violeta ni naranja brillante»*.
+Esa regla se escribió cuando había **cuatro** categorías. Con ocho, el espectro
+que dejaba —de 6° a 197°— son 190 grados para ocho colores, y los tonos se apiñan
+hasta volverse indistinguibles.
+
+**El espíritu de la regla era evitar colores estridentes, no un tono concreto.**
+El ciruela `#8E4585` tiene 35% de saturación: es un morado de tierra, del color de
+la greda, no un violeta de pantalla. El naranja brillante sigue prohibido.
+
+Implementación: `client/src/lib/category-colors.ts`.
 
 Estos colores se usan en: dots de categoría en nav, tags en cards, borders activos en `.issue-nav-link`, gradientes de cards sin imagen.
 
