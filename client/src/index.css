@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Respaldo metrico de Fraunces, para que el texto no cambie de ancho al cargar.
+ *
+ * Fraunces llega con `display=swap`: hasta que baja, el navegador pinta Georgia,
+ * y Georgia es mas ancha. Medido el 5-sep-2026 sobre el logotipo: "Voces" ocupa
+ * 66,3 px en Georgia y 62,9 px en Fraunces; "Indigenas", 96,9 contra 90,5. Al
+ * intercambiarse, el bloque se encoge unos 6 px, el header se reajusta y
+ * arrastra al contenido — 0,0211 del CLS de la portada.
+ *
+ * `size-adjust: 94%` deja a Georgia ocupando lo que ocupara Fraunces, asi que
+ * el intercambio no mueve nada. Es el promedio de los dos ratios medidos
+ * (94,9% y 93,4%); afinar mas por peso no cambia el resultado a estos tamaños.
+ *
+ * Vale para todos los titulares, no solo el logotipo: Fraunces es la display de
+ * todo el sitio.
+ */
+@font-face {
+  font-family: 'Fraunces Fallback';
+  src: local('Georgia'), local('Times New Roman');
+  size-adjust: 94%;
+  ascent-override: 92%;
+  descent-override: 24%;
+  line-gap-override: 0%;
+}
+
 /* Neutrales calidos, para TODO el sitio.
  *
  * Tailwind resuelve su escala `neutral` contra estas variables (ver
@@ -142,7 +166,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces';
+  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
   src: url('/fonts/Fraunces/fraunces-italic-latin-ext.woff2') format('woff2');
   font-weight: 300 900;
   font-style: italic;
@@ -151,7 +175,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces';
+  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
   src: url('/fonts/Fraunces/fraunces-italic-latin.woff2') format('woff2');
   font-weight: 300 900;
   font-style: italic;
@@ -160,7 +184,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces';
+  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
   src: url('/fonts/Fraunces/fraunces-normal-latin-ext.woff2') format('woff2');
   font-weight: 300 900;
   font-style: normal;
@@ -169,7 +193,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces';
+  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
   src: url('/fonts/Fraunces/fraunces-normal-latin.woff2') format('woff2');
   font-weight: 300 900;
   font-style: normal;
@@ -196,7 +220,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Fraunces', Georgia, ui-serif, serif;
+    font-family: 'Fraunces', 'Fraunces Fallback', Georgia, ui-serif, serif;
     text-wrap: balance;
     font-optical-sizing: auto;
   }
@@ -373,7 +397,7 @@
    * continuacion de la primera.
    */
   .brand-voces {
-    font-family: 'Fraunces', Georgia, ui-serif, serif;
+    font-family: 'Fraunces', 'Fraunces Fallback', Georgia, ui-serif, serif;
     font-weight: 700;
     font-size: 22px;
     letter-spacing: -0.02em;
@@ -383,7 +407,7 @@
   }
 
   .brand-indigenas {
-    font-family: 'Fraunces', Georgia, ui-serif, serif;
+    font-family: 'Fraunces', 'Fraunces Fallback', Georgia, ui-serif, serif;
     font-style: italic;
     font-weight: 600;
     font-size: 19px;

@@ -56,7 +56,7 @@ export default {
         },
       },
       fontFamily: {
-        fraunces: ['Fraunces', 'Georgia', 'ui-serif', 'serif'],
+        fraunces: ['Fraunces', 'Fraunces Fallback', 'Georgia', 'ui-serif', 'serif'],
         lora:     ['Lora',     'ui-serif', 'Georgia', 'serif'],
         'dm-sans':['DM Sans',  'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
