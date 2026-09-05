@@ -21,6 +21,7 @@ import { detectAndCluster } from './dedup.js'
 import { generateEmbeddingForContent } from './embedding.js'
 import { saveEmbeddingTx } from '../lib/vectors.js'
 import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/title-capitalization.js'
+import { detectarClasificacionSospechosa } from '../lib/clasificacion-guardarrail.js'
 
 const log = createLogger('analysis')
 
@@ -134,6 +135,27 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
           if (!issueId) {
             log.warn({ articleId: item.articleId, issueSlug: item.issueSlug }, 'invalid issue slug, falling back to feed issue')
             issueId = story.feed.issueId
+          }
+
+          // Guardarrail: el prompt es una restriccion blanda, asi que aqui, en
+          // el punto donde se escribe, se comprueban las contradicciones que SI
+          // son verificables con codigo. No corrige -elegir el tema es un
+          // juicio- pero deja constancia de la que ya se sabe que falla.
+          for (const sospecha of detectarClasificacionSospechosa(
+            story.sourceTitle ?? '',
+            item.issueSlug,
+          )) {
+            log.warn(
+              {
+                storyId: story.id,
+                asignado: item.issueSlug,
+                sugerido: sospecha.sugerido,
+                regla: sospecha.regla,
+                termino: sospecha.termino,
+                title: story.sourceTitle?.slice(0, 80),
+              },
+              `clasificacion sospechosa: ${sospecha.motivo}`,
+            )
           }
 
           updates.push(prisma.story.update({
