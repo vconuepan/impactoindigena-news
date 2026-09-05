@@ -92,6 +92,44 @@ const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
   { query: 'UNDRIP declaration indigenous peoples rights',   region: 'US:en' },
   { query: 'Inter-American Court indigenous peoples',        region: 'US:en' },
   { query: 'ILO convention 169 indigenous rights',           region: 'US:en' },
+
+  // Agregadas el 5-sep-2026, al completar las ocho categorias. Medido sobre
+  // las 30 queries anteriores: DEFENSORES, MUJERES y CULTURA tenian CERO, y
+  // Clima tenia una sola. Es el mismo patron que en agosto dejo a Economias
+  // sin material propio -no faltaban fuentes, faltaba que alguien buscara el
+  // tema- y por eso Cultura sostiene 464 historias que llegaron todas por
+  // reclasificacion, ninguna por descubrimiento.
+
+  // Defensores y proteccion
+  { query: 'defensores derechos humanos indígenas',          region: 'CL:es' },
+  { query: 'dirigente indígena asesinado',                   region: 'CL:es' },
+  { query: 'criminalización protesta indígena',              region: 'CL:es' },
+  { query: 'indigenous land defender killed',                region: 'US:en' },
+  { query: 'indigenous activist criminalization',            region: 'US:en' },
+
+  // Mujeres indígenas
+  { query: 'mujeres indígenas',                              region: 'CL:es' },
+  { query: 'lideresa indígena',                              region: 'CL:es' },
+  { query: 'indigenous women rights',                        region: 'US:en' },
+  { query: 'missing murdered indigenous women',              region: 'US:en' },
+
+  // Cultura y conocimientos ancestrales
+  { query: 'lengua indígena revitalización',                 region: 'CL:es' },
+  { query: 'patrimonio cultural indígena',                   region: 'CL:es' },
+  { query: 'arte indígena contemporáneo',                    region: 'CL:es' },
+  { query: 'educación intercultural bilingüe',               region: 'CL:es' },
+  { query: 'indigenous language revitalization',             region: 'US:en' },
+  { query: 'repatriation indigenous ancestral remains',      region: 'US:en' },
+
+  // Clima y naturaleza, que tenia una sola
+  { query: 'pueblos indígenas cambio climático',             region: 'CL:es' },
+  { query: 'conocimiento ecológico tradicional',             region: 'CL:es' },
+  { query: 'indigenous conservation biodiversity',           region: 'US:en' },
+
+  // Territorio, que tenia dos
+  { query: 'titulación tierras indígenas',                   region: 'CL:es' },
+  { query: 'restitución territorial indígena',               region: 'CL:es' },
+  { query: 'indigenous land title ruling',                   region: 'US:en' },
 ]
 
 export async function runGoogleNewsDiscover(): Promise<void> {
