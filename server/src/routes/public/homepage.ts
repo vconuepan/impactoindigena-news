@@ -12,12 +12,28 @@ const log = createLogger('public:homepage')
 const HOMEPAGE_TTL = 60 * 1000
 const homepageCache = new TTLCache<unknown>(HOMEPAGE_TTL)
 
-// Issue slugs in display order for homepage
-const HOMEPAGE_ISSUE_SLUGS = [
-  'chile-indigena',
+/**
+ * Las ocho categorias tematicas, en el orden en que se muestran.
+ *
+ * Esta lista existe TRES veces -aqui, en `client/src/lib/issue-order.ts` y,
+ * hasta hoy, dentro de HomePage- porque el server no resuelve el alias
+ * `@shared` y darselo obliga a tocar su build. Duplicarla es el mal menor;
+ * dejarla desincronizada, no: el 5-sep-2026 esta se quedo con las cinco viejas
+ * y con el slug legado de Economias, asi que la portada pedia historias para
+ * cinco secciones y las cuatro nuevas -Territorio, Consulta, Defensores y
+ * Mujeres, con 1.180 historias entre ellas- llegaban vacias al cliente.
+ *
+ * `homepage.test.ts` lee el archivo del cliente y falla si dejan de coincidir.
+ * Chile no esta: es una seccion geografica y vive en la barra de verticales.
+ */
+export const HOMEPAGE_ISSUE_SLUGS = [
+  'territorio-y-tierras',
   'cambio-climatico',
+  'consulta-y-consentimiento',
+  'economias-indigenas',
   'derechos-indigenas',
-  'desarrollo-sostenible-y-autodeterminado',
+  'defensores-y-proteccion',
+  'mujeres-indigenas',
   'cultura-y-conocimientos-ancestrales',
 ]
 
