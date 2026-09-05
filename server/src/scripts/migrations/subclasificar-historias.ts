@@ -130,12 +130,12 @@ async function main(): Promise<void> {
     process.exit(1)
   }
 
-  const stories = await prisma.story.findMany({
+  const stories = await withRetry(() => prisma.story.findMany({
     where: { issueId: madre.id, status: 'published' },
     select: { id: true, sourceTitle: true, sourceContent: true },
     orderBy: { datePublished: 'desc' },
     ...(LIMITE ? { take: LIMITE } : {}),
-  })
+  }))
 
   console.log(`${madre.name} · ${stories.length} historias · ${madre.children.length} subsecciones`)
   console.log(`  ${madre.children.map((c) => c.slug).join(' · ')}`)
@@ -200,7 +200,14 @@ async function main(): Promise<void> {
       movidas++
       if (!APLICAR) continue
       appendFileSync(logFile, JSON.stringify({ storyId: it.articleId, antes: madre.id, a: destino.slug }) + '\n')
-      await prisma.story.update({ where: { id: it.articleId }, data: { issueId: destino.id } })
+      // Con reintento: la corrida completa dura mas de media hora y Azure
+      // PostgreSQL cierra la conexion antes de terminar (P1017, "server has
+      // closed the connection"). Paso el 5-sep-2026 con 78 de 2.894 movidas.
+      // Reanudar es barato -el script solo toma historias que siguen en la
+      // madre- pero perder el lote en curso no tiene por que pasar.
+      await withRetry(() =>
+        prisma.story.update({ where: { id: it.articleId }, data: { issueId: destino.id } }),
+      )
     }
   }
 
