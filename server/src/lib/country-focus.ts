@@ -45,6 +45,24 @@ export const GEOGRAPHIC_ISSUE_SLUGS = ['chile-indigena', 'latinoamerica'] as con
  * Latinoamerica es una regla binaria, y las binarias van en el codigo. Misma
  * leccion que `normalizeCountry` y el guardarrail de capitalizacion.
  */
+/**
+ * Las regiones que alimentan las secciones geograficas.
+ *
+ * Los nombres siguen a los grupos regionales de la ONU donde describen bien lo
+ * que contienen -Africa, Asia y el Pacifico, Europa Oriental- y se apartan de
+ * ellos donde no. Los grupos de la ONU reparten asientos en la Asamblea
+ * General: agrupan Estados por conveniencia diplomatica, no pueblos por
+ * territorio, y por eso Australia figura junto a Alemania y Canada junto a
+ * Monaco.
+ *
+ * Medido el 5-sep-2026 sobre las 2.850 historias publicadas con pais: adoptar
+ * los cinco grupos tal cual dejaba 711 historias de pueblos indigenas -inuit,
+ * Primeras Naciones, nativos de Estados Unidos, aborigenes australianos,
+ * maories y sami- dentro de una seccion llamada "Europa Occidental y otros
+ * Estados", que ademas habria sido la segunda del sitio. De ahi las tres
+ * salidas de la nomenclatura: Abya Yala no se parte, y Australia y Aotearoa y
+ * Sapmi salen del "otros".
+ */
 export const REGIONS = {
   /**
    * Abya Yala: el continente americano completo.
@@ -53,7 +71,9 @@ export const REGIONS = {
    * hispana y portuguesa, asi que la seccion incluye a Canada y Estados
    * Unidos. Recortarla a America Latina dejaria fuera a las Primeras Naciones,
    * los inuit, los metis y los pueblos nativos de Estados Unidos, que este
-   * medio cubre: el nombre prometeria mas de lo que entrega.
+   * medio cubre: el nombre prometeria mas de lo que entrega. Es tambien la
+   * razon por la que no se usa el grupo GRULAC de la ONU, que corta el
+   * continente a la altura del rio Bravo.
    */
   abyaYala: [
     // America del Norte
@@ -64,6 +84,77 @@ export const REGIONS = {
     'CO', 'VE', 'EC', 'PE', 'BO', 'CL', 'AR', 'PY', 'UY', 'BR', 'GY', 'SR',
     // Caribe
     'CU', 'DO', 'HT', 'PR',
+    // Groenlandia: kalaallit, un pueblo inuit. Es America aunque el Estado sea danes.
+    'GL',
+  ],
+
+  /** Africa. El grupo de la ONU sin cambios: describe lo que contiene. */
+  africa: [
+    'AO', 'DZ', 'BJ', 'BW', 'BF', 'BI', 'CV', 'CM', 'TD', 'KM', 'CG', 'CI',
+    'DJ', 'EG', 'ER', 'ET', 'SZ', 'GA', 'GM', 'GH', 'GN', 'GW', 'GQ', 'KE',
+    'LS', 'LR', 'LY', 'MG', 'MW', 'ML', 'MA', 'MR', 'MU', 'MZ', 'NE', 'NG',
+    'NA', 'CF', 'CD', 'TZ', 'RW', 'ST', 'SN', 'SC', 'SL', 'SO', 'ZA', 'SD',
+    'SS', 'TG', 'TN', 'UG', 'ZW', 'ZM', 'EH',
+  ],
+
+  /**
+   * Asia y el Pacifico. El grupo de la ONU, que incluye las islas del Pacifico
+   * -Fiji, Papua Nueva Guinea, Salomon, Vanuatu, Samoa, Tonga, Kiribati- pero
+   * NO a Australia ni a Nueva Zelandia, que alli figuran en WEOG y aqui tienen
+   * seccion propia.
+   */
+  asiaPacifico: [
+    'AF', 'SA', 'BH', 'BD', 'BT', 'BN', 'KH', 'CN', 'CY', 'AE', 'FJ', 'PH',
+    'IN', 'ID', 'IR', 'IQ', 'MH', 'JP', 'JO', 'KZ', 'KI', 'KW', 'LA', 'LB',
+    'MY', 'MV', 'FM', 'MN', 'MM', 'NR', 'NP', 'OM', 'PK', 'PW', 'PG', 'QA',
+    'KR', 'KP', 'SB', 'WS', 'SG', 'LK', 'TJ', 'TH', 'TL', 'TO', 'TM', 'TV',
+    'UZ', 'VN', 'YE', 'SY', 'PS', 'IL', 'TR', 'VU',
+    // No son Estados miembros de la ONU y por eso no figuran en ningun grupo,
+    // pero sus pueblos son parte de lo que cubrimos: los kanak de Kanaky /
+    // Nueva Caledonia, los ma'ohi de la Polinesia francesa y los pueblos
+    // aborigenes de Taiwan. Un territorio sin asiento en la Asamblea General
+    // no es un territorio sin pueblo.
+    'NC', 'PF', 'TW',
+  ],
+
+  /**
+   * Australia y Aotearoa. Fuera del "y otros Estados" de la ONU.
+   *
+   * Aotearoa es el nombre maori de Nueva Zelandia. Son 69 historias de pueblos
+   * aborigenes, isleños del Estrecho de Torres y maories: agruparlas con
+   * Alemania y Suiza no las describe.
+   */
+  australiaAotearoa: ['AU', 'NZ'],
+
+  /**
+   * Sapmi: el territorio sami, que cruza cuatro Estados sin coincidir con
+   * ninguno. Mismo criterio que Wallmapu: se nombra el territorio del pueblo,
+   * no la casilla del Estado que lo administra.
+   *
+   * La peninsula de Kola es rusa y Rusia esta ademas en Europa Oriental: una
+   * historia sami de Murmansk aparece en las dos, que es exactamente lo que
+   * permite el eje geografico.
+   */
+  sapmi: ['NO', 'SE', 'FI'],
+
+  /**
+   * Europa Occidental: el grupo WEOG de la ONU al que se le quitaron America
+   * -que es Abya Yala- y Oceania -que es Australia y Aotearoa-, tal como
+   * quedaba al separar esas dos. Lo que queda es Europa occidental y nada mas,
+   * y por eso el "y otros Estados" del nombre original sobra aqui.
+   *
+   * Noruega, Suecia y Finlandia estan tambien en Sapmi: una historia sami
+   * aparece en las dos, que es lo que permite el eje geografico.
+   */
+  europaOccidental: [
+    'DE', 'AD', 'AT', 'BE', 'DK', 'ES', 'FI', 'FR', 'GR', 'IS', 'IE', 'IT',
+    'LI', 'LU', 'MT', 'MC', 'NO', 'NL', 'PT', 'GB', 'SM', 'SE', 'CH',
+  ],
+
+  /** Europa Oriental. El grupo de la ONU sin cambios. */
+  europaOriental: [
+    'AL', 'AM', 'SK', 'ME', 'MK', 'AZ', 'BY', 'BA', 'BG', 'HR', 'CZ', 'EE',
+    'GE', 'HU', 'LV', 'LT', 'MD', 'PL', 'RO', 'RU', 'RS', 'SI', 'UA',
   ],
 } as const satisfies Record<string, readonly string[]>
 
@@ -76,7 +167,15 @@ export const REGIONS = {
  */
 export const GEOGRAPHIC_ISSUE_COUNTRIES: Record<string, readonly string[]> = {
   'chile-indigena': ['CL'],
+  // El slug se conserva de cuando la seccion se llamaba Latinoamerica: no vale
+  // romper los enlaces que ya existen por un renombre.
   latinoamerica: REGIONS.abyaYala,
+  africa: REGIONS.africa,
+  'asia-pacifico': REGIONS.asiaPacifico,
+  'australia-aotearoa': REGIONS.australiaAotearoa,
+  sapmi: REGIONS.sapmi,
+  'europa-occidental': REGIONS.europaOccidental,
+  'europa-oriental': REGIONS.europaOriental,
 }
 
 /**
