@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { ISSUE_LINKS, VERTICAL_LINKS, FOOTER_NAV } from './PublicLayout'
+import { ISSUE_LINKS, VERTICAL_LINKS, VERTICAL_LINKS_MAS, FOOTER_NAV } from './PublicLayout'
 
 /**
  * Cada enlace de la navegacion tiene que caer en una ruta declarada.
@@ -38,6 +38,7 @@ describe('navegacion publica', () => {
   for (const [nombre, enlaces] of [
     ['categorias', ISSUE_LINKS],
     ['verticales', VERTICAL_LINKS],
+    ['mas regiones', VERTICAL_LINKS_MAS],
     ['pie', FOOTER_NAV],
   ] as const) {
     it(`cada enlace de ${nombre} cae en una ruta declarada`, () => {
@@ -47,6 +48,19 @@ describe('navegacion publica', () => {
       }
     })
   }
+
+  it('ninguna region aparece a la vez en la barra y en el menu', () => {
+    const visibles = new Set(VERTICAL_LINKS.map((l) => l.href))
+    for (const l of VERTICAL_LINKS_MAS) {
+      expect(visibles.has(l.href), `${l.href} esta duplicado`).toBe(false)
+    }
+  })
+
+  it('la barra visible cabe: cinco verticales', () => {
+    // Medido con la metrica de `.vertical-nav-link`: las nueve regiones piden
+    // unos 1.130 px y la barra tiene 1.120. Agregar una sexta la desborda.
+    expect(VERTICAL_LINKS).toHaveLength(5)
+  })
 
   it('son ocho categorias tematicas', () => {
     expect(ISSUE_LINKS).toHaveLength(8)

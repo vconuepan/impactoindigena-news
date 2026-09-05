@@ -86,12 +86,33 @@ export const ISSUE_LINKS = [
  * varios a la vez sin dejar su tema, que es lo que permitio separar los dos
  * ejes en agosto.
  */
+/**
+ * Verticales visibles en la barra.
+ *
+ * Son cinco y no las nueve que existen porque no caben: medido con la metrica
+ * de `.vertical-nav-link`, las nueve piden unos 1.130 px y la barra tiene
+ * 1.120. Estas cinco cubren el 96% del archivo; el resto vive en
+ * VERTICAL_LINKS_MAS, detras del menu "Mas regiones".
+ */
 export const VERTICAL_LINKS = [
   // Singular: la ruta de una comunidad es `/comunidad/:slug`. `/comunidades` es
   // el directorio y no acepta slug, asi que el plural aqui daba un 404.
   { labelKey: "verticals.wallmapu", href: "/comunidad/mapuche" },
   { labelKey: "verticals.chile", href: "/issues/chile-indigena" },
   { labelKey: "verticals.latinoamerica", href: "/issues/latinoamerica" },
+  { labelKey: "verticals.asia", href: "/issues/asia" },
+  { labelKey: "verticals.oceania", href: "/issues/oceania" },
+];
+
+/**
+ * El resto del mapa, en el menu. No son secciones de segunda: son las de menor
+ * volumen hoy, y "Mundo" cierra la lista porque es la portada sin filtro.
+ */
+export const VERTICAL_LINKS_MAS = [
+  { labelKey: "verticals.africa", href: "/issues/africa" },
+  { labelKey: "verticals.europaOccidental", href: "/issues/europa-occidental" },
+  { labelKey: "verticals.europaOriental", href: "/issues/europa-oriental" },
+  { labelKey: "verticals.sapmi", href: "/issues/sapmi" },
   { labelKey: "verticals.mundo", href: "/" },
 ];
 
@@ -283,6 +304,7 @@ function PublicLayoutInner() {
   const { t, i18n } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [regionsOpen, setRegionsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [savedCount, setSavedCount] = useState(0);
   const { openSubscribe } = useSubscribe();
@@ -290,6 +312,14 @@ function PublicLayoutInner() {
   const menuDialogRef = useRef<HTMLDialogElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // El boton "Mas regiones" se marca activo cuando el lector esta en una de las
+  // regiones que viven dentro del menu; si no, la barra no daria ninguna señal
+  // de donde esta parado. "/" queda fuera: la portada no es una region.
+  const regionsMasActive = VERTICAL_LINKS_MAS.some(
+    (l) => l.href !== "/" && location.pathname.startsWith(l.href),
+  );
+
 
   const refreshSavedCount = useCallback(() => {
     setSavedCount(getSavedSlugs().length);
@@ -430,6 +460,57 @@ function PublicLayoutInner() {
                 </li>
               );
             })}
+
+            {/*
+              Las regiones que no caben en la barra. El menu se cierra al elegir
+              y con Escape, y no se cierra al perder el foco: en un menu corto
+              eso se lleva por delante al lector que sale un momento con el
+              teclado.
+            */}
+            <li className="border-l border-neutral-200 relative">
+              <button
+                type="button"
+                onClick={() => setRegionsOpen(!regionsOpen)}
+                onKeyDown={(e) => { if (e.key === "Escape") setRegionsOpen(false); }}
+                aria-expanded={regionsOpen}
+                aria-haspopup="true"
+                aria-controls="mas-regiones"
+                className={`vertical-nav-link ${
+                  regionsMasActive ? "text-brand-800" : "text-neutral-500 hover:text-brand-700"
+                }`}
+              >
+                {t("verticals.more")}
+                <span aria-hidden="true" className="ml-1 text-[9px]">{regionsOpen ? "\u25B2" : "\u25BC"}</span>
+              </button>
+              {regionsOpen && (
+                <ul
+                  id="mas-regiones"
+                  className="absolute left-0 top-full z-30 min-w-[13rem] bg-white border border-neutral-200 shadow-lg py-1"
+                >
+                  {VERTICAL_LINKS_MAS.map((link) => {
+                    const active = link.href === "/"
+                      ? location.pathname === "/"
+                      : location.pathname.startsWith(link.href);
+                    return (
+                      <li key={link.href}>
+                        <Link
+                          to={link.href}
+                          onClick={() => setRegionsOpen(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={`block px-4 py-2 text-sm ${
+                            active
+                              ? "text-brand-800 font-semibold"
+                              : "text-neutral-600 hover:text-brand-700 hover:bg-neutral-50"
+                          }`}
+                        >
+                          {t(link.labelKey)}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </li>
           </ul>
         </nav>
 

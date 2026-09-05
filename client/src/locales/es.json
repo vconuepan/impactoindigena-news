@@ -20,7 +20,14 @@
     "wallmapu": "Wallmapu",
     "chile": "Chile Intercultural",
     "latinoamerica": "Abya Yala",
-    "mundo": "Mundo"
+    "mundo": "Mundo",
+    "asia": "Asia",
+    "oceania": "Oceanía",
+    "africa": "África",
+    "europaOccidental": "Europa Occidental",
+    "europaOriental": "Europa Oriental",
+    "sapmi": "Sápmi",
+    "more": "Más regiones"
   },
   "issues": {
     "climaBiodiversidad": "Clima",
