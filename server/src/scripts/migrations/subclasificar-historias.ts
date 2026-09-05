@@ -192,11 +192,19 @@ async function main(): Promise<void> {
     console.log(`  -- lote ${Math.floor(i / LOTE) + 1}/${Math.ceil(stories.length / LOTE)} --`)
 
     for (const it of items) {
+      // El id tiene que venir del lote que se envio. El modelo a veces devuelve
+      // uno que no existe, y actualizar a ciegas tumbaba la corrida entera con
+      // P2025: paso el 5-sep-2026 en el lote 85 de 160 de Clima. Se salta y se
+      // sigue, que es lo que hace el pipeline con el mismo caso.
+      const s = grupo.find((x) => x.id === it.articleId)
+      if (!s) {
+        console.log(`     id desconocido, se ignora: ${it.articleId}`)
+        continue
+      }
       const destino = it.subSlug ? porSlug.get(it.subSlug) : null
       reparto.set(it.subSlug ?? '(se queda en la madre)', (reparto.get(it.subSlug ?? '(se queda en la madre)') ?? 0) + 1)
       if (!destino) continue
-      const s = grupo.find((x) => x.id === it.articleId)
-      console.log(`     ${destino.name.padEnd(28)} ${String(s?.sourceTitle ?? '').slice(0, 62)}`)
+      console.log(`     ${destino.name.padEnd(28)} ${String(s.sourceTitle ?? '').slice(0, 62)}`)
       movidas++
       if (!APLICAR) continue
       appendFileSync(logFile, JSON.stringify({ storyId: it.articleId, antes: madre.id, a: destino.slug }) + '\n')
