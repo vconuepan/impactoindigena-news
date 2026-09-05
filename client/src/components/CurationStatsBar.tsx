@@ -18,7 +18,27 @@ export default function CurationStatsBar() {
       .catch(() => {})
   }, [])
 
-  if (!stats) return null
+  // El espacio se reserva desde el primer render, aunque todavia no haya datos.
+  //
+  // Antes esto devolvia null y la barra APARECIA cuando /api/stats/daily
+  // respondia, empujando hacia abajo el header y toda la pagina: medido con
+  // Lighthouse, era el segundo desplazamiento de la portada. Un elemento que
+  // vive ENCIMA del contenido no puede aparecer tarde.
+  //
+  // Se pinta con el mismo fondo y la misma altura, y sin texto: el hueco verde
+  // de una linea es parte del diseño de la cabecera, no un placeholder que
+  // parpadea. Si la peticion falla, se queda asi y no mueve nada.
+  if (!stats) {
+    return (
+      <div
+        className="w-full py-1.5 text-center font-dm-sans"
+        style={{ backgroundColor: '#0D5F3C' }}
+        aria-hidden="true"
+      >
+        <p className="text-[11px] tracking-wide px-4">&nbsp;</p>
+      </div>
+    )
+  }
 
   const num = (n: number) => n.toLocaleString(i18n.language === 'en' ? 'en' : 'es')
 

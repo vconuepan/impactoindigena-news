@@ -20,6 +20,7 @@ import CasosSection from '../components/CasosSection'
 import DailySnippet from '../components/DailySnippet'
 import { usePositivity } from '../contexts/PositivityContext'
 import { mixHomepageStories, pickHero } from '../lib/mix-stories'
+import { ISSUE_ORDER } from '../lib/issue-order'
 
 // ---------------------------------------------------------------------------
 // Shared constants
@@ -421,14 +422,6 @@ function StatementSection() {
 // ---------------------------------------------------------------------------
 // Home page
 // ---------------------------------------------------------------------------
-
-const ISSUE_ORDER = [
-  'chile-indigena',
-  'cambio-climatico',
-  'derechos-indigenas',
-  'economias-indigenas',
-  'cultura-y-conocimientos-ancestrales',
-]
 
 const LAYOUTS: LayoutVariant[] = ['A', 'B', 'C']
 

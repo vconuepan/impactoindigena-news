@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { ISSUE_LINKS, VERTICAL_LINKS, VERTICAL_LINKS_MAS, FOOTER_NAV } from './PublicLayout'
+import { ISSUE_ORDER, GEOGRAPHIC_SLUGS } from '../lib/issue-order'
 
 /**
  * Cada enlace de la navegacion tiene que caer en una ruta declarada.
@@ -64,6 +65,21 @@ describe('navegacion publica', () => {
 
   it('son ocho categorias tematicas', () => {
     expect(ISSUE_LINKS).toHaveLength(8)
+  })
+
+  it('la barra y la portada muestran las MISMAS ocho, en el mismo orden', () => {
+    // El 5-sep-2026 se agregaron cuatro categorias a la barra y la portada
+    // siguio filtrando por su propia lista de cinco: Territorio, Consulta,
+    // Defensores y Mujeres no aparecian en la portada pese a tener 1.180
+    // historias entre las cuatro. Dos listas que enumeran lo mismo se
+    // desincronizan; esto lo sostiene.
+    expect(ISSUE_LINKS.map((l) => l.slug)).toEqual([...ISSUE_ORDER])
+  })
+
+  it('ninguna categoria de la portada es una seccion geografica', () => {
+    for (const slug of ISSUE_ORDER) {
+      expect(GEOGRAPHIC_SLUGS, slug).not.toContain(slug)
+    }
   })
 
   it('ninguna categoria tematica es una seccion geografica', () => {
