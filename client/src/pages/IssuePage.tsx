@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { API_BASE } from '../lib/api'
 import { usePublicIssue } from '../hooks/usePublicIssues'
 import { usePublicStories } from '../hooks/usePublicStories'
-import { getCategoryColor } from '../lib/category-colors'
+import { getCategoryColor, hexToRgba } from '../lib/category-colors'
 import StoryCard from '../components/StoryCard'
 import PullQuote from '../components/PullQuote'
 import Pagination from '../components/Pagination'
@@ -236,23 +236,45 @@ export default function IssuePage() {
         {/* Daily editorial snippet */}
         <DailySnippet issueSlug={slug} />
 
-        {/* Sub-topics — only those with stories */}
+        {/*
+          Subsecciones. Solo las que tienen historias: una subseccion vacia no
+          es una promesa que valga la pena mostrar.
+
+          Llevan rotulo y cuenta porque sin eso no se leian como navegacion:
+          medido el 5-sep-2026, eran texto de 14 px en peso 400 y gris #404040
+          -el mismo cuerpo que el texto corriente- flotando bajo el titulo sin
+          decir que eran. El color lo hereda cada una de su madre.
+        */}
         {activeChildren.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-5">
-            {activeChildren.map((child) => {
-              const childColors = getCategoryColor(child.slug)
-              return (
-                <Link
-                  key={child.slug}
-                  to={`/issues/${child.slug}`}
-                  className="inline-flex items-center gap-1.5 bg-neutral-50 hover:bg-neutral-100 text-neutral-700 text-sm font-normal px-3 py-1.5 rounded-full transition-colors focus-visible:ring-2 focus-visible:ring-brand-500"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: childColors.hex }} aria-hidden="true" />
-                  {child.name}
-                </Link>
-              )
-            })}
-          </div>
+          <nav className="mb-6" aria-label={`Subsecciones de ${issue.name}`}>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500 mb-2">
+              Dentro de esta sección
+            </p>
+            <ul className="flex flex-wrap gap-2 list-none p-0 m-0">
+              {activeChildren.map((child) => {
+                const childColors = getCategoryColor(child.slug)
+                return (
+                  <li key={child.slug}>
+                    <Link
+                      to={`/issues/${child.slug}`}
+                      className="inline-flex items-center gap-2 bg-white text-neutral-800 hover:text-neutral-900 text-sm font-semibold px-3.5 py-2 rounded-full border transition-colors focus-visible:ring-2 focus-visible:ring-brand-500"
+                      style={{ borderColor: hexToRgba(childColors.hex, 0.45) }}
+                    >
+                      <span
+                        className="w-2 h-2 rounded-full shrink-0"
+                        style={{ backgroundColor: childColors.hex }}
+                        aria-hidden="true"
+                      />
+                      {child.name}
+                      <span className="text-neutral-500 font-normal tabular-nums">
+                        {child.publishedStoryCount}
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </nav>
         )}
 
         {/* Stories — rotating magazine layouts */}

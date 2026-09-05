@@ -206,8 +206,36 @@ const CATEGORY_COLORS: Record<string, CategoryColor> = {
 
 const DEFAULT_COLOR: CategoryColor = CATEGORY_COLORS['general-news']
 
+/**
+ * Prefijo del slug de una subcategoria -> la madre de la que hereda el color.
+ *
+ * Las dieciocho subsecciones se nombraron `<madre>-<eje>` justamente para esto:
+ * `territorio-despojo` es de Territorio y le corresponde su oliva. Sin este
+ * mapa caian todas al verde de marca, que es el fallback, y las tres hijas de
+ * una categoria se veian identicas entre si y distintas de su madre.
+ */
+const PREFIJO_A_MADRE: Record<string, string> = {
+  territorio: 'territorio-y-tierras',
+  clima: 'cambio-climatico',
+  consulta: 'consulta-y-consentimiento',
+  derechos: 'derechos-indigenas',
+  defensores: 'defensores-y-proteccion',
+  cultura: 'cultura-y-conocimientos-ancestrales',
+}
+
 export function getCategoryColor(issueSlug: string): CategoryColor {
-  return CATEGORY_COLORS[issueSlug] ?? DEFAULT_COLOR
+  const propio = CATEGORY_COLORS[issueSlug]
+  if (propio) return propio
+
+  // Una subcategoria hereda el color de su madre. Se prueba solo si el slug
+  // tiene mas de un segmento, para no confundir a la madre consigo misma.
+  const guion = issueSlug.indexOf('-')
+  if (guion > 0) {
+    const madre = PREFIJO_A_MADRE[issueSlug.slice(0, guion)]
+    if (madre && CATEGORY_COLORS[madre]) return CATEGORY_COLORS[madre]
+  }
+
+  return DEFAULT_COLOR
 }
 
 /** Convert a hex color like '#fbbf24' to 'rgba(251,191,36,alpha)' */
