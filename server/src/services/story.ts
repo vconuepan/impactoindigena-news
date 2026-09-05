@@ -1187,6 +1187,27 @@ export async function getClusterMembers(slug: string): Promise<{
   }
 }
 
+/**
+ * Lo que la portada NO usa de cada historia.
+ *
+ * `getHomepageData` devolvia el select publico entero para las 151 historias
+ * que reparte entre las ocho secciones, y eso son 639 KB sin comprimir · 137 KB
+ * transferidos, medido el 5-sep-2026 sobre produccion. La respuesta tardaba
+ * 1.529 ms en llegar y hasta que llega la portada no se re-renderiza.
+ *
+ * Estos tres campos no los lee nadie en la portada -verificado en StoryCard,
+ * HomePage y mix-stories- y pesan el 22% de cada historia: `antifactors` solo
+ * el 13,5%. Las paginas que si los muestran siguen usando el select completo.
+ */
+const HOMEPAGE_OMITE = ['antifactors', 'marketingBlurb', 'marketingBlurbEn'] as const
+
+/** El select publico menos lo que la portada no usa. */
+const HOMEPAGE_STORY_SELECT = Object.fromEntries(
+  Object.entries(PUBLIC_STORY_SELECT).filter(
+    ([k]) => !(HOMEPAGE_OMITE as readonly string[]).includes(k),
+  ),
+) as Omit<typeof PUBLIC_STORY_SELECT, (typeof HOMEPAGE_OMITE)[number]>
+
 const NEGATIVE_EMOTIONS: EmotionTag[] = [EmotionTag.frustrating, EmotionTag.scary]
 
 /**
@@ -1234,7 +1255,7 @@ export async function getHomepageData(issueSlugs: string[], storiesPerIssue = 7)
     // antes cuando la seccion no tenia 7 de ese tono.
     const rows = await prisma.story.findMany({
       where: baseWhere,
-      select: PUBLIC_STORY_SELECT,
+      select: HOMEPAGE_STORY_SELECT,
       orderBy,
       take: storiesPerIssue * HOMEPAGE_FETCH_MULTIPLIER,
     })

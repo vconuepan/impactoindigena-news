@@ -659,6 +659,23 @@ describe('secciones geograficas', () => {
     expect(texto).not.toContain('"NZ"')
   })
 
+  it('la portada no pide los campos que no muestra', async () => {
+    // 151 historias por respuesta: cada campo de mas se paga 151 veces. Estos
+    // tres pesan el 22% de cada historia y no los lee nadie en la portada
+    // -verificado en StoryCard, HomePage y mix-stories-. Medido el 5-sep-2026:
+    // la respuesta eran 639 KB sin comprimir y tardaba 1.529 ms.
+    await getHomepageData(['derechos-indigenas'], 7)
+
+    const select = mockPrisma.story.findMany.mock.calls[0][0].select
+    for (const campo of ['antifactors', 'marketingBlurb', 'marketingBlurbEn']) {
+      expect(select, `la portada no debe pedir ${campo}`).not.toHaveProperty(campo)
+    }
+    // Y sigue trayendo lo que si usa.
+    for (const campo of ['title', 'summary', 'imageUrl', 'quote', 'relevanceReasons']) {
+      expect(select, `la portada necesita ${campo}`).toHaveProperty(campo)
+    }
+  })
+
   it('una seccion tematica no filtra por pais', async () => {
     await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'derechos-indigenas' })
 
