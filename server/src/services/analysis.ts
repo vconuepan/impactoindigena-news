@@ -59,7 +59,14 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
   const { storyIds, llm, schema, buildPrompt, buildUpdate, fallbackToFeedIssue = true, onProgress, batchSize, concurrency, label } = options
 
   const issuesRaw = await prisma.issue.findMany({
-    select: { id: true, slug: true, name: true, description: true, evaluationCriteria: true },
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      description: true,
+      evaluationCriteria: true,
+      parentId: true,
+    },
   })
   // `evaluationCriteria` se guarda como JSON serializado. El clasificador los
   // necesita: sin ellos decide el tema con una linea de descripcion.
@@ -76,7 +83,15 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
   // los temas a proposito: el fallback al issue del feed sigue pudiendo
   // resolver una seccion geografica para las fuentes que la tienen por
   // defecto.
-  const topicIssues = issues.filter(i => !GEOGRAPHIC_ISSUE_SLUGS.includes(i.slug as never))
+  //
+  // Y solo las categorias MADRE. Las subcategorias son un segundo nivel:
+  // ofrecerlas aqui pondria veintiseis opciones donde el prompt razona sobre
+  // ocho, y la eleccion entre "Territorio" y "Titulacion y restitucion" no es
+  // la misma pregunta que entre "Territorio" y "Consulta". La subcategoria se
+  // decide despues, dentro de la madre ya elegida.
+  const topicIssues = issues.filter(
+    i => !GEOGRAPHIC_ISSUE_SLUGS.includes(i.slug as never) && i.parentId === null,
+  )
 
   // Split IDs into batches — stories are loaded per-batch to avoid holding all sourceContent in memory
   const idBatches: string[][] = []

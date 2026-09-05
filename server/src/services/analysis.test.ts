@@ -100,6 +100,35 @@ describe('preAssessStories', () => {
     })
   })
 
+  it('al prompt solo llegan las categorias madre de asunto', async () => {
+    // Dos filtros sobre la misma lista, y los dos importan:
+    //  - las secciones geograficas se llenan por pais, no por asunto;
+    //  - las subcategorias son un segundo nivel, y ofrecerlas aqui pondria
+    //    veintiseis opciones donde el prompt razona sobre ocho.
+    const madre = sampleIssue({ id: 'i-madre', slug: 'territorio-y-tierras', parentId: null })
+    const hija = sampleIssue({ id: 'i-hija', slug: 'territorio-titulacion', parentId: 'i-madre' })
+    const geografica = sampleIssue({ id: 'i-geo', slug: 'chile-indigena', parentId: null })
+    mockPrisma.issue.findMany.mockResolvedValue([madre, hija, geografica])
+    mockPrisma.story.findMany.mockResolvedValue([storyWithRelations({ id: 'story-1' })])
+    mockPrisma.story.update.mockResolvedValue({})
+
+    const mockStructuredLlm = {
+      invoke: vi.fn().mockResolvedValue({
+        articles: [{ articleId: 'story-1', issueSlug: 'territorio-y-tierras', rating: 4, emotionTag: 'calm' }],
+      }),
+    }
+    mockGetMediumLLM.mockReturnValue({ withStructuredOutput: () => mockStructuredLlm })
+
+    await preAssessStories(['story-1'])
+
+    // El prompt viaja como HumanMessage, no como string suelto.
+    const arg: any = mockStructuredLlm.invoke.mock.calls[0][0]
+    const prompt = JSON.stringify(arg?.content ?? arg)
+    expect(prompt).toContain('territorio-y-tierras')
+    expect(prompt).not.toContain('territorio-titulacion')
+    expect(prompt).not.toContain('chile-indigena')
+  })
+
   it('falls back to feed issueId for invalid slugs', async () => {
     const issues = [
       sampleIssue({ id: 'issue-1', slug: 'ai-technology', name: 'AI', description: 'AI topics' }),
