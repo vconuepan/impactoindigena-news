@@ -260,6 +260,7 @@ describe('Issue Service — dynamic sourceNames', () => {
               { title: 'Alignment Forum', displayTitle: null, active: true, _count: { stories: 2 } },
               { title: 'Inactive', displayTitle: null, active: false, _count: { stories: 1 } },
             ],
+            _count: { stories: 7 },
           },
         ],
         parent: null,
@@ -270,7 +271,50 @@ describe('Issue Service — dynamic sourceNames', () => {
       expect(issue).not.toBeNull()
       expect(issue!.sourceNames).toEqual(['Alignment Forum', 'MIT Tech Review', 'Wired'])
       expect(issue!.children[0].sourceNames).toEqual(['Alignment Forum'])
-      expect(issue!.children[0].publishedStoryCount).toBe(3)
+      // Las historias ASIGNADAS a la subseccion, no la suma de las de sus
+      // feeds: son 7, no los 3 de los feeds.
+      expect(issue!.children[0].publishedStoryCount).toBe(7)
+    })
+
+    it('cuenta las historias de una subseccion que no tiene feeds propios', async () => {
+      // Es el caso real de las dieciocho subcategorias: los 96 feeds cuelgan de
+      // las categorias madre, asi que sumar las historias de los feeds de una
+      // hija daba CERO y `IssuePage`, que oculta a las hijas sin historias, las
+      // dejaba invisibles aunque estuvieran pobladas.
+      mockPrisma.issue.findFirst.mockResolvedValue({
+        id: 'issue-1',
+        name: 'Territorio y Tierras',
+        slug: 'territorio-y-tierras',
+        description: '',
+        intro: '',
+        evaluationIntro: '',
+        evaluationCriteria: '',
+        sourceNames: '',
+        makeADifference: '',
+        parentId: null,
+        feeds: [],
+        children: [
+          {
+            id: 'child-1',
+            name: 'Despojo y desalojo',
+            slug: 'territorio-despojo',
+            description: '',
+            intro: '',
+            evaluationIntro: '',
+            evaluationCriteria: '',
+            sourceNames: '',
+            makeADifference: '',
+            parentId: 'issue-1',
+            feeds: [],
+            _count: { stories: 107 },
+          },
+        ],
+        parent: null,
+      })
+
+      const issue = await getPublicIssueBySlug('territorio-y-tierras')
+
+      expect(issue!.children[0].publishedStoryCount).toBe(107)
     })
 
     it('returns null for unknown slug', async () => {

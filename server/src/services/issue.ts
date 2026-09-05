@@ -219,6 +219,13 @@ export async function getPublicIssueBySlug(slug: string) {
               _count: { select: { stories: { where: { status: 'published' } } } },
             },
           },
+          // Las historias asignadas a la subseccion, contadas directamente.
+          //
+          // La suma de las de sus feeds no sirve aqui: una subcategoria no
+          // tiene feeds propios -los 96 cuelgan de las madres- asi que daba
+          // cero, y `IssuePage` oculta a las hijas sin historias. Las
+          // dieciocho subsecciones existian, estaban pobladas y no se veian.
+          _count: { select: { stories: { where: { status: 'published' } } } },
         },
         orderBy: { name: 'asc' },
       },
@@ -235,10 +242,10 @@ export async function getPublicIssueBySlug(slug: string) {
       ...feeds,
       ...(issue.children?.flatMap(c => c.feeds) ?? []),
     ]),
-    children: issue.children?.map(({ feeds: childFeeds, ...child }) => ({
+    children: issue.children?.map(({ feeds: childFeeds, _count, ...child }) => ({
       ...parsePublicIssueJson(child),
       sourceNames: deriveSourceNames(childFeeds),
-      publishedStoryCount: childFeeds.reduce((sum, f) => sum + f._count.stories, 0),
+      publishedStoryCount: _count.stories,
     })) ?? [],
     parent: issue.parent,
   }
