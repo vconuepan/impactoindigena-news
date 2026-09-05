@@ -22,11 +22,23 @@ const TWITTER_URL = "https://x.com/impactoindigena";
 const YOUTUBE_URL = "https://www.youtube.com/@impactoindigena/";
 const GITHUB_URL = GITHUB_REPO_URL;
 
+/**
+ * Las ocho categorias tematicas, en el orden en que se leen: primero lo que
+ * pasa con la tierra, despues lo que pasa con la gente.
+ *
+ * Chile ya no esta aca. Es una seccion geografica y vive en la barra de
+ * verticales: mezclarla con los temas era lo que hacia que una nota chilena
+ * tuviera que elegir entre su pais y su asunto.
+ *
+ * El orden y los colores estan fijados en DESIGN.md y en
+ * `client/src/lib/category-colors.ts`; las etiquetas son de una palabra porque
+ * con nombres largos la barra medida pedia 1.933 px y hay 1.120.
+ */
 const ISSUE_LINKS = [
   {
-    labelKey: "issues.chileIndigena",
-    slug: "chile-indigena",
-    href: "/issues/chile-indigena",
+    labelKey: "issues.territorio",
+    slug: "territorio-y-tierras",
+    href: "/issues/territorio-y-tierras",
   },
   {
     labelKey: "issues.climaBiodiversidad",
@@ -34,9 +46,9 @@ const ISSUE_LINKS = [
     href: "/issues/cambio-climatico",
   },
   {
-    labelKey: "issues.derechosIndigenas",
-    slug: "derechos-indigenas",
-    href: "/issues/derechos-indigenas",
+    labelKey: "issues.consulta",
+    slug: "consulta-y-consentimiento",
+    href: "/issues/consulta-y-consentimiento",
   },
   {
     labelKey: "issues.desarrolloSostenible",
@@ -44,12 +56,26 @@ const ISSUE_LINKS = [
     href: "/issues/desarrollo-sostenible-y-autodeterminado",
   },
   {
+    labelKey: "issues.derechosIndigenas",
+    slug: "derechos-indigenas",
+    href: "/issues/derechos-indigenas",
+  },
+  {
+    labelKey: "issues.defensores",
+    slug: "defensores-y-proteccion",
+    href: "/issues/defensores-y-proteccion",
+  },
+  {
+    labelKey: "issues.mujeres",
+    slug: "mujeres-indigenas",
+    href: "/issues/mujeres-indigenas",
+  },
+  {
     labelKey: "issues.culturaAncestral",
     slug: "cultura-y-conocimientos-ancestrales",
     href: "/issues/cultura-y-conocimientos-ancestrales",
   },
 ];
-
 /**
  * Verticales geograficas: el eje "donde", separado del eje "que".
  *

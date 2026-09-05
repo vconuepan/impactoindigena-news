@@ -27,7 +27,11 @@
     "derechosIndigenas": "Derechos",
     "desarrolloSostenible": "Economías",
     "culturaAncestral": "Cultura",
-    "chileIndigena": "Chile"
+    "chileIndigena": "Chile",
+    "territorio": "Territorio",
+    "consulta": "Consulta",
+    "defensores": "Defensores",
+    "mujeres": "Mujeres"
   },
   "footer": {
     "description": "Noticias sobre los pueblos indígenas que generan impacto en sus territorios y derechos, y el impacto de los pueblos indígenas en el mundo.",
