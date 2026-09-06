@@ -48,6 +48,19 @@ describe('normalizar — el PNG del generador de imagenes', () => {
     expect(img.height).toBe(800)
   })
 
+  it('un JPEG ya optimizado y dentro del ancho maximo NO se reencodea', async () => {
+    // El caso que destapo la simulacion contra la portada el 6-sep-2026: tres
+    // imagenes daban -0% de ahorro y aun asi se reencodeaban, degradandose. Un
+    // JPEG q82 pasado otra vez por el encoder a q82 sale casi del mismo tamano:
+    // pierde calidad y no ahorra nada.
+    const original = pngFotografico(1200, 630)
+    const yaOptimizado = (await normalizar(original))!
+    expect(yaOptimizado).not.toBeNull()
+
+    // Segunda pasada sobre el resultado: no debe tocarlo.
+    expect(await normalizar(yaOptimizado)).toBeNull()
+  })
+
   it('no reencodea en balde: si el original ya pesa menos, devuelve null', async () => {
     // Un JPEG chico ya optimizado no gana nada pasando otra vez por el encoder,
     // y reencodear degrada la imagen sin ahorrar un byte.

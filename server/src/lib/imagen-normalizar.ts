@@ -33,8 +33,30 @@ export const ANCHO_MAXIMO = 1200
 export const CALIDAD_JPEG = 82
 
 /**
- * Normaliza una imagen YA DECODIFICADA a JPEG con ancho acotado. Devuelve null
- * si el original ya es mas liviano, para no reencodear en balde.
+ * Ahorro minimo para que valga la pena reencodear.
+ *
+ * Reencodear un JPEG SIEMPRE degrada: la compresion con perdida se aplica sobre
+ * una imagen que ya perdio informacion, y esa perdida generacional no se
+ * recupera. La condicion anterior era `jpeg.length < original.length` — un solo
+ * byte de ahorro bastaba.
+ *
+ * Simulando la migracion contra las 13 imagenes de la portada el 6-sep-2026, eso
+ * daba tres casos de **-0%**: `oghero-eeefd92b` (279 KB), `oghero-11cfa890`
+ * (153 KB) y `storycard-78790b57` (74 KB), todos JPEG ya optimizados y ya
+ * dentro del ancho maximo. Se habrian reencodeado, perdiendo calidad, para
+ * ahorrar unos pocos bytes.
+ *
+ * Un 10% es el punto donde el ahorro compensa esa perdida. Los PNG sin
+ * comprimir, que son el caso que importa, ahorran entre 92% y 93%: pasan de
+ * sobra.
+ */
+const AHORRO_MINIMO = 0.1
+
+/**
+ * Normaliza una imagen YA DECODIFICADA a JPEG con ancho acotado.
+ *
+ * Devuelve null cuando NO conviene: reencodear degrada, asi que se exige que el
+ * resultado ahorre al menos AHORRO_MINIMO. Quien la llama sube el original.
  */
 export function normalizarDecodificada(img: Image, original: Buffer): Buffer | null {
   const escala = Math.min(1, ANCHO_MAXIMO / img.width)
@@ -43,7 +65,7 @@ export function normalizarDecodificada(img: Image, original: Buffer): Buffer | n
   const canvas = createCanvas(w, h)
   canvas.getContext('2d').drawImage(img, 0, 0, w, h)
   const jpeg = canvas.toBuffer('image/jpeg', CALIDAD_JPEG)
-  return jpeg.length < original.length ? jpeg : null
+  return jpeg.length <= original.length * (1 - AHORRO_MINIMO) ? jpeg : null
 }
 
 /**

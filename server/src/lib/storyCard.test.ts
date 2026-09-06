@@ -14,6 +14,29 @@ vi.mock('./logger.js', () => ({
 const { composeBrandedStoryCard, rehostOrComposeStoryImage, STORY_CARD_MIN_WIDTH } =
   await import('./storyCard.js')
 
+/**
+ * Un PNG con ruido por pixel: lo que hace fotografica a una imagen a ojos de un
+ * compresor. El de relleno solido de abajo comprime a unos pocos bytes en PNG,
+ * asi que pasarlo a JPEG no ahorra nada y `normalizarDecodificada` decide —con
+ * razon— no tocarlo. Para ejercitar la recompresion hace falta ruido, que es lo
+ * que trae una foto de verdad.
+ */
+function pngFotografico(w: number, h: number): Buffer {
+  const c = createCanvas(w, h)
+  const ctx = c.getContext('2d')
+  const datos = ctx.createImageData(w, h)
+  let semilla = 12345
+  for (let i = 0; i < datos.data.length; i += 4) {
+    semilla = (semilla * 1103515245 + 12345) & 0x7fffffff
+    datos.data[i] = semilla & 0xff
+    datos.data[i + 1] = (semilla >> 8) & 0xff
+    datos.data[i + 2] = (semilla >> 16) & 0xff
+    datos.data[i + 3] = 255
+  }
+  ctx.putImageData(datos, 0, 0)
+  return c.toBuffer('image/png')
+}
+
 /** A real PNG buffer of the given size (solid fill), so loadImage can decode it. */
 function pngBuffer(w: number, h: number): Buffer {
   const c = createCanvas(w, h)
@@ -117,7 +140,7 @@ describe('rehostOrComposeStoryImage', () => {
   })
 
   it('caps a >= 1200px source at 1200 wide and stores it as JPEG', async () => {
-    const buffer = pngBuffer(1400, 700)
+    const buffer = pngFotografico(1400, 700)
     mockDownload.mockResolvedValue({ buffer, contentType: 'image/png', ext: 'png' })
 
     const url = await rehostOrComposeStoryImage('https://src/og.png', 'id2', 'Título')
