@@ -49,12 +49,40 @@ function escapeAttrUrl(url: string): string {
 let shellCache: { html: string; fetchedAt: number } | null = null
 const SHELL_TTL_MS = 10 * 60 * 1000
 
+/**
+ * El shell cacheado apunta a un bundle con hash, y ese hash cambia en cada
+ * despliegue del frontend. Mientras el cache no expira, estas paginas piden un
+ * archivo que ya se borro: el script da 404, React no arranca y el lector se
+ * queda con el titular, el resumen y NADA en que hacer clic — sin relacionadas
+ * y sin navegacion. Medido el 5-sep-2026 justo despues de un despliegue:
+ * /stories/* servia `index-8meAqMSo.js`, que devolvia 404, mientras la portada
+ * ya servia `index-WU4o-CB2.js`.
+ *
+ * Se comprueba que el bundle exista antes de dar el shell por bueno. Si no
+ * existe, se vuelve a pedir el shell saltando el cache del CDN.
+ */
+async function bundleVive(html: string): Promise<boolean> {
+  const m = html.match(/<script[^>]+src="(\/assets\/[^"]+\.js)"/)
+  if (!m) return true // sin bundle que verificar, no hay nada que invalidar
+  try {
+    const r = await fetch(`${SITE_URL}${m[1]}`, { method: 'HEAD' })
+    return r.ok
+  } catch {
+    return true // un fallo de red no es prueba de que el bundle no este
+  }
+}
+
 async function getShell(): Promise<string> {
   if (shellCache && Date.now() - shellCache.fetchedAt < SHELL_TTL_MS) {
-    return shellCache.html
+    if (await bundleVive(shellCache.html)) return shellCache.html
+    // El bundle desaparecio: hubo un despliegue. Se descarta y se vuelve a pedir.
+    log.info('shell cacheado apunta a un bundle inexistente, refrescando')
+    shellCache = null
   }
   try {
-    const res = await fetch(`${SITE_URL}/`)
+    // `cache: no-store` y un parametro unico: el shell se pide a traves del CDN,
+    // que puede devolver la version anterior justo despues de un despliegue.
+    const res = await fetch(`${SITE_URL}/?shell=${Date.now()}`, { cache: 'no-store' })
     const html = await res.text()
     if (res.ok && html.includes('<div id="root">')) {
       shellCache = { html, fetchedAt: Date.now() }
