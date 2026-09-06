@@ -171,40 +171,20 @@ export default defineConfig(async () => {
           // El comentario que estaba aca ya lo anticipaba —«la portada cambia de
           // destacada cada dia»— y el preload seguia atado al build igual.
           //
-          // Ahora un script en linea replica `pickHero` (src/lib/mix-stories.ts)
+          // Ahora lo resuelve `public/preload-hero.js`, que replica `pickHero`
           // sobre el snapshot y agrega el <link> con la imagen correcta. Corre al
-          // parsear el <head>, mucho antes de que el bundle de 126 KB se
-          // descargue y ejecute, y el `fetch` reutiliza el preload de arriba, asi
-          // que no cuesta una peticion extra.
+          // parsear el <head>, antes de que el bundle de 126 KB se descargue, y su
+          // `fetch` reutiliza el preload del snapshot que va arriba.
           //
-          // Los atributos van con setAttribute y no como propiedades: `l.as` y
-          // `l.fetchPriority` se reflejan en los navegadores pero NO en jsdom, asi
-          // que el test del script no podria comprobarlos.
-          //
-          // Replica tambien el dial de tono, que decide QUE historia es la
-          // destacada y sale de localStorage. Si algo falla —storage bloqueado,
-          // red, formato inesperado— no agrega nada y la imagen se descubre al
-          // renderizar, que es como estaba antes de todo esto.
+          // Es un ARCHIVO y no un script en linea porque la CSP del sitio declara
+          // `script-src 'self'` sin `unsafe-inline`: la primera version era inline
+          // y en produccion el navegador la bloqueaba antes de ejecutarla, en
+          // silencio salvo por un error en consola.
           if (renderedRoute.route === '/') {
             const snapshot = process.env.VITE_R2_PUBLIC_URL
               ? `${process.env.VITE_R2_PUBLIC_URL}/homepage.json`
               : '/api/homepage'
-            const script = `<script>(function(){try{
-var S=${JSON.stringify(snapshot)},P=50;
-try{var v=localStorage.getItem('ar-positivity');if(v!==null){var n=parseInt(v,10);if(!isNaN(n)){var V=[0,25,50,75,100],c=V[0],m=Math.abs(n-c);for(var i=0;i<V.length;i++){var d=Math.abs(n-V[i]);if(d<m){c=V[i];m=d}}P=c}}}catch(e){}
-fetch(S).then(function(r){return r.json()}).then(function(j){
-var a=[],b=j.storiesByIssue||{};
-for(var k in b){var x=b[k];if(!x)continue;
-if(P===100)a=a.concat(x.uplifting||[]);
-else if(P===0)a=a.concat(x.negative||[]);
-else if(P>50)a=a.concat(x.uplifting||[],x.calm||[]);
-else if(P<50)a=a.concat(x.negative||[]);
-else a=a.concat(x.uplifting||[],x.calm||[],x.negative||[])}
-if(!a.length)return;
-a.sort(function(p,q){return new Date(q.datePublished||q.dateCrawled)-new Date(p.datePublished||p.dateCrawled)});
-var u=a[0]&&a[0].imageUrl;if(!u)return;
-var l=document.createElement('link');l.setAttribute('rel','preload');l.setAttribute('as','image');l.setAttribute('href',u);l.setAttribute('fetchpriority','high');document.head.appendChild(l)
-}).catch(function(){})}catch(e){}})();</script>`
+            const script = `<script src="/preload-hero.js"></script>`
             renderedRoute.html = renderedRoute.html.replace('</head>', script + '\n</head>')
             console.log('[prerender] preload del hero: se resuelve en el navegador desde el snapshot')
           }

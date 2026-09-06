@@ -5,26 +5,34 @@ import { pickHero, type StoryBuckets } from './mix-stories'
 import type { PublicStory } from '@shared/types'
 
 /**
- * El <head> de la portada lleva un script en linea que precarga la imagen del
- * hero. Ese script NO puede importar `pickHero`: corre antes que el bundle, asi
- * que la logica esta duplicada a mano dentro de `vite.config.ts`.
+ * El <head> de la portada carga `public/preload-hero.js`, que precarga la imagen
+ * del hero. Ese archivo NO puede importar `pickHero`: corre antes que el bundle,
+ * asi que la logica esta duplicada a mano.
  *
  * Duplicar logica es una deuda con fecha de vencimiento: el dia que alguien
  * cambie `pickHero` —otro criterio de orden, otro bucket, otro tramo del dial—
- * el script seguira eligiendo con las reglas viejas y la portada volvera a
+ * el archivo seguira eligiendo con las reglas viejas y la portada volvera a
  * precargar la imagen equivocada, en silencio y sin que nada falle.
  *
- * Este test extrae el script REAL de vite.config.ts, lo ejecuta y compara su
- * eleccion contra `pickHero`. Si las dos se separan, se cae aca.
+ * Este test ejecuta el archivo REAL y compara su eleccion contra `pickHero`. Si
+ * las dos se separan, se cae aca.
  */
 
-/** Extrae el script en linea tal como el build lo inyecta en el <head>. */
+/** Lee el archivo tal como se sirve, sin tocarlo. */
 function scriptDelHero(): string {
-  const config = readFileSync(path.resolve(__dirname, '../../vite.config.ts'), 'utf8')
-  const m = config.match(/const script = `<script>([\s\S]*?)<\/script>`/)
-  if (!m) throw new Error('no se encontro el script del hero en vite.config.ts')
-  // El template literal trae `${JSON.stringify(snapshot)}` sin interpolar.
-  return m[1].replace('${JSON.stringify(snapshot)}', '"https://r2.example/homepage.json"')
+  return readFileSync(path.resolve(__dirname, '../../public/preload-hero.js'), 'utf8')
+}
+
+/**
+ * El archivo saca la URL del snapshot del preload que el build deja en el <head>,
+ * asi que el test tiene que ponerlo antes de ejecutarlo.
+ */
+function sembrarPreloadDelSnapshot(): void {
+  const l = document.createElement('link')
+  l.setAttribute('rel', 'preload')
+  l.setAttribute('as', 'fetch')
+  l.setAttribute('href', 'https://r2.example/homepage.json')
+  document.head.appendChild(l)
 }
 
 function historia(id: string, fecha: string, imagen: string): PublicStory {
@@ -62,6 +70,7 @@ const DATOS: Record<string, StoryBuckets> = {
 /** Corre el script real y devuelve el href que precargo, o null. */
 async function correrScript(positividadGuardada: string | null): Promise<string | null> {
   document.head.innerHTML = ''
+  sembrarPreloadDelSnapshot()
   if (positividadGuardada === null) localStorage.removeItem('ar-positivity')
   else localStorage.setItem('ar-positivity', positividadGuardada)
 
@@ -116,8 +125,22 @@ describe('el script que precarga el hero de la portada', () => {
     expect(link?.getAttribute('fetchpriority')).toBe('high')
   })
 
+  it('sin el preload del snapshot en el head no hace nada, ni siquiera pide', async () => {
+    // El archivo saca de ahi la URL. Si el build dejara de emitir ese preload, no
+    // debe inventarse una direccion ni lanzar.
+    document.head.innerHTML = ''
+    const f = vi.fn()
+    vi.stubGlobal('fetch', f as never)
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    new Function(scriptDelHero())()
+    await new Promise((r) => setTimeout(r, 0))
+    expect(f).not.toHaveBeenCalled()
+    expect(document.head.querySelector('link[as="image"]')).toBeNull()
+  })
+
   it('si el snapshot no responde, no precarga nada en vez de fallar', async () => {
     document.head.innerHTML = ''
+    sembrarPreloadDelSnapshot()
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('sin red') }) as never)
     // eslint-disable-next-line @typescript-eslint/no-implied-eval
     new Function(scriptDelHero())()
@@ -127,6 +150,7 @@ describe('el script que precarga el hero de la portada', () => {
 
   it('si una historia no tiene imagen, no inventa un preload', async () => {
     document.head.innerHTML = ''
+    sembrarPreloadDelSnapshot()
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
