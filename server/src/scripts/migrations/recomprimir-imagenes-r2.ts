@@ -24,6 +24,13 @@
  *   npx tsx src/scripts/migrations/recomprimir-imagenes-r2.ts --apply
  *   npx tsx src/scripts/migrations/recomprimir-imagenes-r2.ts --revertir --apply
  */
+// Este script NO usa Prisma, y Prisma es quien carga el .env en todas las demas
+// migraciones sin que se note. Sin esta linea, `config.r2.endpoint` llega vacio,
+// el SDK cae en su endpoint por defecto y la corrida muere con
+// `ENOTFOUND impacto-indigena-media.s3.auto.amazonaws.com`. Va PRIMERO: config.ts
+// lee process.env al evaluarse, asi que cualquier import anterior lo dejaria
+// leyendo un entorno vacio.
+import 'dotenv/config'
 import {
   S3Client,
   ListObjectsV2Command,
