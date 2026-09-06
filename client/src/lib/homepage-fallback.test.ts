@@ -19,7 +19,7 @@ const DEL_SNAPSHOT = { issues: [{ slug: 'del-snapshot' }], storiesByIssue: {}, a
 const DEL_ENDPOINT = { issues: [{ slug: 'del-endpoint' }], storiesByIssue: {}, activeCases: [] }
 
 function respuesta(body: unknown, ok = true) {
-  return { ok, status: ok ? 200 : 500, json: async () => body } as Response
+  return { ok, status: ok ? 200 : 500, json: async () => body } as unknown as Response
 }
 
 describe('la portada y el snapshot de R2', () => {
@@ -53,7 +53,12 @@ describe('la portada y el snapshot de R2', () => {
 
   it('cae al endpoint cuando el snapshot trae un JSON roto', async () => {
     vi.stubGlobal('fetch', vi.fn(async (u: string) => {
-      if (u === SNAPSHOT) return { ok: true, status: 200, json: async () => { throw new SyntaxError('bad json') } } as Response
+      // `as unknown as Response` y no `as Response`: el objeto no solapa con
+      // Response y TypeScript lo rechaza. Es un doble de prueba, no una
+      // respuesta real.
+      if (u === SNAPSHOT) {
+        return { ok: true, status: 200, json: async () => { throw new SyntaxError('bad json') } } as unknown as Response
+      }
       return respuesta(DEL_ENDPOINT)
     }))
     const { publicApi } = await import('./api')
