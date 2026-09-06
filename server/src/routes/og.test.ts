@@ -102,11 +102,42 @@ describe('GET /api/og/story-html — el shell cacheado y el bundle con hash', ()
     // Se despliega el frontend: el hash cambia y el archivo anterior se borra.
     enElSitio = 'index-nuevo.js'
 
-    // Sin el arreglo el cache seguiria vigente diez minutos y esta respuesta
-    // llevaria el bundle borrado.
+    // La comprobacion NO bloquea la respuesta, asi que esta peticion todavia
+    // puede llevarse el shell viejo: lo que hace es DISPARAR la comprobacion.
+    // Ese es el precio deliberado de no cobrarle medio viaje de red a cada
+    // lector — una peticion, en vez de diez minutos.
+    await request(app).get('/api/og/story-html?slug=a-real-story')
+    await new Promise((r) => setImmediate(r))
+
+    // Ya invalidado el cache, la siguiente trae el bundle nuevo.
     const despues = await request(app).get('/api/og/story-html?slug=a-real-story')
     expect(despues.text).toContain('index-nuevo.js')
     expect(despues.text).not.toContain('index-viejo.js')
+  })
+
+  it('la respuesta NO espera al HEAD del bundle: ese viaje de red no va en el camino critico', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(published)
+    let headResuelto = false
+    let respuestaEnviada = false
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'HEAD') {
+        // Un HEAD lento, como el real: 533-763 ms medidos en produccion.
+        await new Promise((r) => setTimeout(r, 50))
+        headResuelto = true
+        return { ok: true, text: async () => '' }
+      }
+      return { ok: true, text: async () => shellCon('index-viejo.js') }
+    }) as any)
+
+    const app = await appFresco()
+    await request(app).get('/api/og/story-html?slug=a-real-story') // cachea el shell
+    await request(app).get('/api/og/story-html?slug=a-real-story').then(() => {
+      respuestaEnviada = true
+    })
+
+    // Si la respuesta hubiera esperado al HEAD, este ya estaria resuelto.
+    expect(respuestaEnviada).toBe(true)
+    expect(headResuelto).toBe(false)
   })
 
   it('un fallo de red al comprobar el bundle NO invalida el cache', async () => {

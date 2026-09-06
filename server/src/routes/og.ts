@@ -94,12 +94,45 @@ function quitarPreloadsDePortada(html: string): string {
   )
 }
 
+let comprobacionEnVuelo = false
+
+/**
+ * Comprueba el bundle SIN bloquear la respuesta.
+ *
+ * La primera version esperaba el HEAD antes de servir, y ese HEAD sale del App
+ * Service en Chile Central hacia el CDN: medido el 6-sep-2026, entre 533 y 763
+ * ms. Es decir, para cerrar una ventana de 10-15 minutos que se abre una vez por
+ * despliegue, se le cobraba media ida y vuelta de red a CADA lector, siempre. Un
+ * mal negocio: cambia un problema raro y transitorio por un costo permanente.
+ *
+ * Asi que la comprobacion se dispara en segundo plano y, si el bundle murio,
+ * invalida el cache para la peticion SIGUIENTE. El precio es que una sola
+ * peticion tras cada despliegue puede llevarse el bundle viejo, en vez de diez
+ * minutos de peticiones. La guarda evita que mil peticiones concurrentes lancen
+ * mil HEAD.
+ */
+function comprobarBundleEnSegundoPlano(cacheDelMomento: { html: string }): void {
+  if (comprobacionEnVuelo) return
+  comprobacionEnVuelo = true
+  void bundleVive(cacheDelMomento.html)
+    .then((vive) => {
+      // Solo se invalida si el cache sigue siendo el mismo que se comprobo: entre
+      // medio pudo refrescarse solo, y descartar el nuevo seria un bucle.
+      if (!vive && shellCache?.html === cacheDelMomento.html) {
+        log.info('shell cacheado apunta a un bundle inexistente, se descarta')
+        shellCache = null
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      comprobacionEnVuelo = false
+    })
+}
+
 async function getShell(): Promise<string> {
   if (shellCache && Date.now() - shellCache.fetchedAt < SHELL_TTL_MS) {
-    if (await bundleVive(shellCache.html)) return shellCache.html
-    // El bundle desaparecio: hubo un despliegue. Se descarta y se vuelve a pedir.
-    log.info('shell cacheado apunta a un bundle inexistente, refrescando')
-    shellCache = null
+    comprobarBundleEnSegundoPlano(shellCache)
+    return shellCache.html
   }
   try {
     // `cache: no-store` y un parametro unico: el shell se pide a traves del CDN,
