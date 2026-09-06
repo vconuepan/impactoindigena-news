@@ -141,7 +141,30 @@ la greda, no un violeta de pantalla. El naranja brillante sigue prohibido.
 
 Implementación: `client/src/lib/category-colors.ts`.
 
-Estos colores se usan en: dots de categoría en nav, tags en cards, borders activos en `.issue-nav-link`, gradientes de cards sin imagen.
+Estos colores se usan en: dots de categoría en nav, tags en cards, borders activos en `.issue-nav-link`, gradientes de cards sin imagen, y las ilustraciones de sección.
+
+### Ilustraciones de sección
+
+Una por categoría, en `client/public/illustrations/<slug>.png`. El nombre del
+archivo **es el slug de la categoría**: si un slug cambia, la ilustración deja de
+cargar en silencio — pasó el 6-sep-2026, con seis de las ocho dando 404 tras el
+cambio de taxonomía.
+
+Reglas del sistema:
+
+- **PNG de 400×400 con fondo blanco**, no SVG. `HomePage.tsx` lo dice: los SVG en
+  línea disparan un defecto de composición en Chromium.
+- **Pictograma de trazo**, no relleno: grosor 28 sobre 400, con extremos y
+  uniones redondeadas.
+- **Un solo color**, el de la categoría en la tabla de arriba.
+- Se muestran a **200 px y al 18% de opacidad**, decorativas y con `alt=""`, solo
+  en escritorio. **Se dibujan para leerse a ese tamaño y con esa opacidad**, no
+  al 100%: cualquier detalle fino desaparece.
+- Formas universales y sencillas. **No se calcan motivos de un pueblo concreto**:
+  una espiral o un cerro pertenecen a todos, un diseño textil identificable no.
+
+Las tres primeras (`cambio-climatico`, `derechos-indigenas`, `economias-indigenas`)
+son anteriores a la paleta tierra y conservan colores más saturados.
 
 ### Uso del color acento (terracota `#C8473A`)
 
