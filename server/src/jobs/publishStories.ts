@@ -6,6 +6,7 @@ import { generateStoryImage } from '../lib/imageGen.js'
 import { rehostOrComposeStoryImage } from '../lib/storyCard.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
+import { publishHomepageSnapshot } from '../lib/homepage-snapshot.js'
 
 const log = createLogger('publish_stories')
 
@@ -124,4 +125,11 @@ export async function runPublishStories(): Promise<void> {
     log.info({ count: publishedIds.length }, 'generating AI hero images')
     await generateHeroImages(publishedIds)
   }
+
+  // El snapshot va AL FINAL, despues de traducir y de generar las imagenes:
+  // publicarlo antes lo congelaria sin los titulos en ingles y sin las heroes,
+  // que son justo lo que la portada muestra. Nunca lanza -devuelve null si algo
+  // falla- porque una portada que no se pudo cachear no es motivo para dar el
+  // job por fallido: el endpoint sigue sirviendola.
+  await publishHomepageSnapshot()
 }

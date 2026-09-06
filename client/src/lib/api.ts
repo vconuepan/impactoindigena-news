@@ -1,4 +1,5 @@
 import type { PublicStory, PaginatedResponse, Community, PublicAgenda } from '@shared/types'
+import { HOMEPAGE_SNAPSHOT_URL } from '../config'
 
 export interface CommunitySignals {
   community: { slug: string; name: string }
@@ -146,7 +147,28 @@ function memberRequest<T>(path: string, options?: RequestInit): Promise<T> {
 }
 
 export const publicApi = {
-  homepage: () => request<HomepageData>('/homepage'),
+  /**
+   * Los datos de la portada, del snapshot en R2 y con el endpoint de respaldo.
+   *
+   * El snapshot lo publica el job de publicacion (`lib/homepage-snapshot.ts`) y
+   * lo sirve el borde de Cloudflare, sin pasar por el proxy del Static Web App
+   * -que esta en Virginia mientras el backend esta en Chile, y pone mas de un
+   * segundo por llamada-.
+   *
+   * CUALQUIER fallo cae al endpoint: que no exista todavia, que R2 este caido,
+   * que el JSON venga roto. La portada nunca depende de que el snapshot exista.
+   */
+  homepage: async (): Promise<HomepageData> => {
+    if (HOMEPAGE_SNAPSHOT_URL) {
+      try {
+        const r = await fetch(HOMEPAGE_SNAPSHOT_URL)
+        if (r.ok) return (await r.json()) as HomepageData
+      } catch {
+        // silencio deliberado: el respaldo de abajo es el camino normal
+      }
+    }
+    return request<HomepageData>('/homepage')
+  },
 
   stories: {
     list: (params?: { page?: number; pageSize?: number; issueSlug?: string; search?: string; emotionTags?: string; dateFrom?: string; dateTo?: string }) =>

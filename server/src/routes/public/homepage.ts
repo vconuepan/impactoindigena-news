@@ -37,40 +37,49 @@ export const HOMEPAGE_ISSUE_SLUGS = [
   'cultura-y-conocimientos-ancestrales',
 ]
 
+/**
+ * Arma la respuesta de la portada.
+ *
+ * Vive aparte de la ruta porque la publica DOS consumidores: este endpoint y el
+ * snapshot que se sube a R2 (`lib/homepage-snapshot.ts`). Si cada uno la
+ * construyera por su lado, el dia que se agregue un campo aqui el snapshot
+ * seguiria sirviendo el viejo y nadie se enteraria.
+ */
+export async function buildHomepagePayload() {
+  const [issues, storyData, activeCases] = await Promise.all([
+    issueService.getPublicIssues(),
+    storyService.getHomepageData(HOMEPAGE_ISSUE_SLUGS, 7),
+    prisma.ongoingCase.findMany({
+      where: { status: 'active' },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, title: true, slug: true, description: true, imageUrl: true, keywords: true },
+    }),
+  ])
+
+  // Count matching stories for each case
+  const casesWithCounts = await Promise.all(
+    activeCases.map(async (c) => {
+      const keywordConditions = c.keywords.flatMap((kw) => [
+        { title:   { contains: kw, mode: 'insensitive' as const } },
+        { summary: { contains: kw, mode: 'insensitive' as const } },
+      ])
+      const storyCount = c.keywords.length === 0 ? 0 : await prisma.story.count({
+        where: { status: 'published', slug: { not: null }, OR: keywordConditions },
+      })
+      return { ...c, storyCount }
+    })
+  )
+
+  return {
+    issues,
+    storiesByIssue: storyData.storiesByIssue,
+    activeCases: casesWithCounts,
+  }
+}
+
 router.get('/', async (req, res) => {
   try {
-    const data = await cached(homepageCache, 'homepage-data', async () => {
-      // Fetch issues, stories, and active cases in parallel
-      const [issues, storyData, activeCases] = await Promise.all([
-        issueService.getPublicIssues(),
-        storyService.getHomepageData(HOMEPAGE_ISSUE_SLUGS, 7),
-        prisma.ongoingCase.findMany({
-          where: { status: 'active' },
-          orderBy: { createdAt: 'desc' },
-          select: { id: true, title: true, slug: true, description: true, imageUrl: true, keywords: true },
-        }),
-      ])
-
-      // Count matching stories for each case
-      const casesWithCounts = await Promise.all(
-        activeCases.map(async (c) => {
-          const keywordConditions = c.keywords.flatMap((kw) => [
-            { title:   { contains: kw, mode: 'insensitive' as const } },
-            { summary: { contains: kw, mode: 'insensitive' as const } },
-          ])
-          const storyCount = c.keywords.length === 0 ? 0 : await prisma.story.count({
-            where: { status: 'published', slug: { not: null }, OR: keywordConditions },
-          })
-          return { ...c, storyCount }
-        })
-      )
-
-      return {
-        issues,
-        storiesByIssue: storyData.storiesByIssue,
-        activeCases: casesWithCounts,
-      }
-    })
+    const data = await cached(homepageCache, 'homepage-data', buildHomepagePayload)
 
     res.set('Cache-Control', 'public, max-age=60')
     res.json(data)

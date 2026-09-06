@@ -28,3 +28,22 @@ export const BRAND = {
 } as const
 export const GITHUB_REPO_URL = 'https://github.com/vconuepan/impactoindigena-news'
 export const GITHUB_LICENSE_URL = `${GITHUB_REPO_URL}/blob/main/LICENSE`
+
+/**
+ * Donde vive el snapshot de la portada, servido desde el borde de Cloudflare.
+ *
+ * El Static Web App esta en East US 2 y el App Service en Chile Central, asi
+ * que cada llamada a /api/* viaja a Virginia y vuelve: medido el 5-sep-2026,
+ * 1,54-1,76 s de TTFB contra 0,11-0,34 s del mismo backend consultado directo.
+ * El snapshot evita ese viaje — 0,68-0,81 s, servido desde Sao Paulo.
+ *
+ * Vacio en desarrollo: sin el, el cliente pide al endpoint de siempre.
+ */
+/*
+ * `import.meta.env?` con encadenamiento opcional, igual que SITE_URL arriba:
+ * `vite.config.ts` importa este archivo para leer BRAND, y cuando Vite empaqueta
+ * su propia configuracion NO hay `import.meta.env`. Sin el `?`, cargar la
+ * configuracion revienta y no arranca ni el build ni los tests.
+ */
+const R2 = import.meta.env?.VITE_R2_PUBLIC_URL as string | undefined
+export const HOMEPAGE_SNAPSHOT_URL = R2 ? `${R2}/homepage.json` : ''

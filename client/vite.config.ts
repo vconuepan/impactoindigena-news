@@ -141,7 +141,16 @@ export default defineConfig(async () => {
           // Medido el 5-sep-2026: el JS llega a los 1.434 ms y la peticion
           // arranca a los 1.476, o sea recien cuando el JS la dispara.
           if (renderedRoute.route === '/') {
-            const preloadTag = `<link rel="preload" href="/api/homepage" as="fetch" />`
+            // Apunta al snapshot de R2 cuando lo hay, que es de donde el cliente
+            // lee primero; si no, al endpoint. Precargar el que NO se va a usar
+            // seria una descarga de mas, no una de menos.
+            const snapshot = process.env.VITE_R2_PUBLIC_URL
+              ? `${process.env.VITE_R2_PUBLIC_URL}/homepage.json`
+              : '/api/homepage'
+            // `crossorigin` solo cuando de verdad es otro origen: en same-origin
+            // hace que el navegador descarte el preload y descargue dos veces.
+            const cross = snapshot.startsWith('http') ? ' crossorigin' : ''
+            const preloadTag = `<link rel="preload" href="${snapshot}" as="fetch"${cross} />`
             renderedRoute.html = renderedRoute.html.replace('</head>', preloadTag + '\n</head>')
           }
 
