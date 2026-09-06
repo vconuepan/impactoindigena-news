@@ -2,6 +2,7 @@ import OpenAI, { AzureOpenAI } from 'openai'
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { uploadImageToR2 } from './imageStorage.js'
+import { normalizar } from './imagen-normalizar.js'
 
 const log = createLogger('image-gen')
 
@@ -110,10 +111,27 @@ Cinematic composition, high contrast, visually striking.
   } else {
     throw new Error('No image data (neither b64_json nor url) in response')
   }
-  const filename = `${storyId}-${Date.now()}.png`
+  // El modelo devuelve PNG, que para una fotografia es el peor formato posible:
+  // guarda cada pixel sin compresion con perdida. Medido el 5-sep-2026 sobre la
+  // portada en movil, cuatro de estos heroes pesaban 9,37 de los 11,09 MB de
+  // imagenes de la pagina — 2,5 MB cada uno, a 1536x1024, para mostrarse a 480 px
+  // de alto. Recomprimidos a JPEG 1200 px quedan en ~200 KB, un 92% menos, sin
+  // diferencia visible.
+  //
+  // Es el mismo arreglo que ya llevaba `storyCard.ts` para las imagenes
+  // rehospedadas; este camino, el de las generadas, habia quedado fuera y seguia
+  // subiendo originales. Ahora ambos comparten `imagen-normalizar.ts` para que no
+  // vuelvan a divergir.
+  const normalizada = await normalizar(imageBuffer)
+  const filename = `${storyId}-${Date.now()}.${normalizada ? 'jpg' : 'png'}`
 
-  const publicUrl = await uploadImageToR2(imageBuffer, filename)
+  const publicUrl = normalizada
+    ? await uploadImageToR2(normalizada, filename, 'image/jpeg')
+    : await uploadImageToR2(imageBuffer, filename)
 
-  log.info({ storyId, publicUrl, model }, 'story image generated and uploaded')
+  log.info(
+    { storyId, publicUrl, model, bytesOriginal: imageBuffer.length, bytesSubidos: (normalizada || imageBuffer).length },
+    'story image generated and uploaded',
+  )
   return publicUrl
 }

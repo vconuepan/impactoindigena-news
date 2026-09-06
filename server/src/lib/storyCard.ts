@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { createLogger } from './logger.js'
 import { downloadExternalImage, uploadImageToR2 } from './imageStorage.js'
+import { normalizarDecodificada, CALIDAD_JPEG } from './imagen-normalizar.js'
 
 const log = createLogger('story-card')
 
@@ -149,7 +150,7 @@ export function composeBrandedStoryCard(img: Image, title: string): Buffer {
   // confiable, y una vista previa rota cuesta mas que los kilobytes que ahorra.
   // Para la web, la version moderna corresponde a un <picture> con variantes,
   // que es otro trabajo.
-  return canvas.toBuffer('image/jpeg', STORY_CARD_JPEG_QUALITY)
+  return canvas.toBuffer('image/jpeg', CALIDAD_JPEG)
 }
 
 /**
@@ -158,40 +159,6 @@ export function composeBrandedStoryCard(img: Image, title: string): Buffer {
  * so the story stays eligible for Google Discover's large-image card. Returns
  * the R2 public URL, or null on failure (caller falls back to the raw URL).
  */
-/**
- * Calidad JPEG de la tarjeta compuesta.
- *
- * 82 es el punto donde la diferencia visual con el original deja de notarse en
- * una fotografia y el archivo ya bajo un orden de magnitud. Por encima de 90 el
- * peso sube rapido sin que se vea mejor; por debajo de 75 aparecen artefactos
- * en los degradados, que en estas tarjetas son justamente el fondo.
- */
-const STORY_CARD_JPEG_QUALITY = 82
-
-/**
- * Ancho maximo con el que se guarda una imagen rehospedada.
- *
- * Antes se subia el original tal cual cuando ya media 1200 px o mas, y eso puso
- * en R2 fotos de 6000x3376 y 5 MB para tarjetas que en movil se ven a 400 px:
- * medido el 4-sep-2026, 1.478 de los 2.842 objetos del bucket eran PNG y
- * pesaban el 88% del total. 1200 es el minimo que Google Discover exige para la
- * tarjeta grande (STORY_CARD_MIN_WIDTH), asi que servir mas no gana nada.
- */
-const REHOST_MAX_WIDTH = 1200
-
-/**
- * Normaliza una imagen ya decodificada a JPEG con ancho acotado. Devuelve null
- * si el original ya es mas liviano, para no reencodear en balde.
- */
-function normalizarParaRehospedaje(img: Image, original: Buffer): Buffer | null {
-  const escala = Math.min(1, REHOST_MAX_WIDTH / img.width)
-  const w = Math.round(img.width * escala)
-  const h = Math.round(img.height * escala)
-  const canvas = createCanvas(w, h)
-  canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-  const jpeg = canvas.toBuffer('image/jpeg', STORY_CARD_JPEG_QUALITY)
-  return jpeg.length < original.length ? jpeg : null
-}
 
 export async function rehostOrComposeStoryImage(
   imageUrl: string,
@@ -205,7 +172,7 @@ export async function rehostOrComposeStoryImage(
 
   // Big enough already, or undecodable (can't measure or draw it) → rehost.
   if (!img || img.width >= STORY_CARD_MIN_WIDTH) {
-    const normalizada = img ? normalizarParaRehospedaje(img, dl.buffer) : null
+    const normalizada = img ? normalizarDecodificada(img, dl.buffer) : null
     try {
       return normalizada
         ? await uploadImageToR2(normalizada, `oghero-${storyId}.jpg`, 'image/jpeg')
