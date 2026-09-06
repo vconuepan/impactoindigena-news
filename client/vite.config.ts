@@ -156,29 +156,57 @@ export default defineConfig(async () => {
 
           // Y la imagen del hero, que es el elemento que mide el LCP.
           //
-          // Ya viaja en el HTML prerenderizado, pero enterrada a ~100 KB del
-          // inicio: el navegador solo la descubre cuando el parser llega hasta
-          // ella. Medido el 5-sep-2026, empezaba a bajar a los 892 ms — 1.327 ms
-          // de "load delay" sobre un LCP de 7,2 s. Un preload en el <head> la
-          // pide en cuanto llega el HTML.
+          // Este preload NO se hornea: se resuelve en el navegador.
           //
-          // La URL se saca del HTML ya renderizado y no de la API, porque es la
-          // imagen que ESA compilacion horneo: la portada cambia de destacada
-          // cada dia y un preload que apunte a otra cosa es una descarga
-          // desperdiciada. `fetchpriority="high"` para que gane al resto de
-          // imagenes de la portada.
+          // La version anterior sacaba la URL del HTML ya renderizado, o sea la
+          // destacada que habia AL COMPILAR. Pero el cliente no lee ese HTML: lee
+          // `homepage.json` de R2, que el job de publicacion reescribe varias
+          // veces al dia. Medido el 6-sep-2026, unas horas despues del ultimo
+          // despliegue: el HTML precargaba `oghero-eeefd92b...jpg` con prioridad
+          // alta mientras la destacada real ya era `storycard-cd289536...`. El
+          // "load delay" habia pasado de 1.372 a 6.268 ms — la imagen que si
+          // medía el LCP recien se descubria cuando el JS habia leido el
+          // snapshot y renderizado.
+          //
+          // El comentario que estaba aca ya lo anticipaba —«la portada cambia de
+          // destacada cada dia»— y el preload seguia atado al build igual.
+          //
+          // Ahora un script en linea replica `pickHero` (src/lib/mix-stories.ts)
+          // sobre el snapshot y agrega el <link> con la imagen correcta. Corre al
+          // parsear el <head>, mucho antes de que el bundle de 126 KB se
+          // descargue y ejecute, y el `fetch` reutiliza el preload de arriba, asi
+          // que no cuesta una peticion extra.
+          //
+          // Los atributos van con setAttribute y no como propiedades: `l.as` y
+          // `l.fetchPriority` se reflejan en los navegadores pero NO en jsdom, asi
+          // que el test del script no podria comprobarlos.
+          //
+          // Replica tambien el dial de tono, que decide QUE historia es la
+          // destacada y sale de localStorage. Si algo falla —storage bloqueado,
+          // red, formato inesperado— no agrega nada y la imagen se descubre al
+          // renderizar, que es como estaba antes de todo esto.
           if (renderedRoute.route === '/') {
-            const hero = renderedRoute.html.match(
-              /<img[^>]+fetchpriority="high"[^>]*src="([^"]+)"|<img[^>]+src="([^"]+)"[^>]*fetchpriority="high"/i,
-            )
-            const src = hero?.[1] ?? hero?.[2]
-            if (src) {
-              const tag = `<link rel="preload" href="${src}" as="image" fetchpriority="high" />`
-              renderedRoute.html = renderedRoute.html.replace('</head>', tag + '\n</head>')
-              console.log(`[prerender] preload del hero: ${src.split('/').pop()}`)
-            } else {
-              console.warn('[prerender] no se encontro la imagen del hero para precargar')
-            }
+            const snapshot = process.env.VITE_R2_PUBLIC_URL
+              ? `${process.env.VITE_R2_PUBLIC_URL}/homepage.json`
+              : '/api/homepage'
+            const script = `<script>(function(){try{
+var S=${JSON.stringify(snapshot)},P=50;
+try{var v=localStorage.getItem('ar-positivity');if(v!==null){var n=parseInt(v,10);if(!isNaN(n)){var V=[0,25,50,75,100],c=V[0],m=Math.abs(n-c);for(var i=0;i<V.length;i++){var d=Math.abs(n-V[i]);if(d<m){c=V[i];m=d}}P=c}}}catch(e){}
+fetch(S).then(function(r){return r.json()}).then(function(j){
+var a=[],b=j.storiesByIssue||{};
+for(var k in b){var x=b[k];if(!x)continue;
+if(P===100)a=a.concat(x.uplifting||[]);
+else if(P===0)a=a.concat(x.negative||[]);
+else if(P>50)a=a.concat(x.uplifting||[],x.calm||[]);
+else if(P<50)a=a.concat(x.negative||[]);
+else a=a.concat(x.uplifting||[],x.calm||[],x.negative||[])}
+if(!a.length)return;
+a.sort(function(p,q){return new Date(q.datePublished||q.dateCrawled)-new Date(p.datePublished||p.dateCrawled)});
+var u=a[0]&&a[0].imageUrl;if(!u)return;
+var l=document.createElement('link');l.setAttribute('rel','preload');l.setAttribute('as','image');l.setAttribute('href',u);l.setAttribute('fetchpriority','high');document.head.appendChild(l)
+}).catch(function(){})}catch(e){}})();</script>`
+            renderedRoute.html = renderedRoute.html.replace('</head>', script + '\n</head>')
+            console.log('[prerender] preload del hero: se resuelve en el navegador desde el snapshot')
           }
 
           return renderedRoute
