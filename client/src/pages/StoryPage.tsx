@@ -364,6 +364,22 @@ export default function StoryPage() {
             </div>
           )}
 
+          {/*
+            Historias relacionadas, JUSTO despues de la cita.
+            
+            Quien llego hasta aqui ya consumio la noticia: el resumen y la cita
+            son 1,4 pantallas en movil, y son el articulo. Lo que sigue -"por
+            que importa" y "advertencias"- es analisis para quien quiere
+            profundizar, y ese lector baja igual.
+            
+            Estaban despues de los dos bloques de analisis y del CTA del
+            boletin, o sea a 7,5 pantallas del inicio. Medido el 5-sep-2026
+            sobre 30 dias: la navegacion interna era el 3,6% de las vistas
+            (63 de 1.762) y de las catorce paginas mas vistas TRECE eran
+            historias sueltas. La gente entraba y se iba.
+          */}
+          {story.slug && <RelatedStories slug={story.slug} />}
+
           {/* Why This Matters */}
           {story.relevanceReasons && (
             <AnalysisSection
@@ -384,9 +400,6 @@ export default function StoryPage() {
 
           {/* Newsletter CTA — inline email capture, end of article */}
           <ArticleInlineCta />
-
-          {/* Related stories */}
-          {story.slug && <RelatedStories slug={story.slug} />}
 
           {/* Contextual guide link for relevant issue areas */}
           {STORY_GUIDES[issueSlug] && (
