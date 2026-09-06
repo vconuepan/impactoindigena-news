@@ -31,15 +31,14 @@ import {
   PutObjectCommand,
   CopyObjectCommand,
 } from '@aws-sdk/client-s3'
-import { createCanvas, loadImage } from '@napi-rs/canvas'
+import { loadImage } from '@napi-rs/canvas'
+// El ancho y la calidad viven en un solo lugar: este script era el TERCER sitio
+// con su propia copia, y tres copias del mismo criterio divergen tarde o temprano.
+import { normalizarDecodificada, ANCHO_MAXIMO } from '../../lib/imagen-normalizar.js'
 import { appendFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { config } from '../../config.js'
 
-/** Ancho maximo servido. Las tarjetas se componen a 1200x630; nada necesita mas. */
-const MAX_WIDTH = 1200
-/** Misma calidad que composeBrandedStoryCard, para que el resultado sea identico. */
-const JPEG_QUALITY = 82
 /** Debajo de esto no vale la pena tocar el objeto. */
 const MIN_BYTES = 300_000
 /**
@@ -162,17 +161,18 @@ async function main(): Promise<void> {
       try {
         const original = await bajar(o.Key)
         const img = await loadImage(original)
-        const escala = Math.min(1, MAX_WIDTH / img.width)
-        const w = Math.round(img.width * escala)
-        const h = Math.round(img.height * escala)
-        const canvas = createCanvas(w, h)
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
-        const jpeg = canvas.toBuffer('image/jpeg', JPEG_QUALITY)
+        const jpeg = normalizarDecodificada(img, original)
 
-        if (jpeg.length >= original.length) {
+        // null es exactamente "el JPEG no ahorra nada": reencodear degradaria la
+        // imagen sin bajar un byte.
+        if (!jpeg) {
           console.log(`  [${i + 1}] SALTA ${o.Key} (el JPEG no es mas chico)`)
           continue
         }
+
+        const escala = Math.min(1, ANCHO_MAXIMO / img.width)
+        const w = Math.round(img.width * escala)
+        const h = Math.round(img.height * escala)
 
         antes += original.length
         despues += jpeg.length
