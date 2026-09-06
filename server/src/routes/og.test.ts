@@ -67,3 +67,64 @@ describe('GET /api/og/story-html — SEO status codes', () => {
     expect(res.status).toBe(200)
   })
 })
+
+// El shell se cachea diez minutos, y el bundle que referencia lleva un hash que
+// cambia en CADA despliegue del frontend. Durante esa ventana el shell cacheado
+// apunta a un archivo ya borrado: el script da 404, React no arranca y el lector
+// se queda sin relacionadas y sin navegacion.
+describe('GET /api/og/story-html — el shell cacheado y el bundle con hash', () => {
+  const shellCon = (bundle: string) =>
+    '<!DOCTYPE html><html><head><title>Voces Indígenas</title></head>' +
+    `<body><div id="root"></div><script type="module" src="/assets/${bundle}"></script></body></html>`
+
+  // El cache del shell es estado de modulo. Cada test necesita el suyo.
+  async function appFresco() {
+    vi.resetModules()
+    const { default: router } = await import('./og.js')
+    const a = express()
+    a.use('/api/og', router)
+    return a
+  }
+
+  it('tras un despliegue deja de servir el bundle borrado y toma el nuevo', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(published)
+    let enElSitio = 'index-viejo.js'
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'HEAD') return { ok: url.endsWith(enElSitio), text: async () => '' }
+      return { ok: true, text: async () => shellCon(enElSitio) }
+    }) as any)
+
+    const app = await appFresco()
+
+    const antes = await request(app).get('/api/og/story-html?slug=a-real-story')
+    expect(antes.text).toContain('index-viejo.js')
+
+    // Se despliega el frontend: el hash cambia y el archivo anterior se borra.
+    enElSitio = 'index-nuevo.js'
+
+    // Sin el arreglo el cache seguiria vigente diez minutos y esta respuesta
+    // llevaria el bundle borrado.
+    const despues = await request(app).get('/api/og/story-html?slug=a-real-story')
+    expect(despues.text).toContain('index-nuevo.js')
+    expect(despues.text).not.toContain('index-viejo.js')
+  })
+
+  it('un fallo de red al comprobar el bundle NO invalida el cache', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(published)
+    let pedidosDeShell = 0
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'HEAD') throw new Error('ECONNRESET')
+      pedidosDeShell++
+      return { ok: true, text: async () => shellCon('index-viejo.js') }
+    }) as any)
+
+    const app = await appFresco()
+    await request(app).get('/api/og/story-html?slug=a-real-story')
+    const segunda = await request(app).get('/api/og/story-html?slug=a-real-story')
+
+    // No poder comprobar el bundle no es prueba de que no este. Tirar el cache
+    // por un timeout dejaria las historias sin shell mientras dure la falla.
+    expect(pedidosDeShell).toBe(1)
+    expect(segunda.text).toContain('index-viejo.js')
+  })
+})
