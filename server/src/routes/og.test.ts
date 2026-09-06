@@ -128,3 +128,55 @@ describe('GET /api/og/story-html — el shell cacheado y el bundle con hash', ()
     expect(segunda.text).toContain('index-viejo.js')
   })
 })
+
+// El shell es el index.html de la PORTADA, y el build le hornea preloads que son
+// suyos: su hero con fetchpriority="high" y el snapshot homepage.json. Arrastrarlos
+// a una pagina de historia pide con prioridad alta una foto que nunca se muestra,
+// compitiendo con la que si mide el LCP.
+describe('GET /api/og/story-html — los preloads que el shell trae de la portada', () => {
+  const SHELL_PORTADA =
+    '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
+    '<link rel="preload" href="/fonts/DMSans/dmsans-normal-latin.woff2" as="font" type="font/woff2" crossorigin />' +
+    '<link rel="preload" href="https://r2.example/homepage.json" as="fetch" crossorigin />' +
+    '<link rel="preload" href="https://r2.example/social/oghero-de-la-portada.jpg" as="image" fetchpriority="high" />' +
+    '</head><body><div id="root">home</div><script src="/app.js"></script></body></html>'
+
+  // El cache del shell es estado de modulo y persiste entre bloques: sin aislar,
+  // este describe recibia el shell de los tests anteriores —que no lleva ningun
+  // preload— y las comprobaciones de ausencia pasaban por la razon equivocada.
+  async function pedirHistoria(story: unknown) {
+    vi.clearAllMocks()
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => SHELL_PORTADA })) as any)
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    vi.resetModules()
+    const { default: router } = await import('./og.js')
+    const a = express()
+    a.use('/api/og', router)
+    return request(a).get('/api/og/story-html?slug=a-real-story')
+  }
+
+  it('descarta el hero de la portada y precarga la imagen de ESTA historia', async () => {
+    const res = await pedirHistoria(published)
+
+    expect(res.text).not.toContain('oghero-de-la-portada.jpg')
+    expect(res.text).toContain(
+      '<link rel="preload" href="https://vocesindigenas.org/images/x.png" as="image" fetchpriority="high" />',
+    )
+  })
+
+  it('descarta el preload de homepage.json, que la historia no pide nunca', async () => {
+    const res = await pedirHistoria(published)
+    expect(res.text).not.toContain('homepage.json')
+  })
+
+  it('conserva los preloads de fuentes, que sirven en cualquier pagina', async () => {
+    const res = await pedirHistoria(published)
+    expect(res.text).toContain('dmsans-normal-latin.woff2')
+    expect(res.text).toContain('as="font"')
+  })
+
+  it('una historia sin imagen no precarga nada: seria otra descarga desperdiciada', async () => {
+    const res = await pedirHistoria({ ...published, imageUrl: null })
+    expect(res.text).not.toContain('as="image"')
+  })
+})

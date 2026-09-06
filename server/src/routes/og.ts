@@ -72,6 +72,28 @@ async function bundleVive(html: string): Promise<boolean> {
   }
 }
 
+/**
+ * El shell es el index.html de la PORTADA, y el build le hornea dos preloads que
+ * son suyos: la imagen de su hero con `fetchpriority="high"` y el snapshot
+ * `homepage.json` (ver el plugin de prerender en client/vite.config.ts, que solo
+ * los emite para la ruta '/').
+ *
+ * En una pagina de historia ninguno de los dos se usa jamas, y el de la imagen
+ * es peor que inutil: pide con prioridad alta una foto que no se va a mostrar,
+ * compitiendo por el ancho de banda con la que si mide el LCP. Medido con
+ * Lighthouse el 5-sep-2026 sobre una historia en movil, la pagina precargaba
+ * `oghero-eeefd92b...jpg` —el hero de la portada— mientras su LCP real era
+ * `storycard-78790b57...`, que no llevaba preload alguno. Lighthouse cifro la
+ * perdida en 963 ms.
+ *
+ * Los preloads de fuentes se conservan: sirven en cualquier pagina del sitio.
+ */
+function quitarPreloadsDePortada(html: string): string {
+  return html.replace(/<link\b[^>]*>/gi, (tag) =>
+    /rel=["']preload["']/i.test(tag) && /\bas=["'](?:image|fetch)["']/i.test(tag) ? '' : tag,
+  )
+}
+
 async function getShell(): Promise<string> {
   if (shellCache && Date.now() - shellCache.fetchedAt < SHELL_TTL_MS) {
     if (await bundleVive(shellCache.html)) return shellCache.html
@@ -191,12 +213,13 @@ router.get('/story-html', async (req, res) => {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${image}" />
+  <meta name="twitter:image" content="${image}" />${story.imageUrl ? `
+  <link rel="preload" href="${image}" as="image" fetchpriority="high" />` : ''}
   <script type="application/ld+json">${escapeJsonForScript(jsonLd)}</script>`
 
     // Strip the shell's own title/meta (the home may be prerendered with full
     // content), clear the prerendered root so React mounts cleanly, then inject.
-    const html = shell
+    const html = quitarPreloadsDePortada(shell)
       .replace(/<title>[^<]*<\/title>/gi, '')
       .replace(/<meta[^>]+(property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*\/?>/gi, '')
       .replace(/<meta[^>]+name=["']description["'][^>]*\/?>/gi, '')
@@ -277,12 +300,13 @@ router.get('/stories/:slug', async (req, res) => {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${image}" />`
+  <meta name="twitter:image" content="${image}" />${story.imageUrl ? `
+  <link rel="preload" href="${image}" as="image" fetchpriority="high" />` : ''}`
 
       // Strip pre-existing title and OG/twitter tags from the shell so we don't
       // end up with two sets of meta tags. LinkedIn (and other parsers) get confused
       // by duplicate og:image tags even when the correct one appears first.
-      const cleanShell = shell
+      const cleanShell = quitarPreloadsDePortada(shell)
         .replace(/<title>[^<]*<\/title>/gi, '')
         .replace(/<meta[^>]+(property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*\/?>/gi, '')
 
