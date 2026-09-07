@@ -97,9 +97,58 @@ aquí: `#7C756E` da 4,54:1 sobre blanco y 4,34:1 sobre el papel.
 
 **No implementado.** Cero clases `dark:` en el cliente, sin `darkMode` en la
 configuración de Tailwind y sin `prefers-color-scheme` en el CSS (verificado el
-5-sep-2026). Esta sección documentaba una tabla completa de valores oscuros que
-no existían. Si algún día se construye, los valores de partida son los de la
-escala stone invertida.
+5-sep-2026 y de nuevo el 6-sep). Esta sección documentaba una tabla completa de
+valores oscuros que no existían.
+
+**Lo que costaría, medido el 6-sep-2026.** No es «poner clases `dark:`»:
+
+*La parte barata ya está hecha.* Los neutrales se resuelven contra variables
+`--n-*` en `:root`, así que **1.002 usos de `bg/text/border-neutral-*` cambiarían
+solos** redefiniendo esas variables bajo `prefers-color-scheme`. Es el 73% de la
+superficie.
+
+*Quedan 377 puntos a revisar a mano* en los 157 archivos públicos: 113
+`style={{…}}`, 99 `bg-brand-*`, 92 `text-white`, 68 `bg-white`, 4 `bg-black` y un
+color literal.
+
+*Y lo que de verdad falta es diseño, no implementación.* **Los ocho colores de
+categoría fallan AA sobre el negro cálido `#1C1917` — los ocho.** Están
+calibrados contra el papel claro:
+
+| Familia | Sobre el papel | Sobre `#1C1917` |
+|---|---|---|
+| Oliva profundo | 5,06:1 | 3,31:1 |
+| Verde bosque | 4,80:1 | 3,49:1 |
+| Pizarra | 5,72:1 | 2,93:1 |
+| Ocre tierra | 5,14:1 | 3,26:1 |
+| Terracota | 5,19:1 | 3,22:1 |
+| **Granate** | 9,28:1 | **1,80:1** |
+| Ciruela | 6,02:1 | 2,78:1 |
+| Café tostado | 7,07:1 | 2,37:1 |
+
+Hace falta **una segunda paleta de ocho**, y aclarar cada color hasta el umbral
+no basta: **Derechos y Defensores convergen**. En claro se distinguen porque el
+granate es mucho más oscuro; al subir los dos al mismo contraste, ambos quedan
+rosados y el par más cercano cae a 25,0 — se vio en una muestra renderizada.
+
+Y separarlos por cálculo devuelve `#DA528B`: pasa AA y se aleja 54,5, pero con
+**65% de saturación es un magenta de pantalla**, exactamente lo que la regla de
+esta paleta prohíbe. **El par Derechos/Defensores hay que resolverlo a ojo, con
+criterio de marca.**
+
+Punto de partida verificado para el día que se decida — seis de los ocho salen
+bien del cálculo, sobre fondo `#1C1917`:
+
+| Familia | Claro | Oscuro | Contraste |
+|---|---|---|---|
+| Oliva profundo | `#5F7328` | `#758D31` | 4,67:1 |
+| Verde bosque | `#15803D` | `#199949` | 4,74:1 |
+| Pizarra | `#1A6B8A` | `#228DB6` | 4,62:1 |
+| Ocre tierra | `#8A6410` | `#AA7B14` | 4,62:1 |
+| Terracota | `#B84236` | `#CE6459` | 4,66:1 |
+| Ciruela | `#8E4585` | `#B668AC` | 4,63:1 |
+| Café tostado | `#7A4A2B` | `#BA7141` | 4,60:1 |
+| **Granate** | `#7A2733` | **sin resolver** | — |
 
 ### Colores de categoría (paleta tierra editorial)
 
