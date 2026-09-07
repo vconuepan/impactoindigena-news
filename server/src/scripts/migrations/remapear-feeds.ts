@@ -26,6 +26,7 @@
  *   npx tsx src/scripts/migrations/remapear-feeds.ts --apply
  */
 import { PrismaClient } from '@prisma/client'
+import { canonicalIssueSlug } from '../../lib/issue-slug.js'
 import { appendFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 
@@ -78,11 +79,11 @@ const MONOTEMATICOS: Record<string, string> = {
   naisa: 'cultura-y-conocimientos-ancestrales',
 
   // --- Economias indigenas ---
-  ccib: 'desarrollo-sostenible-y-autodeterminado',
-  sernatur: 'desarrollo-sostenible-y-autodeterminado',
-  'first peoples worldwide': 'desarrollo-sostenible-y-autodeterminado',
-  'mineria y desarrollo': 'desarrollo-sostenible-y-autodeterminado',
-  'dialogo chino latam': 'desarrollo-sostenible-y-autodeterminado',
+  ccib: 'economias-indigenas',
+  sernatur: 'economias-indigenas',
+  'first peoples worldwide': 'economias-indigenas',
+  'mineria y desarrollo': 'economias-indigenas',
+  'dialogo chino latam': 'economias-indigenas',
 
   // --- Consulta y consentimiento ---
   // La consulta previa es el objeto declarado de estos dos.
@@ -105,7 +106,18 @@ async function main(): Promise<void> {
   const issues = await prisma.issue.findMany({ select: { id: true, slug: true, name: true } })
   const porSlug = new Map(issues.map((i) => [i.slug, i]))
 
-  const desconocidos = [...new Set(Object.values(MONOTEMATICOS))].filter((s) => !porSlug.has(s))
+  // Los slugs del mapa pasan por el alias antes de buscarse.
+  //
+  // Sin esto el script estaba MUERTO: cinco entradas decian
+  // `desarrollo-sostenible-y-autodeterminado`, que dejo de existir cuando la
+  // categoria paso a llamarse `economias-indigenas`, y la guarda de abajo lo
+  // abortaba con exit(1) antes de tocar un solo feed. Nadie se entero porque el
+  // remapeo simplemente figuraba como pendiente.
+  const destinoDe = (slug: string) => canonicalIssueSlug(slug)
+
+  const desconocidos = [...new Set(Object.values(MONOTEMATICOS))]
+    .map(destinoDe)
+    .filter((s) => !porSlug.has(s))
   if (desconocidos.length) {
     console.error(`slugs que no existen: ${desconocidos.join(', ')}`)
     process.exit(1)
@@ -128,7 +140,7 @@ async function main(): Promise<void> {
   let movidos = 0
 
   for (const f of feeds) {
-    const destinoSlug = MONOTEMATICOS[normalizar(f.title)] ?? GENERAL
+    const destinoSlug = destinoDe(MONOTEMATICOS[normalizar(f.title)] ?? GENERAL)
     const destino = porSlug.get(destinoSlug)!
     reparto.set(destino.name, (reparto.get(destino.name) ?? 0) + 1)
     if (f.issueId === destino.id) continue
