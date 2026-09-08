@@ -41,6 +41,9 @@ const prisma = new PrismaClient()
 const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: boolean }> = [
   // --- Pipeline --- (todas las horas son de Chile; ver la nota de arriba)
   { jobName: 'crawl_feeds',             cronExpression: '0 */6 * * *' },
+  // google_news_discover: cada 8 h — busquedas tematicas que complementan los
+  // feeds. Vivia en la base sin estar declarado aqui; encontrado el 8-sep.
+  { jobName: 'google_news_discover',    cronExpression: '0 */8 * * *', enabled: true },
   { jobName: 'preassess_stories',       cronExpression: '0 4,10,16,22 * * *' },
   { jobName: 'assess_stories',          cronExpression: '0 6,18 * * *' },
   { jobName: 'select_stories',          cronExpression: '0 7,19 * * *' },
@@ -54,7 +57,9 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   // No repite posts: los candidatos excluyen lo ya posteado en cada canal
   // (socialMedia.ts, `findAutoPostCandidates`).
   { jobName: 'social_auto_post',        cronExpression: '0 6,15 * * *' },
-  { jobName: 'bluesky_update_metrics',  cronExpression: '0 */6 * * *' },
+  // Diario, no cada seis horas: asi estaba en produccion al leer la base el
+  // 8-sep. Se copia el valor real en vez de imponer el declarado.
+  { jobName: 'bluesky_update_metrics',  cronExpression: '0 0 * * *' },
   { jobName: 'mastodon_update_metrics', cronExpression: '0 1 * * *' },
   { jobName: 'instagram_update_metrics',cronExpression: '0 */6 * * *' },
   { jobName: 'linkedin_update_metrics', cronExpression: '0 */6 * * *' },
@@ -71,8 +76,10 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   { jobName: 'generate_newsletter',       cronExpression: '0 1 * * 3,6' },
   // send_newsletter: lunes y jueves 9 AM
   { jobName: 'send_newsletter',           cronExpression: '0 9 * * 1,4' },
-  // send_private_newsletter: lunes y jueves 9:30 AM (offset para no solapar)
-  { jobName: 'send_private_newsletter',   cronExpression: '30 9 * * 1,4' },
+  // send_private_newsletter: lunes 9:30 AM (offset para no solapar con el
+  // publico). Solo lunes: es lo que la base tenia el 8-sep, aunque este archivo
+  // declaraba tambien el jueves. Alguien lo redujo desde el panel.
+  { jobName: 'send_private_newsletter',   cronExpression: '30 9 * * 1' },
   // send_weekly_newsletter: lunes 6 AM — resumen semana anterior
   { jobName: 'send_weekly_newsletter',    cronExpression: '0 6 * * 1',  enabled: true },
   // send_community_digest: lunes 5 AM — enabled by default
@@ -86,12 +93,23 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   { jobName: 'scrape_docip',        cronExpression: '0 23 * * *' },
   // ingest_agenda: diario 1 AM — pobla "Incidencia Internacional" desde RSS/iCal
   { jobName: 'ingest_agenda',       cronExpression: '0 1 * * *',  enabled: true },
+  // agenda_weekly_digest: viernes 6 AM — resumen semanal de la agenda. Queda
+  // DESHABILITADO, que es como esta en produccion. Vivia en la base sin estar
+  // declarado aqui.
+  { jobName: 'agenda_weekly_digest', cronExpression: '0 6 * * 5' },
   // --- Data retention (Ley 21.719) — enabled by default ---
   // cleanup_auth_data: diario medianoche — purga refresh tokens y magic links expirados
   { jobName: 'cleanup_auth_data',      cronExpression: '0 0 * * *',  enabled: true },
   // cleanup_subscriptions: diario 00:30 — purga opt-ins no confirmados expirados y
   // reconcilia las bajas del boletin con el proveedor de correo
   { jobName: 'cleanup_subscriptions',  cronExpression: '30 0 * * *', enabled: true },
+  // cleanup_analytics: domingos 1 AM — borra daily_visitors de mas de 12 meses.
+  // Se sembraba por SQL (migracion 20260725000000) y no por aqui, asi que un
+  // entorno nuevo no lo tendria pese a existir su handler.
+  { jobName: 'cleanup_analytics',      cronExpression: '0 1 * * 0',  enabled: true },
+  // cleanup_analytics: domingos 1 AM — borra daily_visitors de mas de 12 meses.
+  // Se sembraba por SQL (migracion 20260725000000) y no por aqui, asi que un
+  // entorno nuevo no lo tendria pese a existir su handler.
 ]
 
 async function main() {

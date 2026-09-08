@@ -128,4 +128,21 @@ describe('la cadena del pipeline mantiene su orden', () => {
     expect(rutaJobs).toMatch(/timezone:\s*config\.scheduler\.timezone/)
     expect(rutaJobs, 'la zona volvio a quedar quemada en el endpoint').not.toMatch(/timezone:\s*'America\/Santiago'/)
   })
+  it('todo job con handler esta declarado en el seed', () => {
+    // El 8-sep habia TRES jobs corriendo en produccion que este archivo no
+    // declaraba —google_news_discover, cleanup_analytics y agenda_weekly_digest—:
+    // tenian handler, la base tenia su fila, y un entorno nuevo no los habria
+    // creado nunca. Uno se sembraba por SQL en una migracion, los otros dos no
+    // se sabe. El scheduler ignora en silencio lo que no tiene handler
+    // (scheduler.ts), pero al reves no avisa nada: un handler sin fila jamas
+    // corre y nadie se entera.
+    const handlers = readFileSync(path.resolve(__dirname, '../jobs/handlers.ts'), 'utf8')
+    const bloque = handlers.slice(handlers.indexOf('JOB_HANDLERS'))
+    const conHandler = [...bloque.matchAll(/^\s{2}(\w+):\s/gm)].map((m) => m[1])
+    expect(conHandler.length, 'no se pudo leer el registro de handlers').toBeGreaterThan(10)
+
+    const declarados = new Set([...SEED.matchAll(/jobName: '(\w+)'/g)].map((m) => m[1]))
+    const faltan = conHandler.filter((j) => !declarados.has(j))
+    expect(faltan, `estos jobs tienen handler y no estan en el seed: ${faltan.join(', ')}`).toEqual([])
+  })
 })
