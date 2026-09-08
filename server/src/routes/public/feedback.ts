@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import { createHash } from 'crypto'
 import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import { config } from '../../config.js'
 import { validateBody } from '../../middleware/validate.js'
 import prisma from '../../lib/prisma.js'
 import { createLogger } from '../../lib/logger.js'
+import { hashNoReversible } from '../../lib/hash-no-reversible.js'
 
 const router = Router()
 const log = createLogger('public:feedback')
@@ -35,7 +35,9 @@ router.post('/', feedbackLimiter, validateBody(feedbackSchema), async (req, res)
 
     const { category, message, email } = req.body
     const ip = req.ip || req.socket.remoteAddress || 'unknown'
-    const ipHash = createHash('sha256').update(ip).digest('hex')
+    // Con sal, no SHA-256 crudo: la Politica promete un hash «no reversible» y
+    // un sha256 pelado de una IPv4 se revierte por fuerza bruta (2^32 valores).
+    const ipHash = hashNoReversible('feedback', ip)
 
     await prisma.feedback.create({
       data: {
