@@ -29,7 +29,11 @@ type Status = 'idle' | 'submitting' | 'success' | 'error'
 export default function AlertsPage() {
   const [searchParams] = useSearchParams()
   const confirmed  = searchParams.get('confirmed')
-  const unsubEmail = searchParams.get('unsubscribe') // legacy links already in inboxes
+  // Enlace ANTIGUO, de correos anteriores al 10-jun-2026. Ya no da de baja: el
+  // servidor exige el token porque identificar por correo permitia que
+  // cualquiera diera de baja a cualquiera. Se sigue leyendo para explicarle a
+  // quien llegue por ahi como hacerlo, en vez de dejarlo sin salida.
+  const unsubEmailLegado = searchParams.get('unsubscribe')
   const unsubToken = searchParams.get('unsubscribe_token')
 
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set())
@@ -62,9 +66,9 @@ export default function AlertsPage() {
   }
 
   async function handleUnsubscribe() {
-    if (!unsubEmail && !unsubToken) return
+    if (!unsubToken) return
     try {
-      await publicApi.unsubscribeAlerts(unsubToken ? { token: unsubToken } : { email: unsubEmail! })
+      await publicApi.unsubscribeAlerts({ token: unsubToken })
       setMessage('Tus alertas han sido desactivadas.')
     } catch {
       setMessage('No se pudo desactivar. Escríbenos a contacto@fundacionkm.org.')
@@ -99,17 +103,15 @@ export default function AlertsPage() {
           </div>
         )}
 
-        {/* Unsubscribe state */}
-        {(unsubEmail || unsubToken) && (
+        {/* Baja con token — el unico camino que da de baja */}
+        {unsubToken && (
           <div className="mb-8 bg-neutral-50 border border-neutral-200 rounded-xl p-6 text-center">
             {message ? (
               <p className="text-neutral-700 text-sm">{message}</p>
             ) : (
               <>
                 <p className="text-neutral-800 text-sm mb-3">
-                  {unsubEmail
-                    ? <>¿Desactivar todas las alertas para <strong>{unsubEmail}</strong>?</>
-                    : <>¿Desactivar todas tus alertas de territorio?</>}
+                  ¿Desactivar todas tus alertas de territorio?
                 </p>
                 <button
                   onClick={handleUnsubscribe}
@@ -119,6 +121,22 @@ export default function AlertsPage() {
                 </button>
               </>
             )}
+          </div>
+        )}
+
+        {/* Enlace antiguo: no se da de baja, pero tampoco se deja sin salida */}
+        {unsubEmailLegado && !unsubToken && (
+          <div className="mb-8 bg-amber-50 border border-amber-200 rounded-xl p-6">
+            <p className="text-amber-900 font-semibold text-base mb-2">Este enlace de baja es antiguo</p>
+            <p className="text-amber-800 text-sm">
+              Por seguridad ya no damos de baja a partir de un enlace que lleva la
+              dirección de correo: cualquiera que la conociera podría desactivar
+              las alertas de otra persona.{" "}
+              <strong>Abre cualquier alerta reciente y usa el enlace del pie</strong>,
+              que sí te identifica. Si no encuentras ninguna, escríbenos a{" "}
+              <a href="mailto:contacto@fundacionkm.org" className="underline">contacto@fundacionkm.org</a>{" "}
+              y lo hacemos nosotros.
+            </p>
           </div>
         )}
 

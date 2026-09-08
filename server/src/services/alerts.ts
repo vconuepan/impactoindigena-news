@@ -86,11 +86,20 @@ export async function confirmAlert(token: string, email: string): Promise<void> 
 // data is removed after opt-out (Ley 21.719 audit, B1). The `active` column
 // is now dead schema — kept until a future migration drops it.
 
-/** Legacy path — links already delivered in inboxes carry ?unsubscribe=<email>. */
-export async function unsubscribeFromAlerts(email: string): Promise<void> {
-  const { count } = await prisma.alertSubscription.deleteMany({ where: { email } })
-  log.info({ count }, 'alert subscriptions deleted (legacy email link)')
-}
+// AQUI VIVIA `unsubscribeFromAlerts(email)`, y se borro el 8-sep-2026.
+//
+// Daba de baja por CORREO, sin ninguna prueba de posesion: bastaba conocer la
+// direccion de alguien para borrar todas sus suscripciones. El endpoint que la
+// llamaba ademas no tenia limitador propio, asi que se podia hacer en masa.
+// Existia para los enlaces `?unsubscribe=<correo>` ya entregados en bandejas,
+// pero el enlace con token esta en cada alerta desde el 10-jun-2026 y las
+// alertas se envian a diario: un suscriptor activo lleva meses recibiendo el
+// enlace nuevo.
+//
+// No se deja «por si acaso»: una funcion que borra filas identificando por un
+// dato publico es un arma cargada esperando a que alguien la vuelva a llamar.
+// Si algun dia hace falta una baja administrativa, se escribe con la
+// autenticacion que corresponda.
 
 /**
  * Token-based unsubscribe — the link embedded in every alert email from now

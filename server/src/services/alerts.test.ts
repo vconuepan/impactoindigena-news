@@ -23,7 +23,8 @@ const mockBrevo = {
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('./brevo.js', () => mockBrevo)
 
-const { unsubscribeFromAlerts, unsubscribeByToken, sendDailyAlerts, cleanupExpiredAlertSubscriptions } = await import('./alerts.js')
+const alertsModule = await import('./alerts.js')
+const { unsubscribeByToken, sendDailyAlerts, cleanupExpiredAlertSubscriptions } = alertsModule
 
 describe('alerts unsubscribe (B1 — hard delete, Ley 21.719)', () => {
   beforeEach(() => {
@@ -76,14 +77,17 @@ describe('alerts unsubscribe (B1 — hard delete, Ley 21.719)', () => {
     })
   })
 
-  describe('unsubscribeFromAlerts (legacy email links already in inboxes)', () => {
-    it('also hard-deletes instead of flagging inactive', async () => {
-      await unsubscribeFromAlerts('lectora@example.com')
-
-      expect(mockPrisma.alertSubscription.deleteMany).toHaveBeenCalledWith({
-        where: { email: 'lectora@example.com' },
-      })
-      expect(mockPrisma.alertSubscription.updateMany).not.toHaveBeenCalled()
+  describe('la baja por correo suelto ya no existe', () => {
+    it('el servicio NO exporta ninguna funcion que borre por correo', () => {
+      // `unsubscribeFromAlerts(email)` se borro el 8-sep-2026: bastaba conocer
+      // la direccion de alguien para desactivar sus alertas, y el endpoint que
+      // la llamaba no tenia limitador. Este test existe para que no vuelva por
+      // conveniencia — la prueba de posesion es el token, que llega al correo
+      // de su titular.
+      expect(alertsModule).not.toHaveProperty('unsubscribeFromAlerts')
+      const exportados = Object.keys(alertsModule)
+      const sospechosos = exportados.filter((n) => /^unsubscribe/i.test(n) && n !== 'unsubscribeByToken')
+      expect(sospechosos, `bajas sin prueba de posesion: ${sospechosos.join(', ')}`).toEqual([])
     })
   })
 })

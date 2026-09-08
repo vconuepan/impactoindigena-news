@@ -27,14 +27,13 @@ const subscribeSchema = z.object({
   topics: z.array(z.string().min(1).max(100)).min(1).max(20),
 })
 
-// Token is the current unsubscribe mechanism (no email in URLs); the email
-// variant remains for legacy links already delivered in inboxes.
-const unsubscribeSchema = z
-  .object({
-    email: z.string().email().max(255).optional(),
-    token: z.string().uuid().optional(),
-  })
-  .refine((d) => Boolean(d.email || d.token), { message: 'email or token required' })
+// SOLO token. Hasta el 8-sep-2026 esto aceptaba tambien un correo suelto, de
+// modo que cualquiera que conociera una direccion podia dar de baja a esa
+// persona —y el endpoint no tenia limitador—. El token es la prueba de posesion:
+// llega en el correo de su titular y nadie mas lo tiene.
+const unsubscribeSchema = z.object({
+  token: z.string().uuid(),
+})
 
 router.post('/subscribe', alertLimiter, validateBody(subscribeSchema), async (req, res) => {
   try {
@@ -70,15 +69,11 @@ router.get('/confirm', async (req, res) => {
   }
 })
 
-router.post('/unsubscribe', validateBody(unsubscribeSchema), async (req, res) => {
+router.post('/unsubscribe', alertLimiter, validateBody(unsubscribeSchema), async (req, res) => {
   try {
-    if (req.body.token) {
-      // Idempotent: an unknown or already-used token still answers success —
-      // no oracle for probing tokens, and double-clicks just work.
-      await alertsService.unsubscribeByToken(req.body.token)
-    } else {
-      await alertsService.unsubscribeFromAlerts(req.body.email)
-    }
+    // Idempotent: an unknown or already-used token still answers success —
+    // no oracle for probing tokens, and double-clicks just work.
+    await alertsService.unsubscribeByToken(req.body.token)
     res.json({ success: true })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)

@@ -297,7 +297,8 @@ export const publicApi = {
       body: JSON.stringify({ email, topics }),
     }),
 
-  unsubscribeAlerts: (params: { email?: string; token?: string }) =>
+  // Solo token: el correo como identificador permitia dar de baja a terceros.
+  unsubscribeAlerts: (params: { token: string }) =>
     request<{ success: boolean }>('/alerts/unsubscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
