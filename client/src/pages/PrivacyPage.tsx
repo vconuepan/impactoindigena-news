@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.1 · vigente desde el 8 de septiembre de 2026.
+            Versión 3.2 · vigente desde el 8 de septiembre de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -322,9 +322,13 @@ export default function PrivacyPage() {
             información).
           </p>
           <p className="mt-3">
-            Si rechazamos o no respondemos oportunamente tu solicitud, tienes
-            derecho a reclamar ante la <strong>Agencia de Protección de Datos
-            Personales</strong>.
+            Si rechazamos tu solicitud o no la respondemos en plazo, puedes
+            reclamar. <strong>Hoy</strong> la vía es el{" "}
+            <strong>juez de letras en lo civil</strong> del domicilio del
+            responsable, conforme al artículo 16 de la Ley 19.628.{" "}
+            <strong>Desde el 1 de diciembre de 2026</strong>, cuando rija la Ley
+            21.719, podrás reclamar ante la <strong>Agencia de Protección de
+            Datos Personales</strong>, que esa misma ley crea.
           </p>
 
           {/* 10. Menores */}
