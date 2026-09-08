@@ -34,6 +34,20 @@ export const routes: RouteConfig[] = [
   { path: '/saved', priority: 0.3, changefreq: 'daily' },
   { path: '/subscribed', priority: 0.2, changefreq: 'yearly' },
   { path: '/thank-you', priority: 0.2, changefreq: 'yearly' },
+  // Distribucion, datos abiertos y paginas editoriales. Estaban en el sitemap
+  // del servidor y NO aqui, asi que Google recibia diez URLs que devolvian la
+  // portada byte a byte: soft 404 declarados en bandeja. Existen todas en
+  // App.tsx; lo que faltaba era prerenderizarlas.
+  { path: '/opendata', priority: 0.6, changefreq: 'monthly' },
+  { path: '/widgets', priority: 0.6, changefreq: 'monthly' },
+  { path: '/compare', priority: 0.6, changefreq: 'weekly' },
+  { path: '/free-api', priority: 0.6, changefreq: 'monthly' },
+  { path: '/news-fatigue', priority: 0.5, changefreq: 'monthly' },
+  { path: '/por-que-importa', priority: 0.7, changefreq: 'weekly' },
+  { path: '/fuentes', priority: 0.6, changefreq: 'weekly' },
+  { path: '/archivo', priority: 0.6, changefreq: 'weekly' },
+  { path: '/casos', priority: 0.7, changefreq: 'weekly' },
+  { path: '/alertas', priority: 0.6, changefreq: 'monthly' },
   // Evergreen reference pages
   { path: '/mapa', priority: 0.8, changefreq: 'monthly' },
   { path: '/glosario', priority: 0.8, changefreq: 'monthly' },

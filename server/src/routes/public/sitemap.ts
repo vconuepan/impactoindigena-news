@@ -15,8 +15,15 @@ function getSiteUrl(): string {
 
 type ChangeFreq = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
 
-// Duplicated from client/src/routes.ts — server shouldn't import from client.
-// When adding a new page, update both files.
+// Duplicada de client/src/routes.ts: el server no resuelve el alias `@shared` y
+// darselo obliga a tocar su build, el mismo compromiso que documenta
+// `homepage.ts`. Duplicar es el mal menor; dejarlas desincronizadas, no.
+//
+// El 8-sep-2026 habian divergido en LAS DOS DIRECCIONES: diez rutas vivian solo
+// aqui —y devolvian la portada byte a byte, o sea soft 404 declarados a Google—
+// y cuatro vivian solo alla, prerenderizadas y sin forma de ser encontradas.
+// `sitemap-sincronia.test.ts` lee el archivo del cliente y falla si vuelven a
+// separarse, que es el patron con que este repo ata sus listas duplicadas.
 const STATIC_ROUTES: { path: string; priority: number; changefreq: ChangeFreq }[] = [
   { path: '/', priority: 1.0, changefreq: 'daily' },
   { path: '/issues', priority: 0.8, changefreq: 'monthly' },
@@ -27,20 +34,27 @@ const STATIC_ROUTES: { path: string; priority: number; changefreq: ChangeFreq }[
   { path: '/feedback', priority: 0.5, changefreq: 'monthly' },
   { path: '/imprint', priority: 0.5, changefreq: 'yearly' },
   { path: '/privacy', priority: 0.5, changefreq: 'yearly' },
+  // Estas cuatro se prerenderizaban y el sitemap NO las declaraba, asi que
+  // existian como HTML estatico y Google no tenia como encontrarlas. Dos son
+  // paginas legales.
+  { path: '/terminos', priority: 0.5, changefreq: 'yearly' },
+  { path: '/cookies', priority: 0.5, changefreq: 'yearly' },
+  { path: '/incidencia-internacional', priority: 0.9, changefreq: 'daily' },
+  { path: '/voces-indigenas', priority: 0.9, changefreq: 'weekly' },
   { path: '/search', priority: 0.3, changefreq: 'daily' },
   { path: '/saved', priority: 0.3, changefreq: 'daily' },
   { path: '/subscribed', priority: 0.2, changefreq: 'yearly' },
   { path: '/thank-you', priority: 0.2, changefreq: 'yearly' },
   // Guide pages — high-quality long-form content
-  { path: '/guia', priority: 0.7, changefreq: 'monthly' },
+  { path: '/guia', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/pueblo-mapuche', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/consulta-previa-fpic', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/pueblos-indigenas-chile', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/c169-pais-por-pais', priority: 0.8, changefreq: 'yearly' },
   { path: '/guia/jurisprudencia-interamericana', priority: 0.8, changefreq: 'monthly' },
   { path: '/guia/declaracion-onu-undrip', priority: 0.8, changefreq: 'yearly' },
-  { path: '/glosario', priority: 0.7, changefreq: 'monthly' },
-  { path: '/mapa', priority: 0.6, changefreq: 'monthly' },
+  { path: '/glosario', priority: 0.8, changefreq: 'monthly' },
+  { path: '/mapa', priority: 0.8, changefreq: 'monthly' },
   // Open Data API docs — for researchers and institutional users
   { path: '/opendata', priority: 0.6, changefreq: 'monthly' },
   // Distribution & developer tools — discoverable via search
