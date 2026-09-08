@@ -3,14 +3,27 @@ import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { notifyJobFailure } from '../lib/notify.js'
 import { JOB_HANDLERS } from './handlers.js'
+import { config } from '../config.js'
 
 const log = createLogger('scheduler')
+
+/**
+ * Las expresiones cron se leen en esta zona, no en la del proceso. Sin ella
+ * node-cron usaba UTC —la del App Service— mientras el panel mostraba hora de
+ * Chile, y un horario editado ahi corria tres o cuatro horas antes de lo que
+ * su autor creia.
+ *
+ * OJO AL DESPLEGAR UN CAMBIO DE ZONA: los horarios vivos estan en la tabla
+ * `job_runs`, no en el codigo. Cambiar esto reinterpreta lo que ya hay
+ * guardado, asi que los valores de la base tienen que moverse a la vez.
+ */
+const TIMEZONE = config.scheduler.timezone
 
 const tasksByName = new Map<string, ScheduledTask>()
 const runningJobs = new Set<string>()
 
 export async function initScheduler(): Promise<void> {
-  log.info('initializing')
+  log.info({ timezone: TIMEZONE }, 'initializing')
 
   const jobs = await prisma.jobRun.findMany()
 
@@ -34,7 +47,7 @@ export async function initScheduler(): Promise<void> {
     // Register cron job
     const task = cron.schedule(job.cronExpression, () => {
       runJob(job.jobName, handler)
-    })
+    }, { timezone: TIMEZONE })
     tasksByName.set(job.jobName, task)
     log.info({ jobName: job.jobName, cronExpression: job.cronExpression }, 'registered')
 
@@ -204,7 +217,7 @@ export async function reloadJob(jobName: string): Promise<void> {
 
   const task = cron.schedule(job.cronExpression, () => {
     runJob(jobName, handler)
-  })
+  }, { timezone: TIMEZONE })
   tasksByName.set(jobName, task)
   log.info({ jobName, cronExpression: job.cronExpression }, 'reloaded')
 }

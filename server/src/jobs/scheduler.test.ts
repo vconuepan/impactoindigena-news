@@ -50,7 +50,13 @@ describe('scheduler', () => {
       await initScheduler()
 
       expect(mockSchedule).toHaveBeenCalledTimes(1)
-      expect(mockSchedule).toHaveBeenCalledWith('0 */6 * * *', expect.any(Function))
+      // La zona va en el tercer argumento y NO es decorativa: sin ella node-cron
+      // lee la expresion en la del proceso —UTC en el App Service— mientras el
+      // panel muestra hora de Chile, y el job corre tres o cuatro horas antes de
+      // lo que su autor creia. Se afirma el valor, no solo su presencia.
+      expect(mockSchedule).toHaveBeenCalledWith('0 */6 * * *', expect.any(Function), {
+        timezone: 'America/Santiago',
+      })
     })
 
     it('skips disabled jobs', async () => {

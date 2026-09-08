@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { createLogger } from '../../lib/logger.js'
 import cron from 'node-cron'
 import { runJob, reloadJob } from '../../jobs/scheduler.js'
+import { config } from '../../config.js'
 import { validateBody } from '../../middleware/validate.js'
 import { updateJobSchema } from '../../schemas/job.js'
 import { JOB_HANDLERS } from '../../jobs/handlers.js'
@@ -21,9 +22,12 @@ router.get('/', async (_req, res) => {
 })
 
 router.get('/server-time', (_req, res) => {
+  // La zona sale de la config, que es la MISMA que usa node-cron para leer las
+  // expresiones. Estaba quemada como 'America/Santiago' mientras los cron
+  // corrian en UTC: el panel afirmaba una hora que el scheduler no respetaba.
   res.json({
     time: new Date().toISOString(),
-    timezone: 'America/Santiago',
+    timezone: config.scheduler.timezone,
   })
 })
 

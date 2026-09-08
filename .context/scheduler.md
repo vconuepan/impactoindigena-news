@@ -29,7 +29,13 @@ On server startup, `initScheduler()`:
 - **A cron in `seed-jobs.ts` can silently differ from what production runs.** On 2026-09-07 `social_auto_post` had been re-scheduled from the admin panel months earlier and the file never found out. Read the table before assuming the file is the truth.
 - **Hot reload only covers the admin API path.** A schedule written straight to the database -- SQL, a Prisma script -- is invisible to the running process, because `initScheduler()` reads the table once at startup and never re-reads. Such a change needs a process restart; a backend deploy does one. Prefer the admin API, which reprograms in place.
 
-**Cron expressions run in UTC.** Both `cron.schedule()` calls in `jobs/scheduler.ts` omit the timezone option, so the server clock decides. The admin panel displays `America/Santiago`, which makes it easy to type an hour meaning local time and land three or four hours off.
+**Cron expressions are read in Chile time** (`America/Santiago`). Both `cron.schedule()` calls in `jobs/scheduler.ts` pass `config.scheduler.timezone`, so what you type in the admin panel is local time -- no mental conversion. Override with `SCHEDULER_TIMEZONE` (e.g. back to `UTC`) without a deploy of new code.
+
+Until 2026-09-08 neither call passed a timezone, so node-cron used the process clock -- UTC on the App Service -- while `/admin/jobs/server-time` reported `America/Santiago`. A schedule edited from the panel ran three or four hours earlier than its author intended.
+
+**Why a timezone and not baked-in arithmetic:** Chile is UTC-3 in summer (from the first Sunday of September) and UTC-4 the rest of the year. Subtracting hours by hand works until April, when every job silently shifts by one hour. With the timezone, 08:00 stays 08:00 year-round.
+
+**Changing the timezone moves every job.** The live schedules are cron strings in `job_runs`, and the timezone decides how they are read -- so the stored values must move in the same maneuver, or every job shifts by the offset.
 
 **Manual triggers**: Every job can be triggered via `POST /api/admin/jobs/:jobName/run`, which runs the job in the background regardless of schedule.
 

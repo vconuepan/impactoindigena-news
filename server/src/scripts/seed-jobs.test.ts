@@ -89,9 +89,43 @@ describe('la cadena del pipeline mantiene su orden', () => {
     expect(horasDe(cronDe('publish_stories')).length).toBeGreaterThanOrEqual(2)
   })
 
-  it('el seed advierte que los cron corren en UTC', () => {
-    // La UI muestra America/Santiago y es facil editar un cron creyendo que se
-    // escribe en hora chilena.
-    expect(SEED).toMatch(/CORREN EN UTC/i)
+  it('el seed declara en que zona se leen los cron', () => {
+    // Hasta el 8-sep-2026 corrian en UTC mientras el panel mostraba hora de
+    // Chile, y un horario editado ahi caia tres o cuatro horas antes de lo que
+    // su autor creia. Ahora la zona se le pasa a node-cron; el seed tiene que
+    // decir cual, o vuelve la misma confusion con el signo cambiado.
+    expect(SEED).toMatch(/SE LEEN EN HORA DE CHILE/i)
+    expect(SEED).toContain('America/Santiago')
+  })
+
+  it('la zona llega de verdad a node-cron, en las DOS llamadas', () => {
+    // El seed puede prometer hora de Chile y el scheduler seguir leyendo en la
+    // del proceso: son archivos distintos y nada los ata. Aqui se atan.
+    // Son dos registros —el del arranque y el del hot reload— y olvidar uno
+    // deja los horarios editados desde el panel corriendo en otra zona que los
+    // del arranque, que es la peor de las mezclas porque no se nota.
+    const scheduler = readFileSync(path.resolve(__dirname, '../jobs/scheduler.ts'), 'utf8')
+    const registros = scheduler.match(/cron\.schedule\(/g) || []
+    // El patron cierra el callback ANTES de las opciones: `}, { timezone: … })`.
+    // Buscar solo `{ timezone: TIMEZONE }` contaria tambien el log de arranque
+    // y el test pasaria de largo una llamada sin zona.
+    const conZona = scheduler.match(/\},\s*\{\s*timezone:\s*TIMEZONE\s*\}\)/g) || []
+    expect(registros.length, 'no se encontro ninguna llamada a cron.schedule').toBeGreaterThan(0)
+    expect(conZona.length, 'hay llamadas a cron.schedule sin la zona').toBe(registros.length)
+    expect(scheduler).toMatch(/config\.scheduler\.timezone/)
+  })
+
+  it('la zona por defecto es la de Chile y se puede cambiar sin desplegar', () => {
+    const cfg = readFileSync(path.resolve(__dirname, '../config.ts'), 'utf8')
+    expect(cfg).toMatch(/SCHEDULER_TIMEZONE/)
+    expect(cfg).toMatch(/America\/Santiago/)
+  })
+
+  it('el panel no anuncia una zona distinta de la que usa el scheduler', () => {
+    // Ese desajuste es el defecto original: /server-time devolvia
+    // 'America/Santiago' quemado mientras los cron corrian en UTC.
+    const rutaJobs = readFileSync(path.resolve(__dirname, '../routes/admin/jobs.ts'), 'utf8')
+    expect(rutaJobs).toMatch(/timezone:\s*config\.scheduler\.timezone/)
+    expect(rutaJobs, 'la zona volvio a quedar quemada en el endpoint').not.toMatch(/timezone:\s*'America\/Santiago'/)
   })
 })

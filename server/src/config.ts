@@ -152,6 +152,22 @@ export const config = {
     searchWindowMs: parseInt(process.env.RATE_LIMIT_SEARCH_WINDOW_MS || String(15 * 60 * 1000), 10),
     searchMax: parseInt(process.env.RATE_LIMIT_SEARCH_MAX || "20", 10),
   },
+  scheduler: {
+    // La zona en que se LEEN las expresiones cron. Hasta el 8-sep-2026 no se
+    // pasaba ninguna, asi que node-cron usaba la del proceso —UTC en el App
+    // Service— mientras el panel de admin decia «America/Santiago»: era facil
+    // editar un horario creyendo que se escribia en hora chilena.
+    //
+    // Darle la zona a node-cron y no convertir a mano importa porque Chile
+    // CAMBIA de offset: UTC-3 en verano —desde el primer domingo de
+    // septiembre— y UTC-4 el resto del año. Una conversion horneada se
+    // desplazaria una hora cada abril y cada septiembre; asi, las 08:00 son
+    // las 08:00 todo el año.
+    //
+    // Se deja configurable para poder volver a UTC sin desplegar, y porque un
+    // entorno de otra latitud no tiene por que heredar Chile.
+    timezone: process.env.SCHEDULER_TIMEZONE || "America/Santiago",
+  },
   concurrency: {
     preassess: parseInt(process.env.CONCURRENCY_PREASSESS || "10", 10),
     assess: parseInt(process.env.CONCURRENCY_ASSESS || "10", 10),
