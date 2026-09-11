@@ -15,6 +15,12 @@ i18n
     },
     fallbackLng: 'es',
     supportedLngs: ['es', 'en'],
+    // i18next 25 imprime un anuncio de Locize —su producto comercial— en la
+    // consola de cada carga de pagina, tambien en produccion. No rompe nada,
+    // pero es ruido en la consola de un medio y nada tiene que hacer ahi.
+    // La condicion exacta esta en `i18next.bundled.js`:
+    // `options.showSupportNotice !== false && !usesLocize(this)`.
+    showSupportNotice: false,
     detection: {
       // Spanish-first: the UI language follows an explicit choice only (the
       // header toggle). Browser auto-detection produced a mixed experience
