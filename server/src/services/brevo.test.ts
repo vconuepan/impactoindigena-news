@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 
 const mockAxiosInstance = {
   post: vi.fn(),
@@ -202,5 +204,43 @@ describe('Brevo API client', () => {
         htmlContent: '<p>Confirm</p>',
       }))
     })
+  })
+})
+
+/**
+ * Las direcciones de los lectores no van en claro a los logs.
+ *
+ * `subscribe.ts` ya enmascaraba en sus ocho registros y este archivo en
+ * NINGUNO: el 11-sep-2026 tenia siete lineas con la direccion completa, tres de
+ * ellas en el camino de cada alta —«creating contact», «sending transactional
+ * email» y «email verified via MX lookup»—. Esos archivos viven catorce dias en
+ * almacenamiento persistente.
+ *
+ * El test lee el fuente porque el logger esta mockeado en toda la suite, asi
+ * que ninguna asercion sobre una llamada podria ver lo que se escribe de
+ * verdad.
+ */
+describe('los logs de Brevo no llevan correos en claro', () => {
+  const FUENTE = readFileSync(path.resolve(__dirname, 'brevo.ts'), 'utf8')
+
+  it('cada registro con un correo lo pasa por maskEmail', () => {
+    const sinEnmascarar = FUENTE.split('\n')
+      .map((linea, i) => ({ linea: linea.trim(), n: i + 1 }))
+      .filter(({ linea }) => /log\.(info|warn|error|debug)\(/.test(linea))
+      .filter(({ linea }) => /\b(email|to):/.test(linea))
+      .filter(({ linea }) => !linea.includes('maskEmail'))
+      .map(({ linea, n }) => `L${n}: ${linea.slice(0, 80)}`)
+
+    expect(
+      sinEnmascarar,
+      `estos registros escriben la direccion completa del lector en los logs:\n${sinEnmascarar.join('\n')}`,
+    ).toEqual([])
+  })
+
+  it('el modulo importa maskEmail', () => {
+    expect(
+      /import \{[^}]*maskEmail[^}]*\} from '\.\.\/lib\/logger\.js'/.test(FUENTE),
+      'brevo.ts dejo de importar maskEmail',
+    ).toBe(true)
   })
 })

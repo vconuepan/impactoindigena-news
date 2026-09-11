@@ -2,7 +2,7 @@ import axios from 'axios'
 import { resolveMx } from 'dns/promises'
 import { config } from '../config.js'
 import { withRetry, isRetryableError } from '../lib/retry.js'
-import { createLogger } from '../lib/logger.js'
+import { createLogger, maskEmail } from '../lib/logger.js'
 
 // Common disposable email domains
 const DISPOSABLE_DOMAINS = new Set([
@@ -186,7 +186,7 @@ export async function listCampaigns(): Promise<Campaign[]> {
 export async function createContact(opts: CreateContactOpts): Promise<Contact> {
   return withRetry(
     async () => {
-      log.info({ email: opts.email, subscribed: opts.subscribed }, 'creating contact')
+      log.info({ email: maskEmail(opts.email), subscribed: opts.subscribed }, 'creating contact')
       const payload: Record<string, unknown> = {
         email: opts.email,
         attributes: opts.data || {},
@@ -294,7 +294,7 @@ export async function getContactEngagement(email: string): Promise<ContactEngage
   } catch (err: unknown) {
     const status = (err as { response?: { status?: number } })?.response?.status
     if (status !== 404) {
-      log.warn({ email, status }, 'brevo engagement fetch failed')
+      log.warn({ email: maskEmail(email), status }, 'brevo engagement fetch failed')
     }
     return null
   }
@@ -350,7 +350,7 @@ export interface SendTransactionalOpts {
 export async function sendTransactional(opts: SendTransactionalOpts): Promise<void> {
   return withRetry(
     async () => {
-      log.info({ to: opts.to, subject: opts.subject }, 'sending transactional email')
+      log.info({ to: maskEmail(opts.to), subject: opts.subject }, 'sending transactional email')
       await client.post('/smtp/email', {
         to: [{ email: opts.to }],
         subject: opts.subject,
@@ -360,7 +360,7 @@ export async function sendTransactional(opts: SendTransactionalOpts): Promise<vo
           name: opts.name || config.brevo.fromName,
         },
       })
-      log.info({ to: opts.to }, 'transactional email sent')
+      log.info({ to: maskEmail(opts.to) }, 'transactional email sent')
     },
     { retries: 3, retryOn: isRetryableError },
   )
@@ -383,11 +383,11 @@ export async function verifyEmail(email: string): Promise<EmailVerifyResult> {
   try {
     const records = await resolveMx(domain)
     const domainExists = records.length > 0
-    log.info({ email, domain, domainExists, isDisposable }, 'email verified via MX lookup')
+    log.info({ email: maskEmail(email), domain, domainExists, isDisposable }, 'email verified via MX lookup')
     return { valid: domainExists && !isDisposable, domainExists, isDisposable }
   } catch {
     // DNS lookup failed — domain likely doesn't exist
-    log.info({ email, domain }, 'email MX lookup failed — domain not found')
+    log.info({ email: maskEmail(email), domain }, 'email MX lookup failed — domain not found')
     return { valid: false, domainExists: false, isDisposable }
   }
 }
@@ -397,7 +397,7 @@ export async function verifyEmail(email: string): Promise<EmailVerifyResult> {
 export async function trackEvent(email: string, event: string, data?: Record<string, unknown>): Promise<void> {
   return withRetry(
     async () => {
-      log.debug({ email, event }, 'tracking event')
+      log.debug({ email: maskEmail(email), event }, 'tracking event')
       await client.post('/events', {
         email,
         event,
