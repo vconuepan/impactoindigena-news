@@ -16,6 +16,27 @@ export class EmailValidationError extends Error {
   }
 }
 
+/**
+ * No se pudo entregar el correo de confirmacion.
+ *
+ * Existe para que la ruta pueda DISTINGUIRLO del resto de los errores. Todo lo
+ * demas responde «revisa tu correo» aunque haya fallado, y con razon: decir si
+ * una direccion ya estaba suscrita filtraria quien lo esta. Pero un fallo de
+ * ENTREGA no revela nada de la direccion —el mismo fallo le ocurre a cualquiera
+ * cuando el proveedor esta caido—, y callarlo deja a la persona esperando un
+ * correo que no va a llegar, sin nada que indique que hay que reintentar.
+ *
+ * Hasta el 11-sep-2026 ese caso era invisible para todos: el visitante veia
+ * «revisa tu correo» y el panel no mostraba nada. Con un embudo de ocho
+ * contactos, una caida de dias no se habria notado.
+ */
+export class EmailDeliveryError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'EmailDeliveryError'
+  }
+}
+
 interface SubscribeParams {
   email: string
   firstName?: string
@@ -151,7 +172,7 @@ export async function subscribe({ email, firstName, language = 'es' }: Subscribe
     log.info({ email: maskEmail(email) }, 'confirmation email sent')
   } catch (err) {
     log.error({ err, email: maskEmail(email) }, 'failed to send confirmation email')
-    throw new Error('Failed to send confirmation email')
+    throw new EmailDeliveryError('Failed to send confirmation email')
   }
 }
 

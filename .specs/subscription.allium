@@ -3,16 +3,23 @@
 --                 server/src/routes/public/subscribe.ts
 --
 -- Email subscription with double opt-in: visitor submits email,
--- receives a confirmation link, clicks to confirm. Plunk handles
+-- receives a confirmation link, clicks to confirm. Brevo handles
 -- email delivery and contact management. Graceful degradation
--- throughout — if Plunk is down, subscription still proceeds
+-- throughout — if Brevo is down, subscription still proceeds
 -- where possible.
+--
+-- El campo `plunk_contact_id` conserva el nombre del proveedor ANTERIOR
+-- porque asi se llama la columna en la base; renombrarlo es una migracion.
 --
 -- Visitors are unauthenticated public users, distinct from the
 -- admin User entity in authentication.allium.
 
 config {
-    confirm_token_expiry_hours: Integer = 48
+    -- 24, no 48: el codigo lo lee de SUBSCRIBE_TOKEN_EXPIRY_HOURS con 24 por
+    -- defecto, y el correo de confirmacion le dice al visitante lo que dice el
+    -- codigo. Esta spec declaraba el doble, verificado el 11-sep-2026 contra
+    -- `config.ts` y contra un correo real recibido.
+    confirm_token_expiry_hours: Integer = 24
 }
 
 -- Unauthenticated public visitor. Not the same as auth/User

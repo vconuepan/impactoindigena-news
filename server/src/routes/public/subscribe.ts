@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { config } from '../../config.js'
 import { validateBody } from '../../middleware/validate.js'
 import * as subscribeService from '../../services/subscribe.js'
-import { EmailValidationError } from '../../services/subscribe.js'
+import { EmailValidationError, EmailDeliveryError } from '../../services/subscribe.js'
 import { createLogger } from '../../lib/logger.js'
 
 const router = Router()
@@ -33,6 +33,17 @@ router.post('/', subscribeLimiter, validateBody(subscribeSchema), async (req, re
   } catch (err) {
     if (err instanceof EmailValidationError) {
       res.json({ success: false, message: err.message })
+      return
+    }
+    // El fallo de ENTREGA se dice. No filtra nada sobre la direccion —le pasa
+    // igual a cualquiera cuando el proveedor esta caido— y callarlo dejaba a la
+    // persona esperando un correo que nunca iba a llegar.
+    if (err instanceof EmailDeliveryError) {
+      log.error({ err }, 'confirmation email could not be delivered')
+      res.status(502).json({
+        success: false,
+        message: 'No pudimos enviarte el correo de confirmacion. Intentalo de nuevo en unos minutos.',
+      })
       return
     }
     log.error({ err }, 'subscribe error')
