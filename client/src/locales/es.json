@@ -160,6 +160,17 @@
     "done": "Listo",
     "error": "Algo salió mal. Por favor intenta de nuevo."
   },
+  "subscribed": {
+    "successTitle": "¡Bienvenida a nuestro boletín!",
+    "weekly": "Cada semana en tu correo.",
+    "confirmed": "Tu suscripción quedó confirmada. Mientras tanto, mira lo que está pasando hoy.",
+    "explore": "Ver las historias de hoy",
+    "expiredTitle": "El enlace expiró",
+    "expiredBody": "Tu enlace de confirmación expiró. Vuelve a suscribirte para recibir uno nuevo.",
+    "invalidTitle": "Enlace no válido",
+    "invalidBody": "Este enlace de confirmación no es válido o ya se usó.",
+    "backHome": "Volver al inicio"
+  },
   "articleCta": {
     "eyebrow": "Boletín semanal",
     "headline": "Las noticias que importan a los pueblos indígenas, cada semana.",

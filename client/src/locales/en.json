@@ -160,6 +160,17 @@
     "done": "Done",
     "error": "Something went wrong. Please try again."
   },
+  "subscribed": {
+    "successTitle": "Welcome to the newsletter!",
+    "weekly": "Weekly to your inbox.",
+    "confirmed": "Your subscription is confirmed. In the meantime, explore what's making headlines right now.",
+    "explore": "Explore today's stories",
+    "expiredTitle": "Link expired",
+    "expiredBody": "Your confirmation link has expired. Please subscribe again to receive a new link.",
+    "invalidTitle": "Invalid link",
+    "invalidBody": "This confirmation link is invalid or has already been used.",
+    "backHome": "Back to home"
+  },
   "articleCta": {
     "eyebrow": "Weekly newsletter",
     "headline": "The news that matters to Indigenous peoples, every week.",
