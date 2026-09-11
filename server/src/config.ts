@@ -138,6 +138,20 @@ export const config = {
     // coincidir con el plazo declarado en la Política de Privacidad.
     visitorRetentionDays: parseInt(process.env.ANALYTICS_VISITOR_RETENTION_DAYS || "365", 10),
   },
+  audit: {
+    // Días que se conserva el registro de actividad (`audit_log`) antes de
+    // suprimirlo (job cleanup_audit_log). Hasta el 11-sep-2026 NADA lo borraba:
+    // crecía sin plazo con `actor_email` e `ip_hash` dentro, y la sección
+    // Conservación de la Política ni lo mencionaba. Conservar sin plazo es
+    // exactamente lo que prohíbe el principio de proporcionalidad (art. 3 letra
+    // c de la Ley 21.719): sólo el tiempo necesario para el fin del tratamiento.
+    //
+    // 12 meses, la misma cifra que ya rige para las métricas de audiencia: el
+    // registro respalda el deber de seguridad —poder reconstruir quién operó
+    // sobre datos personales ante un incidente— y un año cubre un ciclo de
+    // auditoría completo. Debe coincidir con el plazo declarado en la Política.
+    retentionDays: parseInt(process.env.AUDIT_LOG_RETENTION_DAYS || "365", 10),
+  },
   rateLimit: {
     publicWindowMs: parseInt(
       process.env.RATE_LIMIT_PUBLIC_WINDOW_MS || String(15 * 60 * 1000),

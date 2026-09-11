@@ -41,6 +41,15 @@ Until 2026-09-08 neither call passed a timezone, so node-cron used the process c
 
 ## Registered Jobs
 
+> **The cron expressions in this table are documentation, not the live schedule.**
+> The running value lives in `job_runs` and the admin panel edits it there;
+> `seed-jobs.ts` upserts with `update: {}`, so it only ever creates jobs that
+> don't exist yet. The two already disagree — the seed says `0 0 * * *` for
+> `cleanup_auth_data` while this table says 3am — and neither is authoritative.
+> Query `job_runs` to know what actually runs. Since `05f167f` the expressions
+> are read in **America/Santiago**, not UTC.
+
+
 | Job Name | Handler | Default Schedule |
 |----------|---------|-----------------|
 | `crawl_feeds` | `runCrawlFeeds` | `0 */6 * * *` (every 6h) |
@@ -54,6 +63,8 @@ Until 2026-09-08 neither call passed a timezone, so node-cron used the process c
 | `generate_newsletter` | `runGenerateNewsletter` | `0 4 * * 6` (Saturday 4am) |
 | `cleanup_auth_data` | `runCleanupAuthData` | `0 3 * * *` (daily 3am) — purges expired refresh tokens + magic links (Ley 21.719 storage limitation) |
 | `cleanup_subscriptions` | `runCleanupSubscriptions` | `30 3 * * *` (daily 3:30am) — purges unconfirmed expired pending/alert subscriptions |
+| `cleanup_analytics` | `runCleanupAnalytics` | Weekly — deletes `daily_visitors` rows older than `ANALYTICS_VISITOR_RETENTION_DAYS` (12 months) |
+| `cleanup_audit_log` | `runCleanupAuditLog` | Weekly — deletes `audit_log` rows older than `AUDIT_LOG_RETENTION_DAYS` (12 months). Until 2026-09-11 **nothing** purged that table: it grew without a retention period holding `actor_email` and `ip_hash` |
 | `ingest_agenda` | `runIngestAgenda` | Daily — "Incidencia Internacional" ingest (RSS/iCal + OHCHR scrape + LLM enrich) |
 | `agenda_weekly_digest` | `runAgendaWeeklyDigest` | `0 9 * * 5` (Friday 9am) — weekly agenda teaser to social channels (once per ISO week) |
 

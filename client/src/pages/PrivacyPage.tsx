@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.2 · vigente desde el 8 de septiembre de 2026.
+            Versión 3.3 · vigente desde el 11 de septiembre de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -278,6 +278,7 @@ export default function PrivacyPage() {
             <li>Suscriptores del boletín o alertas: mientras la suscripción esté activa. Al darte de baja dejas de recibir correos de inmediato, y tu registro se elimina de nuestra base dentro de las 24 horas siguientes.</li>
             <li>Registros del servidor: hasta 14 días, luego se eliminan automáticamente.</li>
             <li>Métricas de audiencia: el registro diario de visitantes (país, categoría de dispositivo e identificador diario no reversible) se conserva hasta <strong>12 meses</strong> y luego se suprime automáticamente, para poder comparar la audiencia año contra año. El conteo de páginas vistas se conserva como estadística histórica: es un dato agregado, sin identificación de personas.</li>
+            <li>Registro de actividad sobre datos personales: las operaciones de borrado y exportación que describimos en Seguridad se registran con la fecha, la acción y el identificador interno de quien la realizó, y ese registro se conserva hasta <strong>12 meses</strong> y luego se suprime automáticamente. Cuando eres tú quien ejercita el derecho —descargar tus datos o eliminar tu cuenta— el registro <strong>no guarda tu correo</strong>, solo el identificador interno de la operación.</li>
             <li>Tokens de sesión y enlaces mágicos: se purgan automáticamente al expirar.</li>
             <li>Feedback: hasta su procesamiento y por el plazo legal aplicable.</li>
             <li>Contenido editorial y datos de noticias de fuentes públicas: mientras tengan valor informativo o de archivo; se rectifican o suprimen ante solicitud fundada.</li>

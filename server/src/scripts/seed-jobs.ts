@@ -107,9 +107,11 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   // Se sembraba por SQL (migracion 20260725000000) y no por aqui, asi que un
   // entorno nuevo no lo tendria pese a existir su handler.
   { jobName: 'cleanup_analytics',      cronExpression: '0 1 * * 0',  enabled: true },
-  // cleanup_analytics: domingos 1 AM — borra daily_visitors de mas de 12 meses.
-  // Se sembraba por SQL (migracion 20260725000000) y no por aqui, asi que un
-  // entorno nuevo no lo tendria pese a existir su handler.
+  // cleanup_audit_log: domingos 1:30 AM — borra audit_log de mas de 12 meses.
+  // Hasta el 11-sep-2026 NADA purgaba esa tabla: crecia sin plazo con
+  // `actor_email` e `ip_hash` dentro. Va media hora despues de
+  // cleanup_analytics para no solaparse con el.
+  { jobName: 'cleanup_audit_log',      cronExpression: '30 1 * * 0', enabled: true },
 ]
 
 async function main() {

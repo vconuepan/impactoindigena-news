@@ -18,7 +18,7 @@ import { isTrustedOrigin } from '../lib/allowedOrigins.js'
 import { createLogger, maskEmail } from '../lib/logger.js'
 import prisma from '../lib/prisma.js'
 import * as brevo from '../services/brevo.js'
-import { writeAuditLog } from '../services/audit.js'
+import { writeAuditLog, actorTitular } from '../services/audit.js'
 
 const log = createLogger('auth')
 
@@ -341,7 +341,9 @@ router.get('/export', requireMember, async (req, res) => {
       feedback,
     }
 
-    await writeAuditLog({ actor: req.user, action: 'data.export', targetType: 'user', targetId: userId })
+    // Mismo caso que el borrado: quien exporta es el titular, y su `userId` ya
+    // lo identifica sin necesidad de duplicar el correo en el registro.
+    await writeAuditLog({ actor: actorTitular(req.user), action: 'data.export', targetType: 'user', targetId: userId })
 
     res.setHeader('Content-Type', 'application/json; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename="mis-datos-vocesindigenas.json"')
@@ -397,7 +399,11 @@ router.delete('/account', requireMember, async (req, res) => {
     res.clearCookie('member_session', { httpOnly: false, secure, sameSite: 'none', path: '/' })
     res.clearCookie(REFRESH_COOKIE, { httpOnly: true, secure, sameSite: 'none', path: '/api/auth' })
 
-    await writeAuditLog({ actor: req.user, action: 'account.delete', targetType: 'user', targetId: userId })
+    // `actorTitular` y no `req.user`: el actor es el propio titular, asi que su
+    // correo no entra al registro. Guardarlo aqui dejaba el correo del titular
+    // en `audit_log` justo al borrar su cuenta, y como nada purgaba esa tabla
+    // era el unico dato suyo que sobrevivia al borrado.
+    await writeAuditLog({ actor: actorTitular(req.user), action: 'account.delete', targetType: 'user', targetId: userId })
     log.info({ email: maskEmail(email) }, 'member account deleted (self-service)')
     res.json({ success: true })
   } catch (err) {
