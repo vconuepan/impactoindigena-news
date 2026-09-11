@@ -15,12 +15,17 @@ Static file that rarely changes. Points crawlers to the sitemap.
 User-agent: *
 Allow: /
 
-Sitemap: https://impactoindigena.news/sitemap.xml
+Sitemap: https://vocesindigenas.org/sitemap.xml
+Sitemap: https://vocesindigenas.org/sitemap-news.xml
 ```
+
+> El dominio es `vocesindigenas.org` desde el rebrand del 4-sep-2026.
+> `impactoindigena.news` solo redirige — y su `robots.txt` bloquea nueve bots de
+> IA, por lo que **no** sirve como referencia de este archivo.
 
 ## sitemap.xml
 
-Served dynamically by the backend at `GET /api/sitemap.xml`. In production, a Render rewrite rule proxies `/sitemap.xml` to the backend endpoint so crawlers see it at the canonical URL.
+Served dynamically by the backend at `GET /api/sitemap.xml`. In production an Azure Static Web Apps rewrite maps `/sitemap.xml` to that endpoint, so crawlers see it at the canonical URL.
 
 ### How It Works
 
@@ -31,20 +36,21 @@ Served dynamically by the backend at `GET /api/sitemap.xml`. In production, a Re
 5. `Cache-Control: public, max-age=3600` header allows CDN/proxy caching
 6. New stories appear in the sitemap automatically within the cache TTL
 
-### Render Rewrite Rule
+### Serving it at the canonical URL (Azure Static Web Apps)
 
-| Field | Value |
-|-------|-------|
-| Source | `/sitemap.xml` |
-| Destination | `https://<backend-service>.onrender.com/api/sitemap.xml` |
-| Action | **Rewrite** |
+`client/public/staticwebapp.config.json` rewrites `/sitemap.xml` →
+`/api/sitemap.xml` and `/sitemap-news.xml` → `/api/sitemap-news.xml`, so crawlers
+see both at the root.
 
-**Critical — Rule Order:**
-- Render evaluates rewrite rules **top-to-bottom, first match wins**
-- The `/sitemap.xml` rule must appear **before** the SPA catch-all rule (`/*` → `/index.html`)
-- If reversed, the catch-all matches first and serves the SPA shell, which then 404s on the client
+**Rule order still matters:** the sitemap rewrites must come **before** the SPA
+catch-all, or the catch-all wins and serves the app shell.
 
-**Important:** No static `sitemap.xml` file should exist in `client/public/` — Render serves static files before applying rewrite rules.
+**No static `sitemap.xml` may exist in `client/public/`** — static files are
+served before rewrites apply, so one would shadow the generated sitemap
+permanently.
+
+> The Render rewrite this file used to document is gone: the project runs on
+> Azure App Service + Static Web Apps since the migration of 2026-05.
 
 ### Configuration
 
@@ -58,10 +64,42 @@ The build-time sitemap generator (`client/scripts/generate-sitemap.ts`) is kept 
 
 ## Adding a New Route
 
-When adding a page, add sitemap metadata in **two places**:
+Which of the two kinds of route you are adding decides what you have to touch.
+
+### Static routes — two places, kept in sync by a test
 
 1. `client/src/routes.ts` — for prerendering
 2. `server/src/routes/public/sitemap.ts` `STATIC_ROUTES` array — for the dynamic sitemap
+
+The server can't resolve the `@shared` alias, so the two lists are duplicated on
+purpose. **`sitemap-sincronia.test.ts` reads both files and fails if they
+diverge** — in either direction, plus a check that every declared route has its
+`<Route>` in `App.tsx`. Don't add a route to one list only; the test exists
+because that happened twice.
+
+### Dynamic routes (sections, communities) — same URL, two different queries
+
+These are not in either list. The sitemap queries the database directly and the
+prerender fetches slugs over HTTP at build time, which is where they can drift
+apart without any list looking wrong:
+
+| | Sitemap (`sitemap.ts`) | Prerender (`vite.config.ts`) |
+|---|---|---|
+| Sections | `prisma.issue.findMany()`, **no `where`** — all 34 | `/api/issues` → `rutasDeSecciones()` |
+| Communities | `prisma.community.findMany()` | `/api/communities` |
+| Stories | all published | **not prerendered** — `/stories/*` is rewritten to `/api/og/story-html` so OG tags stay fresh |
+
+**The trap, and it cost 18 pages on 2026-09-10:** `getPublicIssues()` filters
+`parentId: null` and returns the 18 subsections **nested under `children`**, so
+mapping the top level silently dropped them. The sitemap declared all 34 — the 18
+subsections answered with the homepage byte for byte, which is a soft 404, and a
+declared one. `client/src/lib/issue-routes.ts` flattens them; that module's
+header explains why prerendering them was the fix rather than hiding them from
+the sitemap.
+
+So: **when you add a new kind of dynamic route, add its prefix on both sides.**
+`sitemap-sincronia.test.ts` compares the URL prefixes each side emits and fails
+if one has a prefix the other doesn't.
 
 ### Priority Guidelines
 

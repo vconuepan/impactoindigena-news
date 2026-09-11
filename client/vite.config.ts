@@ -3,6 +3,7 @@ import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import prerender from '@prerenderer/rollup-plugin'
 import { routePaths } from './src/routes'
+import { rutasDeSecciones, type IssueConSubsecciones } from './src/lib/issue-routes'
 import { BRAND } from './src/config'
 import path from 'path'
 
@@ -48,9 +49,13 @@ async function fetchIssueSlugs(): Promise<string[]> {
   try {
     const res = await fetch(`${apiUrl}/api/issues`)
     if (!res.ok) return []
-    const issues = await res.json() as { slug: string }[]
-    console.log(`[prerender] fetched ${issues.length} issue slugs`)
-    return issues.map((i) => `/issues/${i.slug}`)
+    // `getPublicIssues()` filtra `parentId: null` y trae las subsecciones
+    // ANIDADAS en `children`, asi que quedarse con el primer nivel las tira.
+    // `rutasDeSecciones` las aplana; el por que esta en su modulo.
+    const issues = await res.json() as IssueConSubsecciones[]
+    const rutas = rutasDeSecciones(issues)
+    console.log(`[prerender] fetched ${issues.length} issue slugs + subsections = ${rutas.length} routes`)
+    return rutas
   } catch (err) {
     console.warn('[prerender] could not fetch issue slugs, skipping issue prerender:', err)
     return []

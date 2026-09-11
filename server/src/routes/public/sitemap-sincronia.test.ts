@@ -77,8 +77,93 @@ describe('el sitemap y el prerender declaran las mismas rutas', () => {
   })
 })
 
+/**
+ * LAS RUTAS DINAMICAS —secciones y comunidades— son la otra mitad, y los tests
+ * de arriba NO las ven: solo comparan las dos listas estaticas.
+ *
+ * Por ese hueco entro el defecto del 10-sep-2026. Aca no hay dos listas que
+ * comparar sino dos CONSULTAS: el sitemap hace `prisma.issue.findMany()` sin
+ * filtro —34 secciones— y el prerender pide `/api/issues`, que filtra
+ * `parentId: null` y anida las subsecciones en `children`. Quedarse con el
+ * primer nivel dejaba 18 paginas declaradas a Google sirviendo la portada.
+ *
+ * Lo que si se puede atar leyendo el fuente es lo que hizo posible la
+ * divergencia: los prefijos de URL y el aplanado de las subsecciones.
+ */
+describe('las rutas dinamicas: el sitemap y el prerender usan los mismos prefijos', () => {
+  const PRERENDER = readFileSync(path.resolve(__dirname, '../../../../client/vite.config.ts'), 'utf8')
+  const ISSUE_ROUTES = readFileSync(path.resolve(__dirname, '../../../../client/src/lib/issue-routes.ts'), 'utf8')
+
+  /** Los prefijos que el sitemap escribe, de `${baseUrl}/<prefijo>/${...}`. */
+  const delSitemap = new Set(
+    [...SERVIDOR.matchAll(/\$\{baseUrl\}\/([a-z-]+)\/\$\{/g)].map((m) => m[1]),
+  )
+
+  /** Los del cliente: el de secciones es una constante, el de comunidades va en la plantilla. */
+  const delCliente = new Set([
+    ...[...ISSUE_ROUTES.matchAll(/PREFIJO_SECCION = '\/([a-z-]+)'/g)].map((m) => m[1]),
+    ...[...PRERENDER.matchAll(/`\/([a-z-]+)\/\$\{/g)].map((m) => m[1]),
+  ])
+
+  it('los dos lados se leyeron y declaran prefijos', () => {
+    expect(delSitemap.size, 'no se extrajo ningun prefijo del sitemap').toBeGreaterThan(1)
+    expect(delCliente.size, 'no se extrajo ningun prefijo del cliente').toBeGreaterThan(1)
+  })
+
+  it('ningun prefijo esta en el sitemap sin prerenderizarse', () => {
+    // Las historias se sirven desde el backend a proposito, no se prerenderizan
+    // (staticwebapp.config.json → /api/og/story-html), asi que su prefijo no
+    // tiene por que estar en el cliente.
+    const soloServidor = [...delSitemap].filter((p) => p !== 'stories' && !delCliente.has(p))
+    expect(
+      soloServidor,
+      `el sitemap declara URLs con estos prefijos y el prerender no genera ninguna: /${soloServidor.join(', /')}`,
+    ).toEqual([])
+  })
+
+  it('ningun prefijo se prerenderiza sin estar en el sitemap', () => {
+    const soloCliente = [...delCliente].filter((p) => !delSitemap.has(p))
+    expect(
+      soloCliente,
+      `el prerender genera HTML con estos prefijos y el sitemap no los declara: /${soloCliente.join(', /')}`,
+    ).toEqual([])
+  })
+
+  it('el prerender aplana las subsecciones en vez de quedarse con el primer nivel', () => {
+    // `/api/issues` devuelve 16 madres con 18 hijas ANIDADAS. Un `.map` sobre el
+    // primer nivel compila, corre y pierde 18 paginas sin que nada falle.
+    //
+    // Se exige la LLAMADA, no el nombre: buscar `rutasDeSecciones` a secas pasa
+    // con el import puesto y el defecto de vuelta —comprobado por mutacion, la
+    // primera version de este test no atrapo nada—.
+    expect(
+      /rutasDeSecciones\(/.test(PRERENDER),
+      'vite.config.ts ya no LLAMA a `rutasDeSecciones`: si vuelve a mapear el primer nivel de /api/issues, las 18 subsecciones quedan declaradas en el sitemap devolviendo la portada',
+    ).toBe(true)
+  })
+
+  it('el prerender no arma rutas de seccion a mano', () => {
+    // La otra mitad de lo mismo: mientras nadie construya `/issues/...` con una
+    // plantilla suelta en la config, el unico camino es la funcion que aplana.
+    const aMano = [...PRERENDER.matchAll(/`\/issues\/\$\{[^`]*`/g)].map((m) => m[0])
+    expect(
+      aMano,
+      `vite.config.ts vuelve a construir rutas de seccion a mano: ${aMano.join(' · ')}`,
+    ).toEqual([])
+  })
+})
+
 describe('toda ruta declarada existe de verdad en la aplicacion', () => {
   const APP = readFileSync(path.resolve(__dirname, '../../../../client/src/App.tsx'), 'utf8')
+
+  it('las rutas dinamicas tienen su <Route> con parametro', () => {
+    // El equivalente dinamico del test de abajo: el sitemap emite
+    // `/issues/<slug>` y `/comunidad/<slug>`, y de nada sirve que coincidan los
+    // prefijos si el router no tiene donde recibirlos.
+    for (const patron of ['path="/issues/:slug"', 'path="/comunidad/:slug"']) {
+      expect(APP.includes(patron), `falta ${patron} en App.tsx`).toBe(true)
+    }
+  })
 
   it('cada ruta del sitemap tiene su <Route> en App.tsx', () => {
     // Sincronizar las listas no basta: las dos podrian declarar a coro una ruta

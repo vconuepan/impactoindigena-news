@@ -117,6 +117,40 @@ describe('GET /api/sitemap.xml', () => {
     expect(res.text).toContain('<loc>https://vocesindigenas.org/comunidades</loc>')
   })
 
+  // El 10-sep-2026 las 18 subsecciones estaban declaradas aca y NO se
+  // prerenderizaban, asi que devolvian la portada byte a byte. El arreglo fue
+  // prerenderizarlas, no filtrarlas de esta consulta: son paginas reales, y
+  // esconderlas habria tapado el sintoma perdiendo 18 URLs indexables.
+  //
+  // Este caso existe para que el atajo equivocado —anadir `where: { parentId:
+  // null }` aca para que el sitemap deje de declararlas— falle en vez de pasar.
+  it('declara las subsecciones, no solo las secciones madre', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([])
+    mockPrisma.issue.findMany.mockResolvedValue([
+      { slug: 'cultura-y-conocimientos-ancestrales' },
+      { slug: 'cultura-arte' },
+      { slug: 'cultura-lenguas' },
+    ])
+    mockPrisma.community.findMany.mockResolvedValue([])
+
+    const res = await request(app).get('/api/sitemap.xml')
+
+    expect(res.text).toContain('<loc>https://vocesindigenas.org/issues/cultura-arte</loc>')
+    expect(res.text).toContain('<loc>https://vocesindigenas.org/issues/cultura-lenguas</loc>')
+  })
+
+  it('consulta las secciones SIN filtrar por parentId', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([])
+
+    await request(app).get('/api/sitemap.xml')
+
+    const [args] = mockPrisma.issue.findMany.mock.calls[0] ?? [{}]
+    expect(
+      args?.where,
+      'el sitemap volvio a filtrar secciones: si excluye las subsecciones se pierden 18 URLs, y si excluye otra cosa el prerender y el sitemap vuelven a divergir',
+    ).toBeUndefined()
+  })
+
   it('returns 500 on database error', async () => {
     mockPrisma.story.findMany.mockRejectedValue(new Error('DB connection failed'))
 
