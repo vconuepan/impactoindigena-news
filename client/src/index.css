@@ -126,6 +126,18 @@
     U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* OJO CON EL DESCRIPTOR `font-family` DE @font-face: lleva UN solo nombre.
+   Una lista con fallbacks es valida en la PROPIEDAD (el uso) y NO en el
+   DESCRIPTOR (la declaracion). Hasta el 11-sep-2026 los cuatro @font-face de
+   Fraunces decian `'Fraunces', 'Fraunces Fallback', Georgia, serif` y el
+   navegador los DESCARTABA enteros: medido en vivo, el CSS declaraba 13
+   @font-face y `document.fonts` registraba 9 — los cuatro que faltaban eran
+   estos—. Asi que el sitio nunca pinto un titular en Fraunces, y los 67 KB del
+   preload se descargaban para nada; el aviso «preloaded but not used» del
+   navegador era eso. No se noto porque el fallback metrico de arriba esta tan
+   bien ajustado que ocupa el mismo espacio.
+   Los fallbacks siguen donde corresponde: en las reglas que USAN la fuente. */
+
 /* Self-hosted Fraunces + DM Sans (variable, latin + latin-ext).
    Replaces fonts.googleapis.com: reader IPs stay private and text renders
    without a third-party dependency (eng review Ola 1, T4). */
@@ -166,7 +178,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
+  font-family: 'Fraunces';
   src: url('/fonts/Fraunces/fraunces-italic-latin-ext.woff2') format('woff2');
   font-weight: 300 900;
   font-style: italic;
@@ -175,7 +187,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
+  font-family: 'Fraunces';
   src: url('/fonts/Fraunces/fraunces-italic-latin.woff2') format('woff2');
   font-weight: 300 900;
   font-style: italic;
@@ -184,7 +196,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
+  font-family: 'Fraunces';
   src: url('/fonts/Fraunces/fraunces-normal-latin-ext.woff2') format('woff2');
   font-weight: 300 900;
   font-style: normal;
@@ -193,7 +205,7 @@
 }
 
 @font-face {
-  font-family: 'Fraunces', 'Fraunces Fallback', Georgia, serif;
+  font-family: 'Fraunces';
   src: url('/fonts/Fraunces/fraunces-normal-latin.woff2') format('woff2');
   font-weight: 300 900;
   font-style: normal;
