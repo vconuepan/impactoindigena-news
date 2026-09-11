@@ -29,7 +29,23 @@ const transports = pino.transport({
       options: {
         file: `${logDir}/server.log`,
         frequency: 'daily',
-        limit: { count: retentionDays },
+        // `removeOtherLogFiles` NO es opcional aca, es lo que hace cierta la
+        // promesa de la Politica («Registros del servidor: hasta 14 dias, luego
+        // se eliminan automaticamente»).
+        //
+        // Sin el flag, `removeOldFiles()` de pino-roll 4.0.0 solo mira
+        // `createdFileNames` —un array EN MEMORIA con los archivos que creo
+        // ESTE proceso—, asi que los de procesos anteriores nunca entran en la
+        // lista y nunca se borran. Y en produccion hay procesos anteriores todo
+        // el tiempo: cada despliegue o reinicio del App Service arranca uno
+        // nuevo, y `LOG_DIR=/home/LogFiles/app` es almacenamiento PERSISTENTE,
+        // asi que lo que queda, queda. Por esos archivos pasan correos de
+        // lectores, aunque `maskEmail` cubra la mayoria de los caminos.
+        //
+        // Con el flag, `removeOldFiles()` hace `readdir` del directorio y borra
+        // por antiguedad. Es acotado: `identifyLogFile` solo reconoce
+        // `server.log.<entero>` y deja cualquier otro archivo en paz.
+        limit: { count: retentionDays, removeOtherLogFiles: true },
         mkdir: true,
       },
       level: 'debug',

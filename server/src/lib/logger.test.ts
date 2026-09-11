@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { serializeError, maskEmail } from './logger.js'
 
 describe('serializeError', () => {
@@ -76,5 +78,36 @@ describe('maskEmail', () => {
     expect(maskEmail('')).toBe('[no-email]')
     expect(maskEmail('not-an-email')).toBe('[redacted-email]')
     expect(maskEmail('@nolocal.com')).toBe('[redacted-email]')
+  })
+})
+
+/**
+ * La Politica promete «Registros del servidor: hasta 14 dias, luego se eliminan
+ * automaticamente». Quien lo cumple es una opcion de pino-roll, no codigo
+ * propio, asi que el test lee la configuracion del fuente: no hay forma de
+ * inspeccionar el transport ya construido sin levantarlo.
+ */
+describe('retencion de los archivos de log', () => {
+  const FUENTE = readFileSync(path.resolve(__dirname, 'logger.ts'), 'utf8')
+
+  it('pasa removeOtherLogFiles a pino-roll', () => {
+    // Sin esto, `removeOldFiles()` solo borra los archivos que creo el proceso
+    // actual —los rastrea en un array en memoria— y los de procesos anteriores
+    // se acumulan para siempre. En produccion eso es todo el tiempo: cada
+    // despliegue arranca un proceso nuevo y LOG_DIR=/home/LogFiles/app es
+    // almacenamiento persistente. Verificado en el fuente de pino-roll 4.0.0.
+    expect(
+      /removeOtherLogFiles:\s*true/.test(FUENTE),
+      'pino-roll volvio a quedar sin removeOtherLogFiles: los archivos de log de procesos anteriores dejan de borrarse y la Politica pasa a prometer una retencion de 14 dias que nada cumple',
+    ).toBe(true)
+  })
+
+  it('el limite de archivos sale de LOG_RETENTION_DAYS y no de un numero escrito a mano', () => {
+    // Si el conteo se fija en el codigo, cambiar la Politica y la variable de
+    // entorno deja de tener efecto, y la divergencia no se ve en ninguna parte.
+    expect(
+      /limit:\s*\{\s*count:\s*retentionDays/.test(FUENTE),
+      'el limite de archivos de log ya no se deriva de LOG_RETENTION_DAYS',
+    ).toBe(true)
   })
 })

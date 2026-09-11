@@ -62,6 +62,17 @@ Two transports run in parallel via Pino's worker threads:
 1. **Stdout** — `pino-pretty` in dev, raw JSON in production (captured by Render's log aggregator)
 2. **Rotating file** — JSON logs written to `LOG_DIR/server.log`, rotated daily, kept for `LOG_RETENTION_DAYS` days
 
+> **`limit.removeOtherLogFiles: true` is load-bearing.** Without it, pino-roll's
+> `removeOldFiles()` only considers `createdFileNames` — an in-memory list of the
+> files *this process* created — so files left by earlier processes are never
+> deleted. In production that is constant: every deploy or App Service restart
+> starts a new process, and `LOG_DIR=/home/LogFiles/app` is **persistent**
+> storage. The Privacy Policy promises "Registros del servidor: hasta 14 días,
+> luego se eliminan automáticamente", and this flag is what makes that true.
+> It is narrow: `identifyLogFile` only matches `server.log.<integer>` and leaves
+> everything else in the directory alone. Verified against pino-roll 4.0.0 and
+> guarded by `logger.test.ts`.
+
 ## Log Levels
 
 | Level | When to use |
