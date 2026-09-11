@@ -17,6 +17,12 @@ use "./story-pipeline.allium" as pipeline
 
 config {
     rrf_fetch_limit: Integer = 50
+    -- Distancia coseno maxima para entrar en los resultados semanticos.
+    -- `<=>` sobre embeddings normalizados da [0,2] y 1.0 es la ortogonalidad.
+    -- Sin este tope, la pierna semantica devolvia SIEMPRE `rrf_fetch_limit`
+    -- historias por lejanas que fueran: medido el 11-sep-2026, un teclazo
+    -- (`qwertzxcvnoexiste`) daba 50 resultados contra 96 de «mapuche».
+    max_cosine_distance: Float = 1.0
     rrf_k: Integer = 60
     related_display_count: Integer = 4
     related_candidate_multiplier: Integer = 3
@@ -48,6 +54,11 @@ rule HybridSearch {
     -- constrained to the date range when present.
     -- Capped at rrf_fetch_limit results.
     -- On failure: returns empty (graceful degradation).
+    --
+    -- DESCARTA lo que supera `max_cosine_distance`. Sin ese tope la pierna
+    -- semantica no podia devolver vacio nunca, asi que una consulta sin
+    -- respuesta razonable salia como decenas de resultados irrelevantes y el
+    -- estado vacio de la pagina —que existe y esta traducido— era inalcanzable.
     let semantic_ids = semantic_search(query, issue_slug, date_from, date_to, config.rrf_fetch_limit)
 
     -- Leg 2: Text search

@@ -138,6 +138,22 @@ export const config = {
     // coincidir con el plazo declarado en la Política de Privacidad.
     visitorRetentionDays: parseInt(process.env.ANALYTICS_VISITOR_RETENTION_DAYS || "365", 10),
   },
+  search: {
+    // Distancia coseno maxima para que una historia entre en los resultados
+    // semanticos. `<=>` de pgvector sobre embeddings normalizados da [0,2], y
+    // **1.0 es la ortogonalidad**: dos textos sin relacion lineal. El valor sale
+    // de esa geometria, no de una calibracion sobre este corpus.
+    //
+    // Hasta el 11-sep-2026 no habia ningun filtro: la consulta ordenaba por
+    // distancia y cortaba en 50, asi que un teclazo como `qwertzxcvnoexiste`
+    // devolvia 50 articulos sin relacion —contra 96 de «mapuche»— y la pagina
+    // no podia mostrar su estado vacio porque nunca llegaba a cero.
+    //
+    // Es conservador a proposito: mas vale dejar pasar algo dudoso que esconder
+    // un resultado bueno. Para ajustarlo con datos reales hace falta la base;
+    // el procedimiento esta en el comentario de `searchByEmbedding`.
+    maxCosineDistance: parseFloat(process.env.SEARCH_MAX_COSINE_DISTANCE || "1.0"),
+  },
   audit: {
     // Días que se conserva el registro de actividad (`audit_log`) antes de
     // suprimirlo (job cleanup_audit_log). Hasta el 11-sep-2026 NADA lo borraba:

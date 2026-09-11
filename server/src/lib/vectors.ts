@@ -8,6 +8,7 @@
 
 import { Prisma } from '@prisma/client'
 import prisma from './prisma.js'
+import { config } from '../config.js'
 
 // ──── Types ────────────────────────────────────────────────────────────────
 
@@ -108,18 +109,52 @@ export async function saveEmbeddingTx(
   `
 }
 
-/** Search published stories by embedding cosine distance. */
+/**
+ * Search published stories by embedding cosine distance.
+ *
+ * DESCARTA LO QUE NO SE PARECE A NADA, que hasta el 11-sep-2026 no hacia: esta
+ * consulta ordenaba por distancia y cortaba en `limit` **sin filtrar**, asi que
+ * siempre devolvia las N mas cercanas por lejanas que fueran. Medido en vivo
+ * contra la busqueda publica: `qwertzxcvnoexiste` devolvia **50 resultados** y
+ * `asdfghjklñpoiu` otros 50, contra 96 de «mapuche» y 61 de «consulta». No habia
+ * separacion util entre una busqueda real y un teclazo, y el lector recibia
+ * decenas de articulos sin relacion presentados como resultados.
+ *
+ * La pagina de busqueda YA sabia decir «No se encontraron resultados» — la clave
+ * `search.noResults` existe y esta traducida—, pero ese estado era inalcanzable
+ * porque el backend nunca devolvia cero.
+ *
+ * SOBRE EL UMBRAL: `<=>` es distancia coseno y los embeddings de OpenAI vienen
+ * normalizados, asi que el rango es [0,2] y **1.0 es la ortogonalidad** — dos
+ * textos sin ninguna relacion lineal. El valor por defecto sale de ahi, de la
+ * geometria y no de una calibracion: es deliberadamente conservador, descarta
+ * solo lo que por construccion no guarda relacion.
+ *
+ * **No esta calibrado contra este corpus**, porque medir distancias reales exige
+ * la base y esta tras el firewall. Para ajustarlo con datos, con el firewall
+ * abierto:
+ *
+ *   SELECT s.title, s.embedding <=> '[...]'::vector AS distancia
+ *   FROM stories s WHERE s.status='published' AND s.embedding IS NOT NULL
+ *   ORDER BY 2 LIMIT 20;
+ *
+ * comparando una consulta real contra una inventada y poniendo el corte entre
+ * las dos nubes. Se cambia con `SEARCH_MAX_COSINE_DISTANCE`, sin tocar codigo.
+ */
 export async function searchByEmbedding(
   queryEmbedding: number[],
   options?: {
     limit?: number
     issueFilter?: Prisma.Sql
     dateFilter?: Prisma.Sql
+    /** Distancia coseno maxima aceptada. Por defecto, `config.search.maxCosineDistance`. */
+    maxDistance?: number
   },
 ): Promise<{ id: string }[]> {
   const limit = options?.limit ?? 50
   const issueFilter = options?.issueFilter ?? Prisma.empty
   const dateFilter = options?.dateFilter ?? Prisma.empty
+  const maxDistance = options?.maxDistance ?? config.search.maxCosineDistance
   const vectorStr = toVectorLiteral(queryEmbedding)
 
   return prisma.$queryRaw<{ id: string }[]>`
@@ -127,6 +162,7 @@ export async function searchByEmbedding(
     FROM stories s
     WHERE s.status = 'published'
       AND s.embedding IS NOT NULL
+      AND (s.embedding <=> ${vectorStr}::vector) < ${maxDistance}
       ${issueFilter}
       ${dateFilter}
     ORDER BY s.embedding <=> ${vectorStr}::vector

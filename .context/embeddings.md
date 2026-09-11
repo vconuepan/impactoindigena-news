@@ -2,6 +2,36 @@
 
 > **Spec:** [`.specs/search.allium`](../.specs/search.allium) -- hybrid RRF search, related stories with LRU cache, emotion filtering. This file covers embedding generation, database schema, backfill scripts, and configuration.
 
+## Umbral de relevancia (`SEARCH_MAX_COSINE_DISTANCE`)
+
+La busqueda semantica **descarta lo que supera una distancia coseno maxima**,
+`config.search.maxCosineDistance` (1.0 por defecto).
+
+**Por que existe.** Hasta el 11-sep-2026 `searchByEmbedding` ordenaba por
+distancia y cortaba en 50 sin filtrar, asi que devolvia siempre las 50 mas
+cercanas por lejanas que fueran. Medido en produccion: `qwertzxcvnoexiste` →
+**50 resultados**, `asdfghjklñpoiu` → 50, contra 96 de «mapuche» y 61 de
+«consulta». Ademas dejaba inalcanzable el estado vacio de `/search`, que existe
+y esta traducido (`search.noResults`).
+
+**De donde sale el 1.0.** `<=>` sobre embeddings normalizados da [0,2], y 1.0 es
+la **ortogonalidad**: dos textos sin relacion lineal. Sale de la geometria, no de
+una calibracion sobre este corpus, y es deliberadamente conservador — antes dejar
+pasar algo dudoso que esconder un resultado bueno.
+
+**Sigue sin calibrar con datos reales**, porque medir distancias exige la base y
+esta tras el firewall. Para ajustarlo, con el firewall abierto:
+
+```sql
+SELECT s.title, s.embedding <=> '[...]'::vector AS distancia
+FROM stories s
+WHERE s.status = 'published' AND s.embedding IS NOT NULL
+ORDER BY 2 LIMIT 20;
+```
+
+Se corre con el embedding de una consulta real y el de una inventada, y el corte
+va entre las dos nubes. Se cambia por variable de entorno, sin tocar codigo.
+
 ## Overview
 
 Stories get vector embeddings generated from their content (titleLabel + title + summary) using OpenAI's `text-embedding-3-small` model. These embeddings power hybrid semantic+text search on the public API.
