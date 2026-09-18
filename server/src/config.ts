@@ -453,5 +453,17 @@ export const config = {
     },
     storiesPerEpisode: parseInt(process.env.PODCAST_STORIES_PER_EPISODE || '4', 10),
     voice: (process.env.PODCAST_VOICE || 'nova') as 'nova' | 'alloy' | 'echo' | 'fable' | 'onyx' | 'shimmer',
+    /*
+     * El correo del `itunes:owner`, que es PUBLICO: sale en el feed y es la
+     * direccion por la que Apple contacta al dueno del podcast.
+     *
+     * Antes salia de `BREVO_FROM_EMAIL`, y ese acoplamiento tenia un costo
+     * real: el remitente de Brevo solo puede cambiarse dando de alta y
+     * verificando una direccion en Brevo, asi que el feed quedaba atado a ese
+     * tramite y publicaba `venancio@impactoindigena.com` —marca vieja, dominio
+     * ajeno— mientras tanto. Son dos cosas distintas: una debe poder ENVIAR,
+     * la otra solo debe poder RECIBIR.
+     */
+    ownerEmail: process.env.PODCAST_OWNER_EMAIL || 'contacto@fundacionkm.org',
   },
 } as const;

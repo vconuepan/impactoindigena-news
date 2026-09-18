@@ -30,6 +30,12 @@ router.get('/feed.xml', async (_req, res) => {
       const siteUrl = config.siteUrl
       const feedUrl = `${siteUrl}/podcast/feed.xml`
       const now = new Date().toUTCString()
+      /*
+       * La caratula. Apple Podcasts RECHAZA un feed sin `itunes:image`, y
+       * hasta el 17-sep-2026 este no lo declaraba. Se genera con
+       * `npm run images:podcast --prefix client`: 3000x3000, JPEG, sRGB.
+       */
+      const coverUrl = `${siteUrl}/images/podcast-cover.jpg`
 
       const items = episodes.map(ep => {
         const pubDate = ep.publishedAt
@@ -71,9 +77,16 @@ router.get('/feed.xml', async (_req, res) => {
     <copyright>© ${new Date().getFullYear()} Voces Indígenas</copyright>
     <lastBuildDate>${now}</lastBuildDate>
     <atom:link href="${feedUrl}" rel="self" type="application/rss+xml" />
+    <image>
+      <url>${coverUrl}</url>
+      <title>Voces Indígenas</title>
+      <link>${siteUrl}</link>
+    </image>
     <itunes:title>Voces Indígenas</itunes:title>
     <itunes:author>Voces Indígenas</itunes:author>
     <itunes:summary>Las noticias más importantes sobre pueblos indígenas del mundo y de Chile, curadas con inteligencia artificial.</itunes:summary>
+    <itunes:image href="${coverUrl}" />
+    <itunes:type>episodic</itunes:type>
     <itunes:explicit>false</itunes:explicit>
     <itunes:language>es</itunes:language>
     <itunes:category text="News" />
@@ -82,7 +95,7 @@ router.get('/feed.xml', async (_req, res) => {
     </itunes:category>
     <itunes:owner>
       <itunes:name>Voces Indígenas</itunes:name>
-      <itunes:email>${process.env.BREVO_FROM_EMAIL || ''}</itunes:email>
+      <itunes:email>${escapeXml(config.podcast.ownerEmail)}</itunes:email>
     </itunes:owner>
 ${items}
   </channel>

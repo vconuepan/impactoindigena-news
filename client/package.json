@@ -17,7 +17,8 @@
     "images:optimize": "node scripts/images.mjs optimize",
     "images:optimize-single": "node scripts/images.mjs optimize-single",
     "images:clean": "node scripts/images.mjs clean",
-    "images:og": "npx tsx scripts/generate-og-image.ts"
+    "images:og": "npx tsx scripts/generate-og-image.ts",
+    "images:podcast": "npx tsx scripts/generate-podcast-cover.ts"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
