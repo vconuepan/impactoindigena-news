@@ -314,8 +314,14 @@ export async function publishPost(postId: string) {
     description: story.marketingBlurb || story.summary || '',
   }
 
-  // Use og:image from our site if available
-  const ogImageUrl = `${config.siteUrl}/og-image.png`
+  /*
+   * La miniatura de la tarjeta de enlace.
+   *
+   * Hasta el 17-sep-2026 esto pedia `/og-image.png`, sin `/images/`, que
+   * devuelve 404: cada post de Bluesky salia con la tarjeta sin imagen. El
+   * archivo vive en `/images/og-image.png`.
+   */
+  const ogImageUrl = `${config.siteUrl}/images/og-image.png`
   linkCard.thumbUrl = ogImageUrl
 
   try {

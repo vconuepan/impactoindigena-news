@@ -83,7 +83,7 @@ Bluesky uses a points-based system: 5,000 points/hour, 35,000 points/day. Posts 
 
 ## Configuration
 
-Story URLs in posts use the top-level `config.siteUrl` (`SITE_URL` env var, defaults to `https://impactoindigena.news`).
+Story URLs in posts use the top-level `config.siteUrl` (`SITE_URL` env var, defaults to `https://vocesindigenas.org`).
 
 Channel-specific settings in `server/src/config.ts` under `config.bluesky`:
 

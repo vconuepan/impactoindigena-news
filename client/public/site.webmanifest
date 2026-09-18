@@ -1,7 +1,7 @@
 {
   "name": "Voces Indígenas",
-  "short_name": "Impacto",
-  "description": "Construimos puentes entre el mundo indígena y la sociedad global. Noticias curadas con inteligencia artificial.",
+  "short_name": "Voces",
+  "description": "Los pueblos indígenas del mundo, en las noticias que importan. Curadas con inteligencia artificial.",
   "id": "/",
   "icons": [
     { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

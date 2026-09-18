@@ -65,7 +65,7 @@ When R2 is absent, `generateDraft()` falls back to a single-image post using onl
 
 Captions are LLM-generated via `buildInstagramCaptionPrompt()` (`server/src/prompts/instagram.ts`) using the **medium** model tier. The prompt receives: `title`, `titleLabel`, `summary`, `relevanceSummary`, `relevanceReasons`, `marketingBlurb`, `issueName`, and `sourceCountry`.
 
-The story's canonical URL (`https://impactoindigena.news/stories/:slug`) is appended to every caption with a blank line separator. Total caption is capped at **2,200 characters** (truncated with `…` if exceeded).
+The story's canonical URL (`https://vocesindigenas.org/stories/:slug`) is appended to every caption with a blank line separator. Total caption is capped at **2,200 characters** (truncated with `…` if exceeded).
 
 ## Flows
 

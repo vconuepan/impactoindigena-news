@@ -406,8 +406,21 @@ export const config = {
     // reautorizar. Ya existían en App Service sin que el código las leyera.
     clientId: process.env.LINKEDIN_CLIENT_ID || '',
     clientSecret: process.env.LINKEDIN_CLIENT_SECRET || '',
-    // Debe coincidir EXACTA con la URL registrada en la app de LinkedIn, o el
-    // intercambio del código falla. Pasa por el proxy de Static Web Apps.
+    /*
+     * Debe coincidir EXACTA con la URL registrada en la app de LinkedIn, o el
+     * intercambio del código falla. Pasa por el proxy de Static Web Apps.
+     *
+     * SIGUE SIENDO EL DOMINIO VIEJO A PROPÓSITO. Es la única URL del proyecto
+     * que no se mudó a vocesindigenas.org, porque quien la compara es LinkedIn
+     * contra lo que declara el registro de la app: cambiarla acá antes de
+     * agregarla allá deja la reautorización en `redirect_uri_mismatch` y el
+     * token de miembro sin poder renovarse. El 301 del dominio viejo no ayuda
+     * — LinkedIn compara cadenas, no sigue redirecciones.
+     *
+     * El orden para mudarla está en `.context/linkedin.md`: primero se agrega
+     * la URL nueva en el portal de LinkedIn (admite varias), y recién entonces
+     * se cambia acá y en Azure.
+     */
     redirectUri: process.env.LINKEDIN_REDIRECT_URI
       || 'https://impactoindigena.news/api/linkedin/oauth/callback',
     autoPost: {

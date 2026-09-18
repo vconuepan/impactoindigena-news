@@ -681,7 +681,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
           <tr>
             <td style="background-color: #1B3A2D; padding: 28px 32px 20px; text-align: center;">
               <a href="https://vocesindigenas.org" style="text-decoration: none;">
-                <img src="https://impactoindigena.com/wp-content/uploads/2025/04/cropped-logo-voces-indigenas_letras_blancas-1-scaled-1.png" alt="Voces Ind&iacute;genas" width="220" style="display: inline-block; max-width: 220px; height: auto;" />
+                <img src="${config.siteUrl}/images/logo-horizontal-blanco.png" alt="Voces Ind&iacute;genas" width="220" style="display: inline-block; max-width: 220px; height: auto;" />
               </a>
               <p style="margin: 10px 0 0; font-size: 13px; color: #86efac; letter-spacing: 0.02em;">Noticias de impacto para pueblos ind&iacute;genas</p>
             </td>

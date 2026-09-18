@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { uploadImageToR2 } from './imageStorage.js'
 import { createLogger } from './logger.js'
+import { config } from '../config.js'
 
 const log = createLogger('carousel-gen')
 
@@ -31,7 +32,15 @@ const C = {
   mute: 'rgba(255,255,255,0.80)',
 }
 
-const LOGO_WHITE = 'https://impactoindigena.com/wp-content/uploads/2025/04/cropped-logo-impacto-indigena_letras_blancas-1-scaled-1.png'
+/*
+ * El logo que va en cada slide del carrusel.
+ *
+ * Hasta el 17-sep-2026 era el logotipo de Impacto Indigena alojado en el
+ * WordPress de esa marca: cada pieza publicada en Instagram salia firmada con
+ * la marca anterior. Ahora sale del propio sitio, que ademas quita la
+ * dependencia de un dominio que este repo no controla.
+ */
+const LOGO_WHITE = `${config.siteUrl}/images/logo-horizontal-blanco.png`
 
 // 4:5 vertical (1080×1350), rendered 2× for crispness
 const W = 1080, H = 1350, SCALE = 2

@@ -20,7 +20,7 @@ Key files: `server/src/lib/linkedin.ts` (API + auth), `server/src/services/linke
 | `LINKEDIN_ACCESS_TOKEN` | Member token used to publish. Bootstrap value only — see below |
 | `LINKEDIN_AUTHOR_URN` | Author. Currently `urn:li:person:...` (a personal profile) |
 | `LINKEDIN_CLIENT_ID` / `LINKEDIN_CLIENT_SECRET` | App credentials — introspection and reauthorization |
-| `LINKEDIN_REDIRECT_URI` | Must match the app registration exactly. Defaults to `https://impactoindigena.news/api/linkedin/oauth/callback` |
+| `LINKEDIN_REDIRECT_URI` | Must match the app registration exactly. Defaults to `https://impactoindigena.news/api/linkedin/oauth/callback` — the old domain, **on purpose**: this URL is registered in the LinkedIn app and changing it in code without changing it there first breaks the OAuth flow. See the note below. |
 | `LINKEDIN_OAUTH_SCOPES` | Defaults to `w_member_social` — the only scope used. Requesting a scope the app is not approved for fails the whole authorization |
 | `LINKEDIN_TOKEN_WARN_THRESHOLD_DAYS` | Days of remaining life that trigger the alert (default 7) |
 | `LINKEDIN_AUTO_POST_ENABLED` | Currently `false` — nothing publishes on its own |
@@ -96,6 +96,25 @@ https://impactoindigena.news/api/linkedin/oauth/callback
 
 The exchange fails without it. The app also needs the product that grants
 `w_member_social` (Share on LinkedIn).
+
+**Why this is still the old domain.** Every other URL in the project moved to
+`vocesindigenas.org`; this one did not, and that is deliberate. The redirect URL
+is matched *by LinkedIn* against what the app registration lists, so it can only
+change in two steps and in this order:
+
+1. Add `https://vocesindigenas.org/api/linkedin/oauth/callback` to the app's
+   Authorized redirect URLs in the LinkedIn Developer Portal (LinkedIn allows
+   several, so the old one keeps working meanwhile).
+2. Only then set `LINKEDIN_REDIRECT_URI` to the new URL in Azure and update the
+   default in `server/src/config.ts`.
+
+Doing step 2 first breaks reauthorization with `redirect_uri_mismatch`, and the
+member token cannot be renewed until it is undone. The old domain still 301s to
+the new one, but a 301 does not help here: LinkedIn compares strings.
+
+Verified 17-sep-2026: `impactoindigena.news` has **no MX record**, so the domain
+receives no mail — it only redirects HTTP. That does not affect this callback,
+which is HTTP, but it does mean any `@impactoindigena.news` address is dead.
 
 ## OAuth reauthorization flow
 

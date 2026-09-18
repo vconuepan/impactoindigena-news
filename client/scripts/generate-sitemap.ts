@@ -2,7 +2,14 @@
  * Generates sitemap.xml from routes.ts + published story slugs from the API.
  *
  * Run manually: npm run sitemap:generate
- * Runs automatically: as part of npm run build
+ *
+ * NO corre en el build: `npm run build` es `tsc -b && vite build`, y el
+ * sitemap que sirve el sitio lo emite el servidor en /sitemap.xml con
+ * `config.siteUrl`. Este script escribe client/public/sitemap.xml, que hoy no
+ * existe; si alguien lo corre, ese archivo pasa a competir con la ruta del
+ * servidor. Por eso lee el dominio de la configuracion y no uno escrito a
+ * mano: hasta el 17-sep-2026 tenia `impactoindigena.news` fijo, que lleva
+ * meses siendo solo una redireccion.
  */
 
 import { writeFileSync } from 'fs'
@@ -10,9 +17,10 @@ import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { routes, type RouteConfig } from '../src/routes.js'
 import { generateSitemapXml } from '../src/lib/sitemap.js'
+import { SITE_URL } from '../src/config.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const BASE_URL = 'https://impactoindigena.news'
+const BASE_URL = SITE_URL
 const API_URL = process.env.VITE_API_URL || 'http://localhost:3001'
 
 interface PaginatedResponse {

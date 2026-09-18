@@ -8,7 +8,7 @@ The crawler fetches RSS feeds and extracts article content using a 3-tier fallba
 
 Before any extraction tier runs, `isAllowedByRobots()` (`lib/robots.ts`) checks the source's `robots.txt`. If it excludes us, the article is skipped entirely — including the Diffbot tier, since a third-party API does not launder a permission the site never gave.
 
-- **User-agent token**: `ImpactoIndigenaCrawler`. The full request UA is `Mozilla/5.0 (compatible; ImpactoIndigenaCrawler/1.0; +https://impactoindigena.news)` — the browser prefix exists because several institutional sites 403 anything that doesn't look like a browser, but the bot name and contact URL travel with it, and that token is what a `robots.txt` can name.
+- **User-agent token**: `VocesIndigenasCrawler` (`ROBOTS_USER_AGENT` in `server/src/lib/robots.ts`). The full request UA is `Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://vocesindigenas.org)` — the browser prefix exists because several institutional sites 403 anything that doesn't look like a browser, but the bot name and contact URL travel with it, and that token is what a `robots.txt` can name.
 - **Fail-open by design**: no `robots.txt`, a 404, a timeout or a malformed file all mean *allowed*. Absence of rules is permission, not prohibition. Only an explicit rule excluding us blocks the fetch.
 - **Cached 12 h per origin.** Without it, a crawl batch would refetch the same `robots.txt` once per article.
 - **`Crawl-delay` is not implemented.** Pace is already bounded by crawler concurrency and `ApiThrottle`; adding a third source of delay would need measuring first.

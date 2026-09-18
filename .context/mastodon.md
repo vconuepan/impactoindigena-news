@@ -93,7 +93,7 @@ The admin Mastodon page (`/admin/mastodon`) shows a merged view of the account's
 
 ## Configuration
 
-Story URLs in posts use the top-level `config.siteUrl` (`SITE_URL` env var, defaults to `https://impactoindigena.news`).
+Story URLs in posts use the top-level `config.siteUrl` (`SITE_URL` env var, defaults to `https://vocesindigenas.org`).
 
 All settings in `server/src/config.ts`:
 

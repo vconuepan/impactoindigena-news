@@ -92,7 +92,15 @@ async function runGeneration(postId: string, story: any): Promise<void> {
   const trimmedCaption = captionWithUrl.length > 2200 ? captionWithUrl.slice(0, 2197) + '…' : captionWithUrl
 
   // Reusar imagen de Twitter si existe y no es el logo de fallback
-  const LOGO_FALLBACK_MARKERS = ['cropped-logo-impacto-indigena', '1-2.png']
+  /*
+   * Marcadores de imagen generica: si Twitter ya cayo en un logo de respaldo,
+   * esa imagen no representa a la historia y el carrusel no debe reusarla.
+   *
+   * Los dos primeros son del WordPress de Impacto Indigena y siguen aqui
+   * porque las filas antiguas de `twitterPost` los tienen guardados; el
+   * tercero es el respaldo actual, servido desde el propio sitio.
+   */
+  const LOGO_FALLBACK_MARKERS = ['cropped-logo-impacto-indigena', '1-2.png', '/images/og-image.png']
   const twitterPost = await prisma.twitterPost.findFirst({
     where: { storyId, imageUrl: { not: null } },
   })
@@ -113,7 +121,7 @@ async function runGeneration(postId: string, story: any): Promise<void> {
       log.info({ storyId, aiImageUrl }, 'AI image generated for Instagram')
     } catch (err) {
       log.error({ err, storyId }, 'failed to generate AI image, using fallback')
-      aiImageUrl = 'https://impactoindigena.com/wp-content/uploads/2025/04/cropped-logo-impacto-indigena_letras_blancas-1-scaled-1.png'
+      aiImageUrl = `${config.siteUrl}/images/og-image.png`
     }
   }
 

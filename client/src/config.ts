@@ -3,18 +3,22 @@
  *
  * POR QUE ES UNA VARIABLE Y NO UNA CONSTANTE. El rebrand a Voces Indigenas
  * quedo escrito en el codigo antes de que `vocesindigenas.org` estuviera
- * sirviendo: al 4-sep-2026 ese dominio devuelve el 403 de HostGator. Con el
- * dominio nuevo escrito a mano en `seo.tsx`, cualquier despliegue habria
- * publicado canonicas y `og:image` apuntando a un 403 — que es como se pierde
- * el posicionamiento de golpe.
+ * sirviendo: al 4-sep-2026 ese dominio devolvia el 403 de HostGator, asi que
+ * el default tuvo que seguir siendo el dominio viejo para que un despliegue no
+ * publicara canonicas y `og:image` apuntando a un 403 — que es como se pierde
+ * el posicionamiento de golpe. El cambio de dominio quedo como variable de
+ * entorno del build: `VITE_SITE_URL=https://vocesindigenas.org`.
  *
- * Asi el codigo del rebrand puede desplegarse HOY, sirviendo todavia el dominio
- * viejo, y el cambio de dominio pasa a ser una variable de entorno en la
- * configuracion del build: `VITE_SITE_URL=https://vocesindigenas.org`. Un
- * cambio de dominio no deberia exigir un commit.
+ * POR QUE EL DEFAULT YA NO ES EL VIEJO. Desde el 4-sep-2026 `vocesindigenas.org`
+ * sirve el sitio y es el canonico; `impactoindigena.news` solo redirige. Un
+ * default que apunta al dominio redirigido es una trampa silenciosa: todo lo
+ * que no pase por el build de Azure —un script de este repo, un entorno local,
+ * un despliegue que olvide la variable— escribe el dominio muerto sin avisar.
+ * Eso ya paso: `og-image.png` se genero con el host viejo pintado encima y se
+ * sirvio asi hasta el 17-sep-2026. La variable se conserva, el default cambia.
  */
 export const SITE_URL: string =
-  (import.meta.env?.VITE_SITE_URL as string | undefined) ?? 'https://impactoindigena.news'
+  (import.meta.env?.VITE_SITE_URL as string | undefined) ?? 'https://vocesindigenas.org'
 
 /** El dominio sin protocolo, para mostrarlo en texto. */
 export const SITE_HOST: string = SITE_URL.replace(/^https?:\/\//, '')

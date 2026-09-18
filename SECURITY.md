@@ -49,7 +49,7 @@ primero. Ese plazo corre incluso si no hemos respondido.
 
 | Versión | Estado |
 |---|---|
-| `main` desplegada en impactoindigena.news | Se atiende |
+| `main` desplegada en vocesindigenas.org | Se atiende |
 | Cualquier fork o despliegue propio | No se atiende |
 
 El proyecto no publica versiones etiquetadas: lo que corre en producción es la
@@ -127,7 +127,7 @@ que no pierdas tiempo reportando lo que ya existe:
 
 El tratamiento de datos personales se rige por la Ley 19.628 mientras esté
 vigente, y por la Ley 21.719 desde el 1 de diciembre de 2026. El detalle está en
-la [Política de Privacidad](https://impactoindigena.news/privacy) del sitio.
+la [Política de Privacidad](https://vocesindigenas.org/privacy) del sitio.
 
 Si tu hallazgo expone datos personales, díselo explícitamente en el reporte: eso
 cambia los plazos y las obligaciones de notificación.
