@@ -182,7 +182,7 @@ function RuledSection({ issue }: { issue: PublicIssue }) {
 
   return (
     <div
-      className="relative z-20 flex items-center"
+      className="relative flex items-center"
       style={{ gap: '14px', padding: '36px 0 18px', borderBottom: '2px solid #1C1917', marginBottom: '24px' }}
     >
       <span
@@ -277,8 +277,18 @@ function IssueSection({
        * se implemento.
        */}
       <section className={`relative mb-8 mt-16 md:mt-20 ${layout === 'B' ? '-mx-4 md:-mx-8 px-4 md:px-8 py-8 md:py-12 bg-brand-50' : ''}`}>
-        {/* Pre-rendered PNG to avoid Chromium inline-SVG compositing bug */}
-        <div className="absolute -left-12 top-0 -translate-y-[40%] z-10 pointer-events-none select-none hidden md:block w-[200px] h-[200px]">
+        {/*
+         * Marca de agua de seccion. PNG pre-renderizado, no SVG en linea: los
+         * SVG en linea disparan un defecto de composicion en Chromium.
+         *
+         * `-z-10` y anclada bajo el encabezado, no `z-10` y desbordando por
+         * arriba. Antes salia medio fuera de la seccion y cruzaba por delante
+         * del `h2`, y eso no se lee como marca de agua sino como un elemento mal
+         * puesto — con el agravante de que el `RuledSection` necesitaba un
+         * `z-20` defensivo para que el titulo siguiera siendo legible, de modo
+         * que cada bloque nuevo tenia que acordarse de su z-index.
+         */}
+        <div className="absolute -left-12 top-[140px] -z-10 pointer-events-none select-none hidden md:block w-[200px] h-[200px]">
           <img src={`/illustrations/${issue.slug}.png`} alt="" className="opacity-[0.18] w-full h-full" />
         </div>
 

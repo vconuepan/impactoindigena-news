@@ -7,10 +7,21 @@ interface PullQuoteProps {
 }
 
 /**
- * Displays an editorial pull-quote from a story.
+ * Cita editorial de una historia.
  *
- * Large centered text with oversized decorative quotation marks,
- * separated from sections by a vertical diamond divider.
+ * Ejecuta la ficha `.pull-quote` de DESIGN.md, que el componente no seguia:
+ * Fraunces italic 22-26px, `line-height 1.4`, y **una regla superior de 2px en
+ * el verde de marca**. Nada mas.
+ *
+ * Lo que habia antes eran CINCO decoraciones sobre la misma cita —dos reglas con
+ * rombo, una comilla de 5,5rem al 18%, bordes verticales de 4px y todo
+ * centrado—, repetidas cuatro veces en la portada. Ese apilamiento hacia que la
+ * cita pesara como un titular y compitiera con las secciones en vez de separar
+ * dos de ellas, que es su trabajo.
+ *
+ * **Alineada a la izquierda**, no centrada: DESIGN.md lista «todo centrado»
+ * entre los anti-patrones activos, y la cita alineada se lee como un cambio de
+ * registro dentro del flujo editorial en vez de como un cartel.
  */
 export default function PullQuote({ story }: PullQuoteProps) {
   const { i18n } = useTranslation()
@@ -23,32 +34,12 @@ export default function PullQuote({ story }: PullQuoteProps) {
   const hasPersonAttribution = story.quoteAttribution && story.quoteAttribution !== 'Original article'
 
   return (
-    <figure className="py-10 md:py-14 text-center max-w-2xl mx-auto px-4 border-l-4 border-r-4 border-brand-200/40">
-      {/* Top rule with diamond */}
-      <div className="flex items-center gap-4 mb-8" aria-hidden="true">
-        <span className="flex-1 border-t border-neutral-200" />
-        <span className="text-brand-300 text-[10px] leading-none">◆</span>
-        <span className="flex-1 border-t border-neutral-200" />
-      </div>
-
-      {/* Decorative open-quote */}
-      <span
-        aria-hidden="true"
-        className="block leading-none select-none pointer-events-none"
-        style={{
-          fontSize: '5.5rem',
-          fontFamily: 'Fraunces, Georgia, serif',
-          fontWeight: 300,
-          color: '#0D5F3C',
-          opacity: 0.18,
-          marginBottom: '-2rem',
-        }}
-      >
-        &ldquo;
-      </span>
-
+    <figure className="py-10 md:py-12 max-w-2xl mx-auto px-4 border-t-2 border-brand-800">
       <blockquote>
-        <p className="text-xl md:text-2xl leading-relaxed px-2 md:px-6 italic font-fraunces" style={{ color: '#44403c' }}>
+        <p
+          className="font-fraunces italic mt-6"
+          style={{ fontSize: 'clamp(22px, 2.2vw, 26px)', fontWeight: 400, lineHeight: 1.4, color: '#44403c' }}
+        >
           {displayQuote}
         </p>
       </blockquote>
@@ -73,14 +64,6 @@ export default function PullQuote({ story }: PullQuoteProps) {
           </Link>
         )}
       </figcaption>
-
-      {/* Bottom rule */}
-      <div className="flex items-center gap-4 mt-8" aria-hidden="true">
-        <span className="flex-1 border-t border-neutral-200" />
-        <span className="text-brand-300 text-[10px] leading-none">◆</span>
-        <span className="flex-1 border-t border-neutral-200" />
-      </div>
     </figure>
   )
 }
-

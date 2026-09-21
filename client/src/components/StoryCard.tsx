@@ -161,15 +161,34 @@ function NarrativeFrameTag({ frame, dark = false }: { frame: string; dark?: bool
   )
 }
 
+/**
+ * Sello editorial: la marca de excelencia sobre la foto de una historia con
+ * `relevance >= 8`. Jerarquia sin recurrir a un badge generico de «DESTACADO».
+ *
+ * SVG en linea de TRAZO BLANCO -circulo exterior + estrella de siete puntas-,
+ * que es lo que especifica DESIGN.md. El codigo usaba
+ * `/images/logo-no-text-square.png`, el emblema multicolor completo de la marca,
+ * reducido a 36px y bajado al 32% de opacidad: a ese tamaño sus siete colores se
+ * mezclan en una mancha y, sobre una fotografia cualquiera, ni se distingue la
+ * forma ni se reconoce la marca. Un trazo blanco si sostiene su silueta sobre
+ * cualquier fondo, que es justo el requisito.
+ */
 function EditorialSeal() {
   return (
     <div className="absolute bottom-2.5 right-2.5 pointer-events-none select-none" aria-hidden="true">
-      <img
-        src="/images/logo-no-text-square.png"
-        alt=""
-        className="w-9 h-9 object-contain"
+      <svg
+        width="36"
+        height="36"
+        viewBox="0 0 36 36"
+        fill="none"
+        stroke="#FFFFFF"
+        strokeWidth="1.25"
+        strokeLinejoin="round"
         style={{ opacity: 0.32 }}
-      />
+      >
+        <circle cx="18" cy="18" r="16" />
+        <path d="M18 6.5 L20.6 14.2 L28.4 12.6 L23.4 18 L28.4 23.4 L20.6 21.8 L18 29.5 L15.4 21.8 L7.6 23.4 L12.6 18 L7.6 12.6 L15.4 14.2 Z" />
+      </svg>
     </div>
   )
 }
@@ -256,7 +275,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   // === FEATURED variant — full-bleed image, meta flush inside card ===
   if (variant === 'featured') {
     return (
-      <article className={`group relative overflow-hidden rounded-lg`}>
+      <article className={`group relative overflow-hidden rounded-lg border border-neutral-200 bg-white`}>
         <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg">
           {/* Image area */}
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
@@ -264,7 +283,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
               <CardImage
                 src={imageUrl}
                 alt={headlineText}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                className="w-full h-full object-cover"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
                     {Pattern && <Pattern opacity={0.25} />}
@@ -278,7 +297,8 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
             )}
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
-            {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
+            {/* Solo sobre fotografia: DESIGN.md dice «no mostrar si la imagen no carga» */}
+            {imageUrl && (story.relevance ?? 0) >= 8 && <EditorialSeal />}
             {/* Headline + category */}
             <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-4">
               {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} onImage />}
@@ -304,14 +324,14 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   // === EQUAL variant — image top, text below ===
   if (variant === 'equal') {
     return (
-      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white h-full`}>
+      <article className={`group relative overflow-hidden rounded-lg border border-neutral-200 bg-white h-full`}>
         <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg overflow-hidden">
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <CardImage
                 src={imageUrl}
                 alt={headlineText}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                className="w-full h-full object-cover"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
                     {Pattern && <Pattern opacity={0.2} />}
@@ -323,7 +343,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 {Pattern && <Pattern opacity={0.2} />}
               </div>
             )}
-            {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
+            {imageUrl && (story.relevance ?? 0) >= 8 && <EditorialSeal />}
           </div>
         </Link>
         <div className="p-5">
@@ -349,7 +369,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   // === HORIZONTAL variant — text left, image right ===
   if (variant === 'horizontal') {
     return (
-      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white`}>
+      <article className={`group relative overflow-hidden rounded-lg border border-neutral-200 bg-white`}>
         <div className="flex flex-col md:flex-row">
           {/* Text left */}
           <div className="flex-1 p-5 md:p-6">
@@ -372,13 +392,25 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
             )}
           </div>
           {/* Image right */}
-          <Link to={`/stories/${story.slug}`} className="md:w-44 md:shrink-0 overflow-hidden rounded-b-lg md:rounded-b-none md:rounded-r-lg focus-visible:ring-2 focus-visible:ring-brand-500">
-            <div className="h-44 md:h-full min-h-[160px] overflow-hidden bg-neutral-100 relative">
+          {/*
+           * 256px y proporcion propia, no 176px estirados por la columna de texto.
+           *
+           * El origen es 1200x630 (1,90:1 apaisado). Con `md:w-44` la caja media
+           * 176px de ancho por el ALTO de la columna de texto -entre 220 y 340px
+           * segun el largo del resumen-, asi que `object-cover` escalaba por el
+           * lado corto y solo se veia entre el 27% y el 42% CENTRAL de la imagen.
+           * Cuando la imagen es una captura de portada o de red social con su
+           * propio titular encima -y varias lo son-, se veia un tercio de una
+           * frase. En movil no pasaba: ahi la caja es `h-44` a ancho completo,
+           * casi la proporcion del origen.
+           */}
+          <Link to={`/stories/${story.slug}`} className="md:w-64 md:shrink-0 overflow-hidden rounded-b-lg md:rounded-b-none md:rounded-r-lg focus-visible:ring-2 focus-visible:ring-brand-500">
+            <div className="h-44 md:h-auto md:self-start md:aspect-[4/3] min-h-[160px] overflow-hidden bg-neutral-100 relative">
               {imageUrl ? (
                 <CardImage
                   src={imageUrl}
                   alt={headlineText}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
+                  className="w-full h-full object-cover object-[center_40%]"
                   fallback={
                     <div
                       className="w-full h-full"
@@ -396,7 +428,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                   {Pattern && <Pattern opacity={0.22} />}
                 </div>
               )}
-              {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
+              {imageUrl && (story.relevance ?? 0) >= 8 && <EditorialSeal />}
             </div>
           </Link>
         </div>
