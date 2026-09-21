@@ -75,7 +75,46 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
   )
 }
 
-function CategoryPill({ name, hex }: { name: string; hex: string }) {
+/**
+ * Pill de categoria, con un modo para cuando va ENCIMA de una fotografia.
+ *
+ * El par «fondo al 10% + texto en el color de categoria» esta calibrado para el
+ * papel claro y solo funciona ahi. Sobre una foto no hay contraste que valga:
+ * medido el 21-sep-2026 en la portada en vivo, el oliva sobre un gris medio de
+ * fotografia da **1,09:1**, y calculadas las 8 categorias contra tres
+ * luminancias de foto, la mejor combinacion llega a 2,59:1. **Ninguna de las 24
+ * pasa AA.** El pill era, sencillamente, invisible.
+ *
+ * En `onImage` el texto pasa a blanco sobre un velo neutro -que si sostiene
+ * contraste sobre cualquier foto- y **el color de categoria se muda a un punto
+ * de 6px**: sigue informando de que seccion es, que es su trabajo, sin tener que
+ * sostener legibilidad de texto.
+ *
+ * El testigo de que esto era un olvido y no una decision esta al lado:
+ * `NarrativeFrameTag` si recibio una prop `dark`, y se usa con ella dos lineas
+ * mas abajo en la misma tarjeta.
+ */
+function CategoryPill({ name, hex, onImage = false }: { name: string; hex: string; onImage?: boolean }) {
+  if (onImage) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-2 font-dm-sans"
+        style={{
+          backgroundColor: 'rgba(255,255,255,0.14)',
+          color: '#FFFFFF',
+          border: '1px solid rgba(255,255,255,0.30)',
+          backdropFilter: 'blur(4px)',
+        }}
+      >
+        <span
+          aria-hidden="true"
+          className="shrink-0 rounded-full"
+          style={{ width: '6px', height: '6px', backgroundColor: hex }}
+        />
+        {name}
+      </span>
+    )
+  }
   return (
     <span
       className="inline-block text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full mb-2 font-dm-sans"
@@ -184,7 +223,22 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
     if (story.slug) setRead(isRead(story.slug))
   }, [story.slug])
 
-  const readClass = read ? 'opacity-70' : ''
+  /*
+   * El estado «leido» se marca en el TITULAR, no en la tarjeta entera.
+   *
+   * `opacity-70` iba en el `<article>`, asi que componia contra el fondo todo lo
+   * de dentro. Calculado sobre blanco: la metadata (n-500) caia de 5,81:1 a
+   * 3,06:1, el resumen (n-600) de 7,63:1 a 3,59:1 y «Publicado» / «Noticia
+   * antigua» (n-400) de 4,80:1 a 2,73:1. Sobre el papel #FAFAF8 es peor.
+   *
+   * O sea: en cuanto alguien leia una noticia, su tarjeta dejaba de cumplir
+   * WCAG AA en todo menos el titular — y el efecto era permanente y acumulativo,
+   * porque al lector habitual la portada se le iba volviendo ilegible.
+   *
+   * En el titular la señal se conserva y el contraste aguanta: n-900 al 70% da
+   * 6,45:1.
+   */
+  const readTitle = read ? 'opacity-70' : ''
 
   const isEn = i18n.language === 'en'
   const localizedStory = {
@@ -202,7 +256,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   // === FEATURED variant — full-bleed image, meta flush inside card ===
   if (variant === 'featured') {
     return (
-      <article className={`group relative overflow-hidden rounded-lg ${readClass}`}>
+      <article className={`group relative overflow-hidden rounded-lg`}>
         <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg">
           {/* Image area */}
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
@@ -227,12 +281,12 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
             {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
             {/* Headline + category */}
             <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-4">
-              {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} />}
+              {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} onImage />}
               {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} dark />}
               {getTitleLabel(localizedStory) && (
                 <span className="block text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1.5 font-dm-sans">{getTitleLabel(localizedStory)}</span>
               )}
-              <h3 className="font-fraunces text-[21px] md:text-[24px] font-semibold text-white leading-tight">
+              <h3 className={`font-fraunces text-[21px] md:text-[24px] font-semibold text-white leading-tight ${readTitle}`}>
                 {headlineText}
               </h3>
             </div>
@@ -250,7 +304,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   // === EQUAL variant — image top, text below ===
   if (variant === 'equal') {
     return (
-      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white h-full ${readClass}`}>
+      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white h-full`}>
         <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg overflow-hidden">
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
@@ -277,7 +331,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
           {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
           <div className="flex items-start justify-between gap-1">
             <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
-              <h3 className="font-fraunces text-[17px] font-semibold text-neutral-900 mb-2.5 group-hover:text-brand-800 transition-colors leading-snug">
+              <h3 className={`font-fraunces text-[17px] font-semibold text-neutral-900 mb-2.5 group-hover:text-brand-800 transition-colors leading-snug ${readTitle}`}>
                 {headlineText}
               </h3>
             </Link>
@@ -295,7 +349,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   // === HORIZONTAL variant — text left, image right ===
   if (variant === 'horizontal') {
     return (
-      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white ${readClass}`}>
+      <article className={`group relative overflow-hidden rounded-lg border border-neutral-100 bg-white`}>
         <div className="flex flex-col md:flex-row">
           {/* Text left */}
           <div className="flex-1 p-5 md:p-6">
@@ -306,7 +360,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 {getTitleLabel(localizedStory) && (
                   <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1.5 font-dm-sans">{getTitleLabel(localizedStory)}</span>
                 )}
-                <h3 className="font-fraunces text-xl md:text-[22px] font-semibold text-neutral-900 mb-3 group-hover:text-brand-800 transition-colors leading-tight">
+                <h3 className={`font-fraunces text-xl md:text-[22px] font-semibold text-neutral-900 mb-3 group-hover:text-brand-800 transition-colors leading-tight ${readTitle}`}>
                   {headlineText}
                 </h3>
               </Link>
@@ -352,7 +406,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
 
   // === COMPACT variant — no image, "en breve" style ===
   return (
-    <article className={`group relative flex gap-3 py-3.5 border-b border-neutral-100 last:border-0 ${readClass}`}>
+    <article className={`group relative flex gap-3 py-3.5 border-b border-neutral-100 last:border-0`}>
       {/* Category dot */}
       <div className="mt-1.5 w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors.hex }} aria-hidden="true" />
       <div className="flex-1 min-w-0">
@@ -363,7 +417,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
           {getTitleLabel(localizedStory) && (
             <span className="block text-[10px] font-bold uppercase tracking-widest mb-0.5 font-dm-sans" style={{ color: colors.hex }}>{getTitleLabel(localizedStory)}</span>
           )}
-          <h3 className="font-fraunces text-[15px] font-semibold text-neutral-800 mb-1 group-hover:text-brand-800 transition-colors leading-snug">
+          <h3 className={`font-fraunces text-[15px] font-semibold text-neutral-800 mb-1 group-hover:text-brand-800 transition-colors leading-snug ${readTitle}`}>
             {headlineText}
           </h3>
         </Link>

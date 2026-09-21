@@ -7,15 +7,13 @@
  *
  * Renders nothing when there is no active spotlight or no matching stories.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
 import { publicApi } from '../lib/api'
 import type { SpotlightStory } from '../lib/api'
 import { getCategoryColor } from '../lib/category-colors'
-
-const ROTATION_INTERVAL = 5000 // ms between story transitions
 
 export default function SpotlightBand() {
   const { t } = useTranslation()
@@ -27,7 +25,6 @@ export default function SpotlightBand() {
 
   const [activeIdx, setActiveIdx] = useState(0)
   const [visible, setVisible] = useState(true)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const stories: SpotlightStory[] = data?.stories ?? []
   const total = stories.length
@@ -38,26 +35,8 @@ export default function SpotlightBand() {
     setVisible(true)
   }, [data?.spotlight?.id])
 
-  // Auto-rotate with fade
-  useEffect(() => {
-    if (total <= 1) return
-
-    timerRef.current = setInterval(() => {
-      setVisible(false)
-      setTimeout(() => {
-        setActiveIdx((prev) => (prev + 1) % total)
-        setVisible(true)
-      }, 350)
-    }, ROTATION_INTERVAL)
-
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [total, data?.spotlight?.id])
-
-  // Manual dot navigation
+  // Navegacion manual: lo unico que mueve esta banda
   function goTo(idx: number) {
-    if (timerRef.current) clearInterval(timerRef.current)
     setVisible(false)
     setTimeout(() => {
       setActiveIdx(idx)
@@ -110,8 +89,6 @@ export default function SpotlightBand() {
                 opacity: visible ? 1 : 0,
                 transform: visible ? 'translateY(0)' : 'translateY(4px)',
               }}
-              aria-live="polite"
-              aria-atomic="true"
             >
               {story.issue && (
                 <span
@@ -138,7 +115,7 @@ export default function SpotlightBand() {
 
           {/* Dot navigation — 44px touch targets */}
           {total > 1 && (
-            <nav className="hidden lg:flex shrink-0 items-center gap-0.5 self-start pt-1" aria-label="Navegación de titulares">
+            <nav className="flex shrink-0 items-center gap-0.5 self-start pt-1" aria-label="Navegación de titulares">
               {stories.map((_, idx) => (
                 <button
                   key={idx}
