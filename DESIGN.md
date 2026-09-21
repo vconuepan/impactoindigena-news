@@ -343,6 +343,31 @@ Es una restriccion medida, no una preferencia: el contenedor es `max-w-6xl` con 
 
 Este bloque decia 10px y `letter-spacing: 0.10em` hasta el 3-sep-2026. El codigo siempre uso 14px y `tracking-wide`; el documento estaba desactualizado, y esa diferencia del 40% es justo la que decide si las ocho caben.
 
+### Pill de categoría — dos modos
+
+| Modo | Fondo | Texto | Uso |
+|---|---|---|---|
+| Sobre papel | color de categoría al 10%, borde al 22% | el color de categoría | listas mezcladas: búsqueda, guardados, página de tema |
+| **Sobre imagen** | `rgba(255,255,255,0.14)` + `blur(4px)`, borde blanco al 30% | **blanco**, con el color de categoría como punto de 6px | cuando el pill va encima de una fotografía |
+
+El primer par está calibrado contra el papel y **solo funciona ahí**. Medido el
+21-09-2026: sobre fotografía, el oliva da **1,09:1**, y calculadas las ocho
+categorías contra tres luminancias de foto, la mejor combinación llega a 2,59:1.
+**Ninguna de las 24 pasa AA.** Sobre imagen el color se muda al punto, donde
+informa de qué sección es sin tener que sostener legibilidad de texto.
+
+**En la portada el pill no se muestra**: cada sección ya lleva su categoría en el
+`h2`, y repetirla bajo el encabezado no informa. `showCategory` por defecto es
+`true` para las páginas donde la lista sí viene mezclada.
+
+### El estado «leído» no se marca con opacidad sobre el contenedor
+
+Se marca **en el titular**. `opacity` sobre el `<article>` compone contra el
+fondo todo lo que hay dentro: medido, la metadata caía de 5,81:1 a 3,06:1 y el
+resumen de 7,63:1 a 3,59:1, así que una tarjeta leída dejaba de cumplir AA en
+todo menos el titular — de forma permanente y acumulativa para el lector
+habitual.
+
 ### `.ruled-section` (encabezados de sección en homepage)
 
 ```css
@@ -358,14 +383,12 @@ margin-bottom: 24px;
 - **Dot:** 9×9px, color de la categoría correspondiente
 - **Título sección:** Fraunces **28px 600**, `letter-spacing: -0.01em`
 
-  > **Deuda declarada, 21-09-2026.** El código corre **20px 700**
-  > (`HomePage.tsx`, `RuledSection`). Este bloque decía 20/700 y la tabla
-  > tipográfica de arriba decía 28/600: **el documento se contradecía consigo
-  > mismo**, y nadie podía saber cuál mandaba. Manda la tabla. Medido en la
-  > portada en vivo, a 20px el rótulo que organiza la página es el **séptimo**
-  > texto más grande, por debajo de dos titulares de tarjeta: el encabezado no
-  > manda sobre lo que encabeza. Alinear el código es un cambio de una línea y
-  > está pendiente.
+  Hasta el 21-09-2026 este bloque decía 20/700 mientras la tabla tipográfica
+  decía 28/600 — **el documento se contradecía consigo mismo** y el código seguía
+  al bloque. Manda la tabla, y el código ya la ejecuta. A 20px, medido en la
+  portada en vivo, el rótulo que organiza la página era el **séptimo** texto más
+  grande, por debajo de dos titulares de tarjeta: el encabezado no mandaba sobre
+  lo que encabeza.
 - **Enlace "Ver todas →":** `margin-left: auto`, DM Sans 11px 600, `color: var(--brand)`
 
 ### `.editorial-grid-1` (grid primario — hero story + 2 side stories)
@@ -545,4 +568,7 @@ media.
 | 2026-09-21 | **Retirar el marcador `IA` de las tarjetas** | Aparecía 15 veces en una portada. Se conserva el marco narrativo, que es lo que la regla manda mostrar. |
 | 2026-09-21 | **Portada con peso descendente: 3 + 5** | Las ocho secciones pesaban igual y la única variación de la página era aritmética (`LAYOUTS[idx % 3]`). Tres secciones conservan los tres diseños y siete historias; las cinco restantes van compactas con tres y **sin resumen**. Las ocho categorías siguen alcanzables. |
 | 2026-09-21 | **Fundir el banner de apoyo en la sección de misión** | Eran dos bloques de misión haciendo el mismo trabajo, y el segundo gritaba más fuerte que el periodismo (36px contra 20px del h2). Los botones se mueven, no se pierden: era el único CTA de suscripción del cuerpo. |
+| 2026-09-21 | **Dos interrupciones por portada, no siete** | Cuatro pull-quotes idénticos y tres snippets ocupaban 1.712 px y ninguno llevaba a una noticia que no estuviera ya en la página. Repetido siete veces, el recurso deja de marcar ritmo y pasa a ser el ritmo. |
+| 2026-09-21 | **El hero se elige mirando si trae fotografía** | `pickHero` ordenaba por fecha: si la más nueva venía sin imagen, la portada abría con un degradado plano de 600px. Replicado en `preload-hero.js`, que un test compara. |
+| 2026-09-21 | **Sin rotación automática en «En Foco»** | Giraba cada 5 s con `aria-live` encima y sin control bajo 1024px: un lector de pantalla recibía un titular nuevo cada cinco segundos, indefinidamente. |
 | 2026-09-21 | **Banda del layout B en `brand-50`** | `neutral-50/70` sobre el papel dejaba el canal azul en 248,7 contra 248: la banda no se veía y se pagaba igual el sangrado. Es el único recurso de ritmo de la portada. |
