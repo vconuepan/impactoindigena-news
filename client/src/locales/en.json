@@ -1,4 +1,7 @@
 {
+  "brand": {
+    "descriptor": "Indigenous news from around the world, selected by AI"
+  },
   "nav": {
     "skipToContent": "Skip to content",
     "saved": "Saved",

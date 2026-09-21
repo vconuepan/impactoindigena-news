@@ -443,6 +443,34 @@ function PublicLayoutInner() {
               </button>
             </div>
           </div>
+
+          {/*
+           * El descriptor del medio, que es lo unico que responde "que es esto".
+           *
+           * Medido el 21-sep-2026 sobre el sitio en vivo: encima del pliegue
+           * habia 41 nodos de texto y NINGUNO enunciaba el producto -tres cifras
+           * de telemetria, un dial de ajustes, catorce enlaces de taxonomia y el
+           * titular de una noticia-. La frase que define al medio vivia en el
+           * pie, a 9,9 pantallas de scroll.
+           *
+           * Va FUERA de `BrandLogo` a proposito. BrandLogo es un `<Link>` con
+           * `aria-label="Voces Indigenas"`, y ese aria-label reemplaza todo el
+           * texto interno: metida ahi, la unica frase que dice que es el sitio
+           * quedaba muda para un lector de pantalla. Ademas BrandLogo se monta
+           * tambien en el menu movil, donde el descriptor se duplicaria.
+           *
+           * Y se ve en movil. Ocultarlo bajo `md` apagaria el arreglo justo
+           * donde mas duele: el lector que llega desde una busqueda o una red.
+           * Son 49 caracteres a 11px, entran en una linea a 375px.
+           *
+           * n-500 (#6B645F) sobre el blanco puro del header da 6,2:1 — pasa AA
+           * de sobra a 11px. Es texto de altura fija: no mueve el CLS.
+           */}
+          <div className="max-w-6xl mx-auto px-4 pb-2.5 -mt-1">
+            <p className="font-dm-sans text-[11px] font-medium tracking-[0.02em] text-neutral-500">
+              {t('brand.descriptor')}
+            </p>
+          </div>
         </div>
 
         {/* Verticales geograficas: donde. Va sobre las categorias, que son el que. */}

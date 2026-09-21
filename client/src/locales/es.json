@@ -1,4 +1,7 @@
 {
+  "brand": {
+    "descriptor": "Noticias indígenas del mundo, seleccionadas por IA"
+  },
   "nav": {
     "skipToContent": "Ir al contenido",
     "saved": "Guardados",

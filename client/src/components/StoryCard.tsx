@@ -14,6 +14,17 @@ import { publisherFromUrl } from '@shared/utils/publisher'
 interface StoryCardProps {
   story: PublicStory
   variant?: 'featured' | 'compact' | 'horizontal' | 'equal'
+  /**
+   * Oculta el resumen de dos lineas. Solo lo usan las secciones de la cola de
+   * la portada.
+   *
+   * La variante `equal` es la unica con imagen que ademas lleva resumen, y las
+   * secciones de cola son cinco: dejarlo puesto metia QUINCE resumenes nuevos
+   * en la portada. Medido el 21-sep-2026 comparando produccion contra local con
+   * los mismos datos, eso subia el texto de 1.331 a 1.477 palabras — o sea, el
+   * peso descendente bajaba el alto y empeoraba lo que venia a arreglar.
+   */
+  hideSummary?: boolean
 }
 
 function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | 'xs' }) {
@@ -82,7 +93,18 @@ function NarrativeFrameTag({ frame, dark = false }: { frame: string; dark?: bool
       className={`inline-flex items-center gap-1.5 text-[10px] italic font-dm-sans cursor-help leading-none mb-2 ${dark ? 'text-white/75' : 'text-neutral-500'}`}
       title={`Marco narrativo identificado por IA: ${label}`}
     >
-      <span aria-hidden="true" className="not-italic font-semibold tracking-[0.08em] opacity-55 text-[8px]">IA</span>
+      {/*
+       * Sin el marcador «IA» literal. Medido el 21-sep-2026 en la portada en
+       * vivo: aparecia 15 veces en una sola pagina. A 8px y opacidad 0,55 no
+       * informaba —no cambia ninguna decision del lector— y repetido quince
+       * veces hacia justo lo contrario de lo que buscaba: en vez de senalar
+       * curaduria algoritmica como un rasgo del medio, leia como plantilla.
+       *
+       * La regla de DESIGN.md se sigue cumpliendo: lo que manda mostrar en
+       * todas las tarjetas es el MARCO NARRATIVO, y el marco sigue aqui. Lo
+       * que se retira es el rotulo de dos letras, no la senal. La atribucion
+       * al sistema se conserva donde si se lee: en el `title` de arriba.
+       */}
       <span aria-hidden="true" className={`w-2.5 h-px ${dark ? 'bg-white/40' : 'bg-neutral-300'}`} />
       {label}
     </span>
@@ -139,7 +161,7 @@ function CardImage({
   )
 }
 
-export default function StoryCard({ story, variant = 'featured' }: StoryCardProps) {
+export default function StoryCard({ story, variant = 'featured', hideSummary = false }: StoryCardProps) {
   const { i18n } = useTranslation()
   const issueSlug = story.issue?.slug ?? story.feed?.issue?.slug ?? 'general-news'
   const issueName = story.issue?.name ?? story.feed?.issue?.name ?? ''
@@ -251,7 +273,7 @@ export default function StoryCard({ story, variant = 'featured' }: StoryCardProp
             {story.slug && <BookmarkButton slug={story.slug} size="sm" hoverReveal className="shrink-0" />}
           </div>
           <StoryMeta story={story} size="xs" />
-          {displaySummary && (
+          {displaySummary && !hideSummary && (
             <p className="text-[13px] text-neutral-500 leading-relaxed mt-2.5 line-clamp-2">{displaySummary}</p>
           )}
         </div>

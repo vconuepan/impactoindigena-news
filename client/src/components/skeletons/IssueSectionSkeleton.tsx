@@ -9,9 +9,19 @@ type LayoutVariant = 'A' | 'B' | 'C'
 
 interface IssueSectionSkeletonProps {
   layout: LayoutVariant
+  /**
+   * Seccion de la cola: tres historias y sin la segunda fila.
+   *
+   * Va atado al mismo umbral que usa HomePage (`FRONT_SECTIONS`). Si el render
+   * pasa a peso descendente y el esqueleto sigue dibujando secciones completas,
+   * la pagina ENCOGE cuando llegan los datos y todo lo de abajo salta: es
+   * exactamente el defecto que se midio el 4-sep-2026, 0,160 de un CLS de
+   * 0,218. Los dos se cambian juntos o no se cambia ninguno.
+   */
+  compact?: boolean
 }
 
-export default function IssueSectionSkeleton({ layout }: IssueSectionSkeletonProps) {
+export default function IssueSectionSkeleton({ layout, compact = false }: IssueSectionSkeletonProps) {
   return (
     <section className="relative mb-6 mt-14 md:mt-28">
       {/* Skeleton heading */}
@@ -52,7 +62,8 @@ export default function IssueSectionSkeleton({ layout }: IssueSectionSkeletonPro
         </div>
       )}
 
-      {/* Layout C: three equal columns + compact row */}
+      {/* Layout C: three equal columns + compact row (la fila compacta no va en
+          las secciones de la cola, que solo traen tres historias) */}
       {layout === 'C' && (
         <div className="space-y-5">
           <div className="grid gap-5 md:grid-cols-3">
@@ -60,11 +71,13 @@ export default function IssueSectionSkeleton({ layout }: IssueSectionSkeletonPro
             <StoryCardSkeleton variant="equal" />
             <StoryCardSkeleton variant="equal" />
           </div>
-          <div className="grid gap-5 md:grid-cols-3">
-            <StoryCardSkeleton variant="compact" />
-            <StoryCardSkeleton variant="compact" />
-            <StoryCardSkeleton variant="compact" />
-          </div>
+          {!compact && (
+            <div className="grid gap-5 md:grid-cols-3">
+              <StoryCardSkeleton variant="compact" />
+              <StoryCardSkeleton variant="compact" />
+              <StoryCardSkeleton variant="compact" />
+            </div>
+          )}
         </div>
       )}
     </section>

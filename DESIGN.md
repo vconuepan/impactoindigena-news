@@ -27,7 +27,12 @@
 ### Carga
 
 - **Lora:** Self-hosted en `/fonts/Lora/` (ya configurado, no modificar)
-- **Fraunces:** Google Fonts — `https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&display=swap`
+- **Fraunces:** **Self-hosted** en `/fonts/Fraunces/`, con `<link rel="preload">` en
+  `client/index.html`. Los ejes disponibles en el binario son `opsz` (9–144) y
+  `wght` (100–900); **`SOFT` y `WONK` no vienen en el archivo**, así que no se
+  pueden pedir. Este documento describió una URL de Google Fonts hasta el
+  21-09-2026; el código dejó de usarla cuando se autohospedó, y el `@font-face`
+  vive en `client/src/index.css`.
 - **DM Sans:** Google Fonts — `https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap`
 
 ### Escala tipográfica
@@ -38,7 +43,7 @@
 | Sección | Fraunces | 28px | 600 | Titular de sección en homepage |
 | Card principal | Fraunces | 20–22px | 600 | Card destacada |
 | Card secundaria | Fraunces | 15–16px | 600 | Sidebar, cards pequeñas |
-| Body | Lora | 18px | 400 | Texto de artículo, line-height 1.63 |
+| Body | Lora | 18px | 400 | Texto de artículo, line-height 1.75 |
 | Body muted | Lora | 15–16px | 400 italic | Bajadas, leads, pull quotes |
 | Label nav | DM Sans | 10px | 700 | Categorías en nav y cards, uppercase, tracking 0.12em |
 | Metadata | DM Sans | 11–12px | 400–500 | Fuente, fecha, tiempo de lectura |
@@ -237,8 +242,11 @@ son anteriores a la paleta tierra y conservan colores más saturados.
 - **Grid homepage:** 2/3 + 1/3 para sección principal, columna única para el hero
 - **Ancho máximo del cuerpo de artículo:** 640px. Con Lora a 18px eso da
   **71 caracteres por línea** — medido en vivo el 5-sep-2026, y es la medida
-  que se persigue. El documento decía 16px / 1.75 hasta esa fecha; el código
-  siempre usó 18px / 1.63, y llega antes al objetivo.
+  que se persigue. El interlineado real es **1,75**, no 1,63: `index.css:277`
+  lo fija así y siempre lo hizo. Este documento afirmó 1,63 en dos lugares hasta
+  el 21-09-2026 — se corrige el documento, no el CSS: bajarlo alteraría el ritmo
+  de lectura de todos los artículos en vivo para perseguir un número que nunca
+  existió.
 
 ### Border radius
 
@@ -259,14 +267,36 @@ son anteriores a la paleta tierra y conservan colores más saturados.
 ## Header
 
 - **Estructura completa (top→bottom):**
-  1. **Stats bar** — fondo `var(--brand)`, 32px de alto, DM Sans 10px
-  2. **Header principal** — blanco puro `#FFFFFF`, 60px de alto
-  3. **Category nav** — bajo el header, separado por `1px solid var(--border)`
+  1. **Stats bar** — fondo `var(--brand)`, 30px de alto, DM Sans 11px
+  2. **Header principal** — blanco puro `#FFFFFF`: fila de marca y acciones, más
+     la **línea de descriptor** debajo
+  3. **Nav de verticales geográficas** — `bg-neutral-50`, solo `lg`
+  4. **Category nav** — bajo ella, separado por `1px solid var(--border)`
 - **Stats bar** (nueva): muestra métricas de curación en tiempo real. Fondo `#0D5F3C`, texto `rgba(255,255,255,0.75)`, indicador de pulso verde `#4ade80`. Ejemplo: "Últimas 24 h: 847 artículos analizados · 23 seleccionados · 214 fuentes activas". Vincula a `/metodologia`.
   - **Piso de contraste:** no bajar de `0.75`. A 11px el texto exige 4.5:1 (WCAG AA) y sobre `#0D5F3C` las opacidades dan: `0.65` → 4.26:1 **falla**, `0.70` → 4.68:1, `0.75` → 5.12:1. El documento decía `0.65` hasta el 2026-08-10; el código siempre usó `0.75`.
   - **Ventana móvil, no día calendario:** el job de publicación corre 11:00 UTC, así que contar por día UTC dejaba el contador de seleccionadas en 0 entre medianoche y las 11:00 — de 20:00 a 07:00 en Chile. Se cuenta sobre las últimas 24 h para que un 0 signifique algo real.
 - **Background header:** Blanco puro (`#FFFFFF`)
-- **Altura header:** 60px
+- **Altura header:** **213px el `<header>` completo**, y **243px** de cromo total
+  hasta el borde superior del hero. Medido el 21-09-2026 a 1440px.
+
+  Este documento decía «60px» y eso describía **solo la fila del medio**, no el
+  header. Que la cifra publicada fuera la tercera parte de la real importa,
+  porque es justo lo que se descuenta del primer pliegue: **el 24% de una
+  pantalla de 1000px se va en cromo antes de la primera noticia.**
+
+- **Línea de descriptor** (`brand.descriptor`, nueva el 21-09-2026). Bajo el
+  logotipo, DM Sans 11px 500, `tracking 0.02em`, `text-neutral-500`. En los dos
+  idiomas y **también en móvil**.
+
+  Es lo único encima del pliegue que responde *qué es esto*. Medido ese día, los
+  41 nodos de texto del primer pliegue eran telemetría, navegación y el titular
+  de una noticia: **ninguno enunciaba el producto**, y la frase que lo definía
+  vivía en el pie, a 9,9 pantallas.
+
+  **Va FUERA de `BrandLogo`.** `BrandLogo` es un `<Link>` con
+  `aria-label="Voces Indígenas"`, y ese atributo reemplaza todo el texto
+  interno: metido ahí, el descriptor quedaba mudo para un lector de pantalla.
+  Además `BrandLogo` se monta también en el menú móvil, donde se duplicaría.
 - **Font:** DM Sans para todas las acciones del header
 - **Botón Suscribirse:** Terracota (`#C8473A`), pills (`border-radius: 9999px`), `min-height: 36px` — CTA principal
 - **Botón Apóyanos:** Brand verde (`#0D5F3C`), ghost/outline. `border: 1px solid` con texto verde y fondo transparente — menor jerarquía que Suscribirse. Referencia: `<LandingCta>`
@@ -286,7 +316,10 @@ El hero principal es el primer elemento debajo del header. Es tratamiento de **p
   - `hero-byline`: DM Sans 11px, `color: rgba(255,255,255,0.50)`.
 - **Padding contenido:** `padding: 0 56px 56px`
 - **Títulos en Title Case** — NUNCA en minúsculas. Los títulos de stories en todo el sitio van en Title Case o Sentence case editorial.
-- **Paginación:** Dots en esquina inferior derecha; dot activo se expande a `width: 18px` (pill).
+- **Sin paginación ni rotación.** El hero es **una sola historia**, elegida por
+  `pickHero` según el dial de tono. Este documento especificó dots de paginación
+  hasta el 21-09-2026 y **nunca existieron en el código**; se retira la
+  especificación en vez de construir un carrusel que nadie decidió.
 
 ## Componentes clave
 
@@ -323,7 +356,16 @@ margin-bottom: 24px;
 ```
 
 - **Dot:** 9×9px, color de la categoría correspondiente
-- **Título sección:** Fraunces 20px 700, `letter-spacing: -0.01em`
+- **Título sección:** Fraunces **28px 600**, `letter-spacing: -0.01em`
+
+  > **Deuda declarada, 21-09-2026.** El código corre **20px 700**
+  > (`HomePage.tsx`, `RuledSection`). Este bloque decía 20/700 y la tabla
+  > tipográfica de arriba decía 28/600: **el documento se contradecía consigo
+  > mismo**, y nadie podía saber cuál mandaba. Manda la tabla. Medido en la
+  > portada en vivo, a 20px el rótulo que organiza la página es el **séptimo**
+  > texto más grande, por debajo de dos titulares de tarjeta: el encabezado no
+  > manda sobre lo que encabeza. Alinear el código es un cambio de una línea y
+  > está pendiente.
 - **Enlace "Ver todas →":** `margin-left: auto`, DM Sans 11px 600, `color: var(--brand)`
 
 ### `.editorial-grid-1` (grid primario — hero story + 2 side stories)
@@ -386,10 +428,16 @@ gap: 6px;
 cursor: help;                /* tooltip al hover */
 ```
 
-Estructura: marcador `IA` (8px, semibold, uppercase, opacity 0.55) + línea separadora `10×1px` + label itálico.
+Estructura: línea separadora `10×1px` + label itálico.
 Texto del label: `Protagonismo` / `Resiliencia` / `Alianza` / `Confrontación`.
 
-El marcador `IA` hace explícito que el marco lo determinó el sistema — es la señal AI-native a nivel de card. (Ajustado 2026-06-14 tras audit: la versión previa a 9px gris `--text-subtle` era invisible en pantalla.)
+**El marcador `IA` de dos letras se retiró el 21-09-2026.** Existió desde el
+2026-06-14 para hacer explícito que el marco lo determina el sistema, pero
+medido en la portada en vivo **aparecía 15 veces en una sola página**: a 8px y
+opacidad 0,55 no cambiaba ninguna decisión del lector, y repetido quince veces
+lograba lo contrario de lo que buscaba —en vez de señalar curaduría algorítmica
+como un rasgo del medio, leía como plantilla—. La atribución al sistema se
+conserva donde sí se lee: en el `title` del elemento.
 
 Al hacer hover: tooltip `title` = "Marco narrativo identificado por IA: {label}".
 
@@ -446,6 +494,20 @@ Grid interno: 3 columnas. Cards con `background: var(--surface)`, `border: 1px s
 ### Watermarks decorativos
 
 - Opacidad máxima: `0.06` en cuerpo de artículo; `0.04` en secciones de homepage
+
+**Esto NO incluye las ilustraciones de sección.** Son dos elementos distintos y
+este tope se leía como si fueran el mismo:
+
+| | Qué es | Opacidad |
+|---|---|---|
+| **Watermark** | patrón geométrico, hero y cuerpo de artículo | `0.04`–`0.06` |
+| **Ilustración de sección** | pictograma de 200px por categoría, portada | `0.18` |
+
+La ilustración va al 18% **a propósito** y así está especificada más arriba: se
+dibuja para leerse a ese tamaño y con esa opacidad. Bajarla al 4% la haría
+desaparecer. Hasta el 21-09-2026 este tope decía `0.04` «en secciones de
+homepage» sin excluirla, y contradecía su propia especificación cuatro veces y
+media.
 - Máximo 1 watermark visible por viewport
 - Siempre `pointer-events: none; user-select: none;`
 
@@ -479,3 +541,8 @@ Grid interno: 3 columnas. Cards con `background: var(--surface)`, `border: 1px s
 | 2026-06-12 | Editorial grid 1.7fr/1fr con gap 1px | Reemplaza el grid de cards homogéneas. Las líneas de 1px crean separadores sin bordes explícitos — estilo NYT/Guardian. |
 | 2026-06-12 | Sección misión en brand verde `.statement-section` | El CTA anterior ("Construimos puentes...") no tenía identidad visual. Fondo verde editorial con Fraunces italic refuerza la voz institucional. |
 | 2026-06-12 | Guías en fondo brand-pale `.guides-section` | Las guías jurídicas son contenido premium. El fondo verde pálido las distingue visualmente del feed de noticias. |
+| 2026-09-21 | **Línea de descriptor bajo el logotipo** | Encima del pliegue no había ni una palabra que dijera qué es el sitio. La frase que lo define vivía en el pie, a 9,9 pantallas. |
+| 2026-09-21 | **Retirar el marcador `IA` de las tarjetas** | Aparecía 15 veces en una portada. Se conserva el marco narrativo, que es lo que la regla manda mostrar. |
+| 2026-09-21 | **Portada con peso descendente: 3 + 5** | Las ocho secciones pesaban igual y la única variación de la página era aritmética (`LAYOUTS[idx % 3]`). Tres secciones conservan los tres diseños y siete historias; las cinco restantes van compactas con tres y **sin resumen**. Las ocho categorías siguen alcanzables. |
+| 2026-09-21 | **Fundir el banner de apoyo en la sección de misión** | Eran dos bloques de misión haciendo el mismo trabajo, y el segundo gritaba más fuerte que el periodismo (36px contra 20px del h2). Los botones se mueven, no se pierden: era el único CTA de suscripción del cuerpo. |
+| 2026-09-21 | **Banda del layout B en `brand-50`** | `neutral-50/70` sobre el papel dejaba el canal azul en 248,7 contra 248: la banda no se veía y se pagaba igual el sangrado. Es el único recurso de ritmo de la portada. |

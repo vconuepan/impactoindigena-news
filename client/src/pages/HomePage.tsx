@@ -14,11 +14,11 @@ import { formatDate } from '../lib/format'
 import { getHeadline } from '../lib/title-label'
 import { SEO, CommonOgTags } from '../lib/seo'
 import { buildWebSiteSchema, buildOrganizationSchema } from '../lib/structured-data'
-import SupportBanner from '../components/SupportBanner'
 import SpotlightBand from '../components/SpotlightBand'
 import CasosSection from '../components/CasosSection'
 import DailySnippet from '../components/DailySnippet'
 import { usePositivity } from '../contexts/PositivityContext'
+import { useSubscribe } from '../components/SubscribeProvider'
 import { mixHomepageStories, pickHero } from '../lib/mix-stories'
 import { ISSUE_ORDER } from '../lib/issue-order'
 
@@ -32,6 +32,9 @@ const NARRATIVE_LABELS: Record<string, string> = {
   alianza: 'Alianza',
   confrontacion: 'Confrontación',
 }
+
+/** Mismo destino que el boton «Apoyanos» de la cabecera (PublicLayout). */
+const KOFI_URL = 'https://ko-fi.com/impactoindigena'
 
 // ---------------------------------------------------------------------------
 // Hero
@@ -216,17 +219,30 @@ function IssueSection({
   heroStoryId,
   layout,
   divider,
+  maxStories,
+  compact = false,
 }: {
   issue: PublicIssue
   allStories: PublicStory[]
   heroStoryId: string | null
   layout: LayoutVariant
   divider?: 'quote' | 'snippet' | 'diamond' | 'none'
+  maxStories: number
+  /** Seccion de la cola: tres historias y sin resumen bajo la tarjeta. */
+  compact?: boolean
 }) {
-  // Exclude the hero story from this section
-  const stories = heroStoryId
+  /*
+   * El corte va DESPUES de sacar la historia del hero, no antes.
+   *
+   * El hero sale de una de las ocho secciones, y cual depende del dial de tono.
+   * Si se cortara antes, esa seccion mostraria una tarjeta menos que las demas
+   * y cual queda corta cambiaria al mover el dial. Por eso el llamador pide una
+   * historia de colchon y el recorte definitivo se hace aqui.
+   */
+  const stories = (heroStoryId
     ? allStories.filter((s) => s.id !== heroStoryId)
     : allStories
+  ).slice(0, maxStories)
 
   if (stories.length === 0) return null
 
@@ -234,7 +250,20 @@ function IssueSection({
 
   return (
     <>
-      <section className={`relative mb-8 mt-16 md:mt-32 ${layout === 'B' ? '-mx-4 md:-mx-8 px-4 md:px-8 py-8 md:py-12 bg-neutral-50/70 rounded-none' : ''}`}>
+      {/*
+       * La banda del layout B va en `brand-50`, no en `neutral-50/70`.
+       *
+       * Medido: `neutral-50` es #FAFAF9 y al 70% sobre el papel #FAFAF8 dejaba
+       * el canal azul en 248,7 contra 248 — una diferencia de 1/255 de UN canal.
+       * La banda no se veia. Se pagaba el sangrado y el relleno para no pintar
+       * nada, y con ello la portada se quedaba sin su unico recurso de ritmo:
+       * ocho secciones seguidas con exactamente el mismo fondo.
+       *
+       * `brand-50` (#f0f9f4) si se distingue del papel y ya existe en
+       * tailwind.config.js. No inventar `brand-pale`: esta en DESIGN.md y nunca
+       * se implemento.
+       */}
+      <section className={`relative mb-8 mt-16 md:mt-32 ${layout === 'B' ? '-mx-4 md:-mx-8 px-4 md:px-8 py-8 md:py-12 bg-brand-50' : ''}`}>
         {/* Pre-rendered PNG to avoid Chromium inline-SVG compositing bug */}
         <div className="absolute -left-12 top-0 -translate-y-[40%] z-10 pointer-events-none select-none hidden md:block w-[200px] h-[200px]">
           <img src={`/illustrations/${issue.slug}.png`} alt="" className="opacity-[0.18] w-full h-full" />
@@ -300,7 +329,7 @@ function IssueSection({
             <div className="space-y-5">
               <div className="grid gap-5 md:grid-cols-3">
                 {stories.slice(0, 3).map((story) => (
-                  <StoryCard key={story.id} story={story} variant="equal" />
+                  <StoryCard key={story.id} story={story} variant="equal" hideSummary={compact} />
                 ))}
               </div>
               {stories.length > 3 && (
@@ -340,7 +369,26 @@ function QuoteDivider({ stories }: { stories: PublicStory[] }) {
 // Mission statement section
 // ---------------------------------------------------------------------------
 
+/**
+ * La seccion de mision, que ahora tambien es el punto de apoyo.
+ *
+ * Hasta el 21-sep-2026 la portada llevaba DOS bloques de mision haciendo el
+ * mismo trabajo: este y un `SupportBanner` a pantalla completa cinco secciones
+ * mas abajo. El segundo gritaba mas fuerte que el periodismo -su titular corria
+ * a 36px contra los 20px del titulo de seccion, 1,8:1- y repetia los dos
+ * botones que ya estan en la cabecera.
+ *
+ * Fundirlos deja una sola declaracion y un solo punto de apoyo. Los botones se
+ * MUEVEN aqui, no se pierden: era el unico CTA de suscripcion del cuerpo de la
+ * portada, y el embudo del boletin ya esta medido como el cuello del sitio.
+ *
+ * Sin iconos a proposito. El par icono+boton redondeado era la mitad de lo que
+ * hacia leer el bloque anterior como una landing de producto.
+ */
 function StatementSection() {
+  const { t } = useTranslation()
+  const { openSubscribe } = useSubscribe()
+
   return (
     <section
       className="my-12 mx-auto"
@@ -398,23 +446,49 @@ function StatementSection() {
         Cubrimos las historias que ponen a los pueblos indígenas como protagonistas, no como víctimas.
       </p>
 
-      {/* CTA */}
-      <Link
-        to="/metodologia"
-        className="font-dm-sans transition-colors hover:border-white/60"
+      {/* La promesa del medio, heredada del banner que este bloque reemplaza */}
+      <p
+        className="font-lora mb-8"
         style={{
-          display: 'inline-block',
-          border: '1px solid rgba(255,255,255,0.30)',
-          borderRadius: '9999px',
-          fontSize: '13px',
-          fontWeight: '600',
-          color: '#fff',
-          padding: '10px 20px',
-          textDecoration: 'none',
+          fontSize: '15px',
+          lineHeight: '1.7',
+          color: 'rgba(255,255,255,0.70)',
+          maxWidth: '520px',
+          whiteSpace: 'pre-line',
         }}
       >
-        Nuestra metodología →
-      </Link>
+        {t('support.message')}
+      </p>
+
+      {/* CTA: suscribirse manda, apoyar y metodologia acompañan */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={() => openSubscribe()}
+          className="font-dm-sans rounded-full bg-accent-500 text-white hover:bg-accent-600 transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800"
+          style={{ fontSize: '13px', fontWeight: '600', padding: '10px 20px' }}
+        >
+          {t('nav.subscribe')}
+        </button>
+
+        <a
+          href={KOFI_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-dm-sans rounded-full border border-white/30 text-white hover:border-white/60 transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800"
+          style={{ fontSize: '13px', fontWeight: '600', padding: '10px 20px', textDecoration: 'none' }}
+        >
+          {t('support.button')}
+          <span className="sr-only"> {t('support.opensInNewTab')}</span>
+        </a>
+
+        <Link
+          to="/metodologia"
+          className="font-dm-sans text-white/70 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-white rounded"
+          style={{ fontSize: '13px', fontWeight: '600', padding: '10px 4px', textDecoration: 'none' }}
+        >
+          Nuestra metodología →
+        </Link>
+      </div>
     </section>
   )
 }
@@ -424,6 +498,27 @@ function StatementSection() {
 // ---------------------------------------------------------------------------
 
 const LAYOUTS: LayoutVariant[] = ['A', 'B', 'C']
+
+/**
+ * Cuantas secciones van en la PORTADA de la portada.
+ *
+ * Hasta el 21-sep-2026 las ocho secciones pesaban exactamente lo mismo: las
+ * ocho pedian siete historias, las ocho traian el mismo encabezado, la misma
+ * marca de agua y el mismo «Ver todas». La unica variacion de la pagina era
+ * aritmetica -`LAYOUTS[idx % 3]`-, no editorial: nada miraba las noticias, asi
+ * que ninguna podia pesar mas que otra. Una pagina cuyo ritmo lo decide un
+ * modulo se lee como lo que es, un render y no una portada.
+ *
+ * Con esto hay tres niveles: frente, cuerpo y cola. Las tres primeras
+ * secciones conservan los tres diseños y sus siete historias; de la cuarta en
+ * adelante van en formato compacto con tres. Las ocho categorias siguen
+ * alcanzables desde la portada -cambia su peso, no su presencia-, que era la
+ * condicion: el 5-sep filtrar por una lista mas corta hizo desaparecer cuatro
+ * categorias con 1.180 historias.
+ */
+const FRONT_SECTIONS = 3
+const FRONT_STORIES = 7
+const TAIL_STORIES = 3
 
 export default function HomePage() {
   const { t } = useTranslation()
@@ -495,12 +590,19 @@ export default function HomePage() {
           // Atado a ISSUE_ORDER, agregar una categoria ya no desajusta nada.
           <>
             {ISSUE_ORDER.map((slug, i) => (
-              <IssueSectionSkeleton key={slug} layout={LAYOUTS[i % LAYOUTS.length]} />
+              <IssueSectionSkeleton
+                key={slug}
+                layout={i < FRONT_SECTIONS ? LAYOUTS[i % LAYOUTS.length] : 'C'}
+                compact={i >= FRONT_SECTIONS}
+              />
             ))}
           </>
         ) : sortedIssues.length > 0 ? (
           sortedIssues.map((issue, idx) => {
-            const layout = LAYOUTS[idx % LAYOUTS.length]
+            // Frente: los tres diseños y siete historias. Cola: compacto y tres.
+            const enPortada = idx < FRONT_SECTIONS
+            const layout: LayoutVariant = enPortada ? LAYOUTS[idx % LAYOUTS.length] : 'C'
+            const maxStories = enPortada ? FRONT_STORIES : TAIL_STORIES
             const isLast = idx === sortedIssues.length - 1
             const divider: 'quote' | 'snippet' | 'diamond' | 'none' = isLast
               ? 'none'
@@ -509,8 +611,10 @@ export default function HomePage() {
                 : 'snippet'
 
             const buckets = storiesByIssueBuckets[issue.slug]
+            // +1 de colchon: la seccion que aporta el hero pierde una historia
+            // al filtrarla, y cual es depende del dial de tono.
             const mixed = buckets
-              ? mixHomepageStories(buckets, 7, positivity)
+              ? mixHomepageStories(buckets, maxStories + 1, positivity)
               : []
 
             return (
@@ -521,15 +625,14 @@ export default function HomePage() {
                 heroStoryId={heroStory?.id ?? null}
                 layout={layout}
                 divider={divider}
+                maxStories={maxStories}
+                compact={!enPortada}
               />
             )
           }).reduce<React.ReactNode[]>((acc, section, idx) => {
             acc.push(section)
             if (idx === 0) {
               acc.push(<StatementSection key="statement-section" />)
-            }
-            if (idx === 1) {
-              acc.push(<SupportBanner key="support-banner" />)
             }
             return acc
           }, [])
