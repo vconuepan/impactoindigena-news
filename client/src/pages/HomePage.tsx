@@ -192,7 +192,20 @@ function RuledSection({ issue }: { issue: PublicIssue }) {
       />
       <h2
         className="font-fraunces"
-        style={{ fontSize: '20px', fontWeight: '700', letterSpacing: '-0.01em', color: '#1C1917' }}
+        /*
+         * 28px/600, que es lo que DESIGN.md especifica en su tabla tipografica
+         * y el codigo nunca ejecuto.
+         *
+         * A 20px el rotulo que ORGANIZA la portada era el septimo texto mas
+         * grande de la pagina: por debajo del titular de la tarjeta destacada
+         * (24px) y del horizontal (22px). El encabezado no mandaba sobre lo que
+         * encabeza, y esa inversion es la que hacia que ocho secciones seguidas
+         * se leyeran como una lista y no como una portada.
+         *
+         * El peso baja de 700 a 600 a proposito: a 28px, Fraunces en 700 pesa
+         * demasiado junto al titular de la tarjeta.
+         */
+        style={{ fontSize: '28px', fontWeight: '600', letterSpacing: '-0.01em', color: '#1C1917' }}
       >
         {issue.name}
       </h2>
@@ -263,7 +276,7 @@ function IssueSection({
        * tailwind.config.js. No inventar `brand-pale`: esta en DESIGN.md y nunca
        * se implemento.
        */}
-      <section className={`relative mb-8 mt-16 md:mt-32 ${layout === 'B' ? '-mx-4 md:-mx-8 px-4 md:px-8 py-8 md:py-12 bg-brand-50' : ''}`}>
+      <section className={`relative mb-8 mt-16 md:mt-20 ${layout === 'B' ? '-mx-4 md:-mx-8 px-4 md:px-8 py-8 md:py-12 bg-brand-50' : ''}`}>
         {/* Pre-rendered PNG to avoid Chromium inline-SVG compositing bug */}
         <div className="absolute -left-12 top-0 -translate-y-[40%] z-10 pointer-events-none select-none hidden md:block w-[200px] h-[200px]">
           <img src={`/illustrations/${issue.slug}.png`} alt="" className="opacity-[0.18] w-full h-full" />
@@ -277,9 +290,9 @@ function IssueSection({
             <>
               {/* Mobile: stacked */}
               <div className="block md:hidden space-y-4">
-                <StoryCard story={featured} variant="featured" />
+                <StoryCard story={featured} variant="featured" showCategory={false} />
                 {rest.slice(0, 2).map((story) => (
-                  <StoryCard key={story.id} story={story} variant="compact" />
+                  <StoryCard key={story.id} story={story} variant="compact" showCategory={false} />
                 ))}
               </div>
               {/* Desktop: editorial grid */}
@@ -295,7 +308,7 @@ function IssueSection({
                 }}
               >
                 <div style={{ gridRow: '1 / 3', background: '#FFFFFF' }}>
-                  <StoryCard story={featured} variant="featured" />
+                  <StoryCard story={featured} variant="featured" showCategory={false} />
                 </div>
                 {rest.slice(0, 2).map((story) => (
                   <div
@@ -303,7 +316,7 @@ function IssueSection({
                     className="[&_article]:border-b-0 [&_article]:py-0"
                     style={{ background: '#FFFFFF', padding: '24px 28px', overflow: 'hidden', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}
                   >
-                    <StoryCard story={story} variant="compact" />
+                    <StoryCard story={story} variant="compact" showCategory={false} />
                   </div>
                 ))}
               </div>
@@ -313,11 +326,11 @@ function IssueSection({
           {/* Layout B: Full-width horizontal card + compact row below */}
           {layout === 'B' && (
             <div className="space-y-5">
-              <StoryCard story={featured} variant="horizontal" />
+              <StoryCard story={featured} variant="horizontal" showCategory={false} />
               {rest.length > 0 && (
                 <div className="grid gap-5 md:grid-cols-3">
                   {rest.slice(0, 3).map((story) => (
-                    <StoryCard key={story.id} story={story} variant="compact" />
+                    <StoryCard key={story.id} story={story} variant="compact" showCategory={false} />
                   ))}
                 </div>
               )}
@@ -329,13 +342,13 @@ function IssueSection({
             <div className="space-y-5">
               <div className="grid gap-5 md:grid-cols-3">
                 {stories.slice(0, 3).map((story) => (
-                  <StoryCard key={story.id} story={story} variant="equal" hideSummary={compact} />
+                  <StoryCard key={story.id} story={story} variant="equal" hideSummary={compact} showCategory={false} />
                 ))}
               </div>
               {stories.length > 3 && (
                 <div className="grid gap-5 md:grid-cols-3">
                   {stories.slice(3, 6).map((story) => (
-                    <StoryCard key={story.id} story={story} variant="compact" />
+                    <StoryCard key={story.id} story={story} variant="compact" showCategory={false} />
                   ))}
                 </div>
               )}
@@ -576,7 +589,12 @@ export default function HomePage() {
       )}
 
       {/* Issue sections with rotating layouts */}
-      <div className="page-section-wide md:-mt-14 min-h-screen">
+      {/*
+       * Sin `md:-mt-14`. Era una compensacion de un solape que ya no existe:
+       * hoy solo se come el padding superior del propio contenedor y acerca la
+       * primera seccion al hero mas de lo que manda la escala de espaciado.
+       */}
+      <div className="page-section-wide min-h-screen">
         {isLoading ? (
           // Un esqueleto POR SECCION, derivado de ISSUE_ORDER.
           //
@@ -603,12 +621,21 @@ export default function HomePage() {
             const enPortada = idx < FRONT_SECTIONS
             const layout: LayoutVariant = enPortada ? LAYOUTS[idx % LAYOUTS.length] : 'C'
             const maxStories = enPortada ? FRONT_STORIES : TAIL_STORIES
-            const isLast = idx === sortedIssues.length - 1
-            const divider: 'quote' | 'snippet' | 'diamond' | 'none' = isLast
-              ? 'none'
-              : idx % 2 === 0
-                ? 'quote'
-                : 'snippet'
+            /*
+             * Dos interrupciones en toda la portada, no siete.
+             *
+             * El ternario anterior ponia una entre CADA par de secciones: cuatro
+             * pull-quotes identicos -comilla gris centrada, italica centrada,
+             * «Articulo original, via ...»- y tres snippets. Medido: 1.712 px de
+             * una portada de 10.498, y ninguno llevaba a una noticia que no
+             * estuviera ya en la pagina. Repetido siete veces, el recurso deja de
+             * marcar ritmo y pasa a SER el ritmo, que es justo lo contrario.
+             *
+             * Quedan dos, en indices fijos, uno de cada tipo: una cita despues de
+             * la segunda seccion y un snippet a la mitad de la cola.
+             */
+            const divider: 'quote' | 'snippet' | 'diamond' | 'none' =
+              idx === 2 ? 'quote' : idx === 5 ? 'snippet' : 'none'
 
             const buckets = storiesByIssueBuckets[issue.slug]
             // +1 de colchon: la seccion que aporta el hero pierde una historia

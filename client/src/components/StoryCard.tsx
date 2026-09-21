@@ -25,6 +25,17 @@ interface StoryCardProps {
    * peso descendente bajaba el alto y empeoraba lo que venia a arreglar.
    */
   hideSummary?: boolean
+  /**
+   * Oculta el pill de categoria. Lo apaga la PORTADA, donde cada seccion ya
+   * lleva la categoria en su `h2`.
+   *
+   * Medido el 21-sep-2026: doce tarjetas repetian palabra por palabra el titulo
+   * que tenian encima -tres «CONSULTA Y CONSENTIMIENTO» bajo el h2 «Consulta y
+   * Consentimiento»-. Dentro de una seccion rotulada el pill no informa nada; en
+   * una lista mezclada -busqueda, guardados, una pagina de tema- si, y por eso
+   * el valor por defecto es mostrarlo.
+   */
+  showCategory?: boolean
 }
 
 function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | 'xs' }) {
@@ -161,7 +172,7 @@ function CardImage({
   )
 }
 
-export default function StoryCard({ story, variant = 'featured', hideSummary = false }: StoryCardProps) {
+export default function StoryCard({ story, variant = 'featured', hideSummary = false, showCategory = true }: StoryCardProps) {
   const { i18n } = useTranslation()
   const issueSlug = story.issue?.slug ?? story.feed?.issue?.slug ?? 'general-news'
   const issueName = story.issue?.name ?? story.feed?.issue?.name ?? ''
@@ -216,7 +227,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
             {(story.relevance ?? 0) >= 8 && <EditorialSeal />}
             {/* Headline + category */}
             <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-4">
-              {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
+              {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} />}
               {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} dark />}
               {getTitleLabel(localizedStory) && (
                 <span className="block text-[10px] font-bold uppercase tracking-widest text-white/60 mb-1.5 font-dm-sans">{getTitleLabel(localizedStory)}</span>
@@ -262,7 +273,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
           </div>
         </Link>
         <div className="p-5">
-          {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
+          {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} />}
           {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
           <div className="flex items-start justify-between gap-1">
             <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
@@ -288,7 +299,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
         <div className="flex flex-col md:flex-row">
           {/* Text left */}
           <div className="flex-1 p-5 md:p-6">
-            {issueName && <CategoryPill name={issueName} hex={colors.hex} />}
+            {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} />}
             {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
             <div className="flex items-start justify-between gap-2">
               <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
