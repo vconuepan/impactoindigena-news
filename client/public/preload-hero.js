@@ -77,7 +77,16 @@
             new Date(q.datePublished || q.dateCrawled) - new Date(p.datePublished || p.dateCrawled)
           )
         })
-        var u = a[0] && a[0].imageUrl
+        // La mas reciente QUE TRAIGA IMAGEN, igual que `pickHero`. Antes se
+        // miraba solo a[0]: si la mas nueva venia sin foto, no se precargaba
+        // nada aunque la portada si fuera a pintar una.
+        var u = null
+        for (var t = 0; t < a.length; t++) {
+          if (a[t] && a[t].imageUrl) {
+            u = a[t].imageUrl
+            break
+          }
+        }
         if (!u) return
         // setAttribute y no propiedades: `l.as` y `l.fetchPriority` se reflejan en
         // los navegadores pero NO en jsdom, y el test no podria comprobarlos.

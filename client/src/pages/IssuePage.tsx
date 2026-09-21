@@ -16,6 +16,7 @@ import { usePositivity } from '../contexts/PositivityContext'
 import DailySnippet from '../components/DailySnippet'
 import { positivityToEmotionTags } from '../lib/mix-stories'
 import type { PublicStory } from '@shared/types'
+import { scrollBehavior } from '../lib/scroll'
 
 // ---------------------------------------------------------------------------
 // Story group with a specific layout variant
@@ -308,7 +309,7 @@ export default function IssuePage() {
                   else prev.set('page', String(newPage))
                   return prev
                 })
-                window.scrollTo({ top: 0, behavior: 'smooth' })
+                window.scrollTo({ top: 0, behavior: scrollBehavior() })
               }}
             />
           </>

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { SEO, CommonOgTags } from '../lib/seo'
 import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
+import { scrollBehavior } from '../lib/scroll'
 
 const META = {
   title: 'Glosario de términos indígenas | Voces Indígenas',
@@ -312,7 +313,7 @@ export default function GlossaryPage() {
                               setActiveLetter(null)
                               setFilter('')
                               setTimeout(() => {
-                                document.getElementById(anchor)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                                document.getElementById(anchor)?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' })
                               }, 50)
                             }}
                             className="text-xs text-brand-800 hover:text-brand-900 underline underline-offset-2 focus-visible:ring-2 focus-visible:ring-brand-500 rounded"

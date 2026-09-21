@@ -237,5 +237,8 @@
     "analyzed": "artículos analizados",
     "selected": "seleccionados",
     "sources": "fuentes activas"
+  },
+  "story": {
+    "olderStory": "Noticia antigua"
   }
 }

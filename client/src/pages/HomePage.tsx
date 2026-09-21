@@ -8,7 +8,6 @@ import { HeroSkeleton, IssueSectionSkeleton } from '../components/skeletons'
 import type { PublicIssue } from '../lib/api'
 import type { PublicStory } from '@shared/types'
 import { getCategoryColor } from '../lib/category-colors'
-import { getCategoryPattern } from '../lib/category-patterns'
 import { parsePoints, stripMarkdown, stripPrefix, limitSentences } from '../lib/parse-points'
 import { formatDate } from '../lib/format'
 import { getHeadline } from '../lib/title-label'
@@ -56,9 +55,7 @@ const HERO_FALLBACK = 'linear-gradient(150deg, rgba(13,95,60,0.8) 0%, #1a1a1a 60
 
 function HeroSection({ story }: { story: PublicStory }) {
   const { i18n } = useTranslation()
-  const issueSlug = story.issue?.slug ?? story.feed?.issue?.slug ?? 'general-news'
   const issueName = story.issue?.name ?? story.feed?.issue?.name ?? ''
-  const Pattern = getCategoryPattern(issueSlug)
   const dateStr = story.datePublished ? formatDate(story.datePublished) : null
   const heroImage = story.imageUrl || null
 
@@ -94,9 +91,7 @@ function HeroSection({ story }: { story: PublicStory }) {
           <div
             className="w-full h-full relative"
             style={{ background: HERO_FALLBACK }}
-          >
-            {Pattern && <Pattern opacity={0.18} />}
-          </div>
+          />
         )}
 
         {/* Brand green gradient overlay */}
@@ -104,13 +99,6 @@ function HeroSection({ story }: { story: PublicStory }) {
           className="absolute inset-0"
           style={{ background: HERO_OVERLAY }}
         />
-
-        {/* Geometric watermark — top right, opacity 0.04 */}
-        {Pattern && (
-          <div className="absolute top-0 right-0 w-64 h-64 pointer-events-none select-none" aria-hidden="true">
-            <Pattern opacity={0.04} />
-          </div>
-        )}
 
         {/* Content */}
         <div className="absolute inset-0 flex items-end">
@@ -239,7 +227,7 @@ function IssueSection({
   allStories: PublicStory[]
   heroStoryId: string | null
   layout: LayoutVariant
-  divider?: 'quote' | 'snippet' | 'diamond' | 'none'
+  divider?: 'quote' | 'snippet' | 'none'
   maxStories: number
   /** Seccion de la cola: tres historias y sin resumen bajo la tarjeta. */
   compact?: boolean
@@ -372,7 +360,6 @@ function IssueSection({
         <QuoteDivider stories={allStories} />
       )}
       {divider === 'snippet' && <DailySnippet issueSlug={issue.slug} />}
-      {divider === 'diamond' && <hr className="section-divider" />}
     </>
   )
 }
@@ -644,7 +631,7 @@ export default function HomePage() {
              * Quedan dos, en indices fijos, uno de cada tipo: una cita despues de
              * la segunda seccion y un snippet a la mitad de la cola.
              */
-            const divider: 'quote' | 'snippet' | 'diamond' | 'none' =
+            const divider: 'quote' | 'snippet' | 'none' =
               idx === 2 ? 'quote' : idx === 5 ? 'snippet' : 'none'
 
             const buckets = storiesByIssueBuckets[issue.slug]

@@ -344,20 +344,6 @@
     vertical-align: middle;
   }
 
-  /* Decorative oversized open-quote behind pull quotes */
-  .decorative-quote {
-    @apply relative;
-  }
-
-  .decorative-quote::before {
-    content: '\201C';
-    @apply absolute -top-4 -left-2 text-brand-300 pointer-events-none select-none;
-    font-size: 8rem;
-    line-height: 1;
-    opacity: 0.12;
-    font-family: 'Lora', Georgia, serif;
-  }
-
   /* Ruled heading: ——— TITLE ——— */
   .ruled-heading {
     @apply flex items-center gap-4 text-xs font-bold uppercase tracking-widest text-neutral-400;

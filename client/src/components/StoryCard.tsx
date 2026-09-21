@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { PublicStory } from '@shared/types'
 import { getCategoryColor, hexToRgba } from '../lib/category-colors'
-import { getCategoryPattern } from '../lib/category-patterns'
 import { formatDate, storyAgeMonths } from '../lib/format'
 import { getTitleLabel, getHeadline } from '../lib/title-label'
 import { isRead } from '../lib/reading-history'
@@ -39,6 +38,7 @@ interface StoryCardProps {
 }
 
 function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | 'xs' }) {
+  const { t } = useTranslation()
   const sourceDate = story.sourceDatePublished ? formatDate(story.sourceDatePublished) : null
   const publishDate = story.datePublished ? formatDate(story.datePublished) : null
   const ageMonths = story.sourceDatePublished ? storyAgeMonths(story.sourceDatePublished) : 0
@@ -66,9 +66,19 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
           · Publicado {publishDate}
         </span>
       )}
+      {/*
+        * Neutrales del sistema, no el ambar por defecto de Tailwind.
+        *
+        * `amber-50/700/200` son tres colores de fabrica dentro de una paleta
+        * tierra calibrada a mano, y era el unico sitio del sitio publico donde
+        * aparecian: en medio de ocho familias elegidas por distancia perceptual,
+        * un amarillo de libreria se lee como lo que es. La insignia avisa de una
+        * fecha, no de un error, asi que tampoco le corresponde el terracota, que
+        * DESIGN.md reserva para urgencia.
+        */}
       {isOld && (
-        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200">
-          Noticia antigua
+        <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide bg-neutral-100 text-neutral-600 border border-neutral-200">
+          {t('story.olderStory')}
         </span>
       )}
     </div>
@@ -235,7 +245,6 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   const issueSlug = story.issue?.slug ?? story.feed?.issue?.slug ?? 'general-news'
   const issueName = story.issue?.name ?? story.feed?.issue?.name ?? ''
   const colors = getCategoryColor(issueSlug)
-  const Pattern = getCategoryPattern(issueSlug)
   const [read, setRead] = useState(false)
 
   useEffect(() => {
@@ -286,13 +295,11 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 className="w-full h-full object-cover"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
-                    {Pattern && <Pattern opacity={0.25} />}
                   </div>
                 }
               />
             ) : (
               <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
-                {Pattern && <Pattern opacity={0.25} />}
               </div>
             )}
             {/* Gradient overlay */}
@@ -334,13 +341,11 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 className="w-full h-full object-cover"
                 fallback={
                   <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
-                    {Pattern && <Pattern opacity={0.2} />}
                   </div>
                 }
               />
             ) : (
               <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
-                {Pattern && <Pattern opacity={0.2} />}
               </div>
             )}
             {imageUrl && (story.relevance ?? 0) >= 8 && <EditorialSeal />}
@@ -416,7 +421,6 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                       className="w-full h-full"
                       style={{ background: `linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})` }}
                     >
-                      {Pattern && <Pattern opacity={0.22} />}
                     </div>
                   }
                 />
@@ -425,7 +429,6 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                   className="w-full h-full"
                   style={{ background: `linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})` }}
                 >
-                  {Pattern && <Pattern opacity={0.22} />}
                 </div>
               )}
               {imageUrl && (story.relevance ?? 0) >= 8 && <EditorialSeal />}

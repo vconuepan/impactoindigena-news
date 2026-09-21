@@ -101,7 +101,26 @@ export function pickHero(
   if (all.length === 0) return null
 
   all.sort(byDateDesc)
-  return all[0]
+
+  /*
+   * La mas reciente QUE TRAIGA FOTOGRAFIA.
+   *
+   * El hero es la portada del sitio: 600px de alto, lo primero que ve cualquiera
+   * que llega. Elegirlo solo por fecha significaba que si la noticia mas nueva
+   * venia sin imagen —cosa que pasa a diario, segun la fuente— la portada abria
+   * con un degradado verde plano. Nada miraba que imagen traia.
+   *
+   * El orden por fecha manda igual: entre las que tienen foto, gana la mas
+   * nueva. Solo si NINGUNA candidata tiene imagen se cae a la primera, que es el
+   * comportamiento anterior.
+   *
+   * OJO: esta eleccion esta replicada a mano en `public/preload-hero.js`, que
+   * corre antes que el bundle y no puede importar nada. `preload-hero.test.ts`
+   * ejecuta ese archivo y compara su eleccion contra esta funcion. Si cambias
+   * una, cambia la otra o el preload del LCP apunta a una imagen distinta de la
+   * que se pinta.
+   */
+  return all.find((s) => s.imageUrl) ?? all[0]
 }
 
 /**

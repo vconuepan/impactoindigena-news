@@ -8,6 +8,7 @@ import { SEO, CommonOgTags } from '../lib/seo'
 import { communityDotColor } from '../lib/category-colors'
 import { publicApi, memberAuth } from '../lib/api'
 import type { PublicStory } from '@shared/types'
+import { scrollBehavior } from '../lib/scroll'
 
 const PAGE_SIZE = 20
 
@@ -491,7 +492,7 @@ export default function CommunityPage() {
                   else prev.set('page', String(newPage))
                   return prev
                 })
-                window.scrollTo({ top: 0, behavior: 'smooth' })
+                window.scrollTo({ top: 0, behavior: scrollBehavior() })
               }}
             />
           </>
