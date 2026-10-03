@@ -203,6 +203,46 @@ function EditorialSeal() {
   )
 }
 
+/**
+ * Relleno de la tarjeta cuando la noticia no trae foto, o la foto no carga.
+ *
+ * Hasta el 3-oct-2026 era un degradado plano del color de la categoria. Ahora
+ * lleva encima el pictograma de seccion de esa categoria, el mismo de la
+ * portada: un solo motivo por categoria, ya dibujado para leerse al 18% de
+ * opacidad (DESIGN.md, «Ilustraciones de seccion»). No se dibujo nada nuevo a
+ * proposito: son formas universales, sin motivos de un pueblo concreto.
+ *
+ * Los PNG tienen fondo blanco, asi que van con `mix-blend-multiply`: el blanco
+ * desaparece sobre el degradado y queda solo el trazo.
+ */
+const ILLUSTRATED_SLUGS = new Set([
+  'cambio-climatico',
+  'chile-indigena',
+  'consulta-y-consentimiento',
+  'cultura-y-conocimientos-ancestrales',
+  'defensores-y-proteccion',
+  'derechos-indigenas',
+  'economias-indigenas',
+  'mujeres-indigenas',
+  'territorio-y-tierras',
+])
+
+function NoPhotoFill({ slug, background }: { slug: string; background: string }) {
+  return (
+    <div className="w-full h-full relative overflow-hidden" style={{ background }}>
+      {ILLUSTRATED_SLUGS.has(slug) && (
+        <img
+          src={`/illustrations/${slug}.png`}
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          className="absolute -right-[8%] -bottom-[14%] h-[95%] w-auto aspect-square opacity-[0.18] mix-blend-multiply pointer-events-none select-none"
+        />
+      )}
+    </div>
+  )
+}
+
 function CardImage({
   src,
   alt,
@@ -294,13 +334,11 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 alt={headlineText}
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
-                  </div>
+                  <NoPhotoFill slug={issueSlug} background={`linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})`} />
                 }
               />
             ) : (
-              <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})` }}>
-              </div>
+              <NoPhotoFill slug={issueSlug} background={`linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})`} />
             )}
             {/* Gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
@@ -340,13 +378,11 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 alt={headlineText}
                 className="w-full h-full object-cover"
                 fallback={
-                  <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
-                  </div>
+                  <NoPhotoFill slug={issueSlug} background={`linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})`} />
                 }
               />
             ) : (
-              <div className="w-full h-full relative" style={{ background: `linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})` }}>
-              </div>
+              <NoPhotoFill slug={issueSlug} background={`linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})`} />
             )}
             {imageUrl && (story.relevance ?? 0) >= 8 && <EditorialSeal />}
           </div>
@@ -417,19 +453,11 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                   alt={headlineText}
                   className="w-full h-full object-cover object-[center_40%]"
                   fallback={
-                    <div
-                      className="w-full h-full"
-                      style={{ background: `linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})` }}
-                    >
-                    </div>
+                    <NoPhotoFill slug={issueSlug} background={`linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})`} />
                   }
                 />
               ) : (
-                <div
-                  className="w-full h-full"
-                  style={{ background: `linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})` }}
-                >
-                </div>
+                <NoPhotoFill slug={issueSlug} background={`linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})`} />
               )}
               {imageUrl && (story.relevance ?? 0) >= 8 && <EditorialSeal />}
             </div>
