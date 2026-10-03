@@ -1,0 +1,18 @@
+{"id": "s01", "label": "sensible", "category": "desalojo/toma", "narrativeFrame": "confrontacion", "text": "Carabineros desalojó una toma de terreno en un fundo de la comuna; hay tres detenidos."}
+{"id": "s02", "label": "sensible", "category": "atentado", "narrativeFrame": null, "text": "Un atentado incendiario destruyó maquinaria forestal durante la madrugada."}
+{"id": "s03", "label": "sensible", "category": "operativo policial", "narrativeFrame": "confrontacion", "text": "Un amplio operativo policial con efectivos del GOPE terminó con dos comuneros formalizados."}
+{"id": "s04", "label": "sensible", "category": "conflicto por tierras", "narrativeFrame": "confrontacion", "text": "La comunidad reclama la usurpación de un predio ancestral que permanece en disputa."}
+{"id": "s05", "label": "sensible", "category": "violencia rural", "narrativeFrame": "confrontacion", "text": "Un agricultor resultó herido de bala en un ataque en la macrozona sur."}
+{"id": "s06", "label": "sensible", "category": "NNA en violencia", "narrativeFrame": null, "text": "Un menor resultó herido durante un allanamiento en la comunidad."}
+{"id": "s07", "label": "sensible", "category": "proceso penal / antiterrorista", "narrativeFrame": null, "text": "La Fiscalía invocó la Ley Antiterrorista contra los imputados por el hecho."}
+{"id": "s08", "label": "sensible", "category": "presos del conflicto", "narrativeFrame": null, "text": "Comuneros en prisión preventiva iniciaron una huelga de hambre indefinida."}
+{"id": "s09", "label": "sensible", "category": "ataque incendiario", "narrativeFrame": "confrontacion", "text": "Encapuchados quemaron camiones en un ataque nocturno en la ruta."}
+{"id": "s10", "label": "sensible", "category": "cultural en conflicto", "narrativeFrame": null, "text": "Una machi denunció una amenaza de muerte tras un operativo policial en su comunidad."}
+{"id": "n01", "label": "neutral", "category": "emprendimiento", "narrativeFrame": "resiliencia", "text": "Una feria de emprendimiento reunió a productores locales en la plaza de la ciudad."}
+{"id": "n02", "label": "neutral", "category": "deporte", "narrativeFrame": "resiliencia", "text": "El club deportivo de la comuna ganó el campeonato regional escolar de fútbol."}
+{"id": "n03", "label": "neutral", "category": "cultura", "narrativeFrame": "protagonismo", "text": "Un taller de telar enseñó técnicas tradicionales de tejido a jóvenes de la zona."}
+{"id": "n04", "label": "neutral", "category": "clima", "narrativeFrame": "resiliencia", "text": "Las lluvias de la semana mejoraron el estado de los embalses en la región."}
+{"id": "n05", "label": "neutral", "category": "educación", "narrativeFrame": "resiliencia", "text": "Una escuela rural estrenó un laboratorio de computación con paneles solares."}
+{"id": "n06", "label": "neutral", "category": "economía", "narrativeFrame": "resiliencia", "text": "Las exportaciones de arándanos crecieron un doce por ciento esta temporada."}
+{"id": "n07", "label": "neutral", "category": "lengua/cultura", "narrativeFrame": "protagonismo", "text": "Un nuevo diccionario de mapuzugun fue presentado en la universidad regional."}
+{"id": "n08", "label": "neutral", "category": "salud", "narrativeFrame": "resiliencia", "text": "El hospital regional inauguró una nueva ala de pediatría para atención ambulatoria."}

@@ -314,6 +314,14 @@ export const config = {
       postDelayMs: parseInt(process.env.AGENDA_DIGEST_POST_DELAY_MS || '2000', 10),
     },
   },
+  // Gate de sensibilidad editorial del programa Las Otras Voces (src/lib/gate.ts).
+  // Portado del fork el 2026-10-03; aun no cableado al job de publicacion.
+  gate: {
+    // Modo aprendizaje: mientras este encendido TODA historia evaluada por el
+    // gate va a held_for_review. Se apaga con GATE_LEARNING_MODE=false una vez
+    // calibrado contra noticias reales (ver server/eval/README.md).
+    learningMode: process.env.GATE_LEARNING_MODE !== 'false',
+  },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),
     pickModelTier: 'medium' as const,
