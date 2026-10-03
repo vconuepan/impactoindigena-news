@@ -26,7 +26,7 @@ interface CommunityData {
   keywords: string[]
 }
 
-const communities: CommunityData[] = [
+export const communities: CommunityData[] = [
   // ── PUEBLOS ─────────────────────────────────────────────────────────
   {
     slug: 'chile-indigena',
@@ -38,13 +38,16 @@ const communities: CommunityData[] = [
     keywords: [],
   },
   {
+    // Ámbito fijado por el director el 3-oct-2026: el Wallmapu entero, Chile y
+    // Argentina, del Pacífico al Atlántico. «Wallmapu» pertenece a esta vertical
+    // y a ninguna otra; Gulumapu y Puelmapu son sus dos mitades.
     slug: 'mapuche',
     name: 'Pueblo Mapuche',
-    description: 'El pueblo más numeroso de Chile y Argentina. Noticias sobre su territorio, cultura, autonomía y conflictos en el Wallmapu.',
+    description: 'El pueblo más numeroso de Chile y Argentina. Su territorio ancestral, el Wallmapu, va del Pacífico al Atlántico a ambos lados de la cordillera: territorio, cultura, lengua, autonomía y conflictos.',
     type: 'PUEBLO',
     region: 'Chile y Argentina',
     issueIds: [ISSUES.chileIndigena, ISSUES.derechosIndigenas, ISSUES.reconciliacionYPaz],
-    keywords: ['mapuche', 'mapuches', 'wallmapu', 'pehuenche', 'lafkenche', 'pewenche', 'mapuche-ngulu', 'mapuche-willi'],
+    keywords: ['mapuche', 'mapuches', 'wallmapu', 'gulumapu', 'ngulumapu', 'puelmapu', 'pehuenche', 'lafkenche', 'pewenche', 'mapuche-ngulu', 'mapuche-willi'],
   },
   {
     slug: 'aymara',
@@ -94,13 +97,20 @@ const communities: CommunityData[] = [
 
   // ── TERRITORIOS ─────────────────────────────────────────────────────
   {
+    // Hasta el 3-oct-2026 esta vertical se llamaba «Wallmapu / Araucanía» y tenía
+    // «wallmapu» y «araucano» entre sus palabras clave. El director separó los dos
+    // conceptos: Wallmapu es el territorio ancestral del pueblo (vertical mapuche);
+    // la Araucanía es la región administrativa, con todos los que la habitan.
+    // Medido ese día sobre 115 notas: 8 entraban solo por «wallmapu» y las 8 eran
+    // del pueblo, no de la región; «araucano» no aportaba ninguna.
+    // El slug se conserva porque es la URL pública indexada desde septiembre.
     slug: 'wallmapu-araucania',
-    name: 'Wallmapu / Araucanía',
-    description: 'Territorio histórico mapuche. Conflictos de tierras, autonomía y noticias de las regiones de La Araucanía, Los Ríos y Los Lagos.',
+    name: 'Araucanía',
+    description: 'La región de La Araucanía con todos los que la habitan: convivencia, economía, cultura y conflicto en el territorio que comparten mapuche y no mapuche.',
     type: 'TERRITORIO',
-    region: 'Regiones XIV-IX, Chile',
+    region: 'Región de La Araucanía, Chile',
     issueIds: [ISSUES.chileIndigena, ISSUES.derechosIndigenas, ISSUES.reconciliacionYPaz],
-    keywords: ['araucanía', 'la araucanía', 'wallmapu', 'araucano', 'región de la araucanía', 'temuco', 'cautín', 'malleco'],
+    keywords: ['araucanía', 'la araucanía', 'región de la araucanía', 'temuco', 'cautín', 'malleco'],
   },
   {
     slug: 'amazonia',
@@ -231,6 +241,12 @@ async function main() {
   console.log('Done.')
 }
 
-main()
-  .catch((e) => { console.error(e); process.exit(1) })
-  .finally(async () => { await prisma.$disconnect() })
+// Solo corre al ejecutar este archivo. Así otros scripts (por ejemplo
+// migrations/separar-wallmapu-araucania.ts) pueden importar `communities`
+// como fuente de verdad sin disparar el seed completo.
+const ejecutadoDirecto = /seed-communities\.(ts|js)$/.test((process.argv[1] ?? '').replace(/\\/g, '/'))
+if (ejecutadoDirecto) {
+  main()
+    .catch((e) => { console.error(e); process.exit(1) })
+    .finally(async () => { await prisma.$disconnect() })
+}

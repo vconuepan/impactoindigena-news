@@ -69,6 +69,8 @@
     "migration:subclasificar:revertir": "tsx src/scripts/migrations/subclasificar-historias.ts --revertir --apply",
     "migration:seed-cultura": "tsx src/scripts/migrations/seed-tema-cultura.ts",
     "migration:seed-cultura:apply": "tsx src/scripts/migrations/seed-tema-cultura.ts --apply",
+    "migration:separar-wallmapu": "tsx src/scripts/migrations/separar-wallmapu-araucania.ts",
+    "migration:separar-wallmapu:apply": "tsx src/scripts/migrations/separar-wallmapu-araucania.ts --apply",
     "migration:retema": "tsx src/scripts/migrations/retema-historias.ts",
     "migration:retema:apply": "tsx src/scripts/migrations/retema-historias.ts --apply",
     "migration:fix-title-caps": "tsx src/scripts/migrations/fix-title-capitalization.ts",
