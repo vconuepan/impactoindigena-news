@@ -277,15 +277,12 @@ export default function MethodologyPage() {
 
           <h2 className="section-heading mt-10">Sobre este proyecto</h2>
           <p>
-            Voces Indígenas News es una iniciativa de{' '}
+            Voces Indígenas es un programa de la <strong>Fundación KM</strong> y un bien público:
+            gratuito, sin publicidad y con su código abierto. Lo creó{' '}
             <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
               Venancio Coñuepan Mesías
             </a>
-            , fundador de{' '}
-            <a href="https://www.impactoindigena.com" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
-              Voces Indígenas SpA
-            </a>
-            . El Sitio lo opera la <strong>Fundación Coñuepan-Millaquir</strong>. El prototipo fue desarrollado en el marco de la
+            , presidente de la Fundación. El prototipo fue desarrollado en el marco de la
             cohorte <strong>LatAm AI 2025</strong> de{' '}
             <a href="https://changemakerxchange.ai" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
               Changemakerxchange.ai

@@ -90,10 +90,10 @@ export default function AboutPage() {
           <h3 className="section-heading mt-8">Fundador</h3>
           <p>
             <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
-              <strong>Venancio Conuepan Mesías</strong>
+              <strong>Venancio Coñuepan Mesías</strong>
             </a>{" "}
-            es abogado mapuche, fundador de Voces Indígenas SpA y director ejecutivo de la
-            Fundación Empresas Indígenas. Su trabajo se ha centrado en la gobernanza
+            es abogado mapuche, presidente y cofundador de la Fundación KM y director ejecutivo de
+            la Fundación Empresas Indígenas. Su trabajo se ha centrado en la gobernanza
             territorial, la mediación intercultural y el emprendimiento indígena — en construir
             instituciones propias, más que en pedir que otros las construyan por nosotros.
           </p>
@@ -166,38 +166,25 @@ export default function AboutPage() {
             jurisprudencia que estos marcos generan y su implementación en los países signatarios.
           </p>
 
-          <h3 className="section-heading mt-8">Quién opera esta plataforma</h3>
+          <h3 className="section-heading mt-8">Un programa de la Fundación KM</h3>
           <p>
-            El Sitio lo opera la <strong>Fundación Coñuepan-Millaquir</strong>, RUT
-            65.191.983-5, organización sin fines de lucro domiciliada en Chile. Es la
-            responsable del tratamiento de datos y la contraparte de los{" "}
+            Voces Indígenas es un programa de la <strong>Fundación KM</strong> y un bien
+            público: gratuito, sin publicidad y con su código abierto. Forma parte de Las Otras
+            Voces, el programa editorial de la Fundación, junto a Voces Araucanía y Voces Mapuche.
+          </p>
+          <p>
+            La Fundación KM, RUT 65.191.983-5, es una organización sin fines de lucro con sede en
+            Temuco, La Araucanía. Es la responsable del tratamiento de datos y la contraparte de
+            los{" "}
             <Link to="/terminos" className="text-brand-800 hover:text-brand-700 font-normal">
               Términos y Condiciones
             </Link>
+            . Conoce el resto de su trabajo en{" "}
+            <a href="https://fundacionkm.org" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
+              fundacionkm.org
+            </a>
             .
           </p>
-          <p>
-            El trabajo se apoya en una red de organizaciones indígenas, entre ellas{" "}
-            <a href="https://www.impactoindigena.com" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700 underline">
-              Voces Indígenas SpA
-            </a>
-            , una Empresa Social Indígena constituida en Chile en 2023 que promueve un
-            cuádruple impacto positivo — económico, social, ambiental y cultural — para
-            contribuir al fortalecimiento de la autonomía de los pueblos indígenas y visibilizar
-            sus saberes para un desarrollo sostenible y autodeterminado.
-          </p>
-
-          <h3 className="section-heading mt-8">Red Indígena Colaborativa</h3>
-          <p>
-            Trabajamos en una red indígena colaborativa que articula capacidades, saberes y
-            recursos junto a:
-          </p>
-          <ul>
-            <li>Fundación Coñuepan-Millaquir por el respeto del mapu</li>
-            <li>Fundación Empresas Indígenas</li>
-            <li>Sociedad de Profesionales Conuepan y Millaquir Limitada</li>
-            <li>Voces Indígenas SpA</li>
-          </ul>
 
           <h3 className="section-heading mt-8">El Modelo R · E · D Indígena</h3>
           <p>
@@ -270,14 +257,14 @@ export default function AboutPage() {
             intencionada, invisibiliza su liderazgo y los excluye de las decisiones que los afectan.
           </p>
           <p>
-            <strong>Voces Indígenas News</strong> nace para cambiar esa narrativa. Usamos
+            <strong>Voces Indígenas</strong> nace para cambiar esa narrativa. Usamos
             inteligencia artificial para monitorear fuentes especializadas en todo el mundo,
             analizar el impacto real de las noticias en los pueblos indígenas y presentar esa
             información de forma clara, accesible y sin publicidad. La elección es concreta:
             construir con los pueblos indígenas, o seguir construyendo sin ellos.
           </p>
 
-          <h3 className="section-heading mt-8">Nuestros Proyectos</h3>
+          <h3 className="section-heading mt-8">Otros programas de la Fundación KM</h3>
           <p>Iniciativas que transforman territorios y relaciones.</p>
         </div>
 
@@ -285,17 +272,17 @@ export default function AboutPage() {
           {[
             {
               titulo: "Café Climático",
-              texto: "Espacio de encuentro intercultural que promueve el diálogo entre juventudes, líderes indígenas, científicos y tomadores de decisión sobre cambio climático. Siete ediciones en La Araucanía, en parques, colegios y universidades.",
+              texto: "Espacio de encuentro intercultural que promueve el diálogo entre juventudes, líderes indígenas, científicos y tomadores de decisión sobre cambio climático. Siete ediciones en La Araucanía entre 2024 y 2025, junto a Force of Nature, en parques, colegios y universidades.",
               accent: "#34d399",
             },
             {
-              titulo: "Red Misión Nielol",
-              texto: "Red de voluntariado indígena y no indígena que impulsa acciones de educación ambiental, restauración ecológica y cuidado del territorio, con base en el cerro Nielol de Temuco como símbolo de encuentro y resistencia cultural mapuche.",
+              titulo: "Red Misión Ñielol",
+              texto: "Red de voluntariado indígena y no indígena que impulsa acciones de educación ambiental, restauración ecológica y cuidado del territorio, con base en el cerro Ñielol de Temuco como símbolo de encuentro y resistencia cultural mapuche.",
               accent: "#38bdf8",
             },
             {
               titulo: "Programa Liderazgo Escolar",
-              texto: "Iniciativa que fortalece el liderazgo de estudiantes indígenas en contextos escolares, promoviendo el orgullo cultural, la acción climática y el compromiso con sus comunidades.",
+              texto: "Programa nacional de la Fundación Pacto Social que la Fundación ejecutó en La Araucanía entre 2023 y 2024, en tres ediciones: 62 estudiantes de 8 colegios, y cada edición culminó en un proyecto de los propios jóvenes.",
               accent: "#fbbf24",
             },
             {

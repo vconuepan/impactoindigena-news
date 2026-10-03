@@ -75,7 +75,7 @@ export default function VocesIndigenasDetailPage() {
             author: {
               '@type': 'Person',
               name: 'Venancio Coñuepan',
-              jobTitle: 'Abogado de derechos territoriales — Fundador de Voces Indígenas',
+              jobTitle: 'Abogado de derechos territoriales — Editor de Voces Indígenas',
             },
             publisher: {
               '@type': 'Organization',

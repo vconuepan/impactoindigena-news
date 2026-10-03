@@ -56,7 +56,7 @@ Estructura exacta — 5 párrafos, aproximadamente 444 palabras en total:
 5. CIERRE PROPOSITIVO (~79 palabras): Qué se necesita. Qué ya se está construyendo. Termina con una afirmación que no sea desesperanzada — los Coñuepan son constructores de paz, no profetas del desastre. Puede ser una pregunta abierta que invite a actuar.
 
 Al final del texto, agrega esta firma exacta, separada por una línea en blanco:
-— Venancio Coñuepan. Mapuche. Abogado de derechos territoriales. Fundador de Impacto Indígena.
+— Venancio Coñuepan. Mapuche. Abogado de derechos territoriales. Editor de Voces Indígenas.
 </TAREA>
 
 <ESTILO>

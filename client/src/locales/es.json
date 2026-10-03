@@ -187,7 +187,7 @@
   "support": {
     "eyebrow": "Periodismo indígena independiente",
     "heading": "Tendemos puentes entre el mundo indígena y la sociedad.",
-    "message": "Gratuito. Independiente. Sin publicidad.\nAyúdanos a mantenerlo así.",
+    "message": "Gratuito. Independiente. Sin publicidad.\nUn programa de la Fundación KM.",
     "button": "Apóyanos en Ko-fi",
     "opensInNewTab": "(abre en nueva pestaña)"
   },
@@ -229,7 +229,7 @@
     "readMethod": "Cómo trabajamos",
     "readSources": "Nuestras fuentes",
     "published": "Publicado desde Chile.",
-    "rights": "© {{year}} Voces Indígenas"
+    "rights": "© {{year}} Voces Indígenas · un programa de la Fundación KM"
   },
   "curationStats": {
     "ariaLabel": "Estadísticas de curaduría",

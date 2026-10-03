@@ -722,8 +722,7 @@ ${flashSection}
           <tr>
             <td style="padding: 28px 32px; text-align: center; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
               <p style="margin: 0 0 4px; font-size: 15px; font-weight: 700; color: #111827;">Gratuito. Independiente. Sin publicidad.</p>
-              <p style="margin: 0 0 18px; font-size: 14px; color: #6b7280;">Si este newsletter es &uacute;til para tu trabajo, ay&uacute;danos a seguir.</p>
-              <a href="https://ko-fi.com/impactoindigena" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 11px 28px; font-size: 14px; font-weight: 700; color: #ffffff; background-color: #1B3A2D; border-radius: 8px; text-decoration: none;">&#10084;&#65039; Apoyar Voces Ind&iacute;genas</a>
+              <p style="margin: 0; font-size: 14px; color: #6b7280;">Un programa de la Fundaci&oacute;n KM.</p>
             </td>
           </tr>
 
@@ -747,7 +746,7 @@ ${flashSection}
                 <a href="https://vocesindigenas.org/feedback" style="color: #6ee7b7; text-decoration: none;">Feedback</a>
               </p>
               <p style="margin: 0; font-size: 11px; color: #4ade80; opacity: 0.6;">
-                Voces Ind&iacute;genas &bull; Chile &bull; <a href="{{unsubscribe}}" style="color: #4ade80; text-decoration: underline;">Cancelar suscripci&oacute;n</a>
+                Voces Ind&iacute;genas &bull; un programa de la Fundaci&oacute;n KM &bull; Chile &bull; <a href="{{unsubscribe}}" style="color: #4ade80; text-decoration: underline;">Cancelar suscripci&oacute;n</a>
               </p>
             </td>
           </tr>

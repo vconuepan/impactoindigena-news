@@ -38,7 +38,7 @@ export default function TermsPage() {
 
           <h2 className="section-heading mt-8">2. Titular</h2>
           <p>
-            El Sitio es operado por la <strong>Fundación Coñuepan-Millaquir</strong>, RUT
+            El Sitio es operado por la <strong>Fundación KM</strong>, RUT
             65.191.983-5, organización sin fines de lucro domiciliada en Chile. Contacto:{" "}
             <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
               contacto@fundacionkm.org
@@ -70,7 +70,7 @@ export default function TermsPage() {
             publicó, enlaza al artículo original y atribuye a su autor cuando el
             medio lo publica. Los resúmenes,
             análisis, calificaciones, textos editoriales, marca, diseño y
-            software del Sitio son propiedad de la Fundación Coñuepan-Millaquir o se usan
+            software del Sitio son propiedad de la Fundación KM o se usan
             bajo licencia.
           </p>
           <p>
@@ -110,7 +110,7 @@ export default function TermsPage() {
             El Sitio se ofrece "tal cual". Si bien procuramos calidad y
             precisión, no garantizamos la exactitud, completitud ni vigencia de
             los resúmenes, ni la disponibilidad ininterrumpida del servicio. En
-            la máxima medida permitida por la ley, la Fundación Coñuepan-Millaquir no será
+            la máxima medida permitida por la ley, la Fundación KM no será
             responsable por daños indirectos o consecuenciales derivados del uso
             del Sitio o de la confianza depositada en sus contenidos.
           </p>

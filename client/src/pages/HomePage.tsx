@@ -33,7 +33,6 @@ const NARRATIVE_LABELS: Record<string, string> = {
 }
 
 /** Mismo destino que el boton «Apoyanos» de la cabecera (PublicLayout). */
-const KOFI_URL = 'https://ko-fi.com/impactoindigena'
 
 // ---------------------------------------------------------------------------
 // Hero
@@ -479,17 +478,6 @@ function StatementSection() {
         >
           {t('nav.subscribe')}
         </button>
-
-        <a
-          href={KOFI_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-dm-sans rounded-full border border-white/30 text-white hover:border-white/60 transition-colors focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-800"
-          style={{ fontSize: '13px', fontWeight: '600', padding: '10px 20px', textDecoration: 'none' }}
-        >
-          {t('support.button')}
-          <span className="sr-only"> {t('support.opensInNewTab')}</span>
-        </a>
 
         <Link
           to="/metodologia"

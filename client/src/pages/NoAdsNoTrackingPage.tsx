@@ -35,7 +35,7 @@ const COMPARISON = [
   { us: 'Sin publicidad', them: 'Anuncios de display, nativos y patrocinados' },
   { us: 'Sin rastreo*', them: 'Decenas de rastreadores de terceros' },
   { us: 'Sin cebo de clics', them: 'Titulares optimizados para el engagement' },
-  { us: 'Financiado por donaciones', them: 'Financiado por publicidad' },
+  { us: 'Sostenido por la Fundación KM, sin fines de lucro', them: 'Financiado por publicidad' },
   { us: 'Nunca vende datos', them: 'Datos frecuentemente vendidos o compartidos' },
 ]
 

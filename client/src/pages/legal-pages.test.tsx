@@ -52,9 +52,9 @@ describe('las tres paginas legales declaran su vigencia', () => {
 
 describe('un solo operador del Sitio, y es el que tiene RUT', () => {
   for (const { nombre, componente } of PAGINAS) {
-    it(`${nombre}: nombra a la Fundacion Coñuepan-Millaquir`, () => {
+    it(`${nombre}: nombra a la Fundacion KM`, () => {
       renderPage(componente)
-      expect(screen.getAllByText(/Fundación Coñuepan-Millaquir/).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/Fundación KM/).length).toBeGreaterThan(0)
     })
   }
 
@@ -66,12 +66,16 @@ describe('un solo operador del Sitio, y es el que tiene RUT', () => {
     // responsable del tratamiento en una sola sesion de navegacion debilitan la
     // cadena de a quien se le reclama, asi que el sitio usa una sola.
     //
+    // El 3-oct-2026 el director eligio «Fundacion KM», que es uno de los cinco
+    // nombres inscritos de la misma persona juridica (RUT 65.191.983-5). Desde
+    // entonces tampoco vale «Coñuepan-Millaquir»: un solo nombre en todo el sitio.
+    //
     // Se lee del fuente y no del render porque el nombre aparece en paginas
     // distintas; lo que se vigila es el repositorio entero.
     const paginas = path.resolve(__dirname)
     for (const archivo of ['AboutPage.tsx', 'MethodologyPage.tsx', 'ImprintPage.tsx', 'TermsPage.tsx', 'PrivacyPage.tsx', 'CookiesPage.tsx']) {
       const fuente = readFileSync(path.join(paginas, archivo), 'utf8')
-      expect(fuente, `${archivo} usa la grafia antigua del nombre de la Fundacion`).not.toMatch(/Konwepang|Millakir/)
+      expect(fuente, `${archivo} usa otro nombre de la Fundacion que «Fundación KM»`).not.toMatch(/Konwepang|Millakir|Coñuepan-Millaquir/)
     }
   })
 

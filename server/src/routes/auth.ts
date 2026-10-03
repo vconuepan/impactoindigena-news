@@ -331,7 +331,7 @@ router.get('/export', requireMember, async (req, res) => {
 
     const exportData = {
       exportedAt: new Date().toISOString(),
-      responsable: 'Fundación Coñuepan-Millaquir (vocesindigenas.org)',
+      responsable: 'Fundación KM (vocesindigenas.org)',
       profile: user,
       communityMemberships: memberships,
       digestExclusions,

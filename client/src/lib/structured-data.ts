@@ -4,10 +4,18 @@ import { SEO } from './seo'
 
 const LOGO_URL = `${SEO.siteUrl}/images/logo-horizontal.png`
 
+/** Voces Indigenas es un programa de la Fundacion KM: asi lo declaran los buscadores. */
+const FUNDACION_KM = {
+  '@type': 'NGO',
+  name: 'Fundación KM',
+  url: 'https://fundacionkm.org',
+}
+
 const publisher = {
   '@type': 'Organization',
   name: SEO.siteName,
   url: SEO.siteUrl,
+  parentOrganization: FUNDACION_KM,
   logo: {
     '@type': 'ImageObject',
     url: LOGO_URL,
@@ -63,6 +71,7 @@ export function buildOrganizationSchema() {
     name: SEO.siteName,
     url: SEO.siteUrl,
     logo: LOGO_URL,
+    parentOrganization: FUNDACION_KM,
     sameAs: [
       'https://www.instagram.com/impactoindigena',
       'https://x.com/impactoindigena',

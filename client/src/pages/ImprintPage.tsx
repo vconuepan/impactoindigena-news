@@ -29,7 +29,7 @@ export default function ImprintPage() {
         <div className="prose max-w-none">
           <h2 className="section-heading mt-8">Contact</h2>
           <p className="text-neutral-600 leading-relaxed">
-            Fundación Coñuepan-Millaquir — vocesindigenas.org<br />
+            Fundación KM — vocesindigenas.org<br />
             <a
               href="mailto:contacto@fundacionkm.org"
               className="text-brand-800 hover:text-brand-700"

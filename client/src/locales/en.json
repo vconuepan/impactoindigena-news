@@ -187,7 +187,7 @@
   "support": {
     "eyebrow": "Independent indigenous journalism",
     "heading": "Building bridges between indigenous peoples and society.",
-    "message": "Free. Independent. Ad-free.\nHelp us keep it that way.",
+    "message": "Free. Independent. Ad-free.\nA program of Fundación KM.",
     "button": "Support us on Ko-fi",
     "opensInNewTab": "(opens in new tab)"
   },
@@ -229,7 +229,7 @@
     "readMethod": "How we work",
     "readSources": "Our sources",
     "published": "Published from Chile.",
-    "rights": "© {{year}} Voces Indígenas"
+    "rights": "© {{year}} Voces Indígenas · a program of Fundación KM"
   },
   "curationStats": {
     "ariaLabel": "Curation statistics",

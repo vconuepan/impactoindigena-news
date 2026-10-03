@@ -16,7 +16,6 @@ import { PositivityProvider } from "../contexts/PositivityContext";
 import { MoodDialPanel } from "../components/PositivitySlider";
 import CurationStatsBar from "../components/CurationStatsBar";
 
-const KOFI_URL = "https://ko-fi.com/impactoindigena";
 const INSTAGRAM_URL = "https://www.instagram.com/impactoindigena";
 const TWITTER_URL = "https://x.com/impactoindigena";
 const YOUTUBE_URL = "https://www.youtube.com/@impactoindigena/";
@@ -151,7 +150,6 @@ const FOOTER_DISTRIBUTE = [
 const FOOTER_CONNECT = [
   { labelKey: "footer.newsletter", href: "/newsletter" },
   { labelKey: "footer.rssFeed", href: `${API_BASE}/feed`, raw: true },
-  { labelKey: "footer.support", href: KOFI_URL, external: true },
   { labelKey: "footer.contact", href: "/feedback" },
 ];
 
@@ -412,15 +410,6 @@ function PublicLayoutInner() {
                 <NewsletterIcon className="w-3.5 h-3.5 shrink-0" />
                 {t('nav.subscribe')}
               </button>
-              <a
-                href={KOFI_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm font-bold tracking-wide transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded-full px-4 py-2.5 min-h-[44px] border border-brand-700 text-brand-800 hover:bg-brand-50"
-              >
-                {t('nav.support')}
-                <span className="sr-only"> (opens in new tab)</span>
-              </a>
               <button onClick={toggleLanguage} className="inline-flex items-center text-xs font-bold tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-2.5 min-h-[44px] text-neutral-400 hover:text-brand-700 border border-neutral-200 hover:border-brand-300" aria-label={t('language.current')}>
                 {t('language.toggle')}
               </button>
@@ -653,16 +642,6 @@ function PublicLayoutInner() {
                   <NewsletterIcon className="w-3.5 h-3.5 shrink-0" />
                   {t('nav.subscribe')}
                 </button>
-                <a
-                  href={KOFI_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2 py-2.5 text-sm font-bold text-brand-800 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
-                >
-                  {t('nav.support')}
-                  <span className="sr-only"> (opens in new tab)</span>
-                </a>
                 <button onClick={() => { setMenuOpen(false); toggleLanguage(); }} className="flex items-center gap-2 py-2.5 text-sm font-bold text-neutral-500 hover:text-neutral-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded" aria-label={t('language.current')}>
                   {t('language.toggle')}
                 </button>

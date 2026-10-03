@@ -49,7 +49,7 @@ export default function PrivacyPage() {
           <h2 className="section-heading mt-4">Responsable del tratamiento</h2>
           <p>
             El responsable del tratamiento de datos personales de este sitio es la{" "}
-            <strong>Fundación Coñuepan-Millaquir</strong> (RUT 65.191.983-5),
+            <strong>Fundación KM</strong> (RUT 65.191.983-5),
             organización sin fines de lucro con domicilio en Chile, que opera el
             medio <strong>vocesindigenas.org</strong> como programa con fines
             exclusivamente informativos y educativos. Su representante legal es{" "}

@@ -31,7 +31,7 @@ export default function CookiesPage() {
           </p>
           <h2 className="section-heading mt-8">Responsable</h2>
           <p>
-            <strong>Fundación Coñuepan-Millaquir</strong>, RUT 65.191.983-5,
+            <strong>Fundación KM</strong>, RUT 65.191.983-5,
             organización sin fines de lucro que opera vocesindigenas.org. Contacto:{" "}
             <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
               contacto@fundacionkm.org
