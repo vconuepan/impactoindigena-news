@@ -29,6 +29,13 @@
  * al inicio de palabra, asi que atrapa plurales e inflexiones («imputados»,
  * «atentados») sin disparar por coincidencias dentro de otra palabra («toma»
  * dentro de «automatico»).
+ *
+ * SIGLAS. Un termino de hasta tres letras se coteja como PALABRA COMPLETA, no
+ * como prefijo. Medido el 2026-10-03 sobre 787 notas publicadas: «cam» como
+ * prefijo disparaba en 92 textos, casi todos por «cambio», «camara», «caminos»
+ * y «campesinas», y ninguno por la CAM. Con la palabra completa dispara solo
+ * en las menciones reales. Lo mismo vale para «pdi», «nna» y para las siglas
+ * del Puelmapu que se sumen («ram»).
  */
 
 export type GateDecision = 'auto_publish' | 'held_for_review'
@@ -84,11 +91,19 @@ function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 }
 
-/** Verdadero si `term` aparece al inicio de una palabra de `haystack` (ambos ya normalizados). */
+/** Largo maximo de un termino que se trata como sigla y se coteja entero. */
+const LARGO_SIGLA = 3
+
+/**
+ * Verdadero si `term` aparece en `haystack` (ambos ya normalizados): al inicio de
+ * una palabra para los terminos normales (admite plurales e inflexiones), y como
+ * palabra completa para las siglas de hasta LARGO_SIGLA letras.
+ */
 function matches(haystack: string, term: string): boolean {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  // Limite al inicio de palabra; se admiten letras despues para plurales e inflexiones.
-  return new RegExp(`(^|[^a-z0-9])${escaped}`).test(haystack)
+  const esSigla = term.length <= LARGO_SIGLA && !term.includes(' ')
+  const cierre = esSigla ? '($|[^a-z0-9])' : ''
+  return new RegExp(`(^|[^a-z0-9])${escaped}${cierre}`).test(haystack)
 }
 
 export function evaluateGate(input: GateInput, options: GateOptions): GateResult {

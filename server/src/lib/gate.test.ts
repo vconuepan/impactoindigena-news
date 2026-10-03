@@ -87,4 +87,23 @@ describe('evaluateGate', () => {
     expect(r.decision).toBe('held_for_review')
     expect(r.reasons).toContain('listA:victima')
   })
+
+  // Siglas: palabra completa, no prefijo. Medido sobre 787 notas publicadas, el
+  // prefijo «cam» disparaba en 92 textos por «cambio», «camara», «caminos».
+  it('does not fire a short acronym (cam) as a prefix of ordinary words', () => {
+    const r = evaluateGate(
+      { narrativeFrame: 'confrontacion', text: 'El cambio climatico altera los caminos y la camara regional debate' },
+      NOT_LEARNING,
+    )
+    expect(r.reasons).not.toContain('listB+corroborated:cam')
+    expect(r.signals).not.toContain('listB:cam')
+  })
+
+  it('fires a short acronym (cam) only as a whole word, with accents and punctuation around it', () => {
+    const r = evaluateGate(
+      { narrativeFrame: 'protagonismo', text: 'Vocero de la CAM, en entrevista, descartó negociar.' },
+      NOT_LEARNING,
+    )
+    expect(r.signals).toContain('listB:cam')
+  })
 })
