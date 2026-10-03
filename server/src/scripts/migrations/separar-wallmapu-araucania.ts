@@ -28,15 +28,21 @@ const APLICAR = process.argv.includes('--apply')
 const SLUGS = ['mapuche', 'wallmapu-araucania'] as const
 const prisma = new PrismaClient()
 
+/**
+ * Mismo `where` que la ruta pública GET /api/communities/:slug/stories
+ * (routes/public/communities.ts): publicada, relevancia >= 3 y la condición de
+ * la comunidad. Así el conteo coincide con el `total` que muestra la página.
+ */
 async function publicadasQueEncajan(keywords: string[], issueIds: string[], temas: Set<string>): Promise<number> {
   const cond = buildCommunityCondition(keywords, issueIds, temas).where as Prisma.StoryWhereInput
-  return prisma.story.count({ where: { status: 'published', ...cond } })
+  return prisma.story.count({ where: { status: 'published', relevance: { gte: 3 }, ...cond } })
 }
 
 async function main() {
   console.log(APLICAR ? '=== APLICANDO ===\n' : '=== SIMULACION (sin --apply no escribe) ===\n')
   const temas = new Set((await prisma.issue.findMany({ select: { id: true } })).map((i) => i.id))
   const registro: object[] = []
+  const cambios: Prisma.PrismaPromise<unknown>[] = []
 
   for (const slug of SLUGS) {
     const objetivo = communities.find((c) => c.slug === slug)
@@ -60,8 +66,8 @@ async function main() {
       publicadas: { antes, despues },
     })
 
-    if (APLICAR) {
-      await prisma.community.update({
+    cambios.push(
+      prisma.community.update({
         where: { slug },
         data: {
           name: objetivo.name,
@@ -69,11 +75,14 @@ async function main() {
           region: objetivo.region,
           keywords: objetivo.keywords,
         },
-      })
-    }
+      }),
+    )
   }
 
   if (APLICAR) {
+    // Las dos filas cambian juntas o ninguna.
+    await prisma.$transaction(cambios)
+    console.log(`${cambios.length} comunidades actualizadas en una transacción`)
     mkdirSync('.migraciones-log', { recursive: true })
     const archivo = `.migraciones-log/separar-wallmapu-araucania-${Date.now()}.jsonl`
     appendFileSync(archivo, registro.map((r) => JSON.stringify(r)).join('\n') + '\n')
