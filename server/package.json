@@ -71,6 +71,8 @@
     "migration:seed-cultura:apply": "tsx src/scripts/migrations/seed-tema-cultura.ts --apply",
     "migration:separar-wallmapu": "tsx src/scripts/migrations/separar-wallmapu-araucania.ts",
     "migration:separar-wallmapu:apply": "tsx src/scripts/migrations/separar-wallmapu-araucania.ts --apply",
+    "migration:backfill-reviews": "tsx src/scripts/migrations/backfill-community-reviews.ts",
+    "migration:backfill-reviews:apply": "tsx src/scripts/migrations/backfill-community-reviews.ts --apply",
     "migration:retema": "tsx src/scripts/migrations/retema-historias.ts",
     "migration:retema:apply": "tsx src/scripts/migrations/retema-historias.ts --apply",
     "migration:fix-title-caps": "tsx src/scripts/migrations/fix-title-capitalization.ts",

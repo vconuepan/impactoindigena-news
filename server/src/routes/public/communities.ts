@@ -5,6 +5,12 @@ import { StoryStatus } from '@prisma/client'
 import { config } from '../../config.js'
 import { requireMember } from '../../middleware/auth.js'
 import { sendTransactional } from '../../services/brevo.js'
+import {
+  buildCommunityCondition,
+  temasVivos,
+  getReviewMode,
+  publicCommunityWhere,
+} from '../../lib/communityVisibility.js'
 
 const router = Router()
 const log = createLogger('public:communities')
@@ -43,61 +49,10 @@ const PUBLIC_STORY_SELECT = {
   },
 }
 
-/**
- * Como se decide que historias pertenecen a una comunidad.
- *
- * EL PROBLEMA QUE REPARA. La condicion era `issueId IN (issue_ids)` Y las
- * palabras clave, las dos obligatorias. Los `issue_ids` se cargaron en el seed
- * con identificadores que ya no existen —`issue-chile-005`, `issue-paz-004`—,
- * asi que al 4-sep-2026 ONCE de las dieciseis comunidades apuntaban a algun
- * tema fantasma y dos mostraban CERO historias. "Pueblo Mapuche" sobrevivia de
- * casualidad: de sus tres identificadores, uno seguia vivo.
- *
- * Y el problema se repite: cada vez que cambia la taxonomia, los
- * identificadores guardados quedan viejos. Con las ocho categorias previstas
- * vuelven a romperse todas.
- *
- * COMO SE DECIDE AHORA. Una comunidad es un PUEBLO o un TERRITORIO, y eso se
- * reconoce por como se lo nombra, no por el cajon tematico donde cayo la nota:
- *
- *   1. Si la comunidad tiene palabras clave, MANDAN ellas. Una nota que dice
- *      "mapuche" pertenece al Pueblo Mapuche este en derechos, en cultura o en
- *      economia. Asi la comunidad deja de depender de la taxonomia.
- *   2. Si no tiene palabras clave —las secciones tipo CAUSA, que son temas
- *      disfrazados de comunidad— se cae a los temas, descartando los que ya no
- *      existen.
- *   3. Si no queda ninguna via, no se inventa: devuelve una condicion que no
- *      encaja con nada, y la comunidad se muestra vacia de forma explicita.
- */
-export function buildCommunityCondition(
-  keywords: string[],
-  issueIds: string[],
-  temasVivos: Set<string>,
-): { where: Record<string, unknown>; via: 'keywords' | 'temas' | 'ninguna' } {
-  if (keywords.length > 0) {
-    return {
-      via: 'keywords',
-      where: {
-        OR: keywords.flatMap((kw: string) => [
-          { title: { contains: kw, mode: 'insensitive' as const } },
-          { summary: { contains: kw, mode: 'insensitive' as const } },
-          { sourceTitle: { contains: kw, mode: 'insensitive' as const } },
-        ]),
-      },
-    }
-  }
-
-  const vivos = issueIds.filter(id => temasVivos.has(id))
-  if (vivos.length > 0) return { via: 'temas', where: { issueId: { in: vivos } } }
-
-  return { via: 'ninguna', where: { id: { in: [] } } }
-}
-
-/** Identificadores de tema que existen hoy. Se consulta por corrida, no por historia. */
-async function temasVivos(): Promise<Set<string>> {
-  const issues = await prisma.issue.findMany({ select: { id: true } })
-  return new Set(issues.map(i => i.id))
-}
+// La condicion de pertenencia y el filtro de la retencion por vertical viven
+// en lib/communityVisibility.ts. Se reexporta buildCommunityCondition para que
+// quien la importaba de esta ruta (tests, scripts de migracion) siga igual.
+export { buildCommunityCondition }
 
 // GET /api/communities — list active communities
 router.get('/', async (_req, res) => {
@@ -150,15 +105,15 @@ router.get('/:slug/stories', async (req, res) => {
 
     const page = Math.max(1, parseInt(req.query.page as string, 10) || 1)
     const pageSize = Math.min(50, Math.max(1, parseInt(req.query.pageSize as string, 10) || 20))
-    const minRelevance = 3
 
-    const cond = buildCommunityCondition(keywords, community.issueIds, await temasVivos())
-
-    const where = {
-      status: StoryStatus.published,
-      relevance: { gte: minRelevance },
-      ...cond.where,
-    }
+    // Publicada, relevancia >= 3, palabras clave y la retencion por vertical.
+    // En modo off (sin fila de modo, o la tabla aun no existe) es el where de siempre.
+    const where = publicCommunityWhere({
+      community: { id: community.id, keywords, issueIds: community.issueIds },
+      temas: await temasVivos(),
+      mode: await getReviewMode(community.id),
+      learningMode: config.gate.learningMode,
+    })
 
     const [total, stories] = await Promise.all([
       prisma.story.count({ where }),
@@ -209,15 +164,14 @@ router.get('/:slug/signals', async (req, res) => {
     const now7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
     const now30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
 
-    // Misma regla que en /stories: una comunidad se reconoce por como se la
-    // nombra, no por el cajon tematico. Ver `buildCommunityCondition`.
-    const cond = buildCommunityCondition(keywords, issueIds, await temasVivos())
-
-    const baseWhere = {
-      status: StoryStatus.published,
-      relevance: { gte: 3 },
-      ...cond.where,
-    }
+    // Misma regla que /stories, por la misma funcion: publicada, relevancia >= 3,
+    // palabras clave y la retencion por vertical. Ver lib/communityVisibility.ts.
+    const baseWhere = publicCommunityWhere({
+      community: { id: community.id, keywords, issueIds },
+      temas: await temasVivos(),
+      mode: await getReviewMode(community.id),
+      learningMode: config.gate.learningMode,
+    })
 
     const [
       allStories,

@@ -112,6 +112,10 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   // `actor_email` e `ip_hash` dentro. Va media hora despues de
   // cleanup_analytics para no solaparse con el.
   { jobName: 'cleanup_audit_log',      cronExpression: '30 1 * * 0', enabled: true },
+  // reconcile_community_reviews: cada hora al minuto 17 — concilia la retencion por
+  // vertical (D4). Nace DESHABILITADO: lo enciende el director tras la carga inicial
+  // en sombra. En produccion lo siembra la migracion 20261004000000.
+  { jobName: 'reconcile_community_reviews', cronExpression: '17 * * * *', enabled: false },
 ]
 
 async function main() {

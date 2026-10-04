@@ -27,6 +27,7 @@ import { runCleanupAnalytics } from './cleanupAnalytics.js'
 import { runCleanupAuditLog } from './cleanupAuditLog.js'
 import { runIngestAgenda } from './ingestAgenda.js'
 import { runAgendaWeeklyDigest } from './agendaWeeklyDigest.js'
+import { runReconcileCommunityReviews } from './reconcileCommunityReviews.js'
 
 export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   crawl_feeds: runCrawlFeeds,
@@ -58,4 +59,5 @@ export const JOB_HANDLERS: Record<string, () => Promise<void>> = {
   cleanup_audit_log: runCleanupAuditLog,
   ingest_agenda: runIngestAgenda,
   agenda_weekly_digest: runAgendaWeeklyDigest,
+  reconcile_community_reviews: runReconcileCommunityReviews,
 }

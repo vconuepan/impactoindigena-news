@@ -7,6 +7,7 @@ import { HumanMessage } from '@langchain/core/messages'
 import { z } from 'zod'
 import { Semaphore } from '../../lib/semaphore.js'
 import { config } from '../../config.js'
+import { registerCommunityReviews } from '../../services/communityReview.js'
 
 const router = Router()
 const log = createLogger('maintenance')
@@ -48,6 +49,9 @@ router.post('/republish-slug', async (req, res) => {
   }
   const prevStatus = story.status
   await prisma.story.update({ where: { id: story.id }, data: { status: 'published' } })
+  // Retencion por vertical (D4): este camino republica justo la clase de nota que
+  // alguien habia despublicado; registra lo que dice el gate. Nunca lanza.
+  await registerCommunityReviews([story.id])
   log.info({ slug, prevStatus }, 'force-republished story')
   res.json({ ok: true, slug, prevStatus, newStatus: 'published', title: story.title })
 })

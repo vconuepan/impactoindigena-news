@@ -15,6 +15,7 @@ import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { buildRelatedStoriesPrompt } from '../prompts/related-stories.js'
 import { relatedStoriesResultSchema } from '../schemas/llm.js'
 import { canonicalIssueSlug } from '../lib/issue-slug.js'
+import { registerCommunityReviews } from './communityReview.js'
 
 const log = createLogger('story')
 
@@ -412,12 +413,15 @@ export async function updateStory(id: string, data: Record<string, any>): Promis
         return s
       })
       relatedCache.clear()
+      // Retencion por vertical (D4): registrar lo que dice el gate. Nunca lanza.
+      if (updateData.status === 'published') await registerCommunityReviews([id])
       return story
     }
   }
 
   const result = await prisma.story.update({ where: { id }, data: updateData })
   relatedCache.clear()
+  if (updateData.status === 'published') await registerCommunityReviews([id])
   return result
 }
 
@@ -429,6 +433,7 @@ export async function updateStoryStatus(id: string, status: string): Promise<Sto
   }
   const result = await prisma.story.update({ where: { id }, data })
   relatedCache.clear()
+  if (status === 'published') await registerCommunityReviews([id])
   return result
 }
 
@@ -509,6 +514,9 @@ export async function bulkUpdateStatus(ids: string[], status: string) {
         data: { status: status as StoryStatus, datePublished: now },
       })
     })
+
+    // Retencion por vertical (D4). Cubre al job publish_stories y a /bulk-status.
+    await registerCommunityReviews(ids)
 
     return { count: ids.length }
   }
@@ -1107,13 +1115,15 @@ export async function getStoriesByStatus(
 export async function publishStory(id: string): Promise<Story> {
   const publishData = await preparePublishData(id)
   await ensureEmbedding(id)
-  return prisma.story.update({
+  const story = await prisma.story.update({
     where: { id },
     data: {
       status: StoryStatus.published,
       ...publishData,
     },
   })
+  await registerCommunityReviews([id])
+  return story
 }
 
 export async function rejectStory(id: string): Promise<Story> {
