@@ -40,7 +40,6 @@ const PENDIENTES: Record<string, number> = {
   'routes/public/feed.ts': 2, // RSS por vertical
   'jobs/sendCommunityDigest.ts': 2, // digest semanal
   'routes/public/communities.ts': 2, // correo de bienvenida
-  'routes/public/opendata.ts': 2, // parametro community
 }
 
 function archivos(): string[] {

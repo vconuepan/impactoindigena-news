@@ -43,7 +43,9 @@ app.use(helmet({
 const allowedOrigins = getAllowedOrigins()
 
 // Open CORS for public read-only endpoints (widget/embed API calls from any origin)
-const publicReadPaths = ['/api/stories', '/api/issues', '/api/homepage', '/api/feed', '/api/docs', '/api/podcast']
+// /api/opendata entro el 4-oct-2026: los datos abiertos son un bien publico y
+// deben poder consultarse tambien desde un navegador en otro dominio.
+const publicReadPaths = ['/api/stories', '/api/issues', '/api/homepage', '/api/feed', '/api/docs', '/api/podcast', '/api/opendata']
 app.use((req, res, next) => {
   if (publicReadPaths.some(p => req.path.startsWith(p))) {
     res.set('Access-Control-Allow-Origin', '*')

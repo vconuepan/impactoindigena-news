@@ -679,7 +679,9 @@ const PUBLIC_STORY_SELECT = {
   },
 } as const
 
-function buildIssueCondition(slugEntrante: string): Prisma.StoryWhereInput {
+// Exportada para /api/opendata: los datos abiertos filtran por tema con la MISMA
+// regla que /api/stories (subtemas, alias legado y secciones geograficas).
+export function buildIssueCondition(slugEntrante: string): Prisma.StoryWhereInput {
   // El slug legado sigue resolviendo: viaja en los datos abiertos y en widgets
   // que terceros ya pegaron en sus paginas, y esas llamadas no pasan por las
   // redirecciones del sitio. Ver `lib/issue-slug.ts`.

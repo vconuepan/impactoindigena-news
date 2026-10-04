@@ -73,7 +73,8 @@ The frontend's headers live in `globalHeaders` in `client/public/staticwebapp.co
 | `img-src 'self' data: https:` | Story images come from R2 **and** from arbitrary source domains (crawled og:image), so this has to stay broad. |
 | `font-src 'self'` | Fonts are self-hosted under `/fonts/` — no Google Fonts. |
 | `connect-src 'self'` | `VITE_API_URL` is empty in production; the client calls `/api/*` on the same origin through the SWA proxy. **If the API ever moves to its own hostname, this must list it or every request breaks.** |
-| `frame-src 'none'` | No iframes or embeds anywhere. Revisit if a podcast player gets embedded. |
+| `frame-src 'self'` | Only same-origin iframes: the `/widgets` preview frames `/embed`. Was `'none'` until 2026-10-04, which left the preview blank. |
+| `frame-ancestors 'self'` | No other site may frame us, **except `/embed`**, which overrides the CSP with `frame-ancestors *` and clears `X-Frame-Options` via its own route rule in `staticwebapp.config.json` (with an explicit `rewrite`: route rules don't apply to `navigationFallback`). `swa-config.test.ts` keeps the two CSPs in sync. |
 
 `X-XSS-Protection: 0` is deliberate. The header is deprecated, and its filter can introduce vulnerabilities in old browsers; OWASP recommends disabling it and relying on CSP.
 

@@ -47,8 +47,8 @@ export default function OpenDataPage() {
             <code>GET {API_BASE}/stories</code>
           </pre>
           <p>
-            Uso desde servidor o scripts (curl, R, Python). Las llamadas desde un navegador en
-            otro dominio no están habilitadas.
+            Se puede consultar desde servidores y scripts (curl, R, Python) y también desde el
+            navegador en cualquier dominio: la API responde con CORS abierto.
           </p>
 
           <h2 className="section-heading mt-10">Parámetros</h2>
@@ -77,6 +77,8 @@ export default function OpenDataPage() {
                     <code>oceania</code>, <code>sapmi</code>, <code>europa-occidental</code>,{" "}
                     <code>europa-oriental</code>.
                     <br />
+                    Cada tema incluye sus subtemas.
+                    <br />
                     <span className="text-neutral-500">
                       El slug antiguo <code>desarrollo-sostenible-y-autodeterminado</code> se sigue
                       aceptando y resuelve a <code>economias-indigenas</code>.
@@ -87,7 +89,8 @@ export default function OpenDataPage() {
                   <td className="py-2 pr-4 font-mono text-xs">community</td>
                   <td className="py-2 pr-4">string</td>
                   <td className="py-2">
-                    Slug de una comunidad del directorio. Filtra historias relevantes para esa comunidad.
+                    Slug de una comunidad del directorio. Devuelve las historias que nombran a ese pueblo
+                    o territorio, con la misma regla que su página en el sitio.
                     <br />
                     Los slugs válidos se obtienen con <code>{`GET ${BASE_URL}/api/communities`}</code>.
                     Por ejemplo: <code>mapuche</code>, <code>aymara</code>, <code>rapa-nui</code>,{" "}
@@ -153,7 +156,8 @@ export default function OpenDataPage() {
     "limit": 25,
     "totalPages": 34
   },
-  "attribution": "Datos de Voces Indígenas (vocesindigenas.org). ..."
+  "license": "CC-BY-4.0",
+  "attribution": "Datos de Voces Indígenas (vocesindigenas.org), un programa de la Fundación KM. ..."
 }`}</code>
           </pre>
           <p>
@@ -163,41 +167,18 @@ export default function OpenDataPage() {
           </p>
 
           <h2 className="section-heading mt-10" id="limites">Límites de uso</h2>
-          <div className="overflow-x-auto mt-4">
-            <table className="w-full text-sm border-collapse">
-              <thead>
-                <tr className="border-b border-neutral-200">
-                  <th className="text-left py-2 pr-4 font-normal">Nivel</th>
-                  <th className="text-left py-2 pr-4 font-normal">Límite</th>
-                  <th className="text-left py-2 font-normal">Acceso</th>
-                </tr>
-              </thead>
-              <tbody className="text-neutral-600">
-                <tr className="border-b border-neutral-100">
-                  <td className="py-2 pr-4">Público</td>
-                  <td className="py-2 pr-4">100 solicitudes / hora</td>
-                  <td className="py-2">Sin registro, sin token</td>
-                </tr>
-                <tr>
-                  <td className="py-2 pr-4">Institucional</td>
-                  <td className="py-2 pr-4">1 000 solicitudes / hora</td>
-                  <td className="py-2">Token <code>Authorization: Bearer &lt;token&gt;</code></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <h2 className="section-heading mt-10" id="institutional">Acceso institucional</h2>
           <p>
-            Universidades, ONGs, bufetes de DDHH y periodistas que necesiten mayor volumen pueden
-            solicitar un token institucional. Incluye 1 000 solicitudes/hora y soporte directo.
+            Hasta 100 solicitudes por hora, sin registro ni token. Al superarlas, la API responde
+            HTTP 429; las cabeceras <code>RateLimit-Remaining</code> y <code>RateLimit-Reset</code>{' '}
+            indican cuántas quedan y cuándo se reinicia el contador. Para descargar el archivo
+            completo usa <code>limit=100</code> y espacia las solicitudes.
           </p>
           <p>
-            Escríbenos a{' '}
+            Si tu investigación necesita más volumen, escríbenos a{' '}
             <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
               contacto@fundacionkm.org
             </a>{' '}
-            con asunto <strong>"API institucional"</strong> e indica tu organización y uso previsto.
+            y vemos cómo resolverlo.
           </p>
 
           <h2 className="section-heading mt-10">Atribución</h2>
@@ -214,10 +195,14 @@ export default function OpenDataPage() {
 
           <h2 className="section-heading mt-10">Licencia y términos</h2>
           <p>
-            Los datos son de uso libre para investigación, periodismo, y trabajo de ONGs, con
-            atribución requerida. No se permite redistribución comercial de los datos sin autorización.
-            Los metadatos de análisis IA son propios de Voces Indígenas; las noticias fuente pertenecen
-            a sus respectivos autores.
+            Los datos que produce Voces Indígenas (títulos, resúmenes, análisis de relevancia y
+            clasificación por tema) se publican bajo licencia{' '}
+            <a href="https://creativecommons.org/licenses/by/4.0/deed.es" className="text-brand-800 hover:text-brand-700">
+              Creative Commons Atribución 4.0 (CC BY 4.0)
+            </a>
+            : puedes reutilizarlos, también con fines comerciales, citando la fuente como se indica
+            arriba. Las noticias originales, a las que enlaza <code>sourceUrl</code>, pertenecen a
+            sus autores y no están cubiertas por esta licencia.
           </p>
 
         </div>

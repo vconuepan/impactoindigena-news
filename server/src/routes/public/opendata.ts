@@ -2,65 +2,50 @@
  * Open Data API — public, rate-limited, no auth required.
  *
  * Designed for researchers, journalists, and NGOs who want to use
- * Voces Indígenas data in their work. When cited in papers or reports,
- * this API generates institutional backlinks that build domain authority.
+ * Voces Indígenas data in their work. Data is published under CC BY 4.0.
  *
- * Rate limits:
- *   - Public tier (no token):       100 requests / hour / IP
- *   - Institutional tier (Bearer token): 1 000 requests / hour / IP
+ * Rate limit: 100 requests / hour per client (plus the general API limit).
  *
- * Token management: tokens are stored as a comma-separated env var
- * OPENDATA_API_TOKENS. Generate with: openssl rand -hex 32
+ * Hasta el 4-oct-2026 habia un nivel «institucional» de 1.000 solicitudes por
+ * hora con token Bearer. Se retiro: no habia ningun token emitido (la variable
+ * OPENDATA_API_TOKENS no existia en produccion) y, aunque lo hubiera, el
+ * apiLimiter general (100 cada 15 min) cortaba antes de llegar a 1.000.
+ *
+ * Los filtros reutilizan las reglas del resto del sitio en vez de copiarlas:
+ * - topic: buildIssueCondition, la misma de /api/stories (subtemas, el slug
+ *   legado y las secciones geograficas por pais).
+ * - community: publicCommunityWhere, el UNICO lugar que decide que notas
+ *   muestra una vertical (lib/communityVisibility.ts). Sin esto, una nota que
+ *   una persona retuvo en una vertical seguia saliendo por los datos abiertos.
  */
 import { Router } from 'express'
 import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
+import type { Prisma } from '@prisma/client'
 import prisma from '../../lib/prisma.js'
 import { createLogger } from '../../lib/logger.js'
 import { config } from '../../config.js'
+import { buildIssueCondition } from '../../services/story.js'
+import { getReviewMode, publicCommunityWhere, temasVivos } from '../../lib/communityVisibility.js'
 
 const router = Router()
 const log = createLogger('public:opendata')
 
-// ─── Rate limiters ────────────────────────────────────────────────────────────
+export const OPENDATA_LICENSE = 'CC-BY-4.0'
+export const OPENDATA_ATTRIBUTION =
+  'Datos de Voces Indígenas (vocesindigenas.org), un programa de la Fundación KM. Licencia CC BY 4.0: ' +
+  'reutilización libre, también comercial, con atribución. Cite como: Voces Indígenas, Open Data API, ' +
+  'https://vocesindigenas.org/opendata'
 
-const publicOpenDataLimiter = rateLimit({
+// ─── Rate limiter ─────────────────────────────────────────────────────────────
+
+const openDataLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
   max: 100,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Rate limit exceeded. Public tier: 100 requests/hour. For higher limits, see /opendata#institutional.' },
+  message: { error: 'Rate limit exceeded: 100 requests/hour. See /opendata#limites.' },
 })
-
-const institutionalOpenDataLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 1000,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Rate limit exceeded. Institutional tier: 1 000 requests/hour.' },
-})
-
-// ─── Token auth middleware ────────────────────────────────────────────────────
-
-function getValidTokens(): Set<string> {
-  const raw = process.env.OPENDATA_API_TOKENS ?? ''
-  return new Set(raw.split(',').map(t => t.trim()).filter(Boolean))
-}
-
-function resolveRateLimiter(req: any, res: any, next: any) {
-  const authHeader = req.headers['authorization'] ?? ''
-  if (authHeader.startsWith('Bearer ')) {
-    const token = authHeader.slice(7).trim()
-    const validTokens = getValidTokens()
-    if (validTokens.size > 0 && validTokens.has(token)) {
-      req.openDataTier = 'institutional'
-      return institutionalOpenDataLimiter(req, res, next)
-    }
-    // Invalid token → treat as public (don't reveal token existence)
-  }
-  req.openDataTier = 'public'
-  return publicOpenDataLimiter(req, res, next)
-}
 
 // ─── Query schema ─────────────────────────────────────────────────────────────
 
@@ -74,7 +59,7 @@ const openDataQuerySchema = z.object({
 
 // ─── GET /api/opendata/stories ────────────────────────────────────────────────
 
-router.get('/stories', resolveRateLimiter, async (req, res) => {
+router.get('/stories', openDataLimiter, async (req, res) => {
   const parsed = openDataQuerySchema.safeParse(req.query)
   if (!parsed.success) {
     res.status(400).json({ error: 'Invalid query parameters', details: parsed.error.flatten().fieldErrors })
@@ -84,39 +69,29 @@ router.get('/stories', resolveRateLimiter, async (req, res) => {
   const { topic, community, since, page, limit } = parsed.data
 
   try {
-    const where: any = { status: 'published', slug: { not: null } }
+    // Cada filtro es una condicion independiente y se combinan con AND: asi
+    // topic y community no se pisan aunque los dos traigan su propio OR.
+    const conditions: Prisma.StoryWhereInput[] = [{ status: 'published', slug: { not: null } }]
 
     if (topic) {
-      where.issue = { slug: topic }
+      conditions.push(buildIssueCondition(topic))
     }
 
     if (community) {
-      // Stories that have at least one keyword matching a community's keywords
-      const comm = await prisma.community.findUnique({
-        where: { slug: community },
-        select: { keywords: true, issueIds: true },
+      const comm = await prisma.community.findFirst({
+        where: { slug: community, active: true },
+        select: { id: true, keywords: true, issueIds: true },
       })
       if (!comm) {
         res.status(404).json({ error: `Community not found: ${community}` })
         return
       }
-      const conditions: any[] = []
-      if (comm.keywords.length > 0) {
-        conditions.push({
-          OR: comm.keywords.map((kw: string) => ({
-            OR: [
-              { title: { contains: kw, mode: 'insensitive' } },
-              { summary: { contains: kw, mode: 'insensitive' } },
-            ],
-          })),
-        })
-      }
-      if (comm.issueIds.length > 0) {
-        conditions.push({ issueId: { in: comm.issueIds } })
-      }
-      if (conditions.length > 0) {
-        where.OR = conditions
-      }
+      conditions.push(publicCommunityWhere({
+        community: comm,
+        temas: await temasVivos(),
+        mode: await getReviewMode(comm.id),
+        learningMode: config.gate.learningMode,
+      }))
     }
 
     if (since) {
@@ -125,8 +100,10 @@ router.get('/stories', resolveRateLimiter, async (req, res) => {
         res.status(400).json({ error: 'Invalid "since" date. Use ISO 8601 format, e.g. "2025-01-01".' })
         return
       }
-      where.datePublished = { gte: sinceDate }
+      conditions.push({ datePublished: { gte: sinceDate } })
     }
+
+    const where: Prisma.StoryWhereInput = { AND: conditions }
 
     const [stories, total] = await Promise.all([
       prisma.story.findMany({
@@ -163,7 +140,7 @@ router.get('/stories', resolveRateLimiter, async (req, res) => {
       source: s.feed?.title ?? null,
     }))
 
-    log.info({ topic, community, since, page, limit, total, tier: (req as any).openDataTier }, 'opendata query')
+    log.info({ topic, community, since, page, limit, total }, 'opendata query')
 
     res.set('Cache-Control', 'public, max-age=300')
     res.json({
@@ -174,7 +151,8 @@ router.get('/stories', resolveRateLimiter, async (req, res) => {
         limit,
         totalPages: Math.ceil(total / limit),
       },
-      attribution: 'Datos de Voces Indígenas (vocesindigenas.org). Reutilización libre con atribución — cite como: Voces Indígenas, Open Data API, https://vocesindigenas.org/opendata',
+      license: OPENDATA_LICENSE,
+      attribution: OPENDATA_ATTRIBUTION,
     })
   } catch (err) {
     log.error({ err }, 'opendata query failed')
