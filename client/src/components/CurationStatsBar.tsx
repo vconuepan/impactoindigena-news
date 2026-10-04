@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { API_BASE } from '../lib/api'
 
 interface CurationStats {
   crawled24h: number
@@ -12,7 +13,11 @@ export default function CurationStatsBar() {
   const { t, i18n } = useTranslation()
 
   useEffect(() => {
-    fetch('/api/stats/daily')
+    // API_BASE y no '/api' a secas: con la ruta relativa la barra ignoraba
+    // VITE_API_URL y, en local contra otro backend, quedaba siempre vacia.
+    // (El tracking de usePageTracking SI va relativo a proposito: en local no
+    // debe contar visitas en la analitica de produccion.)
+    fetch(`${API_BASE}/stats/daily`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then((data: CurationStats) => setStats(data))
       .catch(() => {})
