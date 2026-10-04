@@ -114,6 +114,7 @@ model Story {
   linkedinPosts          LinkedInPost[]
   facebookPosts          FacebookPost[]
   communityPosts         CommunityPost[]
+  communityReviews       StoryCommunityReview[]
   createdAt              DateTime     @default(now()) @map("created_at")
   updatedAt              DateTime     @updatedAt @map("updated_at")
 
@@ -547,6 +548,8 @@ model Community {
   members          CommunityMember[]
   digestExclusions DigestExclusion[]
   posts            CommunityPost[]
+  reviewMode       CommunityReviewMode?
+  storyReviews     StoryCommunityReview[]
 
   @@index([slug])
   @@map("communities")
@@ -791,3 +794,58 @@ model SocialToken {
 
   @@map("social_tokens")
 }
+
+// --- Retención por vertical (D4, Las Otras Voces) ---
+// Diseño: .plans/2026-10-04_retencion-por-vertical.md · SQL: migración 20261004000000.
+// Modelos NUEVOS en tablas nuevas: ninguna columna se agrega a communities ni a
+// stories, así que ninguna consulta existente cambia si el código se despliega
+// antes de que el director corra el SQL. Los valores de texto los fija un CHECK
+// en la base (no enums de Postgres); los tipos TS viven en lib/communityVisibility.ts.
+
+/// Interruptor de revisión de una vertical. Sin fila = 'off'.
+model CommunityReviewMode {
+  communityId String    @id @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  /// 'off' | 'shadow' | 'enforce'
+  mode        String
+  updatedBy   String?   @map("updated_by")
+  updatedAt   DateTime  @default(now()) @map("updated_at")
+
+  @@map("community_review_modes")
+}
+
+/// Una nota en una vertical: lo que dijo el gate (gate*) y lo que decidió una
+/// persona (reviewState released/held). La máquina nunca pisa una decisión humana.
+model StoryCommunityReview {
+  id               String    @id @default(uuid())
+  storyId          String    @map("story_id")
+  story            Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  communityId      String    @map("community_id")
+  community        Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  /// 'auto_publish' | 'held_for_review'
+  gateDecision     String    @map("gate_decision")
+  gateReasons      String[]  @default([]) @map("gate_reasons")
+  gateSignals      String[]  @default([]) @map("gate_signals")
+  gateScore        Int       @default(0) @map("gate_score") @db.SmallInt
+  gateLearningMode Boolean   @map("gate_learning_mode")
+  /// 'short' | 'full'
+  gateTextSource   String    @map("gate_text_source")
+  gateVersion      String    @map("gate_version")
+  gateEvaluatedAt  DateTime  @default(now()) @map("gate_evaluated_at")
+  /// 'auto' | 'pending' (máquina) · 'released' | 'held' (persona)
+  reviewState      String    @map("review_state")
+  /// 'sensitive' | 'out_of_scope'
+  reviewCode       String?   @map("review_code")
+  reviewNote       String?   @map("review_note")
+  reviewedBy       String?   @map("reviewed_by")
+  reviewedAt       DateTime? @map("reviewed_at")
+  publishedAt      DateTime? @map("published_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([storyId, communityId])
+  @@index([communityId, reviewState, gateScore(sort: Desc)], map: "story_community_reviews_queue_idx")
+  @@index([storyId])
+  @@map("story_community_reviews")
+}
+

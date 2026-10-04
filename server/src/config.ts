@@ -321,6 +321,12 @@ export const config = {
     // gate va a held_for_review. Se apaga con GATE_LEARNING_MODE=false una vez
     // calibrado contra noticias reales (ver server/eval/README.md).
     learningMode: process.env.GATE_LEARNING_MODE !== 'false',
+    // Que texto evalua el gate al registrar la retencion por vertical:
+    //   short = titulo + etiqueta + resumen (lo que se midio y calibro)
+    //   full  = lo anterior + el cuerpo de la fuente
+    // Decision del director pendiente (diseño D4, seccion 5); el default es la
+    // recomendacion. El script de carga inicial imprime las cifras de las dos.
+    textSource: (process.env.GATE_TEXT_SOURCE === 'full' ? 'full' : 'short') as 'short' | 'full',
   },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),

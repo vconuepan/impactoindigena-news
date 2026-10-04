@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateGate } from './gate.js'
+import { evaluateGate, GATE_VERSION, LISTA_A, LISTA_B, LARGO_SIGLA } from './gate.js'
+import { createHash } from 'node:crypto'
 
 const NOT_LEARNING = { learningMode: false }
 
@@ -159,3 +160,24 @@ describe('evaluateGate', () => {
     expect(r.signals).toContain('listB:cam')
   })
 })
+
+// Retencion por vertical (D4): cada fila guarda con que reglas se evaluo, y el
+// conciliador reevalua las decisiones de maquina cuando la huella cambia.
+describe('GATE_VERSION', () => {
+  it('es la huella de las dos listas y del largo de sigla', () => {
+    const esperado = createHash('sha1')
+      .update(['A', ...LISTA_A, 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA)].join('\n'))
+      .digest('hex')
+      .slice(0, 12)
+    expect(GATE_VERSION).toBe(esperado)
+    expect(GATE_VERSION).toMatch(/^[0-9a-f]{12}$/)
+  })
+  it('cambia si cambia un termino', () => {
+    const otra = createHash('sha1')
+      .update(['A', ...LISTA_A, 'termino-nuevo', 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA)].join('\n'))
+      .digest('hex')
+      .slice(0, 12)
+    expect(otra).not.toBe(GATE_VERSION)
+  })
+})
+

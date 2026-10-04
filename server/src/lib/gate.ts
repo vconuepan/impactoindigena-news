@@ -47,6 +47,8 @@
  * a proposito: identidad no es conflicto.
  */
 
+import { createHash } from 'node:crypto'
+
 export type GateDecision = 'auto_publish' | 'held_for_review'
 
 /** Marcas del programa. La calibracion por marca esta reservada, aun no ramifica. */
@@ -139,7 +141,7 @@ function normalize(s: string): string {
 }
 
 /** Largo maximo de un termino que se trata como sigla y se coteja entero. */
-const LARGO_SIGLA = 3
+export const LARGO_SIGLA = 3
 
 /**
  * Verdadero si `term` aparece en `haystack` (ambos ya normalizados): al inicio de
@@ -180,3 +182,16 @@ export function evaluateGate(input: GateInput, options: GateOptions): GateResult
     signals,
   }
 }
+
+/**
+ * Huella de las reglas con que se evaluo una nota. La retencion por vertical la
+ * guarda en cada fila (gate_version) y el conciliador reevalua las decisiones de
+ * maquina cuando cambia: asi, cada ajuste de las listas durante la calibracion
+ * se propaga solo a lo que decidio la maquina, nunca a lo que decidio una persona.
+ * Cambia si cambia cualquier termino, el orden de las listas o el largo de sigla.
+ */
+export const GATE_VERSION: string = createHash('sha1')
+  .update(['A', ...LISTA_A, 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA)].join('\n'))
+  .digest('hex')
+  .slice(0, 12)
+
