@@ -185,7 +185,7 @@
     "error": "Algo salió mal. Intenta de nuevo."
   },
   "support": {
-    "eyebrow": "Periodismo indígena independiente",
+    "eyebrow": "Medio indígena independiente",
     "heading": "Tendemos puentes entre el mundo indígena y la sociedad.",
     "message": "Gratuito. Independiente. Sin publicidad.\nUn programa de la Fundación KM.",
     "button": "Apóyanos en Ko-fi",
@@ -223,9 +223,9 @@
     "done": "Listo"
   },
   "colophon": {
-    "tagline": "El primer medio indígena AI‑native.",
+    "tagline": "Un medio indígena AI‑native.",
     "howItWorks": "Cada día se rastrean cientos de artículos de fuentes de América y del mundo. Un modelo de lenguaje evalúa cuáles importan a los pueblos indígenas, con qué relevancia y por qué. El método está escrito y las fuentes están listadas: los dos se pueden auditar.",
-    "principles": "Curado por pueblos indígenas. Operado con inteligencia artificial. Sin publicidad.",
+    "principles": "Criterio editorial indígena. Curaduría con inteligencia artificial. Sin publicidad.",
     "readMethod": "Cómo trabajamos",
     "readSources": "Nuestras fuentes",
     "published": "Publicado desde Chile.",

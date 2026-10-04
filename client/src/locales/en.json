@@ -185,7 +185,7 @@
     "error": "Something went wrong. Please try again."
   },
   "support": {
-    "eyebrow": "Independent indigenous journalism",
+    "eyebrow": "Independent indigenous news outlet",
     "heading": "Building bridges between indigenous peoples and society.",
     "message": "Free. Independent. Ad-free.\nA program of Fundación KM.",
     "button": "Support us on Ko-fi",
@@ -223,9 +223,9 @@
     "done": "Done"
   },
   "colophon": {
-    "tagline": "The first AI‑native indigenous news outlet.",
+    "tagline": "An AI‑native indigenous news outlet.",
     "howItWorks": "Every day hundreds of articles are crawled from sources across the Americas and beyond. A language model assesses which ones matter to indigenous peoples, how relevant they are and why. The method is written down and the sources are listed: both can be audited.",
-    "principles": "Curated by indigenous peoples. Operated with artificial intelligence. No ads.",
+    "principles": "Indigenous editorial criteria. AI-powered curation. No ads.",
     "readMethod": "How we work",
     "readSources": "Our sources",
     "published": "Published from Chile.",

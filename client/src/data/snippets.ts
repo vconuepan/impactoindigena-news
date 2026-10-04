@@ -17,8 +17,8 @@ export function getDailySnippet(pool: Snippet[]): Snippet {
 
 export const SNIPPETS_BY_ISSUE: Record<string, Snippet[]> = {
   'cambio-climatico': [
-    { text: 'Los territorios indígenas albergan el 80% de la biodiversidad restante del planeta.', source: 'IPBES, 2019' },
-    { text: 'Los pueblos indígenas cuidan el 22% de la superficie terrestre y protegen el 80% de los ecosistemas más saludables del mundo.', source: 'Forest Peoples Programme' },
+    { text: 'Al menos una cuarta parte de la superficie terrestre del planeta es tierra indígena, y allí la naturaleza se deteriora más lento que en el resto.', source: 'IPBES, 2019' },
+    { text: 'Las tierras indígenas incluyen cerca del 35% de las áreas protegidas del planeta y cerca del 35% de las zonas con muy baja intervención humana.', source: 'IPBES, 2019' },
     { text: 'Las comunidades indígenas son las primeras en sentir los efectos del cambio climático, a pesar de haber contribuido menos a sus causas.' },
     { text: 'Los conocimientos ecológicos tradicionales llevan siglos documentando cambios en climas, suelos y ciclos del agua.' },
     { text: 'Proteger los territorios indígenas es una de las estrategias más eficaces para capturar carbono y detener la deforestación.', source: 'World Resources Institute' },
@@ -57,7 +57,7 @@ export const SNIPPETS_BY_ISSUE: Record<string, Snippet[]> = {
 export const SNIPPETS_GENERAL: Snippet[] = [
   { text: 'Las voces indígenas son fundamentales para construir políticas públicas justas y sostenibles.' },
   { text: 'La autonomía indígena no es un obstáculo al desarrollo: es su condición.' },
-  { text: 'Los pueblos indígenas representan menos del 5% de la población mundial, pero protegen el 80% de la biodiversidad del planeta.', source: 'ONU, 2019' },
+  { text: 'Al menos una cuarta parte de la superficie terrestre del planeta es tierra indígena.', source: 'IPBES, 2019' },
   { text: 'El diálogo intercultural es el primer paso hacia una sociedad más justa.' },
   { text: 'El reconocimiento de los derechos indígenas beneficia a toda la sociedad: más biodiversidad, más resiliencia y más diversidad cultural.' },
   { text: 'Cuando un idioma originario desaparece, se pierde una manera única de entender el mundo que tardó siglos en construirse.' },

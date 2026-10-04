@@ -72,11 +72,6 @@ export function buildOrganizationSchema() {
     url: SEO.siteUrl,
     logo: LOGO_URL,
     parentOrganization: FUNDACION_KM,
-    sameAs: [
-      'https://www.instagram.com/impactoindigena',
-      'https://x.com/impactoindigena',
-      'https://www.youtube.com/@impactoindigena',
-    ],
   }
 }
 

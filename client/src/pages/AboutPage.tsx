@@ -12,7 +12,7 @@ export default function AboutPage() {
         <title>Quiénes Somos - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT."
+          content="Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native que sigue la jurisprudencia de la Corte IDH y el Convenio 169 de la OIT."
         />
         <meta property="og:title" content={`Quiénes Somos - ${SEO.siteName}`} />
         <meta
@@ -31,7 +31,7 @@ export default function AboutPage() {
             "@type": "WebPage",
             name: `Quiénes Somos - ${SEO.siteName}`,
             description:
-              "Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native al amparo de la Corte IDH y el Convenio 169 OIT.",
+              "Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native que sigue la jurisprudencia de la Corte IDH y el Convenio 169 de la OIT.",
             url: `${SEO.siteUrl}/about`,
             isPartOf: {
               "@type": "WebSite",
@@ -81,9 +81,9 @@ export default function AboutPage() {
           <p>
             Esa resistencia no es solo historia: es el punto de partida de Voces Indígenas.
             Los pueblos indígenas no son grupos vulnerables que esperan ser defendidos. Son,
-            y han sido siempre, protagonistas de su propio futuro. Representan menos del 5&nbsp;%
-            de la población mundial, pero protegen más del 80&nbsp;% de la biodiversidad del
-            planeta. Su conocimiento ancestral, su gobernanza propia y su relación con el
+            y han sido siempre, protagonistas de su propio futuro. Al menos una cuarta parte de la
+            superficie terrestre del planeta es tierra de propiedad, uso u ocupación tradicional
+            indígena, y allí la naturaleza se deteriora más lento que en el resto (IPBES, 2019). Su conocimiento ancestral, su gobernanza propia y su relación con el
             territorio son contribuciones que el mundo necesita urgentemente.
           </p>
 
@@ -118,9 +118,8 @@ export default function AboutPage() {
           </div>
 
           <p>
-            Voces Indígenas no opera en el vacío. Existe al amparo de dos marcos internacionales
-            que protegen los derechos de los pueblos indígenas y generan obligaciones concretas
-            para los Estados:
+            Voces Indígenas sigue de cerca dos marcos internacionales que protegen los derechos
+            de los pueblos indígenas y generan obligaciones concretas para los Estados:
           </p>
         </div>
 
@@ -186,45 +185,45 @@ export default function AboutPage() {
             .
           </p>
 
-          <h3 className="section-heading mt-8">El Modelo R · E · D Indígena</h3>
+          <h3 className="section-heading mt-8">Las 3R de la Fundación KM</h3>
           <p>
-            Todo nuestro trabajo se articula en torno al modelo RED Indígena: una forma de
-            impulsar transformación con identidad.
+            Reconocimiento, reconciliación y reciprocidad. No son tres valores en una lista: son una
+            progresión. El punto de partida, el camino y la práctica.
           </p>
         </div>
 
         <div className="not-prose grid grid-cols-1 sm:grid-cols-3 gap-4 my-6">
           {[
             {
-              letra: "R",
-              titulo: "Reconocer",
-              texto: "Valoramos la riqueza cultural, espiritual y ecológica de los pueblos indígenas. Visibilizamos sus aportes y combatimos los estereotipos que perpetúan su exclusión.",
-              color: "#34d399",
+              etapa: "El punto de partida",
+              titulo: "Reconocimiento",
+              texto: "Reconocer a los pueblos indígenas como actores legítimos del presente y del futuro: sus derechos, sus territorios, su conocimiento y su voz. El respeto no se logra con asimilación forzada ni con imposición, sino reconociendo al otro como un interlocutor válido con quien se cohabita un mismo territorio.",
+              color: "#0D5F3C",
             },
             {
-              letra: "E",
-              titulo: "Empoderar",
-              texto: "Fortalecemos liderazgos y estructuras de gobernanza indígena. Promovemos su participación efectiva en decisiones que afectan sus territorios y su futuro.",
-              color: "#38bdf8",
+              etapa: "El camino",
+              titulo: "Reconciliación",
+              texto: "Reconstruir la relación después de la ruptura. No es olvido ni perdón sin justicia: es relación renovada con la memoria intacta. La paz se hace con los enemigos, no tan solo con los amigos, y por eso hay que tender puentes sobre todo con quienes piensan distinto.",
+              color: "#b03d31", // accent-600: el 500 daba 4,31:1 en la etiqueta sobre el fondo teñido
             },
             {
-              letra: "D",
-              titulo: "Desarrollar",
-              texto: "Impulsamos un desarrollo sostenible y autodeterminado. Respetamos sus modelos de vida y construimos soluciones en diálogo y colaboración.",
-              color: "#a78bfa",
+              etapa: "La práctica",
+              titulo: "Reciprocidad",
+              texto: "Lo que recibes, lo devuelves multiplicado. No extractivismo, no asistencialismo: intercambio genuino donde todos ganan porque todos dan. Reciprocidad con los pares, con otros pueblos y con la ñuke y chaw mapu (la madre y el padre tierra), que es el planeta.",
+              color: "#8A6410",
             },
           ].map((item) => (
             <div
-              key={item.letra}
+              key={item.titulo}
               className="rounded-xl p-6"
-              style={{ backgroundColor: `${item.color}10`, border: `1px solid ${item.color}30` }}
+              style={{ backgroundColor: `${item.color}0A`, border: `1px solid ${item.color}30` }}
             >
-              <div
-                className="text-5xl font-bold mb-3 leading-none"
-                style={{ color: item.color }}
-              >
-                {item.letra}
+              <div className="text-5xl font-bold leading-none" style={{ color: item.color }} aria-hidden="true">
+                R
               </div>
+              <p className="text-xs font-bold uppercase tracking-widest mt-3 mb-1" style={{ color: item.color }}>
+                {item.etapa}
+              </p>
               <h3 className="font-bold text-neutral-800 mb-2">{item.titulo}</h3>
               <p className="text-sm text-neutral-600 leading-relaxed">{item.texto}</p>
             </div>
