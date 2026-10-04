@@ -674,7 +674,7 @@ function PublicLayoutInner() {
       </main>
 
 
-      <footer className="bg-neutral-900 text-neutral-300">
+      <footer className="sobre-oscuro bg-neutral-900 text-neutral-300">
         <div className="max-w-5xl mx-auto px-4 py-12">
           {/* Colofon — el medio hablando antes que el indice de enlaces */}
           <div className="max-w-2xl">

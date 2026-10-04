@@ -68,6 +68,24 @@
   --n-950: 12 10 9;
 }
 
+/*
+ * Escala neutral para superficies OSCURAS (el pie, sobre neutral-900 #1C1917).
+ *
+ * La de :root esta calibrada contra el papel claro, y sobre el negro calido
+ * se cae: neutral-400 daba 3,65:1 y neutral-500 3,01:1, unas 35 infracciones
+ * AA en el pie de cada pagina (medido el 21-sep-2026). Se remapean solo los
+ * dos escalones que llevan texto; el resto (fondos y bordes) queda igual, asi
+ * que `bg-neutral-900` sigue siendo el mismo negro.
+ *
+ * Se conserva la jerarquia: 300 (11,7:1) > 400 (6,9:1) > 500 (5,4:1). El 400
+ * es el stone-400 real que el papel descarto por ilegible; aca es el correcto.
+ * `neutrals.test.ts` mide los dos contra #1C1917.
+ */
+.sobre-oscuro {
+  --n-400: 168 162 158; /* #A8A29E */
+  --n-500: 148 141 135; /* #948D87 */
+}
+
 /* `.admin-warm` ya no remapea nada: la escala calida es ahora la del sitio
    entero. La clase se conserva porque useAdminTheme y CommandPalette la
    aplican, y quitarla de ahi es un cambio aparte. */

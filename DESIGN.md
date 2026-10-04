@@ -98,6 +98,25 @@ papel es más oscuro, así que un color que pasa AA sobre `#FFF` puede no pasar
 aquí: `#7C756E` da 4,54:1 sobre blanco y 4,34:1 sobre el papel.
 `client/src/lib/neutrals.test.ts` lo verifica en cada corrida.
 
+#### Sobre fondo oscuro: `.sobre-oscuro`
+
+La escala de arriba está calibrada para el papel, y **sobre el negro cálido
+`#1C1917` se cae**: `neutral-400` da 3,65:1 y `neutral-500` 3,01:1. Así falló el
+pie de todas las páginas hasta el 4-oct-2026. Toda superficie oscura que lleve
+texto en grises usa la clase `.sobre-oscuro`, que remapea solo los dos escalones
+de texto:
+
+| Clase | Sobre el papel | Dentro de `.sobre-oscuro` | Contraste sobre `#1C1917` |
+|-------|----------------|---------------------------|---------------------------|
+| `neutral-300` | `#D6D3D1` | sin cambio | 11,7:1 |
+| `neutral-400` | `#78716C` | `#A8A29E` | 6,9:1 |
+| `neutral-500` | `#6B645F` | `#948D87` | 5,4:1 |
+
+La jerarquía se conserva (300 › 400 › 500) y los fondos y bordes no cambian:
+`bg-neutral-900` sigue siendo el mismo negro. Hoy la usa el pie
+(`PublicLayout.tsx`). `neutrals.test.ts` mide la escala contra `#1C1917` y
+verifica que el pie la lleve.
+
 ### Modo oscuro
 
 **No implementado.** Cero clases `dark:` en el cliente, sin `darkMode` en la
@@ -572,3 +591,4 @@ media.
 | 2026-09-21 | **El hero se elige mirando si trae fotografía** | `pickHero` ordenaba por fecha: si la más nueva venía sin imagen, la portada abría con un degradado plano de 600px. Replicado en `preload-hero.js`, que un test compara. |
 | 2026-09-21 | **Sin rotación automática en «En Foco»** | Giraba cada 5 s con `aria-live` encima y sin control bajo 1024px: un lector de pantalla recibía un titular nuevo cada cinco segundos, indefinidamente. |
 | 2026-09-21 | **Banda del layout B en `brand-50`** | `neutral-50/70` sobre el papel dejaba el canal azul en 248,7 contra 248: la banda no se veía y se pagaba igual el sangrado. Es el único recurso de ritmo de la portada. |
+| 2026-10-04 | **Escala de grises para fondo oscuro (`.sobre-oscuro`)** | El pie fallaba AA en cada página: los grises de texto estaban calibrados contra el papel. Una clase que remapea `--n-400` y `--n-500` en vez de tocar ~40 enlaces uno por uno. axe sobre el pie: de 8 infracciones a 0, con 43 elementos que pasan. |

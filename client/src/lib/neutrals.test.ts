@@ -71,3 +71,42 @@ describe('neutrales del sitio', () => {
     }
   })
 })
+
+/**
+ * La misma escala sobre el negro calido del pie. El 21-sep-2026 axe encontro ~35
+ * infracciones ahi: la auditoria anterior solo habia medido contra el papel, y
+ * el fondo oscuro quedo fuera de su alcance. `.sobre-oscuro` remapea los
+ * escalones de texto; este bloque lo vigila.
+ */
+describe('neutrales sobre superficies oscuras', () => {
+  const css = readFileSync(path.resolve(__dirname, '../index.css'), 'utf8')
+  const ini = css.indexOf('.sobre-oscuro {')
+  const bloque = ini >= 0 ? css.slice(ini, css.indexOf('}', ini)) : ''
+  const oscura: Record<string, [number, number, number]> = { ...escalaNeutral() }
+  for (const m of bloque.matchAll(/--n-(\d+):\s*(\d+)\s+(\d+)\s+(\d+)/g)) {
+    oscura[m[1]] = [Number(m[2]), Number(m[3]), Number(m[4])]
+  }
+  const FONDO = escalaNeutral()['900'] // #1C1917, el fondo del pie
+
+  it('la clase .sobre-oscuro existe y redefine la escala', () => {
+    expect(ini, 'no se encontro .sobre-oscuro en index.css').toBeGreaterThanOrEqual(0)
+  })
+
+  it('n-300, n-400 y n-500 pasan WCAG AA sobre #1C1917', () => {
+    for (const nivel of ['300', '400', '500']) {
+      const r = contraste(oscura[nivel], FONDO)
+      expect(r, `n-${nivel} da ${r.toFixed(2)}:1 sobre el pie`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('conserva la jerarquia: 300 resalta mas que 400, y 400 mas que 500', () => {
+    const c = (n: string) => contraste(oscura[n], FONDO)
+    expect(c('300')).toBeGreaterThan(c('400'))
+    expect(c('400')).toBeGreaterThan(c('500'))
+  })
+
+  it('el pie usa la escala oscura', () => {
+    const layout = readFileSync(path.resolve(__dirname, '../layouts/PublicLayout.tsx'), 'utf8')
+    expect(layout).toMatch(/<footer className="[^"]*\bsobre-oscuro\b/)
+  })
+})
