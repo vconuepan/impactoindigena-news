@@ -218,6 +218,33 @@ rule Publish {
     ensures: story.status = published
 }
 
+-- ─── Retention per vertical (D4, Las Otras Voces) ──────────────────
+-- A story can be published on the main site and held in a vertical.
+-- story.status is never touched by this rule. Detail:
+-- .context/community-review.md and .plans/2026-10-04_retencion-por-vertical.md
+
+rule CommunityReview {
+    when: StoryBecomesPublished(story)
+    -- Fired by every path that leaves a story published: the publish job,
+    -- bulk status, row status, primary publish button, edit form, and
+    -- maintenance republish. Never fails the publish.
+    for each community where review_mode(community) != off
+        and story matches community membership (same where as the public page):
+    ensures: CommunityReviewRow(story, community) records the gate decision
+    -- The machine writes only states auto | pending. A row a human set to
+    -- released | held is never overwritten by any re-evaluation.
+    -- published_at in the vertical is set once and never reset.
+}
+
+invariant VerticalVisibility {
+    -- What a vertical shows, by effective mode:
+    --   off      published, relevance >= 3, community keywords
+    --   shadow   the same minus rows a human held
+    --   enforce  the same and a row in auto | released (no row = hidden)
+    -- enforce with learning mode on is effectively shadow.
+    -- No row in community_review_modes means off.
+}
+
 -- ─── Manual Transitions ────────────────────────────────────────────
 
 -- Admin can trash any story (soft delete) or reject it.

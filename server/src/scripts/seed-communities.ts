@@ -8,12 +8,19 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 const prisma = new PrismaClient()
 
+// Identificadores VIGENTES de los temas. Hasta el 4-oct-2026 este archivo guardaba
+// dos que ya no existen —'issue-chile-005' e 'issue-paz-004'—, de antes de la
+// taxonomia de ocho categorias. Produccion ya los habia remapeado (registro en
+// .migraciones-log/comunidades-fantasma-*.jsonl): chile-005 → Chile Intercultural
+// y paz-004 → Defensores y Proteccion. Volver a correr este seed con los viejos
+// habria dejado el RSS y el digest de las verticales apuntando a temas fantasma.
+// Verificado contra /api/communities y /api/issues en produccion ese dia.
 const ISSUES = {
-  chileIndigena:        'issue-chile-005',
-  derechosIndigenas:    'issue-ddhh-002',
-  cambioClimatico:      'issue-clima-001',
-  reconciliacionYPaz:   'issue-paz-004',
-  desarrolloSostenible: 'issue-emp-003',
+  chileIndigena:        'fdf9fd2f-f172-4b73-979a-8b389d506416', // chile-indigena
+  derechosIndigenas:    'issue-ddhh-002',                       // derechos-indigenas
+  cambioClimatico:      'issue-clima-001',                      // cambio-climatico
+  reconciliacionYPaz:   '42b1a4fe-4811-48e0-acaf-04d01d22aa53', // defensores-y-proteccion
+  desarrolloSostenible: 'issue-emp-003',                        // economias-indigenas
 }
 
 interface CommunityData {

@@ -33,6 +33,7 @@ spec wins and the context file is what gets corrected.
 | File | Covers | Spec |
 |---|---|---|
 | `story-pipeline.md` | Status transitions, jobs, admin endpoints, slugs, field reference | `story-pipeline.allium` |
+| `community-review.md` | Retention per vertical (D4): review tables, modes, the single visibility filter, gate hooks, reconciler, initial load | `story-pipeline.allium` |
 | `content-extraction.md` | 3-tier extraction chain, crawl flow, resource limits, adding feeds | `crawl-and-extraction.allium` |
 | `llm-analysis.md` | Model tiers, prompt directory, schema-driven format, analysis stages | — |
 | `prompting.md` | GPT-5 prompt conventions. **Read before modifying any prompt** | — |

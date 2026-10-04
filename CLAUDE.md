@@ -128,6 +128,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | File | Topic |
 |------|-------|
 | `story-pipeline.md` | Status transitions, jobs, admin endpoints, slugs, field reference |
+| `community-review.md` | Retention per vertical (D4): modes, single visibility filter, gate hooks, reconciler |
 | `content-extraction.md` | 3-tier extraction chain, crawl flow, resource limits, adding feeds |
 | `llm-analysis.md` | Model tiers, prompt directory, schema-driven format, analysis stages |
 | `prompting.md` | GPT-5 prompt conventions (read before modifying prompts) |

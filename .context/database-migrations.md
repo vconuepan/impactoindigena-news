@@ -8,19 +8,15 @@ Prisma's `migrate dev` command causes persistent issues on Windows: DLL engine f
 
 ## Production Migrations
 
-On Render (Linux), none of the Windows DLL-locking issues apply. Migrations run automatically during the build step:
+**The deploy does NOT apply migrations.** Production runs on Azure (App Service + Static Web Apps) since May 2026; `.github/workflows/deploy-azure.yml` only runs `prisma generate` and `npm run build`. There is no `prisma migrate deploy` anywhere in the pipeline, and no `DATABASE_URL` secret in GitHub. This section used to describe Render, where migrations ran in the build; that is no longer true.
 
-```
-npm install && npx prisma generate && npx prisma migrate deploy && npm run build
-```
+Consequences:
 
-`prisma migrate deploy` applies pending migrations from `server/prisma/migrations/` without generating new ones or prompting. It's a no-op when there are nothing pending. If a migration fails, the build fails and Render does not start the new version.
-
-**Considerations:**
-
+- **A migration in the repo does not exist in production until the director applies its SQL** (Step 3 below) and marks it applied (Step 4).
+- **Order matters for code that reads new columns of existing models.** The deploy regenerates the Prisma client from `schema.prisma`; if a new column was added to an existing model and the SQL is not applied yet, every `findMany()` on that model without `select` fails with P2022. Prefer **new tables** (new models are safe: only new code queries them) or deploy in two phases (SQL first, then the model change). Example: `community_review_modes` is a table, not a column of `communities`, for exactly this reason (`.context/community-review.md`).
+- **New code that reads new tables must tolerate their absence** (try/catch → safe default) when it runs on every request.
 - **No automatic rollback.** Prisma doesn't generate down migrations. Destructive DDL (drop column/table) should be deployed in two phases: remove code references first, drop the column in a later deploy.
-- **Advisory lock contention.** Overlapping deploys will compete for a Postgres advisory lock. One will wait — shouldn't deadlock, but avoid triggering manual deploys while an auto-deploy is in progress.
-- **Migration ordering.** Concurrent branches adding migrations will apply in timestamp order. Avoid touching the same table in conflicting ways across branches.
+- **Write SQL idempotently** (`IF NOT EXISTS`, `ON CONFLICT DO NOTHING`): it is run by hand and may be run twice.
 
 ## Critical Rules
 
