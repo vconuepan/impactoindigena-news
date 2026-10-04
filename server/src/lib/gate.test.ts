@@ -61,13 +61,48 @@ describe('evaluateGate', () => {
     expect(r.reasons).toContain('listB+corroborated:predio')
   })
 
-  it('catches plurals/inflections (imputado -> imputados) via accent-insensitive prefix match', () => {
+  it('catches plurals/inflections (imputa -> imputados, imputaron) via accent-insensitive prefix match', () => {
     const r = evaluateGate(
       { narrativeFrame: null, text: 'Formalizaron a dos imputados por el hecho' },
       NOT_LEARNING,
     )
     expect(r.decision).toBe('held_for_review')
-    expect(r.reasons).toContain('listA:imputado')
+    expect(r.reasons).toContain('listA:imputa')
+    const r2 = evaluateGate({ narrativeFrame: null, text: 'Imputaron a doce integrantes de la comunidad' }, NOT_LEARNING)
+    expect(r2.reasons).toContain('listA:imputa')
+  })
+
+  // Puelmapu (2026-10-04)
+  it('holds an eviction (desalojo) in Argentina even without a narrative frame', () => {
+    const r = evaluateGate(
+      { narrativeFrame: null, text: 'La Justicia ordenó el desalojo de una comunidad mapuche en Villa La Angostura' },
+      NOT_LEARNING,
+    )
+    expect(r.decision).toBe('held_for_review')
+    expect(r.reasons).toContain('listA:desaloj')
+  })
+
+  it('does not hold a place of the conflict (Villa Mascardi) on its own, only with corroboration', () => {
+    const solo = evaluateGate(
+      { narrativeFrame: 'protagonismo', text: 'Una familia pasó la tarde en un camping mapuche de Villa Mascardi' },
+      NOT_LEARNING,
+    )
+    expect(solo.decision).toBe('auto_publish')
+    expect(solo.signals).toContain('listB:villa mascardi')
+    const con = evaluateGate(
+      { narrativeFrame: 'confrontacion', text: 'Nuevo operativo en Villa Mascardi tras el ataque a un puesto' },
+      NOT_LEARNING,
+    )
+    expect(con.decision).toBe('held_for_review')
+    expect(con.reasons).toContain('listB+corroborated:villa mascardi')
+  })
+
+  it('holds RAM as a whole word and ignores it inside other words', () => {
+    const r = evaluateGate({ narrativeFrame: null, text: 'El gobierno declaró organización terrorista a la RAM' }, NOT_LEARNING)
+    expect(r.reasons).toContain('listA:ram')
+    const r2 = evaluateGate({ narrativeFrame: 'protagonismo', text: 'La rama femenina del club se reunió en Ramos Mejía' }, NOT_LEARNING)
+    expect(r2.reasons).not.toContain('listA:ram')
+    expect(r2.decision).toBe('auto_publish')
   })
 
   it('does not false-trigger on mid-word coincidences (toma inside automatico)', () => {
