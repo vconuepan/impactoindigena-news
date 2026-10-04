@@ -23,7 +23,11 @@ export function setPreferredIssues(slugs: string[]): void {
 }
 
 export function hasSetPreferences(): boolean {
-  return localStorage.getItem(PREFERRED_ISSUES_KEY) !== null
+  try {
+    return localStorage.getItem(PREFERRED_ISSUES_KEY) !== null
+  } catch {
+    return false
+  }
 }
 
 // --- Saved stories ---

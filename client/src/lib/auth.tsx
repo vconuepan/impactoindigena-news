@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { UserRole } from '@shared/types'
 import { authApi, setAccessToken, ApiError } from './admin-api'
@@ -28,10 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false)
   const hasAttemptedRestore = useRef(false)
 
-  // Clean up old localStorage-based auth (one-time)
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('admin_api_key')
-  }
+  // Clean up old localStorage-based auth (one-time).
+  //
+  // Con try: este proveedor envuelve TODA la aplicacion, y leer localStorage
+  // lanza SecurityError cuando el navegador bloquea el almacenamiento (cookies
+  // de terceros bloqueadas, por ejemplo dentro del iframe de /embed en otro
+  // sitio). Sin el try, esa excepcion dejaba la pagina entera en blanco.
+  useEffect(() => {
+    try {
+      localStorage.removeItem('admin_api_key')
+    } catch {
+      // almacenamiento no disponible: no hay nada que limpiar
+    }
+  }, [])
 
   // Called when entering admin routes to restore session
   const tryRestoreSession = useCallback(async () => {
