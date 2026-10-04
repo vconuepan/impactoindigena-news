@@ -1,6 +1,6 @@
-# Contributing to Impacto Indígena
+# Contributing to Voces Indígenas
 
-Thanks for your interest in contributing to Impacto Indígena! This is a non-commercial, AI-curated news platform built to surface stories that matter to indigenous peoples. The project is open source under AGPL v3 and is actively seeking a long-term institutional steward. Whether you're fixing a bug, suggesting a feature, or improving documentation, your help is welcome.
+Thanks for your interest in contributing to Voces Indígenas! This is a non-commercial, AI-curated news platform built to surface stories that matter to indigenous peoples. The project is open source under AGPL v3 and is a program and public good of Fundación KM. Whether you're fixing a bug, suggesting a feature, or improving documentation, your help is welcome.
 
 ## Getting Started
 
@@ -56,19 +56,21 @@ Write clear, descriptive commit messages. Keep changes focused — one logical c
 
 ## Contributor License Agreement
 
-Voces Indígenas is licensed under [AGPL v3](LICENSE). The project is exploring transfer to a long-term institutional steward (like a nonprofit, indigenous organization, or civic tech entity).
+Voces Indígenas is a program and public good of [Fundación KM](https://fundacionkm.org), a nonprofit based in Temuco, Chile, which holds the copyright of this adaptation. The code is licensed under [AGPL v3](LICENSE).
 
-To preserve the ability to offer a future steward flexible licensing terms as part of that transfer, we use a lightweight contributor agreement:
+To keep the project sustainable as a public good, we use a lightweight contributor agreement:
 
 **By submitting a pull request, you agree that:**
 
 1. Your contribution is your original work (or you have the right to submit it).
 2. You license your contribution under the AGPL v3, consistent with the project's existing license.
-3. You grant the project maintainer the right to relicense your contribution under different terms as part of a stewardship transfer.
+3. You grant Fundación KM a perpetual, irrevocable right to relicense your contribution under other terms, including other open-source licenses.
+
+This agreement covers contributions to the adaptation. It does not change the license of the original Actually Relevant code by Odin Mühlenbein, which remains under AGPL v3.
 
 This is similar to a Developer Certificate of Origin (DCO). No separate form or CLA signing process is required.
 
-**Note for potential stewards:** Organizations interested in running Voces Indígenas long-term can receive more accommodating license terms directly from the copyright holder. Write to [contacto@fundacionkm.org](mailto:contacto@fundacionkm.org).
+Questions about the agreement: [contacto@fundacionkm.org](mailto:contacto@fundacionkm.org).
 
 ## Code of Conduct
 

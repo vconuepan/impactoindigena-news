@@ -1,7 +1,6 @@
-# Voces Indígenas News
+# Voces Indígenas
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Looking for Maintainer](https://img.shields.io/badge/looking%20for-maintainer-orange)](https://vocesindigenas.org/stewardship)
 
 Plataforma editorial que cubre a los pueblos indígenas como protagonistas activos: innovadores, titulares de derechos y constructores de futuro. Rastrea fuentes de noticias de siete regiones del mundo, evalúa su relevancia mediante inteligencia artificial y publica historias que importan a pueblos indígenas, territorios, liderazgo y desarrollo sostenible.
 
@@ -229,8 +228,8 @@ Para reportar una vulnerabilidad de seguridad, ver [SECURITY.md](SECURITY.md) �
 
 ## Stewardship
 
-Voces Indígenas es un proyecto sin fines de lucro que busca un custodio institucional a largo plazo en periodismo indígena, tecnología cívica, o ecosistema de derechos. Si tu organización puede darle un hogar permanente a esta plataforma, visita [vocesindigenas.org/stewardship](https://vocesindigenas.org/stewardship).
+Voces Indígenas es un programa y un bien público de la [Fundación KM](https://fundacionkm.org), organización sin fines de lucro con sede en Temuco, La Araucanía. La Fundación es la responsable del sitio y la titular de la adaptación del código. Para colaborar o proponer una alianza, escribe a [contacto@fundacionkm.org](mailto:contacto@fundacionkm.org).
 
 ## License
 
-This project is licensed under the [GNU Affero General Public License v3.0](LICENSE). Organizations interested in running vocesindigenas.org as a long-term steward can receive more accommodating license terms — see [Stewardship](https://vocesindigenas.org/stewardship).
+This project is licensed under the [GNU Affero General Public License v3.0](LICENSE). El código original es [Actually Relevant](https://github.com/OdinMB/actually-relevant), de Odin Mühlenbein; la adaptación es de la Fundación KM.
