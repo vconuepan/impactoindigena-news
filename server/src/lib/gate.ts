@@ -41,8 +41,8 @@
  * vocabulario del conflicto en Chile: retenian 101 de 888 titulares argentinos
  * reales. El 2026-10-04 se sumo el vocabulario del lado argentino, extraido de
  * ese corpus y medido termino por termino contra 787 notas ya publicadas; con
- * las listas nuevas la A retiene 426 de los 888 y 46 notas mas de la vertical
- * Mapuche, todas de desalojos, juicios y causas. La identidad (lof, nacion
+ * las listas nuevas la A retiene cerca de la mitad de los 888 (la cifra exacta
+ * esta en server/eval/README.md, remedida tras la refutacion del 2026-10-04). La identidad (lof, nacion
  * mapuche, wiñoy tripantu, trawün, lengua, ceremonia) queda fuera de las listas
  * a proposito: identidad no es conflicto.
  */
@@ -79,33 +79,58 @@ export interface GateOptions {
 // acortaron a su raiz el 2026-10-04 para atrapar las inflexiones que el prefijo
 // dejaba pasar (condena/condenas/condenaron, usurpar/usurpadas, allanaron...).
 export const LISTA_A: string[] = [
-  'atentado', 'terrorista', 'terrorismo', 'antiterrorista', 'ley antiterrorista', 'usurp', 'invasor', 'weichafe', 'preso', 'encapuchados', 'horda', 'allana', 'operativo policial', 'gope', 'comando jungla', 'formalizado', 'imputa', 'prision', 'condena', 'querella', 'homicidio', 'asesin', 'baleado', 'emboscada', 'victima fatal', 'herido de bala', 'amenaza de muerte', 'extorsion', 'menor', 'nino', 'nina', 'adolescente', 'nna', 'victima', 'testigo', 'abuso', 'violacion', 'violencia sexual', 'suicidio', 'huelga de hambre', 'muerte en custodia', 'doxxing',
+  'atentado', 'terrorista', 'terrorismo', 'antiterrorista', 'ley antiterrorista', 'usurp', 'invasor', 'weichafe', 'preso', 'encapuchad', 'horda', 'allana', 'operativo policial', 'gope', 'comando jungla', 'formalizad', 'imput', 'prision', 'condena', 'querella', 'homicid', 'asesin', 'balead', 'emboscada', 'victima fatal', 'herido de bala', 'amenaza de muerte', 'extorsion', 'menor', 'nna', 'victima', 'testigo', 'abuso', 'violencia sexual', 'suicidio', 'huelga de hambre', 'muerte en custodia', 'doxxing',
   // Puelmapu (lado argentino), 2026-10-04. Extraidos de 888 titulares reales de prensa
   // argentina y medidos contra 787 notas ya publicadas (ver server/eval/README.md).
   // fuerzas y operativos
   'desaloj', 'represion', 'reprim', 'megaoperativo', 'balas', 'enfrentamiento',
   // etapas y figuras penales
-  'detenido', 'detencion', 'detuv', 'procesaron', 'acusad', 'juicio', 'absolv', 'absuel', 'absoluci', 'sobrese', 'presas politicas', 'carcel', 'encarcel', 'extradi', 'profugo', 'intimidacion', 'denuncia penal', 'falso testimonio', 'presidio perpetuo', 'cadena perpetua',
+  'detenid', 'detencion', 'detuv', 'procesaron', 'acusa', 'juicio', 'absolv', 'absuel', 'absoluci', 'sobrese', 'presas politicas', 'carcel', 'encarcel', 'extradi', 'profug', 'intimidacion', 'denuncia penal', 'falso testimonio', 'presidio perpetuo', 'cadena perpetua',
   // muertes, heridos y violencia
   'muerte', 'muerto', 'herido', 'crimen', 'femicid', 'desaparecid', 'tortura', 'apremios ilegitimos', 'violencia institucional', 'violencia policial', 'violencia estatal', 'ataque', 'agresion', 'agredi', 'amenazaron', 'acoso', 'hostigamiento', 'sabotaje', 'incendiario', 'prendieron fuego',
   // organizaciones y casos publicos del Puelmapu
   'ram', 'resistencia ancestral', 'jones huala', 'rafael nahuel', 'santiago maldonado',
   // encuadres que deslegitiman la identidad
   'falsos mapuche', 'autoproclamad', 'autodenominad', 'dicen ser mapuche',
+  // Correcciones de la refutacion adversarial, 2026-10-04 (tres lentes: falsos positivos
+  // sobre 787 notas publicadas, falsos negativos sobre 888 titulares argentinos, doctrina).
+  // inflexiones que el prefijo dejaba pasar
+  'condeno', 'allano', 'detienen', 'arrest', 'presas', 'atacad', 'atacar', 'ataco', 'atacan', 'incendian',
+  // atribucion de delitos y criminalizacion (7.3.7)
+  'criminaliza', 'persecucion', 'delincuen', 'culpabiliz', 'responsabiliz', 'grupos mapuches', 'grupo de mapuches', 'hipotesis mapuche', 'presunta comunidad', 'violencia mapuche', 'grupos violentos', 'violent', 'banderazo', 'operativo contra', 'fuerzas policiales',
+  // etapas judiciales ausentes
+  'veredicto', 'sentencia', 'turbacion', 'adopciones ilegales', 'violacion sexual', 'violador',
+  // presos del conflicto (7.3.5), con su sigla
+  'ppm',
+  // despliegue militar y hostilidad institucional
+  'militariz', 'estado de excepcion', 'arremet', 'atropell', 'desplazad',
+  // muertes y violencia de genero (L25, L10)
+  'fallecio', 'fallecimiento', 'murio', 'machismo', 'machista', 'violencia de genero',
+  // terminos de parte con la misma vara (protocolo 3.1)
+  'violencia rural',
+  // casos publicos del Gulumapu
+  'grollmus', 'llaitul', 'nirripil', 'niripil', 'caso lautaro', 'catrillanca', 'luchsinger', 'macarena valdes', 'matias catrileo',
 ]
 
 // Protocolo editorial, seccion 7.2. Lista B: disparan SOLO con corroboracion.
 export const LISTA_B: string[] = [
-  'forestal', 'forestales', 'predio', 'fundo', 'machi', 'lonko', 'werken', 'comunero', 'conadi', 'indh', 'recuperacion', 'toma', 'ocupacion', 'territorio ancestral', 'wallmapu', 'cam', 'resistencia mapuche', 'weichan auka mapu', 'macrozona sur', 'carabineros', 'pdi', 'fiscalia', 'violencia rural', 'agricultor', 'transportista', 'trabajador forestal',
+  'forestal', 'forestales', 'predio', 'fundo', 'machi', 'lonko', 'werken', 'comunero', 'conadi', 'indh', 'recuperacion', 'toma', 'ocupacion', 'territorio ancestral', 'wallmapu', 'cam', 'resistencia mapuche', 'weichan auka mapu', 'macrozona sur', 'carabineros', 'pdi', 'fiscalia', 'agricultor', 'transportista', 'trabajador forestal',
   // Puelmapu, 2026-10-04.
   // organos del Estado argentino y fuerzas, como parte
   'inai', 'gendarme', 'policia', 'fuerzas de seguridad', 'fuerzas federales', 'ministerio de seguridad', 'operativo', 'ejercito', 'parques nacionales', 'relevamiento', 'emergencia territorial', 'personeria',
   // justicia
-  'fiscal', 'juez', 'tribunal', 'juzgado', 'ministerio publico', 'orden judicial', 'corte suprema', 'casacion', 'delito', 'presunt', 'acusacion', 'incidente', 'secuestro', 'desaparicion',
+  'fiscal', 'juez', 'tribunal', 'juzgado', 'ministerio publico', 'orden judicial', 'corte suprema', 'casacion', 'delito', 'presunt', 'incidente', 'secuestro', 'desaparicion',
   // territorio, actores privados y lugares del conflicto
   'villa mascardi', 'vaca muerta', 'ypf', 'benetton', 'poblador', 'guardaparque', 'incendio', 'ocuparon', 'bloqueo', 'acampe', 'restitu', 'despojo', 'territorios ancestrales',
   // encuadre y criminalizacion
-  'violent', 'criminaliza', 'persecucion', 'delincuen', 'racis', 'radical', 'enemigo', 'ilegal', 'vandaliz', 'profana', 'ppm', 'cels',
+  'racis', 'radical', 'enemigo', 'ilegal', 'vandaliz', 'profana', 'cels',
+  // Correcciones de la refutacion adversarial, 2026-10-04.
+  // NNA y «violacion de derechos» bajan de A: retienen solo con corroboracion (7.3.3)
+  'nino', 'nina', 'adolescente', 'violacion',
+  // justicia y disputa territorial, corroboran
+  'conflicto', 'fallo', 'litigio', 'amparo', 'posesion', 'disputa', 'tension', 'encaden', 'ensan',
+  // terminos de parte y actores con coste cero (el umbral de evidencia rige para la A, no para la B)
+  'terrateniente', 'latifund', 'legitima defensa', 'prefectura',
 ]
 
 /** Minusculas sin diacriticos (é→e, ñ→n): el cotejo ignora tildes. */

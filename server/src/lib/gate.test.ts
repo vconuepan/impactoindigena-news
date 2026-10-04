@@ -61,15 +61,15 @@ describe('evaluateGate', () => {
     expect(r.reasons).toContain('listB+corroborated:predio')
   })
 
-  it('catches plurals/inflections (imputa -> imputados, imputaron) via accent-insensitive prefix match', () => {
+  it('catches plurals/inflections (imput -> imputados, imputaron, imputó) via accent-insensitive prefix match', () => {
     const r = evaluateGate(
       { narrativeFrame: null, text: 'Formalizaron a dos imputados por el hecho' },
       NOT_LEARNING,
     )
     expect(r.decision).toBe('held_for_review')
-    expect(r.reasons).toContain('listA:imputa')
+    expect(r.reasons).toContain('listA:imput')
     const r2 = evaluateGate({ narrativeFrame: null, text: 'Imputaron a doce integrantes de la comunidad' }, NOT_LEARNING)
-    expect(r2.reasons).toContain('listA:imputa')
+    expect(r2.reasons).toContain('listA:imput')
   })
 
   // Puelmapu (2026-10-04)
@@ -95,6 +95,23 @@ describe('evaluateGate', () => {
     )
     expect(con.decision).toBe('held_for_review')
     expect(con.reasons).toContain('listB+corroborated:villa mascardi')
+  })
+
+  it('holds a present-tense arrest headline (Detienen a…) with no other term', () => {
+    const r = evaluateGate({ narrativeFrame: null, text: 'Detienen a dos integrantes de una comunidad mapuche en Chubut' }, NOT_LEARNING)
+    expect(r.decision).toBe('held_for_review')
+    expect(r.reasons).toContain('listA:detienen')
+  })
+
+  // 7.3.3: NNA retienen solo en contexto de violencia o conflicto. Medido: «niños»
+  // solo retenía 6 notas de lengua y educación de la vertical Mapuche.
+  it('lets a children-and-language story pass (nino is Lista B now) but holds it when corroborated', () => {
+    const cultural = evaluateGate({ narrativeFrame: 'protagonismo', text: 'Nidos lingüísticos para que 200 niños aprendan mapuzugun' }, NOT_LEARNING)
+    expect(cultural.decision).toBe('auto_publish')
+    expect(cultural.signals).toContain('listB:nino')
+    const abuso = evaluateGate({ narrativeFrame: null, text: 'Denuncian abusos contra niños de una comunidad' }, NOT_LEARNING)
+    expect(abuso.decision).toBe('held_for_review')
+    expect(abuso.reasons).toContain('listB+corroborated:nino')
   })
 
   it('holds RAM as a whole word and ignores it inside other words', () => {
