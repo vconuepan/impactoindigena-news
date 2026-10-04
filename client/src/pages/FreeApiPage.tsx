@@ -6,7 +6,26 @@ import { buildBreadcrumbSchema } from '../lib/structured-data'
 import StructuredData from '../components/StructuredData'
 import ComparisonTable from '../components/ComparisonTable'
 import { API_BASE } from '../lib/api'
+import { SITE_URL } from '../config'
 import { useSources } from '../hooks/useSources'
+
+// URL absoluta para lo que el lector copia y pega (curl, lectores RSS). API_BASE
+// vale '/api' en el build publicado (VITE_API_URL vacío, mismo origen), y una
+// ruta sin host falla fuera del navegador: `curl /api/stories` → exit 3.
+const PUBLIC_API_URL = `${SITE_URL}/api`
+
+// Los ocho temas vigentes, con slug y name tal como los devuelve /api/issues.
+// El feed por tema es parámetro de ruta (/api/feed/:issueSlug), no de consulta.
+const RSS_TOPICS = [
+  { slug: 'cambio-climatico', name: 'Cambio Climático' },
+  { slug: 'consulta-y-consentimiento', name: 'Consulta y Consentimiento' },
+  { slug: 'cultura-y-conocimientos-ancestrales', name: 'Cultura y Conocimientos Ancestrales' },
+  { slug: 'defensores-y-proteccion', name: 'Defensores y Protección' },
+  { slug: 'derechos-indigenas', name: 'Derechos Indígenas' },
+  { slug: 'economias-indigenas', name: 'Economías Indígenas' },
+  { slug: 'mujeres-indigenas', name: 'Mujeres Indígenas' },
+  { slug: 'territorio-y-tierras', name: 'Territorio y Tierras' },
+]
 
 const META = {
   title: 'API de noticias ind\u00edgenas \u2014 Gratis y sin clave | Voces Ind\u00edgenas',
@@ -68,7 +87,7 @@ const COMPARISON_ROWS = [
   {
     feature: 'Enfoque',
     cells: [
-      { text: 'Temas globales (4 dominios)', check: true },
+      { text: 'Ocho temas y ocho geografías', check: true },
       'General (de todo)',
     ],
   },
@@ -85,12 +104,14 @@ const ENDPOINTS = [
   {
     method: 'GET',
     path: '/api/stories',
-    description: 'Noticias curadas del día (paginadas)',
+    description:
+      'Noticias curadas publicadas, de la más reciente a la más antigua (paginadas con page y pageSize, 25 por defecto y máximo 100). Para las de un día: ?dateFrom=AAAA-MM-DD&dateTo=AAAA-MM-DD (fechas UTC).',
   },
   {
     method: 'GET',
     path: '/api/stories?issueSlug=',
-    description: 'Filtrar por área temática (ej., planet-climate, human-development)',
+    description:
+      'Filtrar por área temática (ej., cambio-climatico, derechos-indigenas) o región (ej., latinoamerica)',
   },
   {
     method: 'GET',
@@ -113,7 +134,7 @@ const USE_CASES = [
   {
     title: 'Incorporar noticias curadas en tu sitio',
     description:
-      'Añade una sección de "Noticias globales que importan" a tu sitio de ONG, blog o plataforma comunitaria. Obtén las noticias del día y muéstralas con tu propio diseño.',
+      'Añade una sección de "Noticias globales que importan" a tu sitio de ONG, blog o plataforma comunitaria. Obtén las noticias más recientes y muéstralas con tu propio diseño.',
   },
   {
     title: 'Alimentar un bot de Slack o Discord',
@@ -166,7 +187,7 @@ export default function FreeApiPage() {
         <div className="prose max-w-none">
           <p className="text-lg text-neutral-600 leading-relaxed">
             La mayoría de las APIs de noticias te dan un flujo masivo: millones de artículos sin
-            procesar que tienes que filtrar tú mismo. Voces Ind\u00edgenas te da la señal: una
+            procesar que tienes que filtrar tú mismo. Voces Indígenas te da la señal: una
             selección curada de noticias al día, elegidas por IA según su relevancia real
             desde{sources ? ` ${sources.totalCount}` : ''} fuentes curadas en múltiples idiomas.
           </p>
@@ -175,17 +196,24 @@ export default function FreeApiPage() {
           {/* Quick Start */}
           <h2 className="section-heading mt-10">Inicio rápido</h2>
           <pre className="bg-neutral-900 text-neutral-100 rounded-lg p-4 overflow-x-auto text-sm leading-relaxed">
-            <code>{`# Obtener las noticias curadas del día
-curl ${API_BASE}/stories
+            <code>{`# Obtener las noticias curadas más recientes
+curl ${PUBLIC_API_URL}/stories
 
 # Filtrar por área temática
-curl "${API_BASE}/stories?issueSlug=planet-climate"`}</code>
+curl "${PUBLIC_API_URL}/stories?issueSlug=cambio-climatico"`}</code>
           </pre>
           <p className="text-sm text-neutral-500 mt-3">
             Estos endpoints devuelven JSON. Usa curl, fetch() o cualquier cliente HTTP. Las
             respuestas no se verán bien en un navegador. La respuesta incluye: título, resumen,
             descripción breve, fuente, URL, área temática, puntuaciones de relevancia, fecha de
             publicación y más.
+          </p>
+          <p className="text-sm text-neutral-500 mt-3">
+            Límite de uso: hasta 100 peticiones cada 15 minutos (20 cada 15 minutos con el
+            parámetro search). Al superarlo, la API responde HTTP 429. Consulta las cabeceras
+            RateLimit-Remaining y RateLimit-Reset antes de seguir y espera al reinicio si llegas a
+            cero. Para recorrer el archivo usa pageSize=100 (el campo totalPages de la respuesta
+            indica cuántas páginas hay) y espacia las peticiones.
           </p>
           <p className="mt-2">
             <Link to="/developers" className="text-brand-800 hover:text-brand-700 underline focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
@@ -235,7 +263,8 @@ curl "${API_BASE}/stories?issueSlug=planet-climate"`}</code>
                 </svg>
               ),
               title: 'Enfoque en temas globales',
-              description: 'Cuatro dominios: Desarrollo Humano, Planeta y Clima, Amenazas Existenciales y Ciencia y Tecnología.',
+              description:
+                'Ocho temas: Cambio Climático, Consulta y Consentimiento, Cultura y Conocimientos Ancestrales, Defensores y Protección, Derechos Indígenas, Economías Indígenas, Mujeres Indígenas y Territorio y Tierras; y ocho geografías, de Abya Yala a Sápmi.',
               border: 'border-l-indigo-400',
             },
           ].map((card) => (
@@ -318,31 +347,22 @@ curl "${API_BASE}/stories?issueSlug=planet-climate"`}</code>
             úsalos en flujos de automatización (Zapier, n8n, IFTTT) o construye tu propia integración.
           </p>
           <ul className="list-disc pl-6 space-y-1 mt-3 font-mono text-sm">
-            <li>
-              Desarrollo Humano:{' '}
-              <span className="text-brand-800">
-                {API_BASE}/feed?issueSlug=human-development
-              </span>
-            </li>
-            <li>
-              Planeta y Clima:{' '}
-              <span className="text-brand-800">
-                {API_BASE}/feed?issueSlug=planet-climate
-              </span>
-            </li>
-            <li>
-              Amenazas Existenciales:{' '}
-              <span className="text-brand-800">
-                {API_BASE}/feed?issueSlug=existential-threats
-              </span>
-            </li>
-            <li>
-              Ciencia y Tecnología:{' '}
-              <span className="text-brand-800">
-                {API_BASE}/feed?issueSlug=science-technology
-              </span>
-            </li>
+            {RSS_TOPICS.map((topic) => (
+              <li key={topic.slug}>
+                {topic.name}:{' '}
+                <span className="text-brand-800">
+                  {PUBLIC_API_URL}/feed/{topic.slug}
+                </span>
+              </li>
+            ))}
           </ul>
+          <p className="mt-3">
+            Las geografías también tienen feed, por ejemplo Abya Yala (
+            <span className="font-mono text-sm text-brand-800">{PUBLIC_API_URL}/feed/latinoamerica</span>
+            ) y Chile Intercultural (
+            <span className="font-mono text-sm text-brand-800">{PUBLIC_API_URL}/feed/chile-indigena</span>
+            ).
+          </p>
 
           {/* Widgets */}
           <h2 className="section-heading mt-10">Widgets integrables</h2>

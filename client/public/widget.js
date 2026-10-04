@@ -9,9 +9,11 @@
     issue: script.getAttribute('data-issue') || '',
     theme: script.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
     title: script.getAttribute('data-title') || 'Voces Indígenas',
+    summary: script.getAttribute('data-summary') === 'true',
+    mood: script.getAttribute('data-mood') === 'uplifting' ? 'uplifting' : '',
   }
 
-  var API_BASE = 'https://api.vocesindigenas.org/api'
+  var API_BASE = 'https://vocesindigenas.org/api'
   var SITE_URL = 'https://vocesindigenas.org'
 
   // Create container with shadow DOM for style isolation
@@ -23,6 +25,9 @@
   var bg = isDark ? '#1a1a1a' : '#ffffff'
   var text = isDark ? '#e5e5e5' : '#404040'
   var textMuted = isDark ? '#a3a3a3' : '#737373'
+  // Los mismos tonos del resumen en EmbedPage.tsx (text-neutral-300 / text-neutral-600):
+  // #737373 baja a 4,35:1 sobre hoverBg (#f5f5f5), bajo el AA para texto de 12px.
+  var textSummary = isDark ? '#d4d4d4' : '#525252'
   var border = isDark ? '#333333' : '#e5e5e5'
   var accent = isDark ? '#93c5fd' : '#1d4ed8'
   var hoverBg = isDark ? '#262626' : '#f5f5f5'
@@ -40,6 +45,7 @@
     '.ar-link { text-decoration: none; color: inherit; display: block; }',
     '.ar-link:hover .ar-title { color:' + accent + '; }',
     '.ar-title { font-weight: 500; font-size: 14px; margin: 0 0 2px; transition: color 0.15s; }',
+    '.ar-summary { font-size: 12px; line-height: 1.5; margin: 0 0 4px; color:' + textSummary + '; }',
     '.ar-meta { font-size: 12px; color:' + textMuted + '; }',
     '.ar-footer { padding: 8px 16px; border-top: 1px solid ' + border + '; text-align: center; }',
     '.ar-footer a { font-size: 11px; color:' + textMuted + '; text-decoration: none; }',
@@ -80,6 +86,7 @@
   params.set('pageSize', String(config.count))
   params.set('page', '1')
   if (config.issue) params.set('issueSlug', config.issue)
+  if (config.mood) params.set('emotionTags', config.mood)
 
   var url = API_BASE + '/stories?' + params.toString()
 
@@ -110,6 +117,9 @@
         html += '<li class="ar-item">'
         html += '<a class="ar-link" href="' + escapeHtml(storyUrl) + '" target="_blank" rel="noopener noreferrer">'
         html += '<p class="ar-title">' + escapeHtml(storyTitle) + '</p>'
+        if (config.summary && story.relevanceSummary) {
+          html += '<p class="ar-summary">' + escapeHtml(story.relevanceSummary) + '</p>'
+        }
         html += '<span class="ar-meta">' + escapeHtml(source) + (date ? ' &middot; ' + timeAgo(date) : '') + '</span>'
         html += '</a></li>'
       })

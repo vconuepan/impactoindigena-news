@@ -9,7 +9,7 @@ export default function OpenDataPage() {
   return (
     <>
       <Helmet>
-        <title>Datos abiertos \u2014 {SEO.siteName}</title>
+        <title>{`Datos abiertos \u2014 ${SEO.siteName}`}</title>
         <meta
           name="description"
           content="API pública de Voces Indígenas para investigadores, periodistas y ONGs. Acceso libre a datos sobre pueblos indígenas en América Latina."
@@ -46,6 +46,10 @@ export default function OpenDataPage() {
           <pre className="bg-neutral-100 rounded-lg p-4 text-sm overflow-x-auto">
             <code>GET {API_BASE}/stories</code>
           </pre>
+          <p>
+            Uso desde servidor o scripts (curl, R, Python). Las llamadas desde un navegador en
+            otro dominio no están habilitadas.
+          </p>
 
           <h2 className="section-heading mt-10">Parámetros</h2>
           <div className="overflow-x-auto mt-4">
@@ -82,7 +86,13 @@ export default function OpenDataPage() {
                 <tr className="border-b border-neutral-100">
                   <td className="py-2 pr-4 font-mono text-xs">community</td>
                   <td className="py-2 pr-4">string</td>
-                  <td className="py-2">Slug de una comunidad del directorio. Filtra historias relevantes para esa comunidad.</td>
+                  <td className="py-2">
+                    Slug de una comunidad del directorio. Filtra historias relevantes para esa comunidad.
+                    <br />
+                    Los slugs válidos se obtienen con <code>{`GET ${BASE_URL}/api/communities`}</code>.
+                    Por ejemplo: <code>mapuche</code>, <code>aymara</code>, <code>rapa-nui</code>,{" "}
+                    <code>quechua</code>.
+                  </td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="py-2 pr-4 font-mono text-xs">since</td>
@@ -117,7 +127,7 @@ export default function OpenDataPage() {
 
           <h3 className="text-base font-semibold mt-6 mb-2">Historias sobre el Pueblo Mapuche</h3>
           <pre className="bg-neutral-100 rounded-lg p-4 text-sm overflow-x-auto">
-            <code>{`curl "${API_BASE}/stories?community=pueblo-mapuche"`}</code>
+            <code>{`curl "${API_BASE}/stories?community=mapuche"`}</code>
           </pre>
 
           <h2 className="section-heading mt-10">Respuesta</h2>
@@ -131,7 +141,7 @@ export default function OpenDataPage() {
       "publishedAt": "2025-06-01T00:00:00.000Z",
       "summary": "...",
       "relevanceSummary": "...",
-      "emotionTag": "HOPEFUL",
+      "emotionTag": "uplifting",
       "imageUrl": "https://...",
       "issue": { "name": "Derechos Indígenas", "slug": "derechos-indigenas" },
       "source": "Mapuexpress"
@@ -146,6 +156,11 @@ export default function OpenDataPage() {
   "attribution": "Datos de Voces Indígenas (vocesindigenas.org). ..."
 }`}</code>
           </pre>
+          <p>
+            El campo <code>emotionTag</code> toma uno de estos valores, en minúsculas:{' '}
+            <code>"uplifting"</code>, <code>"frustrating"</code>, <code>"scary"</code> o{' '}
+            <code>"calm"</code>. Puede venir <code>null</code> si la historia no tiene uno asignado.
+          </p>
 
           <h2 className="section-heading mt-10" id="limites">Límites de uso</h2>
           <div className="overflow-x-auto mt-4">

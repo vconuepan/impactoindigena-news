@@ -224,7 +224,9 @@ export default function WidgetGeneratorPage() {
               iframe embed
             </h3>
             <p className="text-xs text-neutral-500 mb-2">
-              Complete style isolation via iframe. Works on any platform.
+              Complete style isolation via iframe. Browsers currently block it
+              on sites other than vocesindigenas.org, so use the script embed
+              on your own site.
             </p>
             <div className="relative">
               <pre className="bg-neutral-900 text-green-400 text-sm p-4 rounded-lg overflow-x-auto" tabIndex={0}>
