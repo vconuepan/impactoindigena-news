@@ -95,6 +95,12 @@ describe('machineUpsertSql', () => {
     expect(texto).toContain("ON CONFLICT (story_id, community_id) DO UPDATE SET")
     expect(texto).toContain("WHERE story_community_reviews.review_state IN ('auto', 'pending')")
   })
+  it('las fechas van en UTC explicito, no en la zona de la sesion de la base', () => {
+    const sql = machineUpsertSql(evaluateForCommunity(STORY, MAPUCHE, { learningMode: false, textSource: 'short' }), new Date())
+    const texto = sql.strings.join('?')
+    // gate_evaluated_at, published_at, created_at, updated_at y el CASE del ON CONFLICT
+    expect((texto.match(/::timestamptz AT TIME ZONE 'UTC'/g) ?? []).length).toBe(5)
+  })
   it('published_at nunca vuelve a null: COALESCE con lo que ya tenia', () => {
     const sql = machineUpsertSql(evaluateForCommunity(STORY, MAPUCHE, { learningMode: false, textSource: 'short' }), new Date())
     expect(sql.strings.join('?').replace(/\s+/g, ' ')).toContain('COALESCE( story_community_reviews.published_at,')

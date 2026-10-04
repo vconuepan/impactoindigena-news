@@ -9,7 +9,7 @@ A story can be published on Voces Indígenas (the main site) and **held** in a v
 | Table | One row per | Notes |
 |---|---|---|
 | `community_review_modes` | vertical | `mode` ∈ `off` · `shadow` · `enforce`. **No row = `off`.** Separate table on purpose: adding a column to `communities` would break `prisma.community.findMany()` if code shipped before the SQL. |
-| `story_community_reviews` | (story, vertical) | Machine fields `gate_*` are rewritten on re-evaluation. `review_state` ∈ `auto` · `pending` (machine) · `released` · `held` (human). **The machine never overwrites a human decision**: every machine write is `ON CONFLICT … WHERE review_state IN ('auto','pending')`. `published_at` is set once and never reset. |
+| `story_community_reviews` | (story, vertical) | Machine fields `gate_*` are rewritten on re-evaluation. `review_state` ∈ `auto` · `pending` (machine) · `released` · `held` (human). **The machine never overwrites a human decision**: every machine write is `ON CONFLICT … WHERE review_state IN ('auto','pending')`. `published_at` is set once and never reset. Timestamps written by raw SQL are converted explicitly to UTC (`AT TIME ZONE 'UTC'`), like Prisma's own writes, so the reconciler's `stories.updated_at > gate_evaluated_at` comparison does not depend on the database session time zone. |
 
 Migration: `server/prisma/migrations/20261004000000_add_story_community_reviews/`. The director applies it; deploy does not.
 
@@ -57,7 +57,7 @@ Job `reconcile_community_reviews`, hourly at :17, **seeded disabled**. Per verti
 
 ## Switching on (director)
 
-1. Deploy code (inert: no tables → everything `off`). 2. Apply the SQL; `db:migrate:resolve`. 3. Simulate the backfill: baseline numbers. 4. `INSERT INTO community_review_modes (community_id, mode) SELECT id, 'shadow' FROM communities WHERE slug IN ('mapuche','wallmapu-araucania');` 5. Choose the text source; `:apply`. 6. Enable the reconciler job. 7. Work the queue in shadow (editor screen: Tanda B). 8. Turn learning mode off per the director's criterion. 9. Vertical to `enforce`; redeploy the frontend so the prerendered vertical page refreshes.
+1. Apply the SQL; `db:migrate:resolve`. It is inert (no mode rows → everything `off`), so it is safe **before** the deploy, and doing it first avoids one failed query per vertical page view (Postgres logs a `relation does not exist` ERROR for each while the code runs without the tables; the app itself reads `off` and serves normally). 2. Deploy the code. 3. Simulate the backfill: baseline numbers. 4. `INSERT INTO community_review_modes (community_id, mode) SELECT id, 'shadow' FROM communities WHERE slug IN ('mapuche','wallmapu-araucania') ON CONFLICT (community_id) DO UPDATE SET mode = EXCLUDED.mode, updated_at = CURRENT_TIMESTAMP;` 5. Choose the text source; `:apply`. 6. Enable the reconciler job. 7. Work the queue in shadow (editor screen: Tanda B). 8. Turn learning mode off per the director's criterion. 9. Vertical to `enforce`; redeploy the frontend so the prerendered vertical page refreshes.
 
 ## Not covered here
 

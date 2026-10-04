@@ -144,6 +144,20 @@ export function evaluateForCommunity(
 }
 
 /**
+ * Una fecha de JS como timestamp SIN zona en UTC, sea cual sea la zona de la
+ * sesion de la base. Hace falta porque las columnas son `timestamp(3)` (sin
+ * zona): Prisma, en sus escrituras propias, guarda UTC; pero un Date pasado
+ * como parametro a SQL crudo se convierte con la zona de la sesion. Medido el
+ * 4-oct-2026: con la sesion en Europe/London, gate_evaluated_at quedaba una hora
+ * adelantada respecto de stories.updated_at, y el conciliador habria dejado de
+ * ver como vieja una nota editada en esa hora. Azure corre en UTC y no se nota;
+ * el codigo no debe depender de eso.
+ */
+function utc(d: Date | null): Prisma.Sql {
+  return d === null ? Prisma.sql`NULL` : Prisma.sql`(${d}::timestamptz AT TIME ZONE 'UTC')`
+}
+
+/**
  * Escribe la decision de la maquina. Si ya hay fila:
  *   - si la decidio una persona (released/held), NO se toca: el WHERE lo impide;
  *   - si es de maquina, se reescribe lo del gate, y published_at se conserva si
@@ -159,8 +173,8 @@ export function machineUpsertSql(rev: MachineReview, now: Date): Prisma.Sql {
     ) VALUES (
       ${randomUUID()}, ${rev.storyId}, ${rev.communityId},
       ${rev.gateDecision}, ${rev.gateReasons}::text[], ${rev.gateSignals}::text[], ${rev.gateScore}, ${rev.gateLearningMode},
-      ${rev.gateTextSource}, ${rev.gateVersion}, ${now},
-      ${rev.reviewState}, ${rev.publishedAt}, ${now}, ${now}
+      ${rev.gateTextSource}, ${rev.gateVersion}, ${utc(now)},
+      ${rev.reviewState}, ${utc(rev.publishedAt)}, ${utc(now)}, ${utc(now)}
     )
     ON CONFLICT (story_id, community_id) DO UPDATE SET
       gate_decision      = EXCLUDED.gate_decision,
@@ -174,7 +188,7 @@ export function machineUpsertSql(rev: MachineReview, now: Date): Prisma.Sql {
       review_state       = EXCLUDED.review_state,
       published_at       = COALESCE(
                              story_community_reviews.published_at,
-                             CASE WHEN EXCLUDED.review_state = 'auto' THEN ${now}::timestamp(3) ELSE NULL END
+                             CASE WHEN EXCLUDED.review_state = 'auto' THEN ${utc(now)} ELSE NULL END
                            ),
       updated_at         = EXCLUDED.updated_at
     WHERE story_community_reviews.review_state IN ('auto', 'pending')

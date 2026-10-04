@@ -16,7 +16,7 @@ import path from 'node:path'
  */
 
 const SRC = path.resolve(__dirname, '..')
-const CARPETAS = ['routes/public', 'jobs']
+const CARPETAS = ['routes/public', 'jobs', 'services']
 
 /**
  * Composicion manual de la pertenencia: el archivo lee las palabras clave de una
@@ -24,15 +24,23 @@ const CARPETAS = ['routes/public', 'jobs']
  * casos de seguimiento (cases.ts, homepage.ts) y spotlight tambien filtran por
  * palabras clave, pero las suyas, no las de una vertical.
  */
-const LEE_PALABRAS_DE_COMUNIDAD = /\b(?:community|comm)\.keywords\b|keywords\s+FROM\s+communities/
-const COMPOSICION_MANUAL = /keywords\.(?:flatMap|map)\(/g
+const LEE_PALABRAS_DE_COMUNIDAD =
+  /\b(?:community|comm)\??\.keywords\b|\{\s*keywords\s*\}\s*=\s*\w*[cC]omm|SELECT[^`]*\bkeywords\b[^`]*FROM\s+communities/
+/**
+ * La FORMA del filtro, no el nombre de la variable: cada condicion `contains`
+ * sobre titulo, resumen o medio. Asi no importa si alguien escribe
+ * `(community.keywords ?? []).flatMap(...)`, usa otro nombre o un bucle.
+ * Revision adversarial del 4-oct-2026: el patron anterior (`keywords.flatMap(`)
+ * dejaba pasar esas variantes.
+ */
+const COMPOSICION_MANUAL = /\b(?:title|summary|sourceTitle)\s*:\s*\{\s*contains\s*:/g
 
-/** Pendientes conocidos: archivo → cuantas composiciones manuales tiene hoy. */
+/** Pendientes conocidos: archivo → cuantas condiciones `contains` arma hoy a mano (titulo + resumen = 2). */
 const PENDIENTES: Record<string, number> = {
-  'routes/public/feed.ts': 1, // RSS por vertical
-  'jobs/sendCommunityDigest.ts': 1, // digest semanal
-  'routes/public/communities.ts': 1, // correo de bienvenida
-  'routes/public/opendata.ts': 1, // parametro community
+  'routes/public/feed.ts': 2, // RSS por vertical
+  'jobs/sendCommunityDigest.ts': 2, // digest semanal
+  'routes/public/communities.ts': 2, // correo de bienvenida
+  'routes/public/opendata.ts': 2, // parametro community
 }
 
 function archivos(): string[] {
@@ -59,9 +67,13 @@ describe('una sola regla para lo que muestra una vertical', () => {
     }
   })
 
-  it('las rutas publicas y los jobs no llaman buildCommunityCondition directo: pasan por publicCommunityWhere', () => {
-    const directos = archivos().filter((f) => /buildCommunityCondition\(/.test(readFileSync(path.join(SRC, f), 'utf8')))
-    expect(directos).toEqual([])
+  it('las rutas publicas, los jobs y los servicios no usan buildCommunityCondition directo: pasan por publicCommunityWhere', () => {
+    // Solo routes/public/communities.ts la nombra, y solo para reexportarla.
+    const usan = archivos().filter((f) => /\bbuildCommunityCondition\b/.test(readFileSync(path.join(SRC, f), 'utf8')))
+    expect(usan).toEqual(['routes/public/communities.ts'])
+    const ruta = readFileSync(path.join(SRC, 'routes/public/communities.ts'), 'utf8')
+    expect(ruta, 'la ruta llama buildCommunityCondition en vez de publicCommunityWhere').not.toMatch(/buildCommunityCondition\(/)
+    expect(ruta, 'alias de importacion: evade este test').not.toMatch(/buildCommunityCondition\s+as\b/)
   })
 
   it('la pagina y el panel de señales de la vertical usan el filtro unico', () => {

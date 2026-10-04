@@ -14,6 +14,11 @@ const register = vi.hoisted(() => vi.fn())
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('./communityReview.js', () => ({ registerCommunityReviews: register }))
+vi.mock('../lib/vectors.js', () => ({
+  searchByEmbedding: vi.fn(),
+  fetchStoryForEmbedding: vi.fn().mockResolvedValue({ id: 'x', status: 'selected', title: 't', titleLabel: null, summary: 's' }),
+  saveEmbeddingTx: vi.fn(),
+}))
 vi.mock('./embedding.js', () => ({
   generateEmbeddingForContent: vi.fn(),
   generateSearchEmbedding: vi.fn(),
@@ -63,5 +68,10 @@ describe('ganchos de la retencion por vertical', () => {
     register.mockClear()
     await updateStory('x', { relevance: 7 })
     expect(register).not.toHaveBeenCalled()
+  })
+
+  it('updateStory con status published y un cambio de titulo (rama transaccional) tambien registra', async () => {
+    await updateStory('x', { status: 'published', title: 'Titulo nuevo' })
+    expect(register).toHaveBeenCalledWith(['x'])
   })
 })
