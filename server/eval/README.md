@@ -46,7 +46,11 @@ Resistencia Mapuche»): deben pasar.
 Corpus: 888 titulares unicos de Google News con pais Argentina (12 busquedas),
 las 387 notas publicadas de la vertical Mapuche y 400 notas globales recientes.
 Cada termino se midio con una replica exacta del cotejo del gate (hits y
-palabras distintas que lo disparan). Reglas: un termino entra solo con
+palabras distintas que lo disparan). **Campos medidos:** solo el titulo en los
+888 titulares argentinos; titulo + resumen en las 387 y las 400 notas
+publicadas. Ninguna cifra de este archivo incluye el cuerpo de la fuente
+(`sourceContent`): si el gate se cablea con el texto completo, retendra mas que
+lo que dice aqui. Ver `.plans/2026-10-04_retencion-por-vertical.md`, seccion 5. Reglas: un termino entra solo con
 evidencia en algun corpus; las siglas se cotejan como palabra completa; la
 identidad (lof, nacion mapuche, wiñoy tripantu, trawün, lengua, ceremonia)
 queda fuera; a la Lista A va lo que es conflicto, proceso penal, violencia o
