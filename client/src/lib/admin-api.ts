@@ -874,6 +874,8 @@ export interface ReviewStats {
   learningMode: boolean
   visibleToday: number
   visibleIfEnforced: number
+  /** true con el aprendizaje encendido: visibleIfEnforced es lo que el gate no retendría sin él. */
+  visibleIfEnforcedProjected?: boolean
   byState: Record<ReviewState, number>
   missingRows: number
   oldestPendingAt: string | null

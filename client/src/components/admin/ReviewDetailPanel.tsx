@@ -3,7 +3,7 @@ import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import type { ReviewQueueItem } from '../../lib/admin-api'
 import { formatDateWithTime } from '../../lib/constants'
-import { CODE_LABEL, STATE_BADGE, STATE_LABEL, marcaLabel, puntajeLabel, razonLabel, terminosDe } from '../../lib/review-labels'
+import { CODE_LABEL, STATE_BADGE, STATE_LABEL, marcaLabel, marcarTerminos, puntajeLabel, razonLabel, terminosDe, textoCorto, terminoVisible } from '../../lib/review-labels'
 
 interface ReviewDetailPanelProps {
   item: ReviewQueueItem | null
@@ -14,24 +14,15 @@ interface ReviewDetailPanelProps {
   pending?: boolean
 }
 
-function escapar(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-}
-
 /** El texto con los términos que dispararon resaltados; el resto, tal cual. */
 export function Resaltado({ texto, terminos }: { texto: string; terminos: string[] }) {
-  if (!texto || terminos.length === 0) return <>{texto}</>
-  const alternativas = terminos.map(escapar).join('|')
-  const partes = texto.split(new RegExp(`(${alternativas})`, 'gi'))
-  // Sin la bandera g: un regex global con test() arrastra lastIndex entre partes.
-  const esTermino = new RegExp(`^(?:${alternativas})$`, 'i')
   return (
     <>
-      {partes.map((p, i) =>
-        esTermino.test(p) ? (
-          <mark key={i} className="rounded bg-amber-100 px-0.5 text-neutral-900">{p}</mark>
+      {marcarTerminos(texto, terminos).map((f, i) =>
+        f.marcado ? (
+          <mark key={i} className="rounded bg-amber-100 px-0.5 text-neutral-900">{f.texto}</mark>
         ) : (
-          <span key={i}>{p}</span>
+          <span key={i}>{f.texto}</span>
         ),
       )}
     </>
@@ -40,6 +31,7 @@ export function Resaltado({ texto, terminos }: { texto: string; terminos: string
 
 export function ReviewDetailPanel({ item, onClose, onRelease, onHold, onReopen, pending }: ReviewDetailPanelProps) {
   const terminos = item ? terminosDe(item.gateReasons, item.gateSignals) : []
+  const texto = item ? textoCorto(item.story) : ''
   const titulo = item?.story.title || item?.story.sourceTitle || ''
   const humano = item ? item.reviewState === 'released' || item.reviewState === 'held' : false
   const puntaje = item ? puntajeLabel(item.gateScore) : null
@@ -77,14 +69,14 @@ export function ReviewDetailPanel({ item, onClose, onRelease, onHold, onReopen, 
               ) : (
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {item.gateReasons.map((r) => {
-                    const l = razonLabel(r)
+                    const l = razonLabel(r, texto)
                     return <Badge key={r} variant={l.variant}>{l.texto}</Badge>
                   })}
                 </div>
               )}
               {item.gateSignals.length > 0 && (
                 <p className="mt-2 text-xs text-neutral-500">
-                  Señales sin corroborar: {item.gateSignals.map((s) => s.replace(/^listB:/, '')).join(', ')}
+                  Señales sin corroborar: {item.gateSignals.map((s) => terminoVisible(s.replace(/^listB:/, ''), texto)).join(', ')}
                 </p>
               )}
             </div>

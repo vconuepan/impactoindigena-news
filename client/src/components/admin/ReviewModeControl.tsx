@@ -65,7 +65,14 @@ export function ReviewModeControl({ slug, stats, isAdmin }: ReviewModeControlPro
         </div>
         <div className="flex items-center gap-3 text-xs">
           <span>
-            Hoy se ven <strong>{stats.visibleToday}</strong> · si aplicaras, <strong>{stats.visibleIfEnforced}</strong>
+            Hoy se ven <strong>{stats.visibleToday}</strong> ·{' '}
+            {stats.visibleIfEnforcedProjected ? 'si aplicaras con el aprendizaje apagado, ' : 'si aplicaras, '}
+            <strong>{stats.visibleIfEnforced}</strong>
+            {stats.visibleIfEnforcedProjected && (
+              <span className="font-normal" title="Lo que el gate no retendría sin el modo aprendizaje: lo liberado más lo pendiente con puntaje 0">
+                {' '}(proyección)
+              </span>
+            )}
           </span>
           {isAdmin && (
             <Select

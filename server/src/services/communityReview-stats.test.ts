@@ -30,6 +30,8 @@ const hace = (h: number) => new Date(Date.now() - h * 3_600_000)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockConfig.learningMode = true
+  mockConfig.queueAlertHours = 48
   mockPrisma.issue.findMany.mockResolvedValue([])
   mockPrisma.story.count.mockResolvedValue(0)
   mockPrisma.storyCommunityReview.groupBy.mockResolvedValue([{ reviewState: 'pending', _count: { _all: 3 } }])
@@ -67,5 +69,25 @@ describe('communityReviewStats: antiguedad de la cola', () => {
     mockConfig.learningMode = false
     mockPrisma.storyCommunityReview.findFirst.mockResolvedValue({ publishedAt: null, gateEvaluatedAt: hace(50) })
     expect((await communityReviewStats(COMUNIDAD, 'shadow')).oldestPendingHours).toBe(50)
+  })
+
+  it('con el aprendizaje encendido «si aplicaras» es una proyeccion: auto, released o pendiente con puntaje 0', async () => {
+    mockPrisma.storyCommunityReview.findFirst.mockResolvedValue(null)
+    const s = await communityReviewStats(COMUNIDAD, 'shadow')
+    expect(s.visibleIfEnforcedProjected).toBe(true)
+    const where = mockPrisma.story.count.mock.calls[1][0].where
+    const some = where.AND[1].communityReviews.some
+    expect(some.communityId).toBe('c1')
+    expect(some.OR).toEqual([{ reviewState: { in: ['auto', 'released'] } }, { reviewState: 'pending', gateScore: 0 }])
+  })
+
+  it('con el aprendizaje apagado «si aplicaras» es el where real de enforce', async () => {
+    mockConfig.learningMode = false
+    mockPrisma.storyCommunityReview.findFirst.mockResolvedValue(null)
+    const s = await communityReviewStats(COMUNIDAD, 'shadow')
+    expect(s.visibleIfEnforcedProjected).toBe(false)
+    const where = mockPrisma.story.count.mock.calls[1][0].where
+    expect(JSON.stringify(where)).not.toContain('gateScore')
+    expect(JSON.stringify(where)).toContain('"in":["auto","released"]')
   })
 })

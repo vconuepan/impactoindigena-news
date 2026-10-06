@@ -17,7 +17,7 @@ import { useAuth } from '../../lib/auth'
 import { ApiError, type ReviewCode, type ReviewQueueItem, type ReviewState } from '../../lib/admin-api'
 import { formatDate } from '../../lib/constants'
 import { useBulkDecideReview, useDecideReview, useReviewQueue, useReviewVerticals } from '../../hooks/useReviews'
-import { STATE_BADGE, STATE_LABEL, marcaLabel, puntajeLabel, razonLabel } from '../../lib/review-labels'
+import { STATE_BADGE, STATE_LABEL, marcaLabel, puntajeLabel, razonLabel, textoCorto } from '../../lib/review-labels'
 
 const ESTADO_LABEL: Record<ReviewState | 'all', string> = { ...STATE_LABEL, all: 'Todas' }
 const PAGE_SIZE = 25
@@ -228,6 +228,7 @@ export default function ReviewsPage() {
                       {filas.map((f) => {
                         const p = puntajeLabel(f.gateScore)
                         const razones = f.gateReasons.filter((r) => r !== 'learning_mode')
+                        const texto = textoCorto(f.story)
                         return (
                           <tr key={f.id} className="border-b border-neutral-100 hover:bg-neutral-50">
                             <td className="px-3 py-3">
@@ -256,7 +257,7 @@ export default function ReviewsPage() {
                             <td className="px-3 py-3">
                               <div className="flex max-w-xs flex-wrap gap-1">
                                 {razones.slice(0, 3).map((r) => {
-                                  const l = razonLabel(r)
+                                  const l = razonLabel(r, texto)
                                   return <Badge key={r} variant={l.variant}>{l.texto}</Badge>
                                 })}
                                 {razones.length > 3 && <span className="text-xs text-neutral-400">+{razones.length - 3}</span>}

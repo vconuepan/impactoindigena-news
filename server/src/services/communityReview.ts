@@ -13,6 +13,7 @@ import {
   type CommunityForVisibility,
   type ReviewMode,
   type ReviewState,
+  VISIBLE_WHEN_ENFORCED,
 } from '../lib/communityVisibility.js'
 
 const log = createLogger('community-review')
@@ -405,8 +406,16 @@ export interface CommunityReviewStats {
   learningMode: boolean
   /** Lo que la pagina publica muestra hoy, con el modo vigente. */
   visibleToday: number
-  /** Lo que mostraria si se pasara a enforce ahora (con el aprendizaje apagado). */
+  /**
+   * Lo que mostraria en enforce. Con el aprendizaje APAGADO es el where real de
+   * enforce. Con el aprendizaje ENCENDIDO todas las filas de maquina estan
+   * pendientes y ese numero seria 0 siempre (visto el 6-oct-2026: «si
+   * aplicaras, 0» con 409 notas), asi que se PROYECTA: lo que el gate no habria
+   * retenido sin el aprendizaje (auto, released, o pendiente con puntaje 0).
+   */
   visibleIfEnforced: number
+  /** true cuando visibleIfEnforced es la proyeccion de arriba, no el where real. */
+  visibleIfEnforcedProjected: boolean
   byState: Record<ReviewState, number>
   /** Notas que encajan en la vertical y aun no tienen fila: las invisibles en enforce. */
   missingRows: number
@@ -425,9 +434,26 @@ export interface CommunityReviewStats {
 export async function communityReviewStats(community: CommunityForVisibility, mode: ReviewMode): Promise<CommunityReviewStats> {
   const temas = await temasVivos()
   const learningMode = config.gate.learningMode
+  // Proyeccion bajo aprendizaje: una fila pendiente con puntaje 0 esta retenida
+  // SOLO por el modo aprendizaje; sin el, el gate la habria dejado en auto.
+  const proyeccionSinAprendizaje: Prisma.StoryWhereInput = {
+    AND: [
+      membershipWhere(community, temas),
+      {
+        communityReviews: {
+          some: {
+            communityId: community.id,
+            OR: [{ reviewState: { in: [...VISIBLE_WHEN_ENFORCED] } }, { reviewState: 'pending', gateScore: 0 }],
+          },
+        },
+      },
+    ],
+  }
   const [visibleToday, visibleIfEnforced, missingRows, grouped, oldest] = await Promise.all([
     prisma.story.count({ where: publicCommunityWhere({ community, temas, mode, learningMode }) }),
-    prisma.story.count({ where: publicCommunityWhere({ community, temas, mode: 'enforce', learningMode: false }) }),
+    prisma.story.count({
+      where: learningMode ? proyeccionSinAprendizaje : publicCommunityWhere({ community, temas, mode: 'enforce', learningMode: false }),
+    }),
     prisma.story.count({ where: { AND: [membershipWhere(community, temas), { communityReviews: { none: { communityId: community.id } } }] } }),
     prisma.storyCommunityReview.groupBy({ by: ['reviewState'], where: { communityId: community.id }, _count: { _all: true } }),
     prisma.storyCommunityReview.findFirst({
@@ -450,6 +476,7 @@ export async function communityReviewStats(community: CommunityForVisibility, mo
     learningMode,
     visibleToday,
     visibleIfEnforced,
+    visibleIfEnforcedProjected: learningMode,
     byState,
     missingRows,
     oldestPendingAt,
