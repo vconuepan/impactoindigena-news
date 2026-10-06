@@ -3,10 +3,10 @@ import { config } from '../../config.js'
 import { createLogger } from '../../lib/logger.js'
 import { TTLCache, cached } from '../../lib/cache.js'
 import { Feed } from 'feed'
-import { StoryStatus } from '@prisma/client'
 import * as storyService from '../../services/story.js'
 import * as issueService from '../../services/issue.js'
 import prisma from '../../lib/prisma.js'
+import { publicCommunityWhere, temasVivos, getReviewMode } from '../../lib/communityVisibility.js'
 
 const router = Router()
 const log = createLogger('feed')
@@ -89,23 +89,19 @@ router.get('/comunidad/:slug', async (req, res) => {
     const community = rows[0]
 
     const xml = await cached(feedCache, `feed:community:${slug}`, async () => {
-      const keywords: string[] = community.keywords ?? []
-      const keywordFilter = keywords.length > 0
-        ? {
-            OR: keywords.flatMap((kw: string) => [
-              { title: { contains: kw, mode: 'insensitive' as const } },
-              { summary: { contains: kw, mode: 'insensitive' as const } },
-            ]),
-          }
-        : {}
+      // El MISMO filtro que la pagina de la vertical (D4, Tanda B, item 11). Antes
+      // el RSS exigia tema Y palabras clave, y entregaba 44 notas donde la pagina
+      // mostraba 389. Una nota que el editor retenga desaparece de aqui tambien,
+      // con el retraso del cache (config.feed.cacheMaxAge).
+      const where = publicCommunityWhere({
+        community: { id: community.id, keywords: community.keywords ?? [], issueIds: community.issue_ids ?? [] },
+        temas: await temasVivos(),
+        mode: await getReviewMode(community.id),
+        learningMode: config.gate.learningMode,
+      })
 
       const stories = await prisma.story.findMany({
-        where: {
-          status: StoryStatus.published,
-          issueId: { in: community.issue_ids },
-          relevance: { gte: 3 },
-          ...keywordFilter,
-        },
+        where,
         select: {
           id: true,
           slug: true,

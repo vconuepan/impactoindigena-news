@@ -37,9 +37,7 @@ const COMPOSICION_MANUAL = /\b(?:title|summary|sourceTitle)\s*:\s*\{\s*contains\
 
 /** Pendientes conocidos: archivo → cuantas condiciones `contains` arma hoy a mano (titulo + resumen = 2). */
 const PENDIENTES: Record<string, number> = {
-  'routes/public/feed.ts': 2, // RSS por vertical
-  'jobs/sendCommunityDigest.ts': 2, // digest semanal
-  'routes/public/communities.ts': 2, // correo de bienvenida
+  // Vacia desde la Tanda B (4-oct-2026): RSS, digest y bienvenida ya pasan por publicCommunityWhere.
 }
 
 function archivos(): string[] {
@@ -78,5 +76,21 @@ describe('una sola regla para lo que muestra una vertical', () => {
   it('la pagina y el panel de señales de la vertical usan el filtro unico', () => {
     const ruta = readFileSync(path.join(SRC, 'routes/public/communities.ts'), 'utf8')
     expect((ruta.match(/publicCommunityWhere\(/g) ?? []).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('los cinco consumidores pasan por el filtro unico CON el modo real de la vertical', () => {
+    // pagina, señales y bienvenida en communities.ts; RSS en feed.ts; digest en el job.
+    const consumidores: Record<string, number> = {
+      'routes/public/communities.ts': 3,
+      'routes/public/feed.ts': 1,
+      'jobs/sendCommunityDigest.ts': 1,
+    }
+    for (const [f, n] of Object.entries(consumidores)) {
+      const codigo = readFileSync(path.join(SRC, f), 'utf8')
+      expect((codigo.match(/publicCommunityWhere\(/g) ?? []).length, `${f}: llamadas a publicCommunityWhere`).toBe(n)
+      // El modo viene de la base, no esta cableado: `mode: 'off'` en un consumidor desactivaria la retencion ahi.
+      expect((codigo.match(/mode:\s*await getReviewMode\(/g) ?? []).length, `${f}: el modo tiene que salir de getReviewMode`).toBe(n)
+      expect(codigo, `${f}: modo cableado a mano`).not.toMatch(/mode:\s*'(?:off|shadow|enforce)'/)
+    }
   })
 })

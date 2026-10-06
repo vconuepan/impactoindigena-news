@@ -243,6 +243,29 @@ invariant VerticalVisibility {
     --   enforce  the same and a row in auto | released (no row = hidden)
     -- enforce with learning mode on is effectively shadow.
     -- No row in community_review_modes means off.
+    -- Holds for EVERY consumer of a vertical: page, signals, RSS, weekly
+    -- digest and welcome email. A story held in a vertical leaves all of
+    -- them at once and stays untouched on the main site.
+}
+
+rule ReviewDecision {
+    when: EditorDecidesReview(story, community, decision)
+    -- decision in release | hold | reopen. hold requires a code
+    -- (sensitive | out_of_scope). reopen returns the row to the machine
+    -- state and clears the human fields.
+    ensures: CommunityReviewRow(story, community).review_state reflects it
+    ensures: audit_log records actor, from, to, gate score and reasons
+    -- Bulk release is refused if any selected row has gate_score > 1:
+    -- strong signals are released one at a time. Bulk hold is always allowed.
+}
+
+rule ReviewModeChange {
+    when: AdminSetsReviewMode(community, mode)
+    -- Only an admin. enforce is refused (409) while learning mode is on,
+    -- so the switch never says one thing and does another.
+    ensures: community_review_modes(community) = mode
+    ensures: audit_log records from, to and the exact count that becomes hidden
+    -- Leaving off runs the reconciler so the queue exists at once.
 }
 
 -- ─── Manual Transitions ────────────────────────────────────────────

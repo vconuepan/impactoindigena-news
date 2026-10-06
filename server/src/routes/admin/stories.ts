@@ -18,10 +18,31 @@ import {
   bulkSelectIdsSchema,
 } from '../../schemas/story.js'
 import { taskRegistry } from '../../lib/taskRegistry.js'
+import prisma from '../../lib/prisma.js'
+import { writeAuditLog } from '../../services/audit.js'
 import { crawlUrlSchema } from '../../schemas/job.js'
 
 const router = Router()
 const log = createLogger('stories')
+
+/**
+ * Rastro de cada cambio de estado hecho a mano (D4, Tanda B, item 12): hasta
+ * el 4-oct-2026 ninguna de las cuatro rutas de estado auditaba. `from` se lee
+ * antes de escribir; si la lectura falla no se bloquea la operacion.
+ */
+async function statusBefore(ids: string[]): Promise<Record<string, string>> {
+  try {
+    const rows = await prisma.story.findMany({ where: { id: { in: ids } }, select: { id: true, status: true } })
+    return Object.fromEntries(rows.map((r) => [r.id, r.status]))
+  } catch {
+    return {}
+  }
+}
+
+function auditStatus(req: import('express').Request, id: string, from: string | undefined, to: string): Promise<void> {
+  return writeAuditLog({ actor: req.user, action: 'story.status', targetType: 'story', targetId: id, metadata: { from: from ?? null, to } })
+}
+
 
 router.get('/stats', async (_req, res) => {
   try {
@@ -228,7 +249,9 @@ router.put('/:id', validateBody(updateStorySchema), async (req, res) => {
 
 router.put('/:id/status', validateBody(updateStoryStatusSchema), async (req, res) => {
   try {
+    const antes = await statusBefore([req.params.id])
     const story = await storyService.updateStoryStatus(req.params.id, req.body.status)
+    await auditStatus(req, req.params.id, antes[req.params.id], req.body.status)
     res.json(story)
   } catch (err: any) {
     if (err.code === 'P2025' || err.message === 'Story not found') {
@@ -242,7 +265,16 @@ router.put('/:id/status', validateBody(updateStoryStatusSchema), async (req, res
 
 router.post('/bulk-status', validateBody(bulkUpdateStatusSchema), async (req, res) => {
   try {
+    const antes = await statusBefore(req.body.ids)
     const result = await storyService.bulkUpdateStatus(req.body.ids, req.body.status)
+    const from: Record<string, number> = {}
+    for (const id of req.body.ids) from[antes[id] ?? 'unknown'] = (from[antes[id] ?? 'unknown'] ?? 0) + 1
+    await writeAuditLog({
+      actor: req.user,
+      action: 'story.bulk_status',
+      targetType: 'story',
+      metadata: { to: req.body.status, requested: req.body.ids.length, updated: result.count, from, ids: req.body.ids },
+    })
     res.json({ updated: result.count })
   } catch (err) {
     log.error({ err }, 'failed to bulk update story status')
@@ -299,7 +331,9 @@ router.post('/select', expensiveOpLimiter, validateBody(selectBodySchema), async
 
 router.post('/:id/publish', async (req, res) => {
   try {
+    const antes = await statusBefore([req.params.id])
     const story = await storyService.publishStory(req.params.id)
+    await auditStatus(req, req.params.id, antes[req.params.id], 'published')
     res.json(story)
   } catch (err: any) {
     if (err.code === 'P2025' || err.message === 'Story not found') {
@@ -313,7 +347,9 @@ router.post('/:id/publish', async (req, res) => {
 
 router.post('/:id/reject', async (req, res) => {
   try {
+    const antes = await statusBefore([req.params.id])
     const story = await storyService.rejectStory(req.params.id)
+    await auditStatus(req, req.params.id, antes[req.params.id], 'rejected')
     res.json(story)
   } catch (err: any) {
     if (err.code === 'P2025') {
