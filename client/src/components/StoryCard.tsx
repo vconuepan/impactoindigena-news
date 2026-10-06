@@ -8,6 +8,7 @@ import { getTitleLabel, getHeadline } from '../lib/title-label'
 import { isRead } from '../lib/reading-history'
 import { resumenParaTarjeta } from '../lib/story-summary'
 import { srcSetDeImagen } from '../lib/story-image'
+import { estaPrerenderizando } from '../lib/prerender'
 import FeedFavicon from './FeedFavicon'
 import BookmarkButton from './BookmarkButton'
 import { publisherFromUrl } from '@shared/utils/publisher'
@@ -301,7 +302,13 @@ function CardImage({
       width={1200}
       height={630}
       loading="lazy"
-      onError={() => (srcSet ? setSinVariantes(true) : setError(true))}
+      onError={() => {
+        // En el prerender un 404 describe el bucket del minuto del build, no al
+        // lector: no se hornea el respaldo (ver lib/prerender.ts).
+        if (estaPrerenderizando()) return
+        if (srcSet) setSinVariantes(true)
+        else setError(true)
+      }}
     />
   )
 }

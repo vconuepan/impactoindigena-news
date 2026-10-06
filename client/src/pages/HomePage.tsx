@@ -13,6 +13,7 @@ import { parsePoints, stripMarkdown, stripPrefix, limitSentences } from '../lib/
 import { formatDate } from '../lib/format'
 import { getHeadline } from '../lib/title-label'
 import { srcSetDeImagen } from '../lib/story-image'
+import { estaPrerenderizando } from '../lib/prerender'
 import { SEO, CommonOgTags } from '../lib/seo'
 import { buildWebSiteSchema, buildOrganizationSchema } from '../lib/structured-data'
 import SpotlightBand from '../components/SpotlightBand'
@@ -99,6 +100,10 @@ function HeroSection({ story }: { story: PublicStory }) {
             className="w-full h-full object-cover opacity-90"
             fetchPriority="high"
             onError={(e) => {
+              // En el prerender NO se hornea el respaldo: el 6-oct-2026 el HTML
+              // de produccion salio sin srcset por un 404 que solo existio en
+              // el minuto del build (ver lib/prerender.ts).
+              if (estaPrerenderizando()) return
               if (heroSrcSet) setHeroSinVariantes(true)
               else (e.target as HTMLImageElement).style.display = 'none'
             }}
@@ -213,8 +218,15 @@ function RuledSection({ issue }: { issue: PublicIssue }) {
       >
         {issue.name}
       </h2>
+      {/*
+        * aria-label con la seccion: ocho enlaces que dicen «Ver todas» y llevan
+        * a ocho destinos distintos son indistinguibles para un lector de
+        * pantalla (PageSpeed, identical-links-same-purpose, 6-oct-2026). El
+        * texto visible queda contenido en el nombre accesible (WCAG 2.5.3).
+        */}
       <Link
         to={`/issues/${issue.slug}`}
+        aria-label={`Ver todas las noticias de ${issue.name}`}
         className="ml-auto font-dm-sans hover:opacity-70 transition-opacity focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
         style={{ fontSize: '11px', fontWeight: '600', color: '#0D5F3C', whiteSpace: 'nowrap' }}
       >

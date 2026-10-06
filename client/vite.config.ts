@@ -30,13 +30,19 @@ function htmlTransformPlugin(): Plugin {
       // cuando el JS leyo los datos: abrir la conexion (DNS + TCP + TLS) desde
       // el <head> la adelanta. PageSpeed lo listaba como «candidato para
       // establecer conexion previamente» con 300 ms de ahorro de LCP (6-oct-2026).
-      // SIN `crossorigin`: las imagenes se piden sin CORS y una conexion
-      // preconectada con credenciales distintas no se reutiliza. El fetch del
-      // snapshot (con CORS) ya trae su propio preload en la portada.
+      // Van DOS, con y sin `crossorigin`, porque el navegador no comparte la
+      // conexion entre peticiones con CORS y sin CORS: el snapshot
+      // `homepage.json` se pide con CORS (es la PRIMERA peticion al bucket) y
+      // las imagenes sin el. Con solo la version sin `crossorigin`, PageSpeed
+      // marcaba la preconexion como «sin usar» (6-oct-2026, segunda corrida) y
+      // seguia proponiendo el origen como candidato.
       const r2 = process.env.VITE_R2_PUBLIC_URL
       if (r2) {
         const origin = new URL(r2).origin
-        html = html.replace('<head>', `<head>\n    <link rel="preconnect" href="${origin}" />`)
+        html = html.replace(
+          '<head>',
+          `<head>\n    <link rel="preconnect" href="${origin}" crossorigin />\n    <link rel="preconnect" href="${origin}" />`,
+        )
       }
 
       return html
@@ -123,6 +129,11 @@ export default defineConfig(async () => {
           maxConcurrentRoutes: 4,
           timeout: 60000,
           renderAfterDocumentEvent: 'render-complete',
+          // Marca `window.__PRERENDER_INJECTED` antes de cualquier script. Los
+          // componentes la leen con `lib/prerender.ts` para NO hornear en el
+          // HTML estados que solo describen la red del build: el 6-oct-2026 el
+          // hero salio sin `srcset` porque su variante dio 404 en Puppeteer.
+          inject: { prerender: true },
           launchOptions: {
             args: [
               // Prerender in Spanish: without this, headless Chrome reports

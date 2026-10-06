@@ -10,6 +10,7 @@ import { parsePoints } from '../lib/parse-points'
 import { getTitleLabel, getHeadline } from '../lib/title-label'
 import { markAsRead } from '../lib/reading-history'
 import { origenDeImagen, claveDeRotulo, srcSetDeImagen } from '../lib/story-image'
+import { estaPrerenderizando } from '../lib/prerender'
 import { storyAgeMonths } from '../lib/format'
 import FeedFavicon from '../components/FeedFavicon'
 import BookmarkButton from '../components/BookmarkButton'
@@ -332,6 +333,8 @@ export default function StoryPage() {
                 onError={(e) => {
                   // Sin la variante (imagen anterior al 6-oct-2026) cae al
                   // original de `src`; solo si ese falla se oculta la figura.
+                  // Y nunca durante el prerender (ver lib/prerender.ts).
+                  if (estaPrerenderizando()) return
                   if (heroSrcSet) setHeroSinVariantes(true)
                   else (e.target as HTMLImageElement).closest('figure')!.style.display = 'none'
                 }}
