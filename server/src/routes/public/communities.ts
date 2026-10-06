@@ -1,7 +1,6 @@
 import { Router } from 'express'
 import { createLogger } from '../../lib/logger.js'
 import prisma from '../../lib/prisma.js'
-import { StoryStatus } from '@prisma/client'
 import { config } from '../../config.js'
 import { requireMember } from '../../middleware/auth.js'
 import { sendTransactional } from '../../services/brevo.js'
@@ -372,29 +371,21 @@ router.post('/:slug/join', requireMember, async (req, res) => {
 async function sendWelcomeEmail(
   email: string,
   userName: string,
-  community: { name: string; slug: string; issueIds: string[]; keywords: string[] }
+  community: { id: string; name: string; slug: string; issueIds: string[]; keywords: string[] }
 ): Promise<void> {
   const SITE_URL = config.siteUrl || 'https://vocesindigenas.org'
   const communityUrl = `${SITE_URL}/comunidad/${community.slug}`
 
-  // Fetch the 3 most recent published stories for this community
-  const keywords = community.keywords ?? []
-  const keywordFilter =
-    keywords.length > 0
-      ? {
-          OR: keywords.flatMap((kw) => [
-            { title: { contains: kw, mode: 'insensitive' as const } },
-            { summary: { contains: kw, mode: 'insensitive' as const } },
-          ]),
-        }
-      : {}
-
+  // Las 3 notas mas recientes, con el MISMO filtro que la pagina de la vertical
+  // (D4, Tanda B, item 11): antes este correo no exigia relevancia 3 y armaba
+  // la pertenencia a mano. Una nota retenida por el editor no se manda.
   const stories = await prisma.story.findMany({
-    where: {
-      status: StoryStatus.published,
-      issueId: { in: community.issueIds },
-      ...keywordFilter,
-    },
+    where: publicCommunityWhere({
+      community: { id: community.id, keywords: community.keywords ?? [], issueIds: community.issueIds },
+      temas: await temasVivos(),
+      mode: await getReviewMode(community.id),
+      learningMode: config.gate.learningMode,
+    }),
     select: { title: true, slug: true, summary: true, sourceTitle: true },
     orderBy: { datePublished: 'desc' },
     take: 3,

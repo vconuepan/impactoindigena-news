@@ -25,7 +25,9 @@ One function decides it: `publicCommunityWhere({ community, temas, mode, learnin
 
 `effectiveMode`: `enforce` with `config.gate.learningMode` on degrades to `shadow` (learning mode holds 100%; enforcing would empty the vertical). `getReviewMode` never throws: any error, including a missing table, reads as `off`.
 
-Consumers using it today: `GET /api/communities/:slug/stories` and `/signals`. Still composing membership by hand (Tanda B, tracked by `lib/community-visibility-contract.test.ts`): community RSS (`feed.ts`), weekly digest (`sendCommunityDigest.ts`), welcome email (`communities.ts`), opendata `community` filter. The contract test fails if a new one appears or if a listed one is fixed and not removed from the list.
+**All five consumers use it** (Tanda B, 4-oct-2026): `GET /api/communities/:slug/stories`, `/signals`, the welcome email (`communities.ts`), the community RSS (`feed.ts`) and the weekly digest (`sendCommunityDigest.ts`). Before, the RSS required topic AND keywords and served 44 items where the page showed 389; the welcome email did not require relevance ≥ 3. `lib/community-visibility-contract.test.ts` fails if any public route, job or service composes membership by hand again, and checks that each consumer passes `mode: await getReviewMode(...)` (a hard-coded mode would silently disable retention there). Route-level tests: `feed-review-mode.test.ts`, `sendCommunityDigest-review.test.ts`, `communities-welcome-review.test.ts`, `communities-review-mode.test.ts`.
+
+The RSS is cached (`config.feed.cacheMaxAge`, 15 min): a `hold` reaches the feed with that delay.
 
 ## Where the gate runs
 
@@ -41,7 +43,7 @@ Consumers using it today: `GET /api/communities/:slug/stories` and `/signals`. S
 
 Membership is decided with the same `where` as the public page (`membershipWhere`), so what the gate evaluated and what the vertical shows coincide.
 
-**Text evaluated:** `config.gate.textSource` (`GATE_TEXT_SOURCE`, default `short` = title + label + summary; `full` adds the source body). Director's decision pending; recorded per row in `gate_text_source`.
+**Text evaluated:** `config.gate.textSource` (`GATE_TEXT_SOURCE`, default `short` = title + label + summary; `full` adds the source body). **Director decided `short` on 2026-10-04** (simulation on production: short holds 204/389 Mapuche and 49/107 Araucanía without learning mode; full holds 265 and 62). Recorded per row in `gate_text_source`.
 
 **Score** (`gate_score`, orders the editor queue): 3 confrontation frame · 2 any Lista A term · 1 reserved (two Lista B families, pending director) · 0 learning mode only.
 
@@ -55,10 +57,26 @@ Job `reconcile_community_reviews`, hourly at :17, **seeded disabled**. Per verti
 
 `npm run migration:backfill-reviews --prefix server` simulates: baseline per vertical (same `where` as the page), configured and effective mode, what the gate would hold with **both** text variants, with and without learning mode, top reasons, and the stories with most reasons. `:apply` runs the reconciler on verticals not in `off`, logs to `.migraciones-log/`, and checks the public total did not change in shadow.
 
+## Editor API (`/api/admin/reviews`)
+
+`server/src/routes/admin/reviews.ts` → `services/communityReviewDecisions.ts`. Admin and editor decide; **only admin changes the mode** (`requireRole('admin')` on the route).
+
+| Endpoint | What |
+|---|---|
+| `GET /` | Verticals under review (mode ≠ off) with `communityReviewStats` each, plus `learningMode` and `bulkReleaseMaxScore` |
+| `GET /:slug?state=&page=&pageSize=` | The queue: ordered by `gateScore desc, publishedAt desc` (index `story_community_reviews_queue_idx`), each row with the story and `alsoIn` (same story in other verticals) |
+| `GET /:slug/stats` | «hoy se ven N · si aplicaras, M», counts by state, `missingRows` |
+| `GET /:slug/mode-preview?mode=` | Exact number of stories that would be hidden, **before** changing anything. Reads only |
+| `PUT /:slug/mode` | Upserts `community_review_modes`. **409** to `enforce` while learning mode is on. Leaving `off` runs the reconciler so the queue exists at once |
+| `POST /:slug/decide` | `{ storyId, decision: release·hold·reopen, code?, note? }`. `hold` requires `code` ∈ `sensitive` · `out_of_scope` (400 otherwise). `reopen` returns the row to the machine state (`auto` if `gate_decision = auto_publish`, else `pending`) and clears the human fields |
+| `POST /:slug/bulk-decide` | Same, for up to 500 ids. **Bulk `release` is refused (409, with the ids) if any selected row has `gateScore > BULK_RELEASE_MAX_SCORE` (1)**: strong signals are released one at a time. Bulk `hold` is always allowed. Returns the real `updateMany` count and the ids with no row (`missing`) |
+
+**Audit.** Every decision writes `audit_log` (`community_review.release|hold|reopen|mode`) with slug, story, `from`/`to`, gate score and reasons, code and note; bulk writes one row per story via `writeAuditLogs` (`createMany`). Both are fire-and-forget: a failed audit never blocks the decision. Since the same change, the four manual status routes in `admin/stories.ts` (`PUT /:id/status`, `POST /bulk-status`, `/:id/publish`, `/:id/reject`) audit `story.status` / `story.bulk_status` with the previous status read before writing.
+
 ## Switching on (director)
 
-1. Apply the SQL; `db:migrate:resolve`. It is inert (no mode rows → everything `off`), so it is safe **before** the deploy, and doing it first avoids one failed query per vertical page view (Postgres logs a `relation does not exist` ERROR for each while the code runs without the tables; the app itself reads `off` and serves normally). 2. Deploy the code. 3. Simulate the backfill: baseline numbers. 4. `INSERT INTO community_review_modes (community_id, mode) SELECT id, 'shadow' FROM communities WHERE slug IN ('mapuche','wallmapu-araucania') ON CONFLICT (community_id) DO UPDATE SET mode = EXCLUDED.mode, updated_at = CURRENT_TIMESTAMP;` 5. Choose the text source; `:apply`. 6. Enable the reconciler job. 7. Work the queue in shadow (editor screen: Tanda B). 8. Turn learning mode off per the director's criterion. 9. Vertical to `enforce`; redeploy the frontend so the prerendered vertical page refreshes.
+1. Apply the SQL; `db:migrate:resolve`. It is inert (no mode rows → everything `off`), so it is safe **before** the deploy, and doing it first avoids one failed query per vertical page view (Postgres logs a `relation does not exist` ERROR for each while the code runs without the tables; the app itself reads `off` and serves normally). 2. Deploy the code. 3. Simulate the backfill: baseline numbers. 4. `INSERT INTO community_review_modes (community_id, mode) SELECT id, 'shadow' FROM communities WHERE slug IN ('mapuche','wallmapu-araucania') ON CONFLICT (community_id) DO UPDATE SET mode = EXCLUDED.mode, updated_at = CURRENT_TIMESTAMP;` 5. Choose the text source; `:apply`. 6. Enable the reconciler job. 7. Work the queue in shadow (API above; screen `/admin/revision` pending). 8. Turn learning mode off per the director's criterion. 9. Vertical to `enforce`; redeploy the frontend so the prerendered vertical page refreshes.
 
 ## Not covered here
 
-Editor API and `/admin/revision` screen, audit of decisions, unifying RSS/digest/welcome/opendata (Tanda B). Brand domains and per-domain SEO (D3). Per-brand relevance (D5). Per-vertical permissions. Autopost exclusion of held stories (director's decision).
+`/admin/revision` screen, keywords PATCH with audit, queue-age alert (Tanda B, second delivery). Brand domains and per-domain SEO (D3). Per-brand relevance (D5). Per-vertical permissions. Autopost exclusion of held stories (director's decision).

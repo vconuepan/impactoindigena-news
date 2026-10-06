@@ -89,3 +89,30 @@ export async function cleanupAuditLog(): Promise<number> {
   `
   return deleted
 }
+
+/**
+ * Varias entradas de una vez (decisiones en masa del editor de verticales).
+ * Misma regla que `writeAuditLog`: nunca lanza. Devuelve cuantas escribio.
+ */
+export async function writeAuditLogs(entries: AuditEntry[]): Promise<number> {
+  if (entries.length === 0) return 0
+  try {
+    const r = await prisma.auditLog.createMany({
+      data: entries.map((entry) => ({
+        actorId: entry.actor?.userId ?? null,
+        actorEmail: entry.actor?.email ?? null,
+        actorRole: entry.actor?.role ?? null,
+        action: entry.action,
+        targetType: entry.targetType ?? null,
+        targetId: entry.targetId ?? null,
+        metadata: (entry.metadata ?? undefined) as Prisma.InputJsonValue | undefined,
+        ipHash: entry.ipHash ?? null,
+      })),
+    })
+    return r.count
+  } catch (err) {
+    log.error({ err, action: entries[0]?.action, n: entries.length }, 'failed to write audit log batch')
+    return 0
+  }
+}
+

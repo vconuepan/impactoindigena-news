@@ -25,6 +25,7 @@ import casesRouter from './cases.js'
 import editorialsRouter from './editorials.js'
 import integrationHealthRouter from './integration-health.js'
 import agendaRouter from './agenda.js'
+import reviewsRouter from './reviews.js'
 
 const router = Router()
 
@@ -56,5 +57,6 @@ router.use('/cases', casesRouter)
 router.use('/editorials', editorialsRouter)
 router.use('/integration-health', integrationHealthRouter)
 router.use('/agenda', agendaRouter)
+router.use('/reviews', reviewsRouter)
 
 export default router

@@ -269,10 +269,10 @@ Tiempos de propagación de una liberación o una retención, según los TTL de h
 
 **Tanda B · decisión técnica, con fundamento**
 
-11. RSS, digest y bienvenida al filtro único, con medición antes y después.
-12. API del editor y auditoría de las rutas de estado.
+11. ✅ RSS, digest y bienvenida al filtro único (4-oct-2026). Medido antes: RSS Mapuche 44 ítems, Araucanía 14, contra 389 y 107 en la página. Después del despliegue el RSS entrega las mismas notas que la página (tope `config.feed.size`, 50).
+12. ✅ API del editor (`/api/admin/reviews`) y auditoría de las cuatro rutas de estado (4-oct-2026).
 13. Pantalla `/admin/revision`.
-14. Test de aislamiento completo, con los cinco consumidores.
+14. ✅ Test de aislamiento: contrato estático (cada consumidor pasa `mode: await getReviewMode`) + tests de ruta para RSS, digest y bienvenida (4-oct-2026).
 15. PATCH de palabras clave auditado y alerta de antigüedad de la cola.
 
 **Tanda C · decisiones del director, sección 9**

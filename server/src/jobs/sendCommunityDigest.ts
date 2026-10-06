@@ -2,7 +2,7 @@ import prisma from '../lib/prisma.js'
 import { config } from '../config.js'
 import { sendTransactional } from '../services/brevo.js'
 import { createLogger } from '../lib/logger.js'
-import { StoryStatus } from '@prisma/client'
+import { publicCommunityWhere, temasVivos, getReviewMode } from '../lib/communityVisibility.js'
 
 const log = createLogger('send_community_digest')
 
@@ -201,6 +201,7 @@ export async function runSendCommunityDigest(): Promise<void> {
   }
 
   log.info({ userCount: byUser.size }, 'building digests')
+  const temas = await temasVivos()
 
   let sent = 0
   let skipped = 0
@@ -218,25 +219,19 @@ export async function runSendCommunityDigest(): Promise<void> {
 
     for (const community of communities) {
       if (excludedIds.has(community.id)) continue
-      const keywords = community.keywords
-
-      const keywordFilter =
-        keywords.length > 0
-          ? {
-              OR: keywords.flatMap((kw) => [
-                { title: { contains: kw, mode: 'insensitive' as const } },
-                { summary: { contains: kw, mode: 'insensitive' as const } },
-              ]),
-            }
-          : {}
-
+      // El MISMO filtro que la pagina de la vertical (D4, Tanda B, item 11),
+      // acotado a la semana. Una nota retenida por el editor no viaja por correo.
       const stories = await prisma.story.findMany({
         where: {
-          status: StoryStatus.published,
-          issueId: { in: community.issueIds },
-          datePublished: { gte: since },
-          relevance: { gte: 3 },
-          ...keywordFilter,
+          AND: [
+            publicCommunityWhere({
+              community: { id: community.id, keywords: community.keywords, issueIds: community.issueIds },
+              temas,
+              mode: await getReviewMode(community.id),
+              learningMode: config.gate.learningMode,
+            }),
+            { datePublished: { gte: since } },
+          ],
         },
         select: {
           title: true,
