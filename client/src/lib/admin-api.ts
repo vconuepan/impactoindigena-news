@@ -43,6 +43,7 @@ export interface AdminCommunity {
   active: boolean
   lat: number | null
   lng: number | null
+  keywords?: string[]
   createdAt: string
   _count: { members: number }
 }
@@ -667,6 +668,29 @@ export const adminApi = {
         method: 'PATCH',
         body: JSON.stringify({ lat, lng }),
       }),
+    updateKeywords: (id: string, keywords: string[]) =>
+      request<AdminCommunity>(`/communities/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ keywords }),
+      }),
+  },
+
+  // Revisión por marca (D4)
+  reviews: {
+    verticals: () =>
+      request<{ learningMode: boolean; bulkReleaseMaxScore: number; data: ReviewVertical[] }>('/reviews'),
+    queue: (slug: string, params: { state?: ReviewState; page?: number; pageSize?: number }) =>
+      request<ReviewQueuePage>(`/reviews/${slug}${toQueryString(params as Record<string, unknown>)}`),
+    stats: (slug: string) => request<ReviewStats & { slug: string; name: string }>(`/reviews/${slug}/stats`),
+    decide: (slug: string, body: { storyId: string; decision: ReviewDecision; code?: ReviewCode; note?: string }) =>
+      request<ReviewQueueItem>(`/reviews/${slug}/decide`, { method: 'POST', body: JSON.stringify(body) }),
+    bulkDecide: (slug: string, body: { storyIds: string[]; decision: ReviewDecision; code?: ReviewCode; note?: string }) =>
+      request<{ updated: number; missing: string[] }>(`/reviews/${slug}/bulk-decide`, { method: 'POST', body: JSON.stringify(body) }),
+    modePreview: (slug: string, mode: ReviewMode) =>
+      request<ReviewModePreview>(`/reviews/${slug}/mode-preview?mode=${mode}`),
+    setMode: (slug: string, mode: ReviewMode) =>
+      request<{ slug: string; from: ReviewMode; to: ReviewMode; effectiveMode: ReviewMode; preview: ReviewModePreview }>(
+        `/reviews/${slug}/mode`, { method: 'PUT', body: JSON.stringify({ mode }) }),
   },
 
   // Maintenance
@@ -802,7 +826,21 @@ export interface IntegrationHealthSocialChannel {
   lastAt: string | null
 }
 
+export interface IntegrationHealthReviewVertical {
+  slug: string
+  mode: ReviewMode
+  pending: number
+  held: number
+  oldestPendingHours: number | null
+  queueAlert: boolean
+}
+
 export interface IntegrationHealth {
+  communityReviews?: {
+    queueAlertHours: number
+    learningMode: boolean
+    verticals: IntegrationHealthReviewVertical[]
+  }
   feeds: {
     totalActive: number
     crawledIn24h: number
@@ -821,6 +859,83 @@ export interface IntegrationHealth {
     status: string
     lastAt: string | null
   } | null
+}
+
+// ─── Revisión por marca (retención por vertical, D4) ──────────────────────────
+
+export type ReviewMode = 'off' | 'shadow' | 'enforce'
+export type ReviewState = 'auto' | 'pending' | 'released' | 'held'
+export type ReviewDecision = 'release' | 'hold' | 'reopen'
+export type ReviewCode = 'sensitive' | 'out_of_scope'
+
+export interface ReviewStats {
+  mode: ReviewMode
+  effectiveMode: ReviewMode
+  learningMode: boolean
+  visibleToday: number
+  visibleIfEnforced: number
+  byState: Record<ReviewState, number>
+  missingRows: number
+  oldestPendingAt: string | null
+  oldestPendingHours: number | null
+  queueAlert: boolean
+}
+
+export interface ReviewVertical {
+  slug: string
+  mode: ReviewMode
+  stats: ReviewStats
+}
+
+export interface ReviewQueueItem {
+  id: string
+  storyId: string
+  reviewState: ReviewState
+  reviewCode: ReviewCode | null
+  reviewNote: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  gateDecision: string
+  gateReasons: string[]
+  gateSignals: string[]
+  gateScore: number
+  gateLearningMode: boolean
+  gateVersion: string
+  gateEvaluatedAt: string
+  publishedAt: string | null
+  story: {
+    id: string
+    slug: string | null
+    title: string | null
+    titleLabel: string | null
+    sourceTitle: string
+    summary: string | null
+    narrativeFrame: string | null
+    datePublished: string | null
+    relevance: number | null
+  }
+  alsoIn: Array<{ slug: string; name: string; reviewState: ReviewState }>
+}
+
+export interface ReviewQueuePage {
+  slug: string
+  mode: ReviewMode
+  data: ReviewQueueItem[]
+  total: number
+  page: number
+  pageSize: number
+  totalPages: number
+}
+
+export interface ReviewModePreview {
+  slug: string
+  current: ReviewMode
+  mode: ReviewMode
+  effectiveMode: ReviewMode
+  learningMode: boolean
+  visibleNow: number
+  visibleAfter: number
+  hidden: number
 }
 
 // ─── Casos en curso types ─────────────────────────────────────────────────────

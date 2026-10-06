@@ -327,6 +327,9 @@ export const config = {
     // Decision del director pendiente (diseño D4, seccion 5); el default es la
     // recomendacion. El script de carga inicial imprime las cifras de las dos.
     textSource: (process.env.GATE_TEXT_SOURCE === 'full' ? 'full' : 'short') as 'short' | 'full',
+    // Alerta del editor de verticales: horas que puede esperar la nota pendiente
+    // mas vieja antes de marcarse en rojo (diseño D4, item 11 de la seccion 10).
+    queueAlertHours: parseInt(process.env.REVIEW_QUEUE_ALERT_HOURS || '48', 10),
   },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),

@@ -80,6 +80,7 @@ const MastodonPage = lazy(() => import('./pages/admin/MastodonPage'))
 const FeedbackPage = lazy(() => import('./pages/admin/FeedbackPage'))
 const MembersPage = lazy(() => import('./pages/admin/MembersPage'))
 const CommunitiesAdminPage = lazy(() => import('./pages/admin/CommunitiesAdminPage'))
+const ReviewsPage = lazy(() => import('./pages/admin/ReviewsPage'))
 const MaintenancePage = lazy(() => import('./pages/admin/MaintenancePage'))
 const SpotlightsAdminPage = lazy(() => import('./pages/admin/SpotlightsAdminPage'))
 const CasesAdminPage = lazy(() => import('./pages/admin/CasesAdminPage'))
@@ -228,6 +229,7 @@ export default function App() {
         <Route path="users" element={<UsersPage />} />
         <Route path="members" element={<MembersPage />} />
         <Route path="communities" element={<CommunitiesAdminPage />} />
+        <Route path="revision" element={<ReviewsPage />} />
         <Route path="feedback" element={<FeedbackPage />} />
         <Route path="maintenance" element={<MaintenancePage />} />
         <Route path="subscribers" element={<SubscribersPage />} />

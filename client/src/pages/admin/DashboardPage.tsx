@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react'
 import { Helmet } from 'react-helmet-async'
+import { Link } from 'react-router-dom'
 import { PlayIcon } from '@heroicons/react/24/outline'
 import { useQuery } from '@tanstack/react-query'
 import { STORY_STATUSES } from '@shared/constants'
 import { useStoryStats } from '../../hooks/useStoryStats'
 import { useJobs, useRunJob } from '../../hooks/useJobs'
+import { MODE_LABEL, marcaLabel } from '../../lib/review-labels'
 import { adminApi, type IntegrationHealth } from '../../lib/admin-api'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Card } from '../../components/ui/Card'
@@ -194,6 +196,28 @@ function IntegrationHealthPanel({ data }: { data: IntegrationHealth }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Revisión por marca: la cola de cada vertical en revisión (D4) */}
+      {data.communityReviews && data.communityReviews.verticals.length > 0 && (
+        <div className="bg-white rounded-lg border border-neutral-200 shadow-sm p-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-neutral-700">Revisión por marca</h3>
+            <Link to="/admin/revision" className="text-xs text-brand-700 hover:underline">Abrir la cola</Link>
+          </div>
+          <ul className="mt-2 space-y-1">
+            {data.communityReviews.verticals.map((v) => (
+              <li key={v.slug} className="flex items-center justify-between text-xs">
+                <span className="text-neutral-700">{marcaLabel(v.slug)} · {MODE_LABEL[v.mode].toLowerCase()}</span>
+                <span className={v.queueAlert ? 'font-semibold text-red-600' : 'text-neutral-500'}>
+                  {v.pending} pendientes · {v.held} retenidas
+                  {v.oldestPendingHours !== null && ` · la más vieja: ${v.oldestPendingHours} h`}
+                  {v.queueAlert && ` · supera las ${data.communityReviews!.queueAlertHours} h`}
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

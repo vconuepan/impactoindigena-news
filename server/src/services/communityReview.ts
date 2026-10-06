@@ -410,6 +410,11 @@ export interface CommunityReviewStats {
   byState: Record<ReviewState, number>
   /** Notas que encajan en la vertical y aun no tienen fila: las invisibles en enforce. */
   missingRows: number
+  /** La pendiente mas vieja (por fecha de publicacion en la vertical), o null si no hay pendientes. */
+  oldestPendingAt: Date | null
+  oldestPendingHours: number | null
+  /** true cuando la pendiente mas vieja supera config.gate.queueAlertHours. */
+  queueAlert: boolean
 }
 
 /**
@@ -420,15 +425,35 @@ export interface CommunityReviewStats {
 export async function communityReviewStats(community: CommunityForVisibility, mode: ReviewMode): Promise<CommunityReviewStats> {
   const temas = await temasVivos()
   const learningMode = config.gate.learningMode
-  const [visibleToday, visibleIfEnforced, missingRows, grouped] = await Promise.all([
+  const [visibleToday, visibleIfEnforced, missingRows, grouped, oldest] = await Promise.all([
     prisma.story.count({ where: publicCommunityWhere({ community, temas, mode, learningMode }) }),
     prisma.story.count({ where: publicCommunityWhere({ community, temas, mode: 'enforce', learningMode: false }) }),
     prisma.story.count({ where: { AND: [membershipWhere(community, temas), { communityReviews: { none: { communityId: community.id } } }] } }),
     prisma.storyCommunityReview.groupBy({ by: ['reviewState'], where: { communityId: community.id }, _count: { _all: true } }),
+    prisma.storyCommunityReview.findFirst({
+      where: { communityId: community.id, reviewState: 'pending' },
+      orderBy: [{ publishedAt: 'asc' }, { gateEvaluatedAt: 'asc' }],
+      select: { publishedAt: true, gateEvaluatedAt: true },
+    }),
   ])
   const byState: Record<ReviewState, number> = { auto: 0, pending: 0, released: 0, held: 0 }
   for (const g of grouped) {
     if (g.reviewState in byState) byState[g.reviewState as ReviewState] = g._count._all
   }
-  return { mode, effectiveMode: effectiveMode(mode, learningMode), learningMode, visibleToday, visibleIfEnforced, byState, missingRows }
+  const oldestPendingAt = oldest ? (oldest.publishedAt ?? oldest.gateEvaluatedAt) : null
+  const oldestPendingHours = oldestPendingAt ? Math.floor((Date.now() - oldestPendingAt.getTime()) / 3_600_000) : null
+  // Con el aprendizaje encendido todo es pendiente por diseño: la alerta solo tiene sentido cuando el gate ya decide.
+  const queueAlert = !learningMode && oldestPendingHours !== null && oldestPendingHours >= config.gate.queueAlertHours
+  return {
+    mode,
+    effectiveMode: effectiveMode(mode, learningMode),
+    learningMode,
+    visibleToday,
+    visibleIfEnforced,
+    byState,
+    missingRows,
+    oldestPendingAt,
+    oldestPendingHours,
+    queueAlert,
+  }
 }

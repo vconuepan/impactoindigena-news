@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
+import { config } from '../../config.js'
+import { communitiesUnderReview, communityReviewStats } from '../../services/communityReview.js'
 
 const router = Router()
 
@@ -73,7 +75,23 @@ router.get('/', async (_req, res) => {
       select: { status: true, sentAt: true, createdAt: true },
     })
 
+    // ── Retencion por vertical (D4) ────────────────────────────────────────
+    // Nunca tumba el panel: si la tabla no existe o algo falla, se informa vacio.
+    let communityReviews: Array<{ slug: string; mode: string; pending: number; held: number; oldestPendingHours: number | null; queueAlert: boolean }> = []
+    try {
+      const verticales = await communitiesUnderReview()
+      communityReviews = await Promise.all(
+        verticales.map(async (c) => {
+          const s = await communityReviewStats(c, c.mode)
+          return { slug: c.slug, mode: c.mode, pending: s.byState.pending, held: s.byState.held, oldestPendingHours: s.oldestPendingHours, queueAlert: s.queueAlert }
+        }),
+      )
+    } catch {
+      communityReviews = []
+    }
+
     res.json({
+      communityReviews: { queueAlertHours: config.gate.queueAlertHours, learningMode: config.gate.learningMode, verticals: communityReviews },
       feeds: {
         totalActive: totalActiveFeeds,
         crawledIn24h,

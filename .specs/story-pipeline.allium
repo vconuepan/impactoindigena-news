@@ -259,6 +259,13 @@ rule ReviewDecision {
     -- strong signals are released one at a time. Bulk hold is always allowed.
 }
 
+rule CommunityKeywordsChange {
+    when: AdminChangesCommunityKeywords(community, keywords)
+    ensures: audit_log records from and to
+    ensures: if review_mode(community) != off, CommunityReviewRows are
+             reconciled at once against the new membership
+}
+
 rule ReviewModeChange {
     when: AdminSetsReviewMode(community, mode)
     -- Only an admin. enforce is refused (409) while learning mode is on,

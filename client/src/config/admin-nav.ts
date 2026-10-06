@@ -23,6 +23,7 @@ import {
   UsersIcon,
   CloudIcon,
   AtSymbolIcon,
+  ScaleIcon,
 } from '@heroicons/react/24/outline'
 
 export interface NavItem {
@@ -58,6 +59,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { name: 'Voces Indígenas', href: '/admin/editorials', icon: MegaphoneIcon },
       { name: 'En Foco', href: '/admin/spotlights', icon: StarIcon },
       { name: 'Incidencia', href: '/admin/agenda', icon: GlobeAltIcon },
+      { name: 'Revisión por marca', href: '/admin/revision', icon: ScaleIcon },
     ],
   },
   {

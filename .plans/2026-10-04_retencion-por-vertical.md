@@ -271,9 +271,9 @@ Tiempos de propagación de una liberación o una retención, según los TTL de h
 
 11. ✅ RSS, digest y bienvenida al filtro único (4-oct-2026). Medido antes: RSS Mapuche 44 ítems, Araucanía 14, contra 389 y 107 en la página. Después del despliegue el RSS entrega las mismas notas que la página (tope `config.feed.size`, 50).
 12. ✅ API del editor (`/api/admin/reviews`) y auditoría de las cuatro rutas de estado (4-oct-2026).
-13. Pantalla `/admin/revision`.
+13. ✅ Pantalla `/admin/revision` (5-oct-2026): pestañas, franja de modo, contadores, cola, panel lateral con términos resaltados, retener con código, liberar en masa bloqueado con señal fuerte, selector de modo solo admin con vista previa.
 14. ✅ Test de aislamiento: contrato estático (cada consumidor pasa `mode: await getReviewMode`) + tests de ruta para RSS, digest y bienvenida (4-oct-2026).
-15. PATCH de palabras clave auditado y alerta de antigüedad de la cola.
+15. ✅ PATCH de palabras clave auditado (concilia al instante si la vertical está en revisión) y alerta cuando la pendiente más vieja pasa de 48 h, en la pantalla y en el panel de salud (5-oct-2026).
 
 **Tanda C · decisiones del director, sección 9**
 
