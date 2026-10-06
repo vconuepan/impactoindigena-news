@@ -3,6 +3,7 @@ import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { uploadImageToR2 } from './imageStorage.js'
 import { normalizar } from './imagen-normalizar.js'
+import { subirVariantesWeb } from './imagen-variantes.js'
 
 const log = createLogger('image-gen')
 
@@ -128,6 +129,8 @@ Cinematic composition, high contrast, visually striking.
   const publicUrl = normalizada
     ? await uploadImageToR2(normalizada, filename, 'image/jpeg')
     : await uploadImageToR2(imageBuffer, filename)
+  // Las renditions de 800 y 1200 px que usa el sitio (imagen-variantes.ts).
+  await subirVariantesWeb(normalizada ?? imageBuffer, filename)
 
   log.info(
     { storyId, publicUrl, model, bytesOriginal: imageBuffer.length, bytesSubidos: (normalizada || imageBuffer).length },

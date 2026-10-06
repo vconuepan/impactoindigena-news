@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { pickHero, type StoryBuckets } from './mix-stories'
+import { srcSetDeImagen } from './story-image'
 import type { PublicStory } from '@shared/types'
 
 /**
@@ -123,6 +124,36 @@ describe('el script que precarga el hero de la portada', () => {
     await correrScript('50')
     const link = document.head.querySelector('link[rel="preload"][as="image"]')
     expect(link?.getAttribute('fetchpriority')).toBe('high')
+  })
+
+  it('con una imagen de nuestro bucket precarga el MISMO srcset que pinta el <img> del hero', async () => {
+    // Si el preload apuntara solo al original y el <img> eligiera la variante,
+    // el navegador bajaria las dos. El script replica srcSetDeImagen a mano;
+    // este test es lo que impide que las dos copias se separen.
+    const r2 = 'https://pub-abc.r2.dev/social/storycard-xyz.png'
+    document.head.innerHTML = ''
+    sembrarPreloadDelSnapshot()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        json: async () => ({ storiesByIssue: { x: buckets([], [historia('h', '2026-10-06T10:00:00Z', r2)], []) } }),
+      })) as never,
+    )
+    // eslint-disable-next-line @typescript-eslint/no-implied-eval
+    new Function(scriptDelHero())()
+    await new Promise((r) => setTimeout(r, 0))
+    const link = document.head.querySelector('link[rel="preload"][as="image"]')
+    expect(link?.getAttribute('href')).toBe(r2)
+    expect(link?.getAttribute('imagesrcset')).toBe(srcSetDeImagen(r2))
+    expect(link?.getAttribute('imagesizes')).toBe('100vw')
+  })
+
+  it('con una imagen externa no inventa variantes: solo el href', async () => {
+    // Las historias del fixture usan `https://r2/...`, que no es el bucket.
+    await correrScript('50')
+    const link = document.head.querySelector('link[rel="preload"][as="image"]')
+    expect(link?.hasAttribute('imagesrcset')).toBe(false)
+    expect(link?.hasAttribute('imagesizes')).toBe(false)
   })
 
   it('sin el preload del snapshot en el head no hace nada, ni siquiera pide', async () => {

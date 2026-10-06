@@ -223,6 +223,23 @@ describe('GET /api/og/story-html — los preloads que el shell trae de la portad
     const res = await pedirHistoria({ ...published, imageUrl: null })
     expect(res.text).not.toContain('as="image"')
   })
+
+  it('una imagen de nuestro bucket se precarga con las variantes que el srcset va a elegir', async () => {
+    // StoryPage pinta el hero con srcset de 800 y 1200 px. Si el preload apuntara
+    // solo al original, el navegador bajaria dos imagenes: la precargada y la
+    // elegida. imagesrcset + imagesizes hacen que las dos sean la misma.
+    const res = await pedirHistoria({
+      ...published,
+      imageUrl: 'https://pub-abc.r2.dev/social/storycard-123.jpg',
+    })
+    expect(res.text).toContain(
+      '<link rel="preload" href="https://pub-abc.r2.dev/social/storycard-123.jpg" as="image" ' +
+        'imagesrcset="https://pub-abc.r2.dev/social/storycard-123-w800.jpg 800w, ' +
+        'https://pub-abc.r2.dev/social/storycard-123-w1200.jpg 1200w" imagesizes="100vw" fetchpriority="high" />',
+    )
+    // El og:image sigue siendo el original: las variantes son para el sitio.
+    expect(res.text).toContain('<meta property="og:image" content="https://pub-abc.r2.dev/social/storycard-123.jpg" />')
+  })
 })
 
 // El shell es la portada prerenderizada: ~120 KB de HTML dentro del root, con

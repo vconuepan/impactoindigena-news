@@ -145,7 +145,11 @@ describe('rehostOrComposeStoryImage', () => {
 
     const url = await rehostOrComposeStoryImage('https://src/og.png', 'id2', 'Título')
 
-    expect(mockUpload).toHaveBeenCalledTimes(1)
+    // El original y, detras, las dos variantes web (imagen-variantes.ts).
+    expect(mockUpload).toHaveBeenCalledTimes(3)
+    expect(mockUpload.mock.calls[1][1]).toBe('oghero-id2-w800.jpg')
+    expect(mockUpload.mock.calls[2][1]).toBe('oghero-id2-w1200.jpg')
+    expect(jpegSize(mockUpload.mock.calls[1][0]).w).toBe(800)
     const [passedBuf, filename, ct] = mockUpload.mock.calls[0]
     expect(filename).toBe('oghero-id2.jpg')
     expect(ct).toBe('image/jpeg')
@@ -173,7 +177,13 @@ describe('rehostOrComposeStoryImage', () => {
 
     const url = await rehostOrComposeStoryImage('https://src/small.png', 'id3', 'Título breve')
 
-    expect(mockUpload).toHaveBeenCalledTimes(1)
+    // La tarjeta a 2400 px y, detras, sus variantes de 800 y 1200 para el sitio:
+    // la de 2400 es la que ven WhatsApp y Facebook, no la que pinta la portada.
+    expect(mockUpload).toHaveBeenCalledTimes(3)
+    expect(mockUpload.mock.calls[1][1]).toBe('storycard-id3-w800.jpg')
+    expect(jpegSize(mockUpload.mock.calls[1][0]).w).toBe(800)
+    expect(mockUpload.mock.calls[2][1]).toBe('storycard-id3-w1200.jpg')
+    expect(jpegSize(mockUpload.mock.calls[2][0]).w).toBe(1200)
     const [passedBuf, filename, ct] = mockUpload.mock.calls[0]
     expect(filename).toBe('storycard-id3.jpg')
     expect(ct).toBe('image/jpeg')

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { origenDeImagen, claveDeRotulo, PREFIJO_MEDIO, PREFIJO_COMPUESTA, type OrigenImagen } from './story-image'
+import { origenDeImagen, claveDeRotulo, PREFIJO_MEDIO, PREFIJO_COMPUESTA, srcSetDeImagen, varianteWeb, ANCHOS_VARIANTE_WEB, type OrigenImagen } from './story-image'
 
 /**
  * El rotulo de la imagen es una afirmacion sobre quien la hizo, y equivocarla
@@ -115,5 +115,40 @@ describe('el contrato con el servidor, que es quien bautiza los objetos', () => 
     const imageGen = readFileSync(path.join(servidor, 'imageGen.ts'), 'utf8')
     expect(imageGen).not.toContain(PREFIJO_MEDIO)
     expect(imageGen).not.toContain(PREFIJO_COMPUESTA)
+  })
+})
+
+describe('srcSetDeImagen — las variantes web que el servidor guarda junto a cada imagen', () => {
+  const r2 = 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/storycard-abc.jpg'
+
+  it('deriva las dos variantes por convencion, siempre .jpg', () => {
+    expect(varianteWeb(r2, 800)).toBe('https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/storycard-abc-w800.jpg')
+    expect(varianteWeb('https://pub-x.r2.dev/social/oghero-1.png', 1200)).toBe('https://pub-x.r2.dev/social/oghero-1-w1200.jpg')
+    expect(srcSetDeImagen(r2)).toBe(
+      'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/storycard-abc-w800.jpg 800w, ' +
+        'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/storycard-abc-w1200.jpg 1200w',
+    )
+  })
+
+  it('una imagen externa, sin imagen o fuera de social/ no tiene srcset: va solo en src', () => {
+    expect(srcSetDeImagen('https://media.biobiochile.cl/foto.jpg')).toBeNull()
+    expect(srcSetDeImagen('https://pub-x.r2.dev/homepage.json')).toBeNull()
+    expect(srcSetDeImagen('https://pub-x.r2.dev/social/sin-extension')).toBeNull()
+    expect(srcSetDeImagen(null)).toBeNull()
+    expect(srcSetDeImagen(undefined)).toBeNull()
+  })
+
+  it('el contrato con el servidor: mismos anchos, mismo sufijo, misma extension', () => {
+    // El servidor bautiza las variantes y el cliente las adivina. Si uno cambia
+    // sin el otro, cada tarjeta pediria una URL inexistente: un 404 por imagen,
+    // en silencio, y el sitio volveria a servir los originales de 300-500 KB.
+    const servidor = readFileSync(
+      path.resolve(__dirname, '../../../server/src/lib/imagen-variantes.ts'),
+      'utf8',
+    )
+    expect(servidor).toContain(`ANCHOS_VARIANTE_WEB = [${ANCHOS_VARIANTE_WEB.join(', ')}] as const`)
+    expect(servidor).toContain('`-w${ancho}.jpg`')
+    expect(servidor).toContain(String.raw`/\.(jpe?g|png|webp|gif)$/i`)
+    expect(servidor).toContain(String.raw`/\.r2\.dev\/social\/[^/?#]+$/i`)
   })
 })

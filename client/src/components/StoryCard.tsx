@@ -7,6 +7,7 @@ import { formatDate, storyAgeMonths } from '../lib/format'
 import { getTitleLabel, getHeadline } from '../lib/title-label'
 import { isRead } from '../lib/reading-history'
 import { resumenParaTarjeta } from '../lib/story-summary'
+import { srcSetDeImagen } from '../lib/story-image'
 import FeedFavicon from './FeedFavicon'
 import BookmarkButton from './BookmarkButton'
 import { publisherFromUrl } from '@shared/utils/publisher'
@@ -51,11 +52,17 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
         {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title) === (story.feed.displayTitle || story.feed.title) && (
           <FeedFavicon feedId={story.feed.id} size={size === 'xs' ? 14 : 16} />
         )}
+        {/*
+          * `min-h-6`: el enlace mide 24 px de alto aunque el texto tenga 11.
+          * WCAG 2.5.8 pide 24x24 para un objetivo tactil, y a 16 px de alto y a
+          * 10 px del titular Lighthouse marcaba los 19 pares de la portada
+          * (6-oct-2026). La fila crece 8 px; el texto no cambia.
+          */}
         <a
           href={story.sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-neutral-500 hover:text-neutral-700 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+          className="inline-flex items-center min-h-6 text-neutral-500 hover:text-neutral-700 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
         >
           {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title)}
           <span className="sr-only"> (opens in new tab)</span>
@@ -249,17 +256,35 @@ function CardImage({
   alt,
   className,
   fallback,
+  sizes,
 }: {
   src: string
   alt: string
   className?: string
   fallback?: React.ReactNode
+  /**
+   * Ancho que la tarjeta ocupa en pantalla, en sintaxis de `sizes`. Con el es
+   * como el navegador elige entre la variante de 800 y la de 1200 px.
+   */
+  sizes: string
 }) {
   const [error, setError] = useState(false)
+  /*
+   * Las variantes web (`-w800.jpg`, `-w1200.jpg`) se piden por CONVENCION, sin
+   * saber si existen: las imagenes anteriores al 6-oct-2026 no las tienen hasta
+   * que corra `migration:variantes-web`, y una variante inexistente responde
+   * 404. El navegador NO prueba otro candidato del srcset cuando el elegido
+   * falla, asi que el primer error quita el srcset y deja que cargue `src`, el
+   * original. Solo si ESE tambien falla se muestra el relleno sin foto.
+   */
+  const [sinVariantes, setSinVariantes] = useState(false)
+  const srcSet = sinVariantes ? undefined : srcSetDeImagen(src) ?? undefined
   if (error) return <>{fallback ?? null}</>
   return (
     <img
       src={src}
+      srcSet={srcSet}
+      sizes={srcSet ? sizes : undefined}
       alt={alt}
       className={className}
       /*
@@ -276,7 +301,7 @@ function CardImage({
       width={1200}
       height={630}
       loading="lazy"
-      onError={() => setError(true)}
+      onError={() => (srcSet ? setSinVariantes(true) : setError(true))}
     />
   )
 }
@@ -334,6 +359,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 src={imageUrl}
                 alt={headlineText}
                 className="w-full h-full object-cover"
+                sizes="(min-width: 768px) 50vw, 100vw"
                 fallback={
                   <NoPhotoFill slug={issueSlug} background={`linear-gradient(135deg, ${hexToRgba(colors.hex, 0.2)}, ${hexToRgba(colors.hex, 0.45)})`} />
                 }
@@ -378,6 +404,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                 src={imageUrl}
                 alt={headlineText}
                 className="w-full h-full object-cover"
+                sizes="(min-width: 768px) 33vw, 100vw"
                 fallback={
                   <NoPhotoFill slug={issueSlug} background={`linear-gradient(135deg, ${hexToRgba(colors.hex, 0.12)}, ${hexToRgba(colors.hex, 0.28)})`} />
                 }
@@ -453,6 +480,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
                   src={imageUrl}
                   alt={headlineText}
                   className="w-full h-full object-cover object-[center_40%]"
+                  sizes="(min-width: 768px) 256px, 100vw"
                   fallback={
                     <NoPhotoFill slug={issueSlug} background={`linear-gradient(150deg, ${hexToRgba(colors.hex, 0.18)}, ${hexToRgba(colors.hex, 0.42)})`} />
                   }

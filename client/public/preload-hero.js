@@ -20,6 +20,17 @@
  * porque este archivo corre antes que el bundle y no puede importar nada. Esa
  * duplicacion la vigila `src/lib/preload-hero.test.ts`, que ejecuta ESTE archivo
  * y compara su eleccion contra `pickHero`. Si cambias uno, cambia el otro.
+ *
+ * Y replica tambien `srcSetDeImagen` (src/lib/story-image.ts): el <img> del hero
+ * declara las variantes de 800 y 1200 px, asi que el preload lleva el mismo
+ * `imagesrcset` + `imagesizes`. Si precargara solo el original, el navegador
+ * bajaria dos imagenes: la precargada y la que el srcset elige. El mismo test
+ * compara los dos.
+ *
+ * SE CARGA CON `async` (vite.config.ts): es un archivo de 2,7 KB que PageSpeed
+ * media como bloqueante del renderizado durante 470 ms en 4G lento. Todo lo
+ * que hace es asincrono -fetch y un <link>-, asi que no necesita frenar al
+ * parser; con async corre igual de temprano y no bloquea.
  */
 ;(function () {
   try {
@@ -94,6 +105,14 @@
         l.setAttribute('rel', 'preload')
         l.setAttribute('as', 'image')
         l.setAttribute('href', u)
+        // Las variantes web, por la misma convencion que `srcSetDeImagen`: solo
+        // para objetos de nuestro bucket bajo /social/ y con extension conocida.
+        var B = /\.r2\.dev\/social\/[^/?#]+$/i
+        var E = /\.(jpe?g|png|webp|gif)$/i
+        if (B.test(u) && E.test(u)) {
+          l.setAttribute('imagesrcset', u.replace(E, '-w800.jpg') + ' 800w, ' + u.replace(E, '-w1200.jpg') + ' 1200w')
+          l.setAttribute('imagesizes', '100vw')
+        }
         l.setAttribute('fetchpriority', 'high')
         document.head.appendChild(l)
       })

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
+import { srcsetDeUrl } from '../lib/imagen-variantes.js'
 
 const router = Router()
 const log = createLogger('og-proxy')
@@ -34,6 +35,23 @@ function escapeJsonForScript(json: string): string {
 // Only escape " and < > which could break the attribute context.
 function escapeAttrUrl(url: string): string {
   return url.replace(/"/g, '%22').replace(/</g, '%3C').replace(/>/g, '%3E')
+}
+
+/**
+ * El preload de la imagen de la historia, con las variantes que el sitio usa.
+ *
+ * `StoryPage` pinta el hero con `srcset` de 800 y 1200 px (ver
+ * `lib/imagen-variantes.ts`); si el preload apuntara solo al original, el
+ * navegador bajaria dos imagenes: la precargada y la que el `srcset` elige.
+ * `imagesrcset` + `imagesizes` hacen que el preload elija la MISMA. Las
+ * imagenes externas, que no tienen variantes, se precargan como antes.
+ */
+function preloadDeImagen(imageUrl: string): string {
+  const href = escapeAttrUrl(imageUrl)
+  const srcset = srcsetDeUrl(imageUrl)
+  const variantes = srcset ? ` imagesrcset="${escapeAttrUrl(srcset)}" imagesizes="100vw"` : ''
+  return `
+  <link rel="preload" href="${href}" as="image"${variantes} fetchpriority="high" />`
 }
 
 // ---------------------------------------------------------------------------
@@ -272,8 +290,7 @@ router.get('/story-html', async (req, res) => {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${image}" />${story.imageUrl ? `
-  <link rel="preload" href="${image}" as="image" fetchpriority="high" />` : ''}
+  <meta name="twitter:image" content="${image}" />${story.imageUrl ? preloadDeImagen(story.imageUrl) : ''}
   <script type="application/ld+json">${escapeJsonForScript(jsonLd)}</script>`
 
     // Strip the shell's own title/meta (the home may be prerendered with full
@@ -358,8 +375,7 @@ router.get('/stories/:slug', async (req, res) => {
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
-  <meta name="twitter:image" content="${image}" />${story.imageUrl ? `
-  <link rel="preload" href="${image}" as="image" fetchpriority="high" />` : ''}`
+  <meta name="twitter:image" content="${image}" />${story.imageUrl ? preloadDeImagen(story.imageUrl) : ''}`
 
       // Strip pre-existing title and OG/twitter tags from the shell so we don't
       // end up with two sets of meta tags. LinkedIn (and other parsers) get confused

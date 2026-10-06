@@ -122,7 +122,11 @@ export const FOOTER_NAV = [
   { labelKey: "footer.archive", href: "/archivo" },
   { labelKey: "footer.cases", href: "/casos" },
   { labelKey: "footer.alerts", href: "/alertas" },
-  { labelKey: "footer.voces", href: "/voces-indigenas" },
+  // Con el nombre visible a secas, este enlace se llamaba igual que los dos de
+  // la marca («Voces Indígenas») y llevaba a otro sitio: Lighthouse lo marco el
+  // 6-oct-2026 (identical-links-same-purpose). El aria-label conserva el texto
+  // visible -WCAG 2.5.3- y agrega a donde va.
+  { labelKey: "footer.voces", href: "/voces-indigenas", ariaLabelKey: "footer.vocesAria" },
 ];
 
 const FOOTER_GUIDES = [
@@ -181,6 +185,8 @@ interface FooterLink {
   href: string
   external?: boolean
   raw?: boolean
+  /** Nombre accesible distinto del texto visible, cuando el texto solo seria ambiguo. */
+  ariaLabelKey?: string
 }
 
 /**
@@ -213,11 +219,12 @@ function FooterLinkRow({ label, links }: { label: string; links: readonly Footer
                 href={link.href}
                 {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                 className={linkClass}
+                aria-label={link.ariaLabelKey ? t(link.ariaLabelKey) : undefined}
               >
                 {t(link.labelKey)}
               </a>
             ) : (
-              <Link to={link.href} className={linkClass}>
+              <Link to={link.href} className={linkClass} aria-label={link.ariaLabelKey ? t(link.ariaLabelKey) : undefined}>
                 {t(link.labelKey)}
               </Link>
             )}

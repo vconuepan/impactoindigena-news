@@ -91,3 +91,55 @@ export function claveDeRotulo(origen: OrigenImagen | null): string | null {
       return null
   }
 }
+
+// ---------------------------------------------------------------------------
+// Variantes web
+// ---------------------------------------------------------------------------
+
+/**
+ * Anchos de las renditions que el servidor guarda junto a cada imagen
+ * (`server/src/lib/imagen-variantes.ts`): `x.jpg` -> `x-w800.jpg`, `x-w1200.jpg`.
+ *
+ * EL DEFECTO QUE ESTO CORRIGE (PageSpeed movil, 6-oct-2026): las tarjetas
+ * pedian el ORIGINAL de R2 -la tarjeta compuesta sale a 2400 px y pesa 300-500
+ * KB- para pintarlo a 405 px. Veinte de esas en una pantalla de 412 px eran
+ * 4,7 MB compitiendo con la imagen del hero; Lighthouse estimaba 2.326 KB de
+ * ahorro. Con `srcset` el navegador elige la de 800 (tarjeta a 2x) o la de
+ * 1200 (hero), y el original queda en `src` como respaldo.
+ *
+ * ES LOGICA DUPLICADA con el servidor, que no puede importar fuera de `src/`.
+ * `story-image.test.ts` lee el archivo del servidor y falla si los anchos, el
+ * sufijo o la extension dejan de coincidir.
+ *
+ * Las imagenes anteriores al 6-oct-2026 no tienen variantes hasta que corra
+ * `migration:variantes-web`; quien pinte con `srcset` debe quitarlo si la
+ * variante responde 404 y dejar que cargue `src`. Ver `CardImage`.
+ */
+export const ANCHOS_VARIANTE_WEB = [800, 1200] as const
+
+/** Las extensiones que el pipeline sube. Lo que no calce no tiene variante. */
+const EXTENSION = /\.(jpe?g|png|webp|gif)$/i
+
+/** Un objeto de nuestro bucket: solo bajo `/social/` hay variantes. */
+const OBJETO_DEL_BUCKET = /\.r2\.dev\/social\/[^/?#]+$/i
+
+/** La URL de la variante de `ancho` px, o null si la imagen no es nuestra. */
+export function varianteWeb(imageUrl: string, ancho: number): string | null {
+  if (!OBJETO_DEL_BUCKET.test(imageUrl) || !EXTENSION.test(imageUrl)) return null
+  return imageUrl.replace(EXTENSION, `-w${ancho}.jpg`)
+}
+
+/**
+ * El `srcset` de una imagen nuestra: `...-w800.jpg 800w, ...-w1200.jpg 1200w`.
+ * Null para una imagen externa o sin extension conocida: esa va solo en `src`.
+ */
+export function srcSetDeImagen(imageUrl: string | null | undefined): string | null {
+  if (!imageUrl) return null
+  const partes: string[] = []
+  for (const ancho of ANCHOS_VARIANTE_WEB) {
+    const v = varianteWeb(imageUrl, ancho)
+    if (!v) return null
+    partes.push(`${v} ${ancho}w`)
+  }
+  return partes.join(', ')
+}

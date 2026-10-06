@@ -25,6 +25,20 @@ function htmlTransformPlugin(): Plugin {
         html = html.replace('<head>', '<head>' + preconnectTags)
       }
 
+      // Preconnect al bucket de imagenes. Toda imagen de historia -el hero, las
+      // tarjetas, la de cada ficha- viene de R2, y la primera se pide recien
+      // cuando el JS leyo los datos: abrir la conexion (DNS + TCP + TLS) desde
+      // el <head> la adelanta. PageSpeed lo listaba como «candidato para
+      // establecer conexion previamente» con 300 ms de ahorro de LCP (6-oct-2026).
+      // SIN `crossorigin`: las imagenes se piden sin CORS y una conexion
+      // preconectada con credenciales distintas no se reutiliza. El fetch del
+      // snapshot (con CORS) ya trae su propio preload en la portada.
+      const r2 = process.env.VITE_R2_PUBLIC_URL
+      if (r2) {
+        const origin = new URL(r2).origin
+        html = html.replace('<head>', `<head>\n    <link rel="preconnect" href="${origin}" />`)
+      }
+
       return html
     },
   }
@@ -185,11 +199,16 @@ export default defineConfig(async () => {
           // `script-src 'self'` sin `unsafe-inline`: la primera version era inline
           // y en produccion el navegador la bloqueaba antes de ejecutarla, en
           // silencio salvo por un error en consola.
+          //
+          // Y va con `async`. Sin el, un <script src> en el <head> frena el
+          // parser hasta que el archivo baja y corre: PageSpeed lo medía como
+          // bloqueante del renderizado durante 470 ms en 4G lento (6-oct-2026),
+          // el primer item de «solicitudes que bloquean el renderizado». Todo lo
+          // que hace es asincrono -un fetch y un <link>-, asi que no necesita
+          // frenar nada; con async el navegador lo descubre igual de temprano,
+          // lo corre en cuanto llega y sigue pintando mientras tanto.
           if (renderedRoute.route === '/') {
-            const snapshot = process.env.VITE_R2_PUBLIC_URL
-              ? `${process.env.VITE_R2_PUBLIC_URL}/homepage.json`
-              : '/api/homepage'
-            const script = `<script src="/preload-hero.js"></script>`
+            const script = `<script src="/preload-hero.js" async></script>`
             renderedRoute.html = renderedRoute.html.replace('</head>', script + '\n</head>')
             console.log('[prerender] preload del hero: se resuelve en el navegador desde el snapshot')
           }

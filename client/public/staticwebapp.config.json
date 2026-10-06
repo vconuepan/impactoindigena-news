@@ -51,10 +51,12 @@
     "exclude": [
       "/assets/*",
       "/images/*",
+      "/.well-known/*",
       "/*.png",
       "/*.ico",
       "/*.xml",
-      "/*.txt"
+      "/*.txt",
+      "/*.json"
     ]
   },
   "globalHeaders": {
@@ -62,6 +64,7 @@
     "X-Frame-Options": "SAMEORIGIN",
     "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'; upgrade-insecure-requests",
     "X-XSS-Protection": "0",
-    "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "Cross-Origin-Opener-Policy": "same-origin"
   }
 }

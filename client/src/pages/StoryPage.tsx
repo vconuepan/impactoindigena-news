@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
@@ -9,7 +9,7 @@ import { getCategoryColor, shiftHex } from '../lib/category-colors'
 import { parsePoints } from '../lib/parse-points'
 import { getTitleLabel, getHeadline } from '../lib/title-label'
 import { markAsRead } from '../lib/reading-history'
-import { origenDeImagen, claveDeRotulo } from '../lib/story-image'
+import { origenDeImagen, claveDeRotulo, srcSetDeImagen } from '../lib/story-image'
 import { storyAgeMonths } from '../lib/format'
 import FeedFavicon from '../components/FeedFavicon'
 import BookmarkButton from '../components/BookmarkButton'
@@ -99,6 +99,14 @@ export default function StoryPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const { data: story, isLoading, error } = usePublicStory(slug || '')
+
+  /*
+   * El hero declara las variantes de 800 y 1200 px (lib/story-image.ts) y deja
+   * el original en `src`; el preload que emite el servidor (routes/og.ts) usa
+   * el mismo srcset. Va antes de los returns tempranos porque es un hook.
+   */
+  const [heroSinVariantes, setHeroSinVariantes] = useState(false)
+  const heroSrcSet = heroSinVariantes ? undefined : srcSetDeImagen(story?.imageUrl) ?? undefined
 
   // Redirect to primary story's URL if this slug was a non-primary cluster member
   useEffect(() => {
@@ -315,11 +323,18 @@ export default function StoryPage() {
             <div className="overflow-hidden" style={{ maxHeight: '480px' }}>
               <img
                 src={story.imageUrl}
+                srcSet={heroSrcSet}
+                sizes={heroSrcSet ? '100vw' : undefined}
                 alt={headline}
                 className="w-full object-cover"
                 style={{ maxHeight: '480px' }}
                 fetchPriority="high"
-                onError={(e) => { (e.target as HTMLImageElement).closest('figure')!.style.display = 'none' }}
+                onError={(e) => {
+                  // Sin la variante (imagen anterior al 6-oct-2026) cae al
+                  // original de `src`; solo si ese falla se oculta la figura.
+                  if (heroSrcSet) setHeroSinVariantes(true)
+                  else (e.target as HTMLImageElement).closest('figure')!.style.display = 'none'
+                }}
               />
             </div>
             {(() => {

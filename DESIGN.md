@@ -517,7 +517,8 @@ overflow: hidden;
 /* Decoración: 2 círculos concentrados en esquina */
 ```
 
-- **Eyebrow:** DM Sans 10px 700 uppercase, `color: rgba(255,255,255,0.45)`, con línea dorada `20×1px` a la izquierda
+- **Eyebrow:** DM Sans 10px 700 uppercase, `color: rgba(255,255,255,0.75)`, con línea dorada `20×1px` a la izquierda.
+  Decía `0.45` hasta el 6-10-2026: sobre `#0D5F3C` da **2,9:1** y a 10px el texto exige 4,5:1; PageSpeed lo marcó. Rige el mismo piso que la stats bar, `0.75` → 5,12:1.
 - **Texto principal:** Fraunces `clamp(28px, 2.8vw, 38px)` 300 italic, `color: rgba(255,255,255,0.95)`, `max-width: 680px`
 - **CTA:** `border: 1px solid rgba(255,255,255,0.30)`, border-radius pill, DM Sans 13px 600 blanco
 
@@ -592,3 +593,5 @@ media.
 | 2026-09-21 | **Sin rotación automática en «En Foco»** | Giraba cada 5 s con `aria-live` encima y sin control bajo 1024px: un lector de pantalla recibía un titular nuevo cada cinco segundos, indefinidamente. |
 | 2026-09-21 | **Banda del layout B en `brand-50`** | `neutral-50/70` sobre el papel dejaba el canal azul en 248,7 contra 248: la banda no se veía y se pagaba igual el sangrado. Es el único recurso de ritmo de la portada. |
 | 2026-10-04 | **Escala de grises para fondo oscuro (`.sobre-oscuro`)** | El pie fallaba AA en cada página: los grises de texto estaban calibrados contra el papel. Una clase que remapea `--n-400` y `--n-500` en vez de tocar ~40 enlaces uno por uno. axe sobre el pie: de 8 infracciones a 0, con 43 elementos que pasan. |
+| 2026-10-06 | **Eyebrow de la sección misión al 75%** | Al 45% daba 2,9:1 sobre el verde; PageSpeed lo marcó. Mismo piso que la stats bar: ningún texto de 10-11px sobre `#0D5F3C` baja de `0.75`. |
+| 2026-10-06 | **Imágenes de historia con variantes web (800 / 1200 px)** | Las tarjetas pedían el original de R2 (la compuesta sale a 2400px, 300-500 KB) para pintarlo a 405px: 4,7 MB en una portada móvil. El `og:image` sigue siendo el original; el sitio usa `srcset`. Ver `.context/images.md`. |

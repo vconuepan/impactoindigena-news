@@ -19,6 +19,7 @@ const config = JSON.parse(
   readFileSync(path.resolve(__dirname, '../../public/staticwebapp.config.json'), 'utf8'),
 ) as {
   routes: Array<{ route: string; rewrite?: string; headers?: Record<string, string> }>
+  navigationFallback: { rewrite: string; exclude: string[] }
   globalHeaders: Record<string, string>
 }
 
@@ -52,5 +53,37 @@ describe('staticwebapp.config.json: /embed enmarcable desde otros sitios', () =>
     // Con frame-src 'none' la vista previa del generador salia vacia.
     expect(globalCsp).toContain("frame-src 'self'")
     expect(globalCsp).not.toContain("frame-src 'none'")
+  })
+})
+
+/**
+ * Lo que NO es una pagina de la aplicacion tiene que responder 404, no el HTML
+ * del SPA con 200. `/health` ya enseñó la trampa (un monitor diria «sano» con
+ * el backend muerto), y PageSpeed la repitio el 6-oct-2026 por otro camino:
+ * Lighthouse pide `/.well-known/ai-catalog.json`, recibia la portada entera y
+ * fallaba el esquema con «Unexpected token '<'». Si la ruta responde 404, la
+ * auditoria pasa a «no aplicable», que es la verdad: no publicamos ese catalogo.
+ */
+describe('staticwebapp.config.json: lo que no es pagina responde 404, no el SPA', () => {
+  const exclude = config.navigationFallback.exclude
+
+  it('ningun archivo .json ni nada bajo /.well-known/ cae en el index.html', () => {
+    expect(exclude).toContain('/*.json')
+    expect(exclude).toContain('/.well-known/*')
+  })
+
+  it('las exclusiones anteriores siguen: un cambio aca no las puede pisar', () => {
+    for (const p of ['/assets/*', '/images/*', '/*.png', '/*.ico', '/*.xml', '/*.txt']) {
+      expect(exclude).toContain(p)
+    }
+  })
+})
+
+describe('staticwebapp.config.json: aislamiento de origen', () => {
+  it('COOP same-origin, igual que helmet en las fichas que sirve el backend', () => {
+    // helmet lo pone por defecto en /stories/*; el sitio estatico no lo tenia y
+    // Lighthouse lo listaba con gravedad alta. Nada del sitio abre ventanas
+    // con `window.open` ni depende de `opener` (comprobado por grep, 6-oct-2026).
+    expect(config.globalHeaders['Cross-Origin-Opener-Policy']).toBe('same-origin')
   })
 })

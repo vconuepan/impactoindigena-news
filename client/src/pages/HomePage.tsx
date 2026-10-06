@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +12,7 @@ import { getCategoryColor } from '../lib/category-colors'
 import { parsePoints, stripMarkdown, stripPrefix, limitSentences } from '../lib/parse-points'
 import { formatDate } from '../lib/format'
 import { getHeadline } from '../lib/title-label'
+import { srcSetDeImagen } from '../lib/story-image'
 import { SEO, CommonOgTags } from '../lib/seo'
 import { buildWebSiteSchema, buildOrganizationSchema } from '../lib/structured-data'
 import SpotlightBand from '../components/SpotlightBand'
@@ -57,6 +59,16 @@ function HeroSection({ story }: { story: PublicStory }) {
   const issueName = story.issue?.name ?? story.feed?.issue?.name ?? ''
   const dateStr = story.datePublished ? formatDate(story.datePublished) : null
   const heroImage = story.imageUrl || null
+  /*
+   * El hero declara las variantes de 800 y 1200 px (lib/story-image.ts) y deja
+   * el original en `src`. Si la variante no existe -imagen anterior al
+   * 6-oct-2026 sin pasar por `migration:variantes-web`-, el 404 quita el srcset
+   * y el navegador carga el original; solo si ese falla se oculta la imagen.
+   * `public/preload-hero.js` precarga con el MISMO srcset y `sizes`, para que
+   * la imagen que baja con prioridad alta sea la que el <img> elige.
+   */
+  const [heroSinVariantes, setHeroSinVariantes] = useState(false)
+  const heroSrcSet = heroSinVariantes ? undefined : srcSetDeImagen(heroImage) ?? undefined
 
   const isEn = i18n.language === 'en'
   const localizedStory = {
@@ -81,10 +93,15 @@ function HeroSection({ story }: { story: PublicStory }) {
         {heroImage ? (
           <img
             src={heroImage}
+            srcSet={heroSrcSet}
+            sizes={heroSrcSet ? '100vw' : undefined}
             alt=""
             className="w-full h-full object-cover opacity-90"
             fetchPriority="high"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            onError={(e) => {
+              if (heroSrcSet) setHeroSinVariantes(true)
+              else (e.target as HTMLImageElement).style.display = 'none'
+            }}
           />
         ) : (
           <div
@@ -434,7 +451,12 @@ function StatementSection() {
         <span aria-hidden="true" style={{ width: '20px', height: '1px', backgroundColor: '#C8473A', flexShrink: 0 }} />
         <span
           className="font-dm-sans"
-          style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.45)' }}
+          /*
+           * 0,75 y no 0,45: a 10 px el texto exige 4,5:1 y sobre #0D5F3C el
+           * blanco al 45% da 2,9:1 (PageSpeed lo marco el 6-oct-2026). Es el
+           * mismo piso que la barra de estadisticas: 0,75 -> 5,12:1.
+           */
+          style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.75)' }}
         >
           Nuestra misión
         </span>

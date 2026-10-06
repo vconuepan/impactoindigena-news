@@ -4,6 +4,7 @@ import path from 'node:path'
 import { createLogger } from './logger.js'
 import { downloadExternalImage, uploadImageToR2 } from './imageStorage.js'
 import { normalizarDecodificada, CALIDAD_JPEG } from './imagen-normalizar.js'
+import { subirVariantesWeb } from './imagen-variantes.js'
 
 const log = createLogger('story-card')
 
@@ -174,9 +175,15 @@ export async function rehostOrComposeStoryImage(
   if (!img || img.width >= STORY_CARD_MIN_WIDTH) {
     const normalizada = img ? normalizarDecodificada(img, dl.buffer) : null
     try {
-      return normalizada
-        ? await uploadImageToR2(normalizada, `oghero-${storyId}.jpg`, 'image/jpeg')
-        : await uploadImageToR2(dl.buffer, `oghero-${storyId}.${dl.ext}`, dl.contentType)
+      const nombre = normalizada ? `oghero-${storyId}.jpg` : `oghero-${storyId}.${dl.ext}`
+      const url = normalizada
+        ? await uploadImageToR2(normalizada, nombre, 'image/jpeg')
+        : await uploadImageToR2(dl.buffer, nombre, dl.contentType)
+      // Las renditions de 800 y 1200 px que usa el sitio (imagen-variantes.ts).
+      // Van DESPUES del original y nunca lanzan: si fallan, la historia queda
+      // con su imagen, que es lo que tenia antes de que existieran.
+      await subirVariantesWeb(normalizada ?? dl.buffer, nombre)
+      return url
     } catch (err) {
       log.warn({ err, storyId }, 'story image: rehost upload failed')
       return null
@@ -187,13 +194,18 @@ export async function rehostOrComposeStoryImage(
   // the small original rather than leaving the story imageless.
   try {
     const card = composeBrandedStoryCard(img, title)
-    const url = await uploadImageToR2(card, `storycard-${storyId}.jpg`, 'image/jpeg')
+    const nombre = `storycard-${storyId}.jpg`
+    const url = await uploadImageToR2(card, nombre, 'image/jpeg')
+    await subirVariantesWeb(card, nombre)
     log.info({ storyId, sourceWidth: img.width }, 'composed branded story card for small source image')
     return url
   } catch (err) {
     log.warn({ err, storyId }, 'story image: branded card failed, rehosting small original')
     try {
-      return await uploadImageToR2(dl.buffer, `oghero-${storyId}.${dl.ext}`, dl.contentType)
+      const nombre = `oghero-${storyId}.${dl.ext}`
+      const url = await uploadImageToR2(dl.buffer, nombre, dl.contentType)
+      await subirVariantesWeb(dl.buffer, nombre)
+      return url
     } catch {
       return null
     }

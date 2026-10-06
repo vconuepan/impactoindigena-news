@@ -100,6 +100,38 @@ Preset sizes are chosen to support 2x retina displays:
 - **Originals:** Never modified or deleted
 - **Script location:** `client/scripts/images.mjs`
 
+## Story Images on R2: Web Variants
+
+Story images (hero, cards, story page) are not the `client/public/images/` files above: they are uploaded by the pipeline to the R2 bucket under `social/` and referenced by `Story.imageUrl`. Three upload paths, all in `server/src/lib/`: `imageGen.ts` (AI-generated), `storyCard.ts` (`oghero-*` rehosted source photo, `storycard-*` branded card composed at 2400×1260 for social previews).
+
+**The problem (PageSpeed mobile, 2026-10-06):** cards requested the original to paint it at ~405px. Composed cards weigh 300-500 KB each; ~20 of them on one phone screen were 4.7 MB competing with the LCP image. Lighthouse estimated 2,326 KiB of savings.
+
+**The fix:** next to every original the pipeline stores two JPEG renditions, named by convention:
+
+| Original | Variants |
+|---|---|
+| `social/storycard-<id>.jpg` | `social/storycard-<id>-w800.jpg`, `social/storycard-<id>-w1200.jpg` |
+| `social/oghero-<id>.png` | `social/oghero-<id>-w800.jpg`, `social/oghero-<id>-w1200.jpg` |
+
+- Widths: 800 (card at 2× DPR) and 1200 (hero). Quality 80. Never upscaled: a 600px original yields 600px variants.
+- `Story.imageUrl` and the `og:image` do not change: social platforms keep fetching the original.
+- Server: `server/src/lib/imagen-variantes.ts` (`subirVariantesWeb`, called right after each original upload; never throws).
+- Client: `client/src/lib/story-image.ts` (`srcSetDeImagen`) derives the URLs; `CardImage` in `StoryCard.tsx`, the home hero and `StoryPage` render `srcset` + `sizes` with the original in `src`. **The two copies are kept in sync by `client/src/lib/story-image.test.ts`, which reads the server file.**
+- Story pages: `server/src/routes/og.ts` emits the `<link rel="preload">` with `imagesrcset`/`imagesizes` so the preloaded candidate is the one the `<img>` picks. The home does the same in `client/public/preload-hero.js`.
+- **404 fallback:** the browser does not try another `srcset` candidate when the chosen one fails. Images uploaded before 2026-10-06 have no variants until the backfill runs, so every consumer drops `srcset` on the first error and loads `src`; only if that fails too does it show the no-photo fill.
+
+**Backfill for existing images** (adds objects only; touches no original and no DB row):
+
+```bash
+npm run migration:variantes-web:portada --prefix server        # dry run, only images in homepage.json
+npm run migration:variantes-web:portada:apply --prefix server
+npm run migration:variantes-web --prefix server                # dry run, whole bucket
+npm run migration:variantes-web:apply --prefix server
+npm run migration:variantes-web:borrar --prefix server         # deletes ALL variants (the undo)
+```
+
+Script: `server/src/scripts/migrations/generar-variantes-web.ts`. Needs the R2 variables from `server/.env`; it does not use Prisma.
+
 ## Feed Favicons (`client/public/images/feeds/`)
 
 One PNG per feed, named `{feedId}.png`, fetched by `server/src/services/favicon.ts`. Three strategies in order: Google's favicon service (`s2/favicons?sz=32`), the `<link rel="icon">` declared by the site, then `/favicon.ico` at the origin. The buffer is written as-is — no resize — so files range from 16x16 to 64x64 depending on what the source publishes.
