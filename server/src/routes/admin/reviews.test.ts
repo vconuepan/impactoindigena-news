@@ -153,7 +153,10 @@ describe('POST /api/admin/reviews/:slug/bulk-decide', () => {
       .send({ storyIds: filas.map((f) => f.storyId), decision: 'hold', code: 'sensitive' })
     expect(res.status).toBe(200)
     expect(res.body.updated).toBe(3)
-    expect(mockPrisma.storyCommunityReview.updateMany.mock.calls[0][0].data).toMatchObject({ reviewState: 'held', reviewCode: 'sensitive' })
+    const call = mockPrisma.storyCommunityReview.updateMany.mock.calls[0][0]
+    expect(call.data).toMatchObject({ reviewState: 'held', reviewCode: 'sensitive' })
+    // Por id de FILA, no de nota: con storyIds no cambiaria nada y nadie lo veria.
+    expect(call.where).toEqual({ id: { in: ['r1', 'r2', 'r3'] } })
   })
 })
 
