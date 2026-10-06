@@ -38,6 +38,7 @@ const stats = {
   learningMode: true,
   visibleToday: 389,
   visibleIfEnforced: 185,
+  visibleIfEnforcedProjected: true,
   byState: { auto: 0, pending: 3, released: 0, held: 0 },
   missingRows: 0,
   oldestPendingAt: null,
@@ -113,6 +114,9 @@ describe('ReviewsPage', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/Modo sombra/)
     expect(screen.getByRole('status')).toHaveTextContent('389')
     expect(screen.getByRole('status')).toHaveTextContent('185')
+    // Con el aprendizaje encendido, «si aplicaras» es una proyección y la franja lo dice.
+    expect(screen.getByRole('status')).toHaveTextContent('si aplicaras con el aprendizaje apagado, 185')
+    expect(screen.getByRole('status')).toHaveTextContent('(proyección)')
     expect(await screen.findByText('Nota 1')).toBeInTheDocument()
     expect(screen.getByText('Encuadre: confrontacion')).toBeInTheDocument()
     expect(screen.getByText(/también en: Voces Araucanía/)).toBeInTheDocument()
