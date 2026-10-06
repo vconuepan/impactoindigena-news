@@ -127,9 +127,12 @@ export interface ReviewQueueItem {
 }
 
 /**
- * La cola: por fuerza de señal (puntaje) y luego por fecha de publicacion, las
- * mas nuevas primero. El indice story_community_reviews_queue_idx cubre este
- * orden.
+ * La cola: por fuerza de señal (puntaje) y luego por fecha de publicacion de la
+ * NOTA, las mas nuevas primero. No por `publishedAt` de la fila: ese campo es
+ * null mientras la fila esta pendiente (se fija al liberar o al pasar en auto),
+ * asi que con el ordenaba al azar dentro de cada puntaje (visto en produccion
+ * el 6-oct-2026 con 409 pendientes). El indice story_community_reviews_queue_idx
+ * cubre el puntaje; la fecha se resuelve por la relacion.
  */
 export async function listReviews(args: {
   community: Pick<ReviewCommunityRef, 'id'>
@@ -143,7 +146,7 @@ export async function listReviews(args: {
     prisma.storyCommunityReview.count({ where }),
     prisma.storyCommunityReview.findMany({
       where,
-      orderBy: [{ gateScore: 'desc' }, { publishedAt: 'desc' }, { id: 'asc' }],
+      orderBy: [{ gateScore: 'desc' }, { story: { datePublished: 'desc' } }, { id: 'asc' }],
       skip: (page - 1) * pageSize,
       take: pageSize,
       include: { story: { select: QUEUE_STORY_SELECT } },

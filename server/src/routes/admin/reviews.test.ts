@@ -68,7 +68,8 @@ describe('GET /api/admin/reviews/:slug', () => {
     const call = mockPrisma.storyCommunityReview.findMany.mock.calls[0][0]
     expect(call.where).toEqual({ communityId: 'c-mapuche', reviewState: 'pending' })
     expect(call.orderBy[0]).toEqual({ gateScore: 'desc' })
-    expect(call.orderBy[1]).toEqual({ publishedAt: 'desc' })
+    // Por la fecha de la NOTA, no por publishedAt de la fila (null mientras esta pendiente).
+    expect(call.orderBy[1]).toEqual({ story: { datePublished: 'desc' } })
   })
 
   it('400 con un estado que no existe', async () => {
