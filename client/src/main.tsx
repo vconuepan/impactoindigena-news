@@ -4,6 +4,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from './lib/query'
+import { datosDePortadaAntesDeMontar } from './lib/arranque-portada'
+import { HOMEPAGE_SNAPSHOT_URL } from './config'
 import { AuthProvider } from './lib/auth'
 import App from './App'
 import './i18n'
@@ -29,19 +31,34 @@ if (import.meta.env.DEV) {
   })
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <HelmetProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </HelmetProvider>
-  </StrictMode>,
-)
+function montar(): void {
+  ReactDOM.createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <HelmetProvider>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </HelmetProvider>
+    </StrictMode>,
+  )
+}
+
+// En la portada prerenderizada, React espera el snapshot (con tope) y arranca
+// con los datos ya en cache: asi no borra el hero que el HTML ya pinto para
+// poner un esqueleto, y el pintado prerenderizado cuenta como LCP. El porque,
+// con la traza que lo mide, en `lib/arranque-portada.ts`. En cualquier otra
+// ruta, o sin HTML prerenderizado, monta de inmediato como siempre.
+datosDePortadaAntesDeMontar({
+  pathname: window.location.pathname,
+  root: document.getElementById('root'),
+  snapshotUrl: HOMEPAGE_SNAPSHOT_URL,
+  queryClient,
+  snapshotPendiente: (window as unknown as { __snapshotPortada?: Promise<unknown> }).__snapshotPortada,
+}).finally(montar)
 
 // Signal to the prerenderer that rendering is complete. The old fixed 100ms
 // timer fired before any data loaded, so prerendered pages shipped in their

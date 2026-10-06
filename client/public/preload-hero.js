@@ -66,11 +66,13 @@
       /* storage bloqueado: se queda en 50, que es el valor por defecto */
     }
 
-    fetch(S)
-      .then(function (r) {
-        return r.json()
-      })
-      .then(function (j) {
+    // La promesa queda en window para que `src/main.tsx` (arranque-portada.ts)
+    // la reutilice al sembrar React Query y no pida el snapshot dos veces.
+    var J = fetch(S).then(function (r) {
+      return r.json()
+    })
+    window.__snapshotPortada = J
+    J.then(function (j) {
         var a = []
         var b = (j && j.storiesByIssue) || {}
         for (var k in b) {
