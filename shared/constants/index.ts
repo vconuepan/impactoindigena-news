@@ -47,3 +47,16 @@ export const FEED_REGION_LABELS: Record<FeedRegion, string> = Object.fromEntries
 
 export const DEFAULT_PAGE_SIZE = 25
 export const MAX_PAGE_SIZE = 100
+
+/**
+ * Piso de relevancia para publicar. Es el mismo valor que `SELECT_RELEVANCE_MIN`
+ * en el servidor (`server/src/config.ts`, default 5); el servidor no importa
+ * `shared/`, asi que si cambia alla hay que cambiarlo aca.
+ *
+ * El cliente lo usa para NO mostrar como bajada el `relevanceSummary` de una
+ * nota que quedo por debajo: ese texto explica por que la nota no es relevante
+ * («…sin impacto indigena») y, en una tarjeta, se lee como bajada. Medido el
+ * 5-oct-2026 en vivo: entre el 20 y el 24 % de lo publicado estaba bajo el piso
+ * y 17 de 300 tarjetas mostraban una explicacion de descarte.
+ */
+export const RELEVANCE_PUBLISH_MIN = 5

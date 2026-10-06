@@ -6,6 +6,7 @@ import { getCategoryColor, hexToRgba } from '../lib/category-colors'
 import { formatDate, storyAgeMonths } from '../lib/format'
 import { getTitleLabel, getHeadline } from '../lib/title-label'
 import { isRead } from '../lib/reading-history'
+import { resumenParaTarjeta } from '../lib/story-summary'
 import FeedFavicon from './FeedFavicon'
 import BookmarkButton from './BookmarkButton'
 import { publisherFromUrl } from '@shared/utils/publisher'
@@ -314,9 +315,9 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
     title: (isEn && story.titleEn) ? story.titleEn : story.title,
     titleLabel: (isEn && story.titleLabelEn) ? story.titleLabelEn : story.titleLabel,
   }
-  const displaySummary: string | null | undefined = (isEn && story.relevanceSummaryEn) ? story.relevanceSummaryEn
-    : (isEn && story.summaryEn) ? story.summaryEn
-    : story.relevanceSummary || story.summary
+  // Bajo el piso de relevancia va el resumen plano, no la explicacion de por
+  // que la nota NO es relevante. La regla y su porque: lib/story-summary.ts.
+  const displaySummary = resumenParaTarjeta(story, isEn)
 
   const imageUrl = story.imageUrl ?? null
   const headlineText = getHeadline(localizedStory)
