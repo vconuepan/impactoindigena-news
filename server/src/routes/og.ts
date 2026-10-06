@@ -94,6 +94,32 @@ function quitarPreloadsDePortada(html: string): string {
   )
 }
 
+/**
+ * Deja `<div id="root"></div>` vacio, sin importar que venga despues.
+ *
+ * El shell es la portada prerenderizada: dentro del root viajan ~120 KB de
+ * HTML con el h1 de OTRA noticia y su hero con fetchpriority="high". La
+ * version anterior vaciaba el root con una regex que exigia un `<script>`
+ * inmediatamente despues del `</div>`, y Vite pone todos los scripts en el
+ * `<head>`: la regex no coincidia nunca y las 4.039 fichas publicadas salieron
+ * durante meses con el cuerpo de la portada (medido en vivo el 5-oct-2026).
+ * Los tests no lo atraparon porque su fixture ponia el script despues del root.
+ *
+ * Se recorta desde la apertura del root hasta su ULTIMO `</div>` antes de
+ * `</body>`, asi que un `<script>` que si viniera despues del root (el layout
+ * antiguo) se conserva.
+ */
+export function vaciarRoot(html: string): string {
+  const apertura = '<div id="root">'
+  const inicio = html.indexOf(apertura)
+  if (inicio === -1) return html
+  const finBody = html.indexOf('</body>', inicio)
+  const tope = finBody === -1 ? html.length : finBody
+  const cierre = html.lastIndexOf('</div>', tope)
+  if (cierre < inicio + apertura.length) return html
+  return html.slice(0, inicio) + `${apertura}</div>` + html.slice(cierre + '</div>'.length)
+}
+
 let comprobacionEnVuelo = false
 
 /**
@@ -252,13 +278,12 @@ router.get('/story-html', async (req, res) => {
 
     // Strip the shell's own title/meta (the home may be prerendered with full
     // content), clear the prerendered root so React mounts cleanly, then inject.
-    const html = quitarPreloadsDePortada(shell)
+    const html = vaciarRoot(quitarPreloadsDePortada(shell))
       .replace(/<title>[^<]*<\/title>/gi, '')
       .replace(/<meta[^>]+(property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*\/?>/gi, '')
       .replace(/<meta[^>]+name=["']description["'][^>]*\/?>/gi, '')
       .replace(/<link[^>]+rel=["']canonical["'][^>]*\/?>/gi, '')
       .replace('<head>', `<head>${headTags}`)
-      .replace(/<div id="root">[\s\S]*?<\/div>(?=\s*<script)/, '<div id="root"></div>')
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8')
     res.setHeader('Cache-Control', 'public, max-age=300')
@@ -339,15 +364,13 @@ router.get('/stories/:slug', async (req, res) => {
       // Strip pre-existing title and OG/twitter tags from the shell so we don't
       // end up with two sets of meta tags. LinkedIn (and other parsers) get confused
       // by duplicate og:image tags even when the correct one appears first.
-      const cleanShell = quitarPreloadsDePortada(shell)
+      const cleanShell = vaciarRoot(quitarPreloadsDePortada(shell))
         .replace(/<title>[^<]*<\/title>/gi, '')
         .replace(/<meta[^>]+(property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*\/?>/gi, '')
 
-      // Inject story OG tags right after <head> and clear prerendered root content
-      // (avoids React hydration mismatch when shell was prerendered as homepage)
-      html = cleanShell
-        .replace('<head>', `<head>${ogTags}`)
-        .replace(/<div id="root">[\s\S]*?<\/div>(?=\s*<script)/, '<div id="root"></div>')
+      // Inject story OG tags right after <head>; the prerendered root is already
+      // empty (avoids React hydration mismatch when shell was prerendered as homepage)
+      html = cleanShell.replace('<head>', `<head>${ogTags}`)
     } else {
       // Minimal fallback HTML
       html = `<!DOCTYPE html>

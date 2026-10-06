@@ -8,13 +8,24 @@ const mockPrisma = vi.hoisted(() => ({
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
-import ogRouter from './og.js'
+import ogRouter, { vaciarRoot } from './og.js'
 
 // The og handler builds story HTML by fetching the home "shell" and injecting
 // per-story tags. Stub global fetch so getShell() returns a valid shell.
+//
+// La forma importa: Vite pone el script del bundle en el <head> y el prerender
+// deja la PORTADA entera dentro del root, con divs anidados y sin ningun
+// <script> despues. Un fixture con el script tras el root dejo pasar durante
+// meses una regex que nunca coincidia con el shell real (ver vaciarRoot).
+const PORTADA_EN_ROOT =
+  '<div id="root"><div class="layout"><header><nav>Voces</nav></header>' +
+  '<main><h1>Titular de la portada</h1>' +
+  '<img src="https://r2.example/social/oghero-de-la-portada.jpg" fetchpriority="high" alt="" />' +
+  '<section><article><h2>Otra nota</h2></article></section></main></div></div>'
 const SHELL = '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
+  '<script type="module" crossorigin="" src="/assets/index-abc123.js"></script>' +
   '<link rel="canonical" href="https://vocesindigenas.org/" data-rh="true"></head>' +
-  '<body><div id="root">home content</div><script src="/app.js"></script></body></html>'
+  `<body>${PORTADA_EN_ROOT}</body></html>`
 
 const app = express()
 app.use('/api/og', ogRouter)
@@ -74,8 +85,9 @@ describe('GET /api/og/story-html — SEO status codes', () => {
 // se queda sin relacionadas y sin navegacion.
 describe('GET /api/og/story-html — el shell cacheado y el bundle con hash', () => {
   const shellCon = (bundle: string) =>
-    '<!DOCTYPE html><html><head><title>Voces Indígenas</title></head>' +
-    `<body><div id="root"></div><script type="module" src="/assets/${bundle}"></script></body></html>`
+    '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
+    `<script type="module" src="/assets/${bundle}"></script></head>` +
+    '<body><div id="root"></div></body></html>'
 
   // El cache del shell es estado de modulo. Cada test necesita el suyo.
   async function appFresco() {
@@ -167,10 +179,11 @@ describe('GET /api/og/story-html — el shell cacheado y el bundle con hash', ()
 describe('GET /api/og/story-html — los preloads que el shell trae de la portada', () => {
   const SHELL_PORTADA =
     '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
+    '<script type="module" crossorigin="" src="/assets/index-abc123.js"></script>' +
     '<link rel="preload" href="/fonts/DMSans/dmsans-normal-latin.woff2" as="font" type="font/woff2" crossorigin />' +
     '<link rel="preload" href="https://r2.example/homepage.json" as="fetch" crossorigin />' +
     '<link rel="preload" href="https://r2.example/social/oghero-de-la-portada.jpg" as="image" fetchpriority="high" />' +
-    '</head><body><div id="root">home</div><script src="/app.js"></script></body></html>'
+    `</head><body>${PORTADA_EN_ROOT}</body></html>`
 
   // El cache del shell es estado de modulo y persiste entre bloques: sin aislar,
   // este describe recibia el shell de los tests anteriores —que no lleva ningun
@@ -209,5 +222,54 @@ describe('GET /api/og/story-html — los preloads que el shell trae de la portad
   it('una historia sin imagen no precarga nada: seria otra descarga desperdiciada', async () => {
     const res = await pedirHistoria({ ...published, imageUrl: null })
     expect(res.text).not.toContain('as="image"')
+  })
+})
+
+// El shell es la portada prerenderizada: ~120 KB de HTML dentro del root, con
+// el h1 de OTRA noticia y su hero. Medido en vivo el 5-oct-2026, las 4.039
+// fichas publicadas entregaban ese cuerpo a todo rastreador sin JS y el
+// navegador bajaba el hero equivocado con prioridad alta. La regex que debia
+// vaciarlo exigia un <script> despues del </div>, y Vite los pone en el <head>.
+describe('vaciarRoot — el cuerpo de la portada no viaja en la ficha', () => {
+  it('vacia un root con divs anidados y nada despues (la forma real de Vite)', () => {
+    const out = vaciarRoot(SHELL)
+    expect(out).toContain('<body><div id="root"></div></body>')
+    expect(out).not.toContain('Titular de la portada')
+    expect(out).not.toContain('oghero-de-la-portada.jpg')
+    // El script del bundle vive en el head y se conserva: sin el, React no arranca.
+    expect(out).toContain('src="/assets/index-abc123.js"')
+  })
+
+  it('conserva un <script> que venga despues del root (el layout antiguo)', () => {
+    const viejo = '<html><head></head><body><div id="root"><div>home</div></div>' +
+      '<script src="/app.js"></script></body></html>'
+    expect(vaciarRoot(viejo)).toBe(
+      '<html><head></head><body><div id="root"></div><script src="/app.js"></script></body></html>',
+    )
+  })
+
+  it('no toca un documento sin root ni uno con el root ya vacio', () => {
+    expect(vaciarRoot('<html><body><p>sin root</p></body></html>')).toBe('<html><body><p>sin root</p></body></html>')
+    const vacio = '<html><body><div id="root"></div></body></html>'
+    expect(vaciarRoot(vacio)).toBe(vacio)
+  })
+
+  it('la respuesta de /story-html no trae el h1 ni el hero de la portada, y si su bundle', async () => {
+    vi.clearAllMocks()
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => SHELL })) as any)
+    mockPrisma.story.findUnique.mockResolvedValue(published)
+    vi.resetModules()
+    const { default: router } = await import('./og.js')
+    const a = express()
+    a.use('/api/og', router)
+    const res = await request(a).get('/api/og/story-html?slug=a-real-story')
+
+    expect(res.status).toBe(200)
+    const body = res.text.slice(res.text.indexOf('<body>'))
+    expect(body).not.toContain('Titular de la portada')
+    expect(body).not.toContain('fetchpriority="high"')
+    expect(body).toContain('<div id="root"></div>')
+    expect(res.text).toContain('src="/assets/index-abc123.js"')
+    expect(res.text).toContain('<title>news: A Real Story - Voces Indígenas</title>')
   })
 })
