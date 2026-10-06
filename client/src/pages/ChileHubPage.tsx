@@ -7,23 +7,25 @@ import { buildBreadcrumbSchema } from '../lib/structured-data'
 const META = {
   title: 'Chile Intercultural: guía completa | Voces Indígenas',
   description:
-    'Chile tiene diez pueblos indígenas reconocidos por ley. Conoce quiénes son, dónde viven, cuántos son y cuáles son sus principales demandas: mapuche, aymara, rapanui, atacameño y más.',
+    'Chile reconoce por ley once pueblos indígenas. Conoce quiénes son, dónde viven, cuántos son según el Censo 2024 y cuáles son sus principales demandas: mapuche, aymara, rapa nui, atacameño y más.',
   url: `${SEO.siteUrl}/guia/pueblos-indigenas-chile`,
 }
 
+// Cifras: Censo 2024, INE, tabulado oficial «P2-Pueblos-indigenas.xlsx» (30-jun-2025),
+// hoja 1, fila País. La lista es la del art. 1° de la Ley 19.253 vigente.
 const PUEBLOS = [
   {
     nombre: 'Mapuche',
-    poblacion: '1.745.147',
+    poblacion: '1.623.073',
     region: 'La Araucanía, Los Ríos, Los Lagos, Región Metropolitana',
     descripcion:
-      'El pueblo más numeroso de Chile, con el 79,8% de la población indígena nacional. Habitan ancestralmente el Wallmapu, territorio que se extiende desde el río Biobío hasta la Patagonia. Su lengua es el mapuzungún.',
+      'El pueblo más numeroso de Chile: el 77,2% de quienes se consideran pertenecientes a un pueblo indígena. Habitan ancestralmente el Wallmapu, territorio que se extiende desde el río Biobío hasta la Patagonia. Su lengua es el mapuzungún.',
     slug: 'mapuche',
     guia: '/guia/pueblo-mapuche',
   },
   {
     nombre: 'Aymara',
-    poblacion: '156.754',
+    poblacion: '178.637',
     region: 'Arica y Parinacota, Tarapacá',
     descripcion:
       'Pueblo andino de la región del altiplano, con presencia histórica en el norte de Chile, Perú y Bolivia. Su cultura está profundamente ligada a la agricultura en terrazas, la ganadería de camélidos y el ritual andino.',
@@ -32,7 +34,7 @@ const PUEBLOS = [
   },
   {
     nombre: 'Diaguita',
-    poblacion: '88.474',
+    poblacion: '153.231',
     region: 'Atacama, Coquimbo',
     descripcion:
       'Pueblo del norte chico de Chile, redescubierto y reconocido legalmente en 2006. Habitaron los valles transversales y la zona costera del norte semiárido. Reconocidos por su cerámica característica.',
@@ -40,17 +42,8 @@ const PUEBLOS = [
     guia: null,
   },
   {
-    nombre: 'Atacameño (Lickanantay)',
-    poblacion: '30.369',
-    region: 'Antofagasta',
-    descripcion:
-      'Pueblo del desierto de Atacama, uno de los más antiguos de América del Sur. Su territorio ancestral incluye el Salar de Atacama, codiciado por el litio. Su nombre propio es Lickanantay.',
-    slug: null,
-    guia: null,
-  },
-  {
     nombre: 'Quechua',
-    poblacion: '33.868',
+    poblacion: '46.519',
     region: 'Antofagasta, Tarapacá',
     descripcion:
       'Pueblo andino con presencia en el norte de Chile, vinculado culturalmente al vasto mundo quechua de los Andes. Su lengua, el quechua, es la más hablada entre los pueblos originarios de América del Sur.',
@@ -58,26 +51,17 @@ const PUEBLOS = [
     guia: null,
   },
   {
-    nombre: 'Rapanui',
-    poblacion: '9.399',
-    region: 'Isla de Pascua (Rapa Nui)',
+    nombre: 'Atacameño (Lickanantay)',
+    poblacion: '36.221',
+    region: 'Antofagasta',
     descripcion:
-      'Pueblo polinesio de Rapa Nui (Isla de Pascua), a 3.700 km del continente. Creadores de los moai, los monolitos de piedra más icónicos del mundo. Demandan mayor autonomía y control territorial sobre la isla.',
-    slug: null,
-    guia: null,
-  },
-  {
-    nombre: 'Lamas (Lafkenche)',
-    poblacion: '14.093',
-    region: 'Araucanía, Los Lagos (costa)',
-    descripcion:
-      'Subgrupo mapuche costero ("gente del mar") con una identidad cultural propia ligada al mar y los recursos costeros. La Ley Lafkenche (2008) reconoce su derecho a los espacios costeros marinos.',
+      'Pueblo del desierto de Atacama, uno de los más antiguos de América del Sur. Su territorio ancestral incluye el Salar de Atacama, codiciado por el litio. Su nombre propio es Lickanantay.',
     slug: null,
     guia: null,
   },
   {
     nombre: 'Colla',
-    poblacion: '20.744',
+    poblacion: '21.913',
     region: 'Atacama',
     descripcion:
       'Pueblo trashumante de la Puna de Atacama, con tradición de pastoreo de camélidos en las alturas. Su territorio ancestral abarca zonas de alta montaña hoy cruzadas por concesiones mineras.',
@@ -85,8 +69,26 @@ const PUEBLOS = [
     guia: null,
   },
   {
+    nombre: 'Chango',
+    poblacion: '11.795',
+    region: 'Costa de Antofagasta, Atacama y Coquimbo',
+    descripcion:
+      'Pueblo costero del norte. El Estado lo reconoció en 2020 (Ley 21.273), que describe a sus comunidades como costeras, ubicadas principalmente entre las regiones de Antofagasta y Valparaíso, y pide proteger su hábitat: el borde costero, las playas, las islas y los roqueríos. Según el Censo 2024, la mayoría vive en Antofagasta, Coquimbo y Atacama.',
+    slug: null,
+    guia: null,
+  },
+  {
+    nombre: 'Rapa Nui',
+    poblacion: '6.659',
+    region: 'Isla de Pascua (Rapa Nui)',
+    descripcion:
+      'Pueblo polinesio de Rapa Nui (Isla de Pascua), a 3.700 km del continente. Creadores de los moai, los monolitos de piedra más icónicos del mundo. Demandan mayor autonomía y control territorial sobre la isla.',
+    slug: null,
+    guia: null,
+  },
+  {
     nombre: 'Kawésqar',
-    poblacion: '3.448',
+    poblacion: '2.153',
     region: 'Magallanes',
     descripcion:
       'Uno de los pueblos nómades del mar más australes del mundo, con una cultura excepcional adaptada a los canales patagónicos. Hoy en grave riesgo de desaparición cultural: quedan menos de diez hablantes nativos del kawésqar.',
@@ -94,9 +96,18 @@ const PUEBLOS = [
     guia: null,
   },
   {
+    nombre: "Selk'nam",
+    poblacion: '1.392',
+    region: 'Tierra del Fuego (Magallanes); hoy la mayoría en la Región Metropolitana',
+    descripcion:
+      "Pueblo originario de Tierra del Fuego, al que durante décadas se dio por desaparecido. Sus descendientes obtuvieron el reconocimiento del Estado en 2023 (Ley 21.606). En el Censo 2024, 1.392 personas se consideran selk'nam, la mayor parte en la Región Metropolitana y Valparaíso.",
+    slug: null,
+    guia: null,
+  },
+  {
     nombre: 'Yagán',
-    poblacion: '1.600',
-    region: 'Cabo de Hornos',
+    poblacion: '1.244',
+    region: 'Cabo de Hornos (Magallanes)',
     descripcion:
       'El pueblo más austral del planeta, habitante de Tierra del Fuego y el Cabo de Hornos. En situación crítica de extinción cultural: la última hablante nativa fluida de yagán falleció en 2022. Su memoria es patrimonio de la humanidad.',
     slug: null,
@@ -149,7 +160,7 @@ export default function ChileHubPage() {
                 name: '¿Cuántos pueblos indígenas hay en Chile?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'La Ley Indígena N° 19.253 reconoce diez pueblos indígenas en Chile: mapuche, aymara, rapanui, atacameño (lickanantay), quechua, colla, diaguita, kawésqar, yagán y lamas (lafkenche). Según el Censo 2017, 2.185.792 personas se identificaron como pertenecientes a alguno de estos pueblos, el 12,4% de la población total.',
+                  text: "La Ley Indígena N° 19.253 reconoce once pueblos indígenas en Chile: mapuche, aymara, rapa nui, atacameño (lickanantay), quechua, colla, diaguita, chango, kawésqar, yagán y selk'nam. Según el Censo 2024, 2.105.863 personas se consideran pertenecientes a alguno de ellos, el 11,5% de la población.",
                 },
               },
               {
@@ -157,7 +168,7 @@ export default function ChileHubPage() {
                 name: '¿Cuál es el pueblo indígena más grande de Chile?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'El pueblo mapuche es el más numeroso, con 1.745.147 personas según el Censo 2017, lo que representa el 79,8% del total de la población indígena en Chile.',
+                  text: 'El pueblo mapuche es el más numeroso, con 1.623.073 personas según el Censo 2024: el 77,2% de quienes se consideran pertenecientes a un pueblo indígena u originario en Chile.',
                 },
               },
               {
@@ -181,7 +192,7 @@ export default function ChileHubPage() {
             Chile Intercultural
           </h1>
           <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto">
-            Diez pueblos. Un país. Sus territorios, sus lenguas y sus derechos.
+            Once pueblos. Un país. Sus territorios, sus lenguas y sus derechos.
           </p>
         </div>
       </div>
@@ -191,10 +202,11 @@ export default function ChileHubPage() {
 
           <h2 className="section-heading mt-8">¿Quiénes son los pueblos indígenas de Chile?</h2>
           <p>
-            Chile reconoce legalmente diez pueblos indígenas a través de la{' '}
-            <strong>Ley Indígena N° 19.253</strong> de 1993. Según el{' '}
-            <strong>Censo 2017</strong>, 2.185.792 personas se identificaron como
-            pertenecientes a alguno de estos pueblos, el <strong>12,4% de la población total</strong>.
+            Chile reconoce legalmente once pueblos indígenas a través de la{' '}
+            <strong>Ley Indígena N° 19.253</strong> de 1993, ampliada en 2020 (pueblo chango)
+            y en 2023 (pueblo selk'nam). Según el <strong>Censo 2024</strong>, 2.105.863
+            personas se consideran pertenecientes a alguno de estos pueblos, el{' '}
+            <strong>11,5% de la población</strong>.
           </p>
           <p>
             Estos pueblos son radicalmente distintos entre sí: van desde los yaganes del Cabo de
@@ -204,7 +216,7 @@ export default function ChileHubPage() {
             derechos colectivos.
           </p>
 
-          <h2 className="section-heading mt-8">Los diez pueblos reconocidos</h2>
+          <h2 className="section-heading mt-8">Los once pueblos reconocidos</h2>
         </div>
 
         {/* Pueblo cards — outside prose to allow full-width grid */}
@@ -239,7 +251,8 @@ export default function ChileHubPage() {
           </p>
           <ul>
             <li>
-              <strong>Ley Indígena N° 19.253 (1993)</strong> — reconoce los diez pueblos,
+              <strong>Ley Indígena N° 19.253 (1993)</strong> — reconoce once pueblos (el chango
+              desde la Ley 21.273 de 2020 y el selk'nam desde la Ley 21.606 de 2023),
               protege tierras indígenas y crea la CONADI (Corporación Nacional de Desarrollo Indígena).
             </li>
             <li>
@@ -262,9 +275,10 @@ export default function ChileHubPage() {
 
           <h3>¿Cuántos pueblos indígenas hay en Chile?</h3>
           <p>
-            La Ley Indígena reconoce diez pueblos: mapuche, aymara, rapanui, atacameño
-            (lickanantay), quechua, colla, diaguita, kawésqar, yagán y lamas. Según el Censo
-            2017, el 12,4% de la población chilena se identifica como indígena.
+            La Ley Indígena reconoce once pueblos: mapuche, aymara, rapa nui, atacameño
+            (lickanantay), quechua, colla, diaguita, chango, kawésqar, yagán y selk'nam. Según
+            el Censo 2024, el 11,5% de las personas censadas se considera perteneciente a
+            alguno de ellos.
           </p>
 
           <h3>¿Tienen reconocimiento constitucional?</h3>

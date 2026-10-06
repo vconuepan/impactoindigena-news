@@ -16,7 +16,7 @@ const NoCoordsList = lazy(() =>
 const META = {
   title: 'Mapa de pueblos indígenas de Chile | Voces Indígenas',
   description:
-    'Mapa interactivo de los territorios ancestrales y ubicación de los diez pueblos indígenas reconocidos en Chile: mapuche, aymara, rapanui, atacameño, quechua, colla, diaguita, kawésqar, yagán y lafkenche.',
+    'Mapa interactivo de los territorios ancestrales y ubicación de los once pueblos indígenas reconocidos en Chile: mapuche, aymara, rapa nui, atacameño, quechua, colla, diaguita, chango, kawésqar, yagán y selk\'nam.',
   url: `${SEO.siteUrl}/mapa`,
 }
 
@@ -63,7 +63,7 @@ export default function MapPage() {
             Territorios indígenas de Chile
           </h1>
           <p className="text-base text-white/70 leading-relaxed max-w-xl mx-auto">
-            Ubicación y territorios ancestrales de los diez pueblos indígenas reconocidos. Haz clic en cada pueblo para conocer más.
+            Ubicación y territorios ancestrales de los once pueblos indígenas reconocidos. Haz clic en cada pueblo para conocer más.
           </p>
         </div>
       </div>
@@ -90,8 +90,9 @@ export default function MapPage() {
             reconocimiento ni renuncia a ningún reclamo territorial.
           </p>
           <p className="text-sm text-neutral-600 leading-relaxed mt-3">
-            Los datos de población corresponden al Censo 2017 de Chile (INE). Las coordenadas de
-            los territorios son aproximaciones basadas en fuentes históricas y etnográficas.
+            Los datos de población corresponden al Censo 2024 de Chile (INE, tabulado de pueblos
+            indígenas u originarios, junio de 2025). Las coordenadas de los territorios son
+            aproximaciones basadas en fuentes históricas y etnográficas.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-3">

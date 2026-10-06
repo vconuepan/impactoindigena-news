@@ -129,7 +129,7 @@ const ENTRIES: GlossaryEntry[] = [
     term: 'Ley Indígena',
     origin: 'Derecho chileno',
     definition:
-      'Ley N° 19.253 de Chile, promulgada en 1993. Reconoce los diez pueblos indígenas del país, protege las tierras indígenas y crea la CONADI. Es el principal marco legal de los derechos indígenas en Chile, pero es criticada por no otorgar reconocimiento constitucional ni autonomía real.',
+      'Ley N° 19.253 de Chile, promulgada en 1993. Reconoce once pueblos indígenas (los dos últimos, chango y selk\'nam, se incorporaron por las leyes 21.273 de 2020 y 21.606 de 2023), protege las tierras indígenas y crea la CONADI. Es el principal marco legal de los derechos indígenas en Chile, pero es criticada por no otorgar reconocimiento constitucional ni autonomía real.',
     related: ['CONADI', 'Consulta Previa'],
     seeAlso: { label: 'Guía sobre pueblos indígenas de Chile', href: '/guia/pueblos-indigenas-chile' },
   },

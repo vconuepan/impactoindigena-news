@@ -183,9 +183,10 @@ export default function MapuchePage() {
 
           <h3>¿Cuántos mapuche hay en Chile?</h3>
           <p>
-            Según el Censo 2017, 1.745.147 personas se identificaron como mapuche en Chile,
-            representando el 9,9% de la población total. La mayoría vive en la Región
-            Metropolitana (migración campo-ciudad) y en La Araucanía.
+            Según el Censo 2024, 1.623.073 personas se consideran mapuche en Chile: el 77,2%
+            de quienes se identifican con un pueblo indígena u originario. La región con más
+            personas de pueblos originarios en números absolutos es la Metropolitana
+            (545.700), y en proporción, La Araucanía (34,5%).
           </p>
 
           <div className="mt-10 p-5 bg-neutral-50 rounded-lg border border-neutral-100">

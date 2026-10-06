@@ -25,13 +25,15 @@ interface PuebloData {
   communitySlug?: string
 }
 
+// Cifras: Censo 2024, INE, tabulado «P2-Pueblos-indigenas.xlsx» (30-jun-2025), fila País.
+// Coordenadas aproximadas del territorio ancestral, no de la residencia actual.
 const PUEBLOS: PuebloData[] = [
   {
     id: 'aymara',
     nombre: 'Aymara',
     lat: -18.5,
     lng: -69.3,
-    poblacion: '156.754',
+    poblacion: '178.637',
     region: 'Arica y Parinacota, Tarapacá',
     lengua: 'Aymara',
     descripcion: 'Pueblo andino del altiplano norte, con presencia en Chile, Bolivia y Perú. Reconocidos por la agricultura en terrazas, la ganadería de camélidos y el ritual andino.',
@@ -42,7 +44,7 @@ const PUEBLOS: PuebloData[] = [
     nombre: 'Quechua',
     lat: -20.2,
     lng: -68.6,
-    poblacion: '33.868',
+    poblacion: '46.519',
     region: 'Antofagasta, Tarapacá',
     lengua: 'Quechua (runasimi)',
     descripcion: 'Pueblo andino cuya lengua, el quechua, es la más hablada entre los pueblos indígenas de América del Sur. En Chile habitan principalmente en el altiplano de Antofagasta.',
@@ -54,7 +56,7 @@ const PUEBLOS: PuebloData[] = [
     nombrePropio: 'Lickanantay',
     lat: -23.0,
     lng: -68.2,
-    poblacion: '30.369',
+    poblacion: '36.221',
     region: 'Antofagasta (Salar de Atacama)',
     lengua: 'Kunza (extinta) / Español',
     descripcion: 'Pueblo del desierto de Atacama. Su territorio incluye el Salar de Atacama, zona de alta demanda de litio. Reivindican control del agua y territorio frente a la minería.',
@@ -65,7 +67,7 @@ const PUEBLOS: PuebloData[] = [
     nombre: 'Colla',
     lat: -27.5,
     lng: -68.8,
-    poblacion: '20.744',
+    poblacion: '21.913',
     region: 'Atacama (cordillera)',
     lengua: 'Español (lengua propia extinta)',
     descripcion: 'Pueblo trashumante de la Puna de Atacama, con tradición de pastoreo de camélidos en altura. Su territorio ancestral cruza concesiones mineras activas.',
@@ -76,7 +78,7 @@ const PUEBLOS: PuebloData[] = [
     nombre: 'Diaguita',
     lat: -29.0,
     lng: -70.3,
-    poblacion: '88.474',
+    poblacion: '153.231',
     region: 'Atacama, Coquimbo',
     lengua: 'Español (lengua propia extinta)',
     descripcion: 'Pueblo del norte chico, reconocido legalmente en 2006. Habitaron los valles transversales entre Atacama y Coquimbo. Conocidos por su cerámica característica de diseños geométricos.',
@@ -87,31 +89,42 @@ const PUEBLOS: PuebloData[] = [
     nombre: 'Mapuche',
     lat: -38.7,
     lng: -72.6,
-    poblacion: '1.745.147',
+    poblacion: '1.623.073',
     region: 'Araucanía, Los Ríos, Los Lagos, R. Metropolitana',
     lengua: 'Mapuzungún',
-    descripcion: 'El pueblo más numeroso de Chile (79,8% de la población indígena nacional). Su territorio ancestral, el Wallmapu, se extiende desde el Biobío hasta la Patagonia.',
+    descripcion: 'El pueblo más numeroso de Chile (77,2% de quienes se consideran de un pueblo indígena). Su territorio ancestral, el Wallmapu, se extiende desde el Biobío hasta la Patagonia.',
     color: '#059669',
     guia: '/guia/pueblo-mapuche',
     communitySlug: 'mapuche',
   },
   {
-    id: 'lafkenche',
-    nombre: 'Lafkenche',
-    lat: -38.9,
-    lng: -73.5,
-    poblacion: '14.093',
-    region: 'Araucanía y Los Lagos (costa)',
-    lengua: 'Mapuzungún',
-    descripcion: 'Subgrupo mapuche costero ("gente del mar"). La Ley Lafkenche (2008) reconoce su derecho a los espacios costeros marinos de uso ancestral.',
+    id: 'chango',
+    nombre: 'Chango',
+    lat: -25.0,
+    lng: -70.45,
+    poblacion: '11.795',
+    region: 'Costa de Antofagasta, Atacama y Coquimbo',
+    lengua: 'Español',
+    descripcion: 'Pueblo costero del norte, reconocido por el Estado en 2020 (Ley 21.273). La ley pide proteger su hábitat: el borde costero, las playas, las islas y los roqueríos.',
     color: '#0891b2',
   },
   {
+    id: 'selknam',
+    nombre: "Selk'nam",
+    lat: -53.6,
+    lng: -69.3,
+    poblacion: '1.392',
+    region: 'Tierra del Fuego (Magallanes); hoy la mayoría en la R. Metropolitana',
+    lengua: 'Selk\'nam (sin hablantes nativos)',
+    descripcion: 'Pueblo originario de Tierra del Fuego, al que durante décadas se dio por desaparecido. Sus descendientes obtuvieron el reconocimiento del Estado en 2023 (Ley 21.606).',
+    color: '#9f1239',
+  },
+  {
     id: 'rapanui',
-    nombre: 'Rapanui',
+    nombre: 'Rapa Nui',
     lat: -27.1,
     lng: -109.4,
-    poblacion: '9.399',
+    poblacion: '6.659',
     region: 'Isla de Pascua (3.700 km del continente)',
     lengua: 'Rapanui / Español',
     descripcion: 'Pueblo polinesio de Rapa Nui. Creadores de los moai. Reivindican autonomía y control territorial sobre la isla. Su cultura es de origen polinesio, no andino.',
@@ -122,7 +135,7 @@ const PUEBLOS: PuebloData[] = [
     nombre: 'Kawésqar',
     lat: -49.1,
     lng: -74.4,
-    poblacion: '3.448',
+    poblacion: '2.153',
     region: 'Magallanes (canales patagónicos)',
     lengua: 'Kawésqar (en extinción crítica)',
     descripcion: 'Pueblo nómade del mar de los canales patagónicos. En situación crítica de extinción cultural: quedan menos de diez hablantes con dominio nativo de la lengua.',
@@ -133,7 +146,7 @@ const PUEBLOS: PuebloData[] = [
     nombre: 'Yagán',
     lat: -54.9,
     lng: -67.6,
-    poblacion: '~1.600',
+    poblacion: '1.244',
     region: 'Cabo de Hornos, Tierra del Fuego',
     lengua: 'Yagán (extinta en 2022)',
     descripcion: 'El pueblo más austral del planeta. La última hablante nativa fluida del yagán, Cristina Calderón, falleció en 2022. Su memoria es patrimonio inmaterial de la humanidad.',
@@ -242,7 +255,7 @@ export default function MapWidget() {
                 <span style={{ fontWeight: 600 }}>Región:</span> {pueblo.region}
               </div>
               <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 8 }}>
-                <span style={{ fontWeight: 600 }}>Población (Censo 2017):</span> {pueblo.poblacion}
+                <span style={{ fontWeight: 600 }}>Población (Censo 2024):</span> {pueblo.poblacion}
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {pueblo.guia && (

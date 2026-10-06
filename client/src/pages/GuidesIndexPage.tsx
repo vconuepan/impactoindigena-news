@@ -29,7 +29,7 @@ const GUIDES = [
   {
     title: 'Chile Intercultural',
     description:
-      'Los diez pueblos reconocidos por la ley chilena: mapuche, aymara, rapanui, atacameño, quechua, colla, diaguita, kawésqar, yagán y lamas. Sus territorios y demandas.',
+      'Los once pueblos reconocidos por la ley chilena: mapuche, aymara, rapa nui, atacameño, quechua, colla, diaguita, chango, kawésqar, yagán y selk\'nam. Sus territorios y demandas.',
     href: '/guia/pueblos-indigenas-chile',
     label: 'Chile',
   },

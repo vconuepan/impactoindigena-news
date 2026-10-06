@@ -45,10 +45,10 @@ export const SNIPPETS_BY_ISSUE: Record<string, Snippet[]> = {
     { text: 'Los pueblos indígenas escriben, filman, componen y exponen su propia obra. La cultura indígena es producción contemporánea, no solo herencia.' },
   ],
   'chile-indigena': [
-    { text: 'Chile tiene diez pueblos indígenas reconocidos oficialmente, que representan cerca del 13% de la población.', source: 'Censo 2017, INE' },
+    { text: 'Chile reconoce por ley once pueblos indígenas. El 11,5 % de las personas censadas en 2024 se considera perteneciente a alguno: 2.105.863 personas.', source: 'Censo 2024, INE' },
     { text: 'El mapudungun, idioma del pueblo mapuche, es hablado por más de 200.000 personas en Chile y Argentina.' },
     { text: 'Los pueblos originarios de Chile llevan habitando estos territorios por más de 10.000 años.' },
-    { text: 'El pueblo mapuche es el pueblo indígena más numeroso de Chile, con más de 1,7 millones de personas que se identifican como parte de él.', source: 'Censo 2017, INE' },
+    { text: 'El pueblo mapuche es el más numeroso de Chile: 1.623.073 personas se identifican como parte de él, el 77,2 % de quienes se consideran de un pueblo indígena.', source: 'Censo 2024, INE' },
     { text: 'La Araucanía fue el último territorio de América del Sur en ser incorporado por la fuerza al Estado chileno, a fines del siglo XIX.' },
   ],
 }
