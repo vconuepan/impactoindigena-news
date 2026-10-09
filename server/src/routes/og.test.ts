@@ -183,6 +183,7 @@ describe('GET /api/og/story-html — los preloads que el shell trae de la portad
     '<link rel="preload" href="/fonts/DMSans/dmsans-normal-latin.woff2" as="font" type="font/woff2" crossorigin />' +
     '<link rel="preload" href="https://r2.example/homepage.json" as="fetch" crossorigin />' +
     '<link rel="preload" href="https://r2.example/social/oghero-de-la-portada.jpg" as="image" fetchpriority="high" />' +
+    '<script src="/preload-hero.js" async></script>' +
     `</head><body>${PORTADA_EN_ROOT}</body></html>`
 
   // El cache del shell es estado de modulo y persiste entre bloques: sin aislar,
@@ -211,6 +212,13 @@ describe('GET /api/og/story-html — los preloads que el shell trae de la portad
   it('descarta el preload de homepage.json, que la historia no pide nunca', async () => {
     const res = await pedirHistoria(published)
     expect(res.text).not.toContain('homepage.json')
+  })
+
+  it('descarta preload-hero.js: solo sirve en la portada y aca ya no tiene el preload que busca', async () => {
+    const res = await pedirHistoria(published)
+    expect(res.text).not.toContain('preload-hero.js')
+    // El script del bundle sigue: la regex no puede llevarse los demas.
+    expect(res.text).toContain('/assets/index-abc123.js')
   })
 
   it('conserva los preloads de fuentes, que sirven en cualquier pagina', async () => {

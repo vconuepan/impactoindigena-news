@@ -189,6 +189,29 @@ export function getOpenAPIDocument(): any {
       { url: process.env.API_URL || 'https://vocesindigenas.org', description: 'Production' },
     ],
     paths: {
+      '/api/health': {
+        get: {
+          operationId: 'getHealth',
+          summary: 'Check that the API and its database are up',
+          description:
+            'Returns 200 when the API can reach its database and 503 when it cannot. ' +
+            'This is the probe for external monitors: `/health` without the `/api` prefix is ' +
+            'answered by the website, not by the API, and returns 200 even if the backend is down.',
+          tags: ['Health'],
+          responses: {
+            '200': {
+              description: 'API and database reachable',
+              content: {
+                'application/json': {
+                  schema: { type: 'object', properties: { status: { type: 'string', enum: ['ok'] }, database: { type: 'string', enum: ['connected'] }, uptime: { type: 'number' } } },
+                },
+              },
+            },
+            '503': { description: 'Database unreachable' },
+            '429': rateLimitedResponse,
+          },
+        },
+      },
       '/api/homepage': {
         get: {
           operationId: 'getHomepage',
@@ -434,6 +457,7 @@ export function getOpenAPIDocument(): any {
       schemas: {},
     },
     tags: [
+      { name: 'Health', description: 'Liveness probe for external monitors' },
       { name: 'Homepage', description: 'Homepage data with emotion-bucketed stories' },
       { name: 'Stories', description: 'Published story listing and detail' },
       { name: 'Issues', description: 'Issue categories and hierarchy' },

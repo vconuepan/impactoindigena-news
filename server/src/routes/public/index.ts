@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { apiLimiter } from '../../middleware/rateLimit.js'
+import healthRouter from '../health.js'
 import storiesRouter from './stories.js'
 import issuesRouter from './issues.js'
 import feedRouter from './feed.js'
@@ -28,6 +29,8 @@ const router = Router()
 // Apply rate limiting to public API
 router.use(apiLimiter)
 
+// Sonda pública: detrás del limitador porque cada llamada consulta la base.
+router.use('/health', healthRouter)
 router.use('/homepage', homepageRouter)
 router.use('/stories', storiesRouter)
 router.use('/issues', issuesRouter)

@@ -16,6 +16,7 @@ import publicRouter from './routes/public/index.js'
 import ogRouter from './routes/og.js'
 import { ogLimiter } from './middleware/rateLimit.js'
 import { getAllowedOrigins } from './lib/allowedOrigins.js'
+import { config } from './config.js'
 
 
 const httpLog = createLogger('http')
@@ -25,7 +26,25 @@ const app = express()
 // Trust proxy for correct IP detection behind reverse proxy (Azure App Service)
 app.set('trust proxy', 1)
 
+/**
+ * Origen del bucket público de R2, o null si no está configurado o no es una URL.
+ *
+ * El cliente lee de ahí el snapshot de la portada (`homepage.json`). La CSP del
+ * Static Web App ya lo declara en `connect-src` (client/public/staticwebapp.config.json);
+ * esta es la copia de la del servidor, y `app.csp.test.ts` vigila que las dos
+ * nombren el mismo origen.
+ */
+export function r2ConnectOrigin(publicUrl: string = config.r2.publicUrl): string | null {
+  if (!publicUrl) return null
+  try {
+    return new URL(publicUrl).origin
+  } catch {
+    return null
+  }
+}
+
 // Security headers
+const r2Origin = r2ConnectOrigin()
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -33,7 +52,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      connectSrc: r2Origin ? ["'self'", r2Origin] : ["'self'"],
     }
   },
   crossOriginEmbedderPolicy: false,
@@ -62,7 +81,7 @@ app.use((req, res, next) => {
       if (allowedOrigins.includes(origin)) {
         return callback(null, true)
       }
-      return callback(new Error('Not allowed by CORS'))
+      return callback(Object.assign(new Error('Not allowed by CORS'), { status: 403 }))
     },
     credentials: true,
   })(req, res, next)
@@ -101,7 +120,7 @@ export function redactSensitiveQuery(url: string): string {
 
 // Request logging — single line per request, no redundant fields
 app.use((req, res, next) => {
-  if (req.originalUrl === '/health') return next()
+  if (req.originalUrl === '/health' || req.originalUrl === '/api/health') return next()
   const start = Date.now()
   res.on('finish', () => {
     const ms = Date.now() - start
@@ -114,6 +133,10 @@ app.use((req, res, next) => {
 })
 
 // Routes
+// `/health` en la raíz es para las sondas del propio App Service. Lo que ve un
+// monitor externo es `/api/health` (dentro del router público, con limitador):
+// el Static Web App solo reenvía `/api/*` al backend, y `/health` ahí devuelve
+// el HTML del SPA con 200, o sea «sano» aunque el backend esté muerto.
 app.use('/health', healthRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/auth', authPublicRouter)
@@ -151,6 +174,12 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
       res.status(400).json({ error: 'Invalid request' })
       return
     }
+  }
+
+  // Origen no permitido por CORS: es un rechazo del cliente, no una falla del servidor.
+  if (err instanceof Error && err.message === 'Not allowed by CORS') {
+    res.status(403).json({ error: 'Origin not allowed' })
+    return
   }
 
   // Known service errors

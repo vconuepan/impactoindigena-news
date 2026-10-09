@@ -116,7 +116,7 @@ describe('App error handling', () => {
   })
 
   describe('500 error handler', () => {
-    it('returns 500 JSON when CORS rejects an origin on restricted endpoint', async () => {
+    it('returns 403 JSON when CORS rejects an origin on restricted endpoint', async () => {
       // The CORS middleware throws "Not allowed by CORS" for disallowed origins
       // on non-public endpoints (subscribe, auth, admin).
       // Public read endpoints (stories, issues, homepage, feed, docs) allow all origins.
@@ -124,8 +124,31 @@ describe('App error handling', () => {
         .post('/api/subscribe')
         .set('Origin', 'https://evil-site.com')
 
-      expect(res.status).toBe(500)
-      expect(res.body).toEqual({ error: 'Internal server error' })
+      // Un origen no permitido es un rechazo del cliente, no una falla del servidor:
+      // un 500 disparaba alertas de disponibilidad por cualquier sitio ajeno.
+      expect(res.status).toBe(403)
+      expect(res.body).toEqual({ error: 'Origin not allowed' })
     })
   })
+})
+
+describe('GET /api/health', () => {
+  // El Static Web App solo reenvía /api/* al backend: /health a secas devuelve
+  // el HTML del SPA con 200. La sonda que un monitor externo puede usar es esta.
+  it('responde por el router público, no por el fallback del SPA', async () => {
+    mockPrisma.$queryRaw = vi.fn().mockResolvedValue([{ '?column?': 1 }])
+    const res = await request(app).get('/api/health')
+
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ status: 'ok', database: 'connected' })
+  })
+
+  it('devuelve 503 cuando la base no responde', async () => {
+    mockPrisma.$queryRaw = vi.fn().mockRejectedValue(new Error('down'))
+    const res = await request(app).get('/api/health')
+
+    expect(res.status).toBe(503)
+    expect(res.body).toEqual({ status: 'error', database: 'disconnected' })
+  })
+
 })

@@ -107,9 +107,13 @@ async function bundleVive(html: string): Promise<boolean> {
  * Los preloads de fuentes se conservan: sirven en cualquier pagina del sitio.
  */
 function quitarPreloadsDePortada(html: string): string {
-  return html.replace(/<link\b[^>]*>/gi, (tag) =>
-    /rel=["']preload["']/i.test(tag) && /\bas=["'](?:image|fetch)["']/i.test(tag) ? '' : tag,
-  )
+  return html
+    .replace(/<link\b[^>]*>/gi, (tag) =>
+      /rel=["']preload["']/i.test(tag) && /\bas=["'](?:image|fetch)["']/i.test(tag) ? '' : tag,
+    )
+    // `preload-hero.js` solo sirve en `/`: busca el preload del snapshot, que
+    // acá ya se quitó, y sin él no hace nada. Dejarlo sería una descarga muerta.
+    .replace(/<script\b[^>]*\bsrc=["'][^"']*preload-hero\.js["'][^>]*>\s*<\/script>/gi, '')
 }
 
 /**
