@@ -10,6 +10,7 @@ import { config } from '../config.js'
 import * as brevo from './brevo.js'
 import { publisherFromUrl } from '../lib/publisher.js'
 import { createLogger } from '../lib/logger.js'
+import { escapeHtml } from '../lib/escapeHtml.js'
 
 const log = createLogger('alerts')
 
@@ -207,7 +208,9 @@ export async function sendDailyAlerts(): Promise<void> {
 
 async function sendConfirmationEmail(email: string, token: string, topics: string[]): Promise<void> {
   const confirmUrl = `${API_URL}/api/alerts/confirm?token=${token}&email=${encodeURIComponent(email)}`
-  const topicList  = topics.map((t) => `<li style="margin:4px 0;">${t}</li>`).join('')
+  // Los temas los escribe quien llama al formulario publico: se codifican, o un
+  // tema con marcado llega al correo como HTML desde nuestro remitente.
+  const topicList  = topics.map((t) => `<li style="margin:4px 0;">${escapeHtml(t)}</li>`).join('')
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -258,15 +261,15 @@ async function sendAlertEmail(email: string, token: string, topics: string[], st
   // into logs and referrers). The legacy ?unsubscribe=<email> path stays
   // supported server-side for links already delivered.
   const unsubUrl  = `${CLIENT_URL}/alertas?unsubscribe_token=${token}`
-  const topicList = topics.join(', ')
+  const topicList = escapeHtml(topics.join(', '))
 
   const storyItems = stories.map((s) => {
     const url   = `${CLIENT_URL}/stories/${s.slug}`
     const date  = s.datePublished ? new Date(s.datePublished).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' }) : ''
-    const src   = publisherFromUrl(s.sourceUrl, s.feed?.displayTitle ?? s.feed?.title)
+    const src   = escapeHtml(publisherFromUrl(s.sourceUrl, s.feed?.displayTitle ?? s.feed?.title))
     return `
       <tr><td style="padding:12px 0;border-bottom:1px solid #f5f5f5;">
-        <a href="${url}" style="font-size:14px;font-weight:600;color:#171717;text-decoration:none;display:block;margin-bottom:4px;">${s.title ?? ''}</a>
+        <a href="${url}" style="font-size:14px;font-weight:600;color:#171717;text-decoration:none;display:block;margin-bottom:4px;">${escapeHtml(s.title)}</a>
         <span style="font-size:12px;color:#737373;">${src}${date ? ' · ' + date : ''}</span>
       </td></tr>`
   }).join('')
