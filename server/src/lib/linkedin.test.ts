@@ -7,6 +7,11 @@ const mockToken = vi.hoisted(() => ({
 }))
 
 vi.mock('./socialToken.js', () => mockToken)
+
+// La imagen de la nota se baja por `downloadExternalImage` (guardia SSRF en cada
+// salto), no con fetch: `fetch` queda solo para la API de LinkedIn.
+const mockDownload = vi.hoisted(() => vi.fn())
+vi.mock('./imageStorage.js', () => ({ downloadExternalImage: mockDownload }))
 vi.mock('./logger.js', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
@@ -227,11 +232,8 @@ describe('createUgcPost with a dead token', () => {
    * cascadas. Un token muerto tiene que cortar en el primer 401.
    */
   it('stops at the first 401 instead of retrying every slide', async () => {
-    const fetchMock = vi.fn(async (url: string) => {
-      // La descarga de la imagen desde la fuente sí funciona.
-      if (!String(url).includes('api.linkedin.com')) return jsonResponse('binary', 200)
-      return jsonResponse(EXPIRED_401, 401)
-    })
+    mockDownload.mockResolvedValue({ buffer: Buffer.from('binary'), contentType: 'image/jpeg', ext: 'jpg' })
+    const fetchMock = vi.fn(async () => jsonResponse(EXPIRED_401, 401))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(
@@ -262,8 +264,8 @@ describe('createUgcPost with a dead token', () => {
   // Un fallo puntual de una imagen no debe impedir publicar: el post sale en
   // modo ARTICLE, que es el comportamiento que ya existía.
   it('still falls back to ARTICLE mode on a non-auth upload failure', async () => {
+    mockDownload.mockResolvedValue({ buffer: Buffer.from('binary'), contentType: 'image/jpeg', ext: 'jpg' })
     const fetchMock = vi.fn(async (url: string) => {
-      if (!String(url).includes('api.linkedin.com')) return jsonResponse('binary', 200)
       if (String(url).includes('registerUpload')) return jsonResponse('boom', 500)
       return jsonResponse({ id: 'urn:li:share:123' }, 200)
     })
@@ -275,6 +277,30 @@ describe('createUgcPost with a dead token', () => {
     const postCall = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/v2/ugcPosts'))
     expect(JSON.parse(postCall![1].body).specificContent['com.linkedin.ugc.ShareContent']
       .shareMediaCategory).toBe('ARTICLE')
+  })
+})
+
+describe('createUgcPost: la imagen que la guardia SSRF rechaza no se sube', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockToken.getStoredToken.mockResolvedValue(null)
+  })
+
+  it('no registra ni sube nada y publica en modo ARTICLE cuando la descarga es rechazada', async () => {
+    mockDownload.mockResolvedValue(null) // la guardia la rechazo
+    const fetchMock = vi.fn(async () => jsonResponse({ id: 'urn:li:share:9' }, 200))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await createUgcPost('texto', 'https://x/y', 'T', 'R', ['http://169.254.169.254/latest'])
+
+    expect(mockDownload).toHaveBeenCalledWith('http://169.254.169.254/latest')
+    // `fetch` nunca vio la URL interna: ninguna llamada es a otro host que LinkedIn.
+    expect(fetchMock.mock.calls.every(([u]) => String(u).includes('api.linkedin.com'))).toBe(true)
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('registerUpload'))).toBe(false)
+    const postCall = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/v2/ugcPosts'))
+    expect(JSON.parse(postCall![1].body).specificContent['com.linkedin.ugc.ShareContent']
+      .shareMediaCategory).toBe('ARTICLE')
+    expect(result.id).toBe('urn:li:share:9')
   })
 })
 

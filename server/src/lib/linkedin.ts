@@ -1,6 +1,7 @@
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { getStoredToken, saveToken, recordTokenError } from './socialToken.js'
+import { downloadExternalImage } from './imageStorage.js'
 
 const log = createLogger('linkedin')
 
@@ -265,17 +266,16 @@ export async function exchangeCodeForToken(code: string): Promise<ExchangedToken
 async function uploadImageAsset(imageUrl: string): Promise<string | null> {
   const accessToken = await getAccessToken()
   try {
-    // 1. Download the image from the source URL
-    const imgRes = await fetch(imageUrl, {
-      signal: AbortSignal.timeout(15000),
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenas/1.0)' },
-    })
-    if (!imgRes.ok) {
-      log.warn({ imageUrl, status: imgRes.status }, 'could not download image for LinkedIn upload')
+    // 1. Download the image from the source URL, through the SSRF guard. `fetch`
+    // seguia las redirecciones solo y no validaba el destino, y esta URL puede ser
+    // la imagen de una nota que viene de la pagina de un tercero.
+    const dl = await downloadExternalImage(imageUrl)
+    if (!dl) {
+      log.warn({ imageUrl }, 'could not download image for LinkedIn upload (blocked, not an image, or failed)')
       return null
     }
-    const buffer = Buffer.from(await imgRes.arrayBuffer())
-    const contentType = imgRes.headers.get('content-type') || 'image/jpeg'
+    const buffer = dl.buffer
+    const contentType = dl.contentType
 
     // 2. Register the upload with LinkedIn
     const regRes = await fetch('https://api.linkedin.com/v2/assets?action=registerUpload', {
@@ -329,7 +329,7 @@ async function uploadImageAsset(imageUrl: string): Promise<string | null> {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': contentType,
       },
-      body: buffer,
+      body: new Uint8Array(buffer),
     })
     // LinkedIn returns 201 Created on success (not 200)
     if (!upRes.ok && upRes.status !== 201) {

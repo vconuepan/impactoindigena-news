@@ -16,6 +16,10 @@ vi.mock('../lib/extract-og-image.js', () => ({ fetchOgImage: mockFetchOg }))
 const mockRehost = vi.hoisted(() => vi.fn())
 vi.mock('../lib/storyCard.js', () => ({ rehostOrComposeStoryImage: mockRehost }))
 
+// La guardia SSRF: el respaldo en crudo solo se guarda si la URL todavia la pasa.
+const mockAssertUrl = vi.hoisted(() => vi.fn())
+vi.mock('../utils/urlValidation.js', () => ({ assertUrlAllowed: mockAssertUrl }))
+
 vi.mock('../config.js', () => ({
   config: {
     r2: { publicUrl: 'https://cdn.r2.example' },
@@ -47,6 +51,7 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     mockFetchOg.mockResolvedValue('https://src/og.jpg')
     mockRehost.mockResolvedValue('https://cdn.r2.example/oghero-id.jpg')
     mockPrisma.story.update.mockResolvedValue({})
+    mockAssertUrl.mockResolvedValue(undefined)
   })
 
   it('featured story (relevance >= 8) gets an AI hero, no og:image lookup', async () => {
@@ -78,6 +83,33 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     expect(mockPrisma.story.update).toHaveBeenCalledWith({
       where: { id: 'id' }, data: { imageUrl: 'https://src/og.jpg' },
     })
+  })
+
+  // Una URL que la guardia SSRF rechaza no se guarda como imagen de la nota. Antes
+  // `rehosted ?? ogImage` la persistia igual, y despues el carrusel y la subida a
+  // LinkedIn la pedian sin guardia: el veredicto de la guardia se perdia aqui.
+  it('does NOT store the raw og:image when the SSRF guard rejects it; a non-featured story gets an AI hero instead', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([story({ relevance: 5 })])
+    mockFetchOg.mockResolvedValue('http://169.254.169.254/latest/meta-data')
+    mockRehost.mockResolvedValue(null)
+    mockAssertUrl.mockRejectedValue(new Error('Blocked disallowed URL'))
+    await generateHeroImages(['id'])
+    expect(mockAssertUrl).toHaveBeenCalledWith('http://169.254.169.254/latest/meta-data')
+    const guardados = mockPrisma.story.update.mock.calls.map((c) => c[0].data.imageUrl)
+    expect(guardados).not.toContain('http://169.254.169.254/latest/meta-data')
+    expect(mockGenerateImage).toHaveBeenCalledTimes(1)
+    expect(guardados).toContain('https://cdn.r2.example/ai.png')
+  })
+
+  it('a featured story whose AI failed and whose og:image is rejected stays without the raw URL', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([story({ relevance: 9 })])
+    mockGenerateImage.mockRejectedValue(new Error('image API down'))
+    mockFetchOg.mockResolvedValue('http://127.0.0.1:8080/x.jpg')
+    mockRehost.mockResolvedValue(null)
+    mockAssertUrl.mockRejectedValue(new Error('Blocked disallowed URL'))
+    await generateHeroImages(['id'])
+    expect(mockPrisma.story.update).not.toHaveBeenCalled()
+    expect(mockGenerateImage).toHaveBeenCalledTimes(1) // no reintenta la IA
   })
 
   it('non-featured story with no og:image falls back to AI', async () => {

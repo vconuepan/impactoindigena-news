@@ -4,6 +4,7 @@ import { translateStoriesBatch } from '../services/translation.js'
 import { fetchOgImage } from '../lib/extract-og-image.js'
 import { generateStoryImage } from '../lib/imageGen.js'
 import { rehostOrComposeStoryImage } from '../lib/storyCard.js'
+import { assertUrlAllowed } from '../utils/urlValidation.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
 import { publishHomepageSnapshot } from '../lib/homepage-snapshot.js'
@@ -35,9 +36,29 @@ async function generateAiHero(story: {
 //     third-party URL. Keeps image spend proportional to editorial value.
 //     When no og:image exists, we fall back to an AI hero so a story is never
 //     left imageless. If the R2 rehost fails, we fall back to the raw og:image
-//     URL rather than leave the story without a hero.
+//     URL rather than leave the story without a hero, but ONLY if that URL
+//     still passes the SSRF guard (see `urlSiLaGuardiaLaPermite`).
 // A featured story whose AI generation fails also falls back to og:image.
 // Sequential: the image API is the bottleneck and stories/day is low.
+/**
+ * El respaldo en crudo: devuelve la URL si la guardia SSRF la permite, o null.
+ *
+ * El rehospedaje devuelve null tanto si fallo R2 como si la guardia rechazo la
+ * URL. Antes `rehosted ?? ogImage` guardaba la URL en los dos casos, asi que una
+ * direccion interna que la guardia habia bloqueado quedaba como imagen de la nota
+ * y despues la pedian el carrusel y la subida a LinkedIn. Aqui el veredicto de la
+ * guardia no se pierde: lo que no pasa, no se guarda.
+ */
+async function urlSiLaGuardiaLaPermite(url: string, storyId: string): Promise<string | null> {
+  try {
+    await assertUrlAllowed(url)
+    return url
+  } catch (err) {
+    log.warn({ storyId, url, err: (err as Error).message }, 'og:image rechazada por la guardia SSRF, no se guarda como imagen de la historia')
+    return null
+  }
+}
+
 export async function generateHeroImages(ids: string[]): Promise<void> {
   const r2PublicUrl = config.r2.publicUrl
   const minRelevance = config.imageGen.heroAiMinRelevance
@@ -74,15 +95,19 @@ export async function generateHeroImages(ids: string[]): Promise<void> {
       // it instead (zero AI cost). Fall back to the raw URL if both fail, so the
       // story still gets an image.
       const rehosted = await rehostOrComposeStoryImage(ogImage, story.id, story.title ?? story.sourceTitle)
-      const finalUrl = rehosted ?? ogImage
-      await prisma.story.update({ where: { id: story.id }, data: { imageUrl: finalUrl } })
-      log.info(
-        { storyId: story.id, featured: isFeatured, rehosted: rehosted !== null },
-        rehosted !== null
-          ? 'source og:image rehosted to R2'
-          : 'source og:image saved (rehost failed, hotlinking raw URL)',
-      )
-      continue
+      const finalUrl = rehosted ?? (await urlSiLaGuardiaLaPermite(ogImage, story.id))
+      if (finalUrl) {
+        await prisma.story.update({ where: { id: story.id }, data: { imageUrl: finalUrl } })
+        log.info(
+          { storyId: story.id, featured: isFeatured, rehosted: rehosted !== null },
+          rehosted !== null
+            ? 'source og:image rehosted to R2'
+            : 'source og:image saved (rehost failed, hotlinking raw URL)',
+        )
+        continue
+      }
+      // La guardia la rechazo: se trata como si la fuente no tuviera og:image y se
+      // cae a la heroe de IA de abajo (una destacada ya la intento antes).
     }
 
     // No og:image. For non-featured stories generate an AI hero as a last

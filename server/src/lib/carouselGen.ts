@@ -2,6 +2,7 @@ import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { uploadImageToR2 } from './imageStorage.js'
+import { loadRemoteImage } from './loadRemoteImage.js'
 import { createLogger } from './logger.js'
 import { config } from '../config.js'
 
@@ -152,7 +153,7 @@ async function drawBgPhoto(ctx: any, aiImageUrl: string, darken: number): Promis
   ctx.fillRect(0, 0, RW, RH)
   if (!isLogoFallback(aiImageUrl)) {
     try {
-      const p = await loadImage(aiImageUrl)
+      const p = await loadRemoteImage(aiImageUrl)
       const tr = RW / RH
       const sw = Math.min(p.width, p.height * tr)
       const sh = sw / tr
@@ -250,7 +251,7 @@ async function generateSlide2(summary: string, category: string, aiImageUrl: str
   const fx = M, fy = 160 * SCALE, fw = RW - M * 2, fh = 520 * SCALE
   if (!isLogoFallback(aiImageUrl)) {
     try {
-      const p = await loadImage(aiImageUrl)
+      const p = await loadRemoteImage(aiImageUrl)
       ctx.save()
       roundRect(ctx, fx, fy, fw, fh, 32 * SCALE)
       ctx.clip()
