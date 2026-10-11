@@ -30,22 +30,24 @@ const TOKEN_EXPIRY_HOURS = 48
 export async function subscribeToAlerts(email: string, topics: string[]): Promise<void> {
   if (topics.length === 0) throw new Error('At least one topic required')
 
-  // Check if already confirmed with same topics
   const existing = await prisma.alertSubscription.findFirst({
     where: { email, confirmedAt: { not: null }, active: true },
   })
 
-  if (existing) {
-    // Update topics for existing confirmed subscriber
-    await prisma.alertSubscription.update({
-      where: { id: existing.id },
-      data: { topics },
-    })
-    log.info({ email: maskEmail(email) }, 'updated alert topics for existing subscriber')
+  // Quien ya esta suscrito NO cambia sus temas desde el formulario. El formulario
+  // es publico y el correo es lo unico que pide: aceptar el cambio directo dejaba
+  // que cualquiera que conociera la direccion reescribiera los temas de otra
+  // persona, sin ninguna prueba de que fuera suya. El cambio se pide igual que un
+  // alta -una fila pendiente y un correo con enlace- y solo se aplica cuando el
+  // titular lo confirma desde SU bandeja (ver `confirmAlert`). Mientras tanto la
+  // suscripcion confirmada no se toca.
+  if (existing && mismosTemas(existing.topics, topics)) {
+    // Pedir lo que ya tiene no cambia nada: ni fila ni correo.
+    log.info({ email: maskEmail(email) }, 'alert topics request matches the current ones, nothing to do')
     return
   }
 
-  // Clean up stale unconfirmed entries
+  // Clean up stale unconfirmed entries (nunca la confirmada: solo `confirmedAt: null`)
   await prisma.alertSubscription.deleteMany({
     where: { email, confirmedAt: null },
   })
@@ -57,8 +59,19 @@ export async function subscribeToAlerts(email: string, topics: string[]): Promis
     data: { email, topics, token, expiresAt },
   })
 
-  await sendConfirmationEmail(email, token, topics)
-  log.info({ email: maskEmail(email), topics }, 'alert subscription created, confirmation sent')
+  await sendConfirmationEmail(email, token, topics, { cambio: !!existing })
+  log.info(
+    { email: maskEmail(email), topics, cambio: !!existing },
+    existing ? 'alert topics change requested, confirmation sent' : 'alert subscription created, confirmation sent',
+  )
+}
+
+/** Mismos temas, sin importar orden, mayusculas ni espacios de borde. */
+function mismosTemas(actuales: string[], pedidos: string[]): boolean {
+  const normalizar = (ts: string[]) => [...new Set(ts.map((t) => t.trim().toLowerCase()))].sort()
+  const a = normalizar(actuales)
+  const b = normalizar(pedidos)
+  return a.length === b.length && a.every((t, i) => t === b[i])
 }
 
 // ---------------------------------------------------------------------------
@@ -71,6 +84,23 @@ export async function confirmAlert(token: string, email: string): Promise<void> 
   if (sub.confirmedAt) return // already confirmed
 
   if (new Date() > sub.expiresAt) throw new Error('Confirmation link has expired')
+
+  // Si esta direccion YA tiene una suscripcion confirmada, esto es la confirmacion
+  // de un CAMBIO de temas: se aplican a la confirmada y el pedido se borra. La
+  // confirmada conserva su token, que es la credencial de baja de los correos que
+  // ya salieron (`unsubscribeByToken` tiene que funcionar para siempre); la fila
+  // pendiente no se convierte en una segunda suscripcion, o la persona recibiria
+  // cada alerta duplicada. Si el borrado fallara, el enlace sigue sirviendo y
+  // volver a abrirlo aplica los mismos temas: es idempotente.
+  const { count } = await prisma.alertSubscription.updateMany({
+    where: { email, confirmedAt: { not: null }, active: true, id: { not: sub.id } },
+    data: { topics: sub.topics },
+  })
+  if (count > 0) {
+    await prisma.alertSubscription.deleteMany({ where: { id: sub.id } })
+    log.info({ email: maskEmail(email) }, 'alert topics change confirmed and applied')
+    return
+  }
 
   await prisma.alertSubscription.update({
     where: { id: sub.id },
@@ -206,7 +236,19 @@ export async function sendDailyAlerts(): Promise<void> {
 // Email helpers
 // ---------------------------------------------------------------------------
 
-async function sendConfirmationEmail(email: string, token: string, topics: string[]): Promise<void> {
+/**
+ * `cambio` distingue el correo de CAMBIO de temas, que va a alguien que ya esta
+ * suscrito, del de alta. El texto del cambio dice que si la persona no lo pidio
+ * no pasa nada: quien lo pidio puede no ser ella, y ese correo es la unica
+ * barrera entre un tercero y su suscripcion.
+ */
+async function sendConfirmationEmail(
+  email: string,
+  token: string,
+  topics: string[],
+  opts: { cambio?: boolean } = {},
+): Promise<void> {
+  const cambio = !!opts.cambio
   const confirmUrl = `${API_URL}/api/alerts/confirm?token=${token}&email=${encodeURIComponent(email)}`
   // Los temas los escribe quien llama al formulario publico: se codifican, o un
   // tema con marcado llega al correo como HTML desde nuestro remitente.
@@ -223,15 +265,17 @@ async function sendConfirmationEmail(email: string, token: string, topics: strin
           <h1 style="margin:0;font-size:22px;font-weight:800;color:#171717;">Voces Indígenas</h1>
         </td></tr>
         <tr><td style="padding:32px;">
-          <h2 style="margin:0 0 16px;font-size:20px;color:#171717;">Confirma tus alertas de territorio</h2>
-          <p style="margin:0 0 12px;font-size:15px;color:#525252;line-height:1.6;">Recibirás alertas diarias cuando haya nuevas noticias sobre:</p>
+          <h2 style="margin:0 0 16px;font-size:20px;color:#171717;">${cambio ? 'Confirma el cambio de tus alertas' : 'Confirma tus alertas de territorio'}</h2>
+          <p style="margin:0 0 12px;font-size:15px;color:#525252;line-height:1.6;">${cambio
+            ? 'Recibimos una solicitud para cambiar los temas de tus alertas. Si confirmas, recibirás alertas diarias sobre:'
+            : 'Recibirás alertas diarias cuando haya nuevas noticias sobre:'}</p>
           <ul style="margin:0 0 20px;padding-left:20px;font-size:14px;color:#374151;">${topicList}</ul>
           <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 24px;">
             <tr><td style="border-radius:6px;background:#d41f7f;">
-              <a href="${confirmUrl}" style="display:inline-block;padding:14px 32px;font-size:16px;font-weight:600;color:#fff;text-decoration:none;">Confirmar alertas</a>
+              <a href="${confirmUrl}" style="display:inline-block;padding:14px 32px;font-size:16px;font-weight:600;color:#fff;text-decoration:none;">${cambio ? 'Confirmar cambio' : 'Confirmar alertas'}</a>
             </td></tr>
           </table>
-          <p style="margin:0;font-size:12px;color:#a3a3a3;">Este enlace expira en ${TOKEN_EXPIRY_HOURS} horas. Puedes desactivar las alertas en cualquier momento haciendo clic en el enlace al pie de cada email.</p>
+          <p style="margin:0;font-size:12px;color:#a3a3a3;">${cambio ? 'Si no pediste este cambio, ignora este correo: tus alertas actuales no cambian. ' : ''}Este enlace expira en ${TOKEN_EXPIRY_HOURS} horas. Puedes desactivar las alertas en cualquier momento haciendo clic en el enlace al pie de cada email.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -241,7 +285,7 @@ async function sendConfirmationEmail(email: string, token: string, topics: strin
 
   await brevo.sendTransactional({
     to:      email,
-    subject: 'Confirma tus alertas — Voces Indígenas',
+    subject: cambio ? 'Confirma el cambio de tus alertas — Voces Indígenas' : 'Confirma tus alertas — Voces Indígenas',
     body:    html,
   })
 }

@@ -12,7 +12,7 @@ vi.mock('../lib/logger.js', async (original) => ({
 }))
 
 const mockPrisma = vi.hoisted(() => ({
-  alertSubscription: { findFirst: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), deleteMany: vi.fn() },
+  alertSubscription: { findFirst: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() },
   story: { findMany: vi.fn() },
 }))
 const mockBrevo = vi.hoisted(() => ({ sendTransactional: vi.fn() }))
@@ -36,6 +36,7 @@ beforeEach(() => {
   mockPrisma.alertSubscription.deleteMany.mockResolvedValue({ count: 0 })
   mockPrisma.alertSubscription.create.mockResolvedValue({ id: 's1' })
   mockPrisma.alertSubscription.update.mockResolvedValue({})
+  mockPrisma.alertSubscription.updateMany.mockResolvedValue({ count: 0 })
 })
 
 describe('alertas: el correo no se escribe crudo en el log', () => {
@@ -46,10 +47,26 @@ describe('alertas: el correo no se escribe crudo en el log', () => {
     expect(todoLoEscrito()).not.toContain(CORREO)
   })
 
-  it('al actualizar los temas de una suscripcion confirmada', async () => {
-    mockPrisma.alertSubscription.findFirst.mockResolvedValue({ id: 's1' })
+  it('al pedir el cambio de temas de una suscripcion confirmada', async () => {
+    mockPrisma.alertSubscription.findFirst.mockResolvedValue({ id: 's1', topics: ['agua'] })
     await subscribeToAlerts(CORREO, ['litio'])
-    expect(todoLoEscrito()).toContain('updated alert topics')
+    expect(todoLoEscrito()).toContain('alert topics change requested')
+    expect(todoLoEscrito()).not.toContain(CORREO)
+  })
+
+  it('al pedir los mismos temas que ya tiene', async () => {
+    mockPrisma.alertSubscription.findFirst.mockResolvedValue({ id: 's1', topics: ['litio'] })
+    await subscribeToAlerts(CORREO, ['litio'])
+    expect(todoLoEscrito()).toContain('nothing to do')
+    expect(todoLoEscrito()).not.toContain(CORREO)
+  })
+
+  it('al confirmar un cambio de temas', async () => {
+    mockPrisma.alertSubscription.findFirst.mockResolvedValue({ id: 's2', topics: ['litio'], confirmedAt: null, expiresAt: new Date(Date.now() + 60_000) })
+    mockPrisma.alertSubscription.updateMany.mockResolvedValue({ count: 1 })
+    mockPrisma.alertSubscription.deleteMany.mockResolvedValue({ count: 1 })
+    await confirmAlert('tok', CORREO)
+    expect(todoLoEscrito()).toContain('change confirmed and applied')
     expect(todoLoEscrito()).not.toContain(CORREO)
   })
 
