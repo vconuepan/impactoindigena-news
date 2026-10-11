@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { createLogger } from '../../lib/logger.js'
+import { escapeHtml } from '../../lib/escapeHtml.js'
 import prisma from '../../lib/prisma.js'
 import { config } from '../../config.js'
 import { requireMember } from '../../middleware/auth.js'
@@ -392,17 +393,19 @@ async function sendWelcomeEmail(
   })
 
   const firstName = userName && !userName.includes('@') ? userName.split(' ')[0] : null
-  const greeting = firstName ? `Hola ${firstName}` : 'Hola'
+  // El nombre lo escribio quien se une, y titulo, resumen y fuente salen de la
+  // pagina de un tercero: se codifican al entrar a la plantilla.
+  const greeting = firstName ? `Hola ${escapeHtml(firstName)}` : 'Hola'
 
   const storyRows = stories
     .map((s) => {
       const storyUrl = `${SITE_URL}/stories/${s.slug}`
-      const title = s.title || s.slug
-      const summary = s.summary ? s.summary.slice(0, 140) + (s.summary.length > 140 ? '…' : '') : ''
+      const title = escapeHtml(s.title || s.slug)
+      const summary = s.summary ? escapeHtml(s.summary.slice(0, 140)) + (s.summary.length > 140 ? '…' : '') : ''
       return `
       <tr>
         <td style="padding:12px 0;border-bottom:1px solid #f0ede8;">
-          ${s.sourceTitle ? `<p style="margin:0 0 4px;font-size:11px;color:#8c7e6a;font-family:sans-serif;">${s.sourceTitle}</p>` : ''}
+          ${s.sourceTitle ? `<p style="margin:0 0 4px;font-size:11px;color:#8c7e6a;font-family:sans-serif;">${escapeHtml(s.sourceTitle)}</p>` : ''}
           <a href="${storyUrl}" style="display:block;font-size:16px;font-weight:600;color:#1a1a1a;text-decoration:none;font-family:Georgia,serif;line-height:1.4;margin-bottom:4px;">${title}</a>
           ${summary ? `<p style="margin:0;font-size:13px;color:#4a4a4a;font-family:Georgia,serif;line-height:1.5;">${summary}</p>` : ''}
         </td>
@@ -427,7 +430,7 @@ async function sendWelcomeEmail(
         <tr>
           <td style="padding:28px 32px 8px;">
             <p style="margin:0 0 8px;font-size:16px;color:#333;font-family:Georgia,serif;line-height:1.6;">
-              ${greeting}, te uniste a <a href="${communityUrl}" style="color:#2d6a4f;font-weight:700;text-decoration:none;">${community.name}</a>.
+              ${greeting}, te uniste a <a href="${communityUrl}" style="color:#2d6a4f;font-weight:700;text-decoration:none;">${escapeHtml(community.name)}</a>.
             </p>
             <p style="margin:0;font-size:14px;color:#555;font-family:sans-serif;line-height:1.6;">
               Cada lunes recibirás un resumen con las noticias más relevantes de esta comunidad.

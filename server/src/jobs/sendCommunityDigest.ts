@@ -2,6 +2,7 @@ import prisma from '../lib/prisma.js'
 import { config } from '../config.js'
 import { sendTransactional } from '../services/brevo.js'
 import { createLogger } from '../lib/logger.js'
+import { escapeHtml } from '../lib/escapeHtml.js'
 import { publicCommunityWhere, temasVivos, getReviewMode } from '../lib/communityVisibility.js'
 
 const log = createLogger('send_community_digest')
@@ -40,9 +41,12 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
       const storyRows = stories
         .map((s) => {
           const storyUrl = `${SITE_URL}/stories/${s.slug}`
-          const title = s.title || s.slug
+          // Nada de esto es nuestro: el titulo de la fuente sale de la pagina de un
+          // tercero y el titulo y el resumen los escribe un modelo a partir de ella.
+          // Se codifican al entrar a la plantilla, o llegan al correo como marcado.
+          const title = escapeHtml(s.title || s.slug)
           const summary = s.summary || ''
-          const source = s.sourceTitle || ''
+          const source = escapeHtml(s.sourceTitle || '')
           const date = s.datePublished
             ? new Date(s.datePublished).toLocaleDateString('es-CL', {
                 day: 'numeric',
@@ -55,7 +59,7 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
             <td style="padding:12px 0;border-bottom:1px solid #f0ede8;">
               <p style="margin:0 0 4px;font-size:11px;color:#8c7e6a;font-family:sans-serif;">${source}${date ? ` · ${date}` : ''}</p>
               <a href="${storyUrl}" style="display:block;font-size:17px;font-weight:600;color:#1a1a1a;text-decoration:none;font-family:Georgia,serif;line-height:1.4;margin-bottom:6px;">${title}</a>
-              <p style="margin:0;font-size:14px;color:#4a4a4a;font-family:Georgia,serif;line-height:1.6;">${summary.slice(0, 180)}${summary.length > 180 ? '…' : ''}</p>
+              <p style="margin:0;font-size:14px;color:#4a4a4a;font-family:Georgia,serif;line-height:1.6;">${escapeHtml(summary.slice(0, 180))}${summary.length > 180 ? '…' : ''}</p>
             </td>
           </tr>`
         })
@@ -65,7 +69,7 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
       <tr>
         <td style="padding:28px 0 8px;">
           <p style="margin:0 0 2px;font-size:11px;color:#8c7e6a;text-transform:uppercase;letter-spacing:1px;font-family:sans-serif;">${typeLabel}</p>
-          <a href="${communityUrl}" style="font-size:20px;font-weight:700;color:#2d6a4f;text-decoration:none;font-family:Georgia,serif;">${community.name}</a>
+          <a href="${communityUrl}" style="font-size:20px;font-weight:700;color:#2d6a4f;text-decoration:none;font-family:Georgia,serif;">${escapeHtml(community.name)}</a>
           <p style="margin:4px 0 0;font-size:13px;color:#8c7e6a;font-family:sans-serif;">${stories.length} noticia${stories.length !== 1 ? 's' : ''} nueva${stories.length !== 1 ? 's' : ''} esta semana</p>
         </td>
       </tr>
@@ -77,7 +81,7 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
   const firstName = userName && !userName.includes('@')
     ? userName.split(' ')[0]
     : 'Hola'
-  const greeting = firstName !== 'Hola' ? `Hola ${firstName}` : 'Hola'
+  const greeting = firstName !== 'Hola' ? `Hola ${escapeHtml(firstName)}` : 'Hola'
   const communityCount = sections.length
 
   return `<!DOCTYPE html>
