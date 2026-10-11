@@ -182,6 +182,14 @@ export const config = {
     searchWindowMs: parseInt(process.env.RATE_LIMIT_SEARCH_WINDOW_MS || String(15 * 60 * 1000), 10),
     searchMax: parseInt(process.env.RATE_LIMIT_SEARCH_MAX || "20", 10),
   },
+  proxy: {
+    // Cuantas entradas desde la DERECHA de X-Forwarded-For hay que contar para
+    // llegar al lector. El borde de Static Web Apps agrega al lector y el App
+    // Service agrega la salida de Static Web Apps, asi que el lector es la
+    // penultima: 2. Si la cadena real fuera mas larga, se sube; con 0 se apaga y
+    // vuelve el `req.ip` de Express. Ver lib/clientIp.ts.
+    clientIpFromRight: parseInt(process.env.CLIENT_IP_FROM_RIGHT || "2", 10),
+  },
   scheduler: {
     // La zona en que se LEEN las expresiones cron. Hasta el 8-sep-2026 no se
     // pasaba ninguna, asi que node-cron usaba la del proceso —UTC en el App

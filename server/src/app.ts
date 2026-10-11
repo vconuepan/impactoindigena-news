@@ -16,6 +16,7 @@ import publicRouter from './routes/public/index.js'
 import ogRouter from './routes/og.js'
 import { ogLimiter } from './middleware/rateLimit.js'
 import { getAllowedOrigins } from './lib/allowedOrigins.js'
+import { resolveClientIp } from './middleware/clientIp.js'
 import { config } from './config.js'
 
 
@@ -23,8 +24,12 @@ const httpLog = createLogger('http')
 
 const app = express()
 
-// Trust proxy for correct IP detection behind reverse proxy (Azure App Service)
+// Trust proxy: un salto, el del App Service. Sirve para el protocolo y el host,
+// pero NO da la IP del lector: detras de Static Web Apps `req.ip` es la salida del
+// proxy. Esa la resuelve `resolveClientIp`, que cuenta X-Forwarded-For desde la
+// derecha y debe ir ANTES de los limitadores y del log.
 app.set('trust proxy', 1)
+app.use(resolveClientIp(config.proxy.clientIpFromRight))
 
 /**
  * Origen del bucket público de R2, o null si no está configurado o no es una URL.

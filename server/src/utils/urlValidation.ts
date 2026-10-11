@@ -36,7 +36,7 @@ function isBlockedIpv4(ip: string): boolean {
 }
 
 /** Expand an IPv6 string into 8 16-bit groups, handling `::` and embedded IPv4. */
-function expandIpv6(input: string): number[] | null {
+export function expandIpv6(input: string): number[] | null {
   let ip = input.split('%')[0].toLowerCase() // drop zone id
 
   // Embedded IPv4 tail, e.g. ::ffff:127.0.0.1

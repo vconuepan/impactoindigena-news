@@ -40,6 +40,15 @@ The admin panel uses JWT-only authentication: access tokens (15 min) with httpOn
 
 - `JWT_SECRET` — Required. Random string (32+ chars) for signing JWTs. Verification is restricted to HS256 algorithm only.
 - `PUBLIC_API_KEY` — Optional. Static key for public API consumers (mobile apps, external services). Does **not** grant admin access.
+- `CLIENT_IP_FROM_RIGHT` — Optional, default `2`. How many entries from the RIGHT of `X-Forwarded-For` to count to reach the reader (see below). `0` turns it off and `req.ip` goes back to Express's value.
+
+## Rate limits count per reader
+
+Every limiter keys on `req.ip`. Behind the Static Web Apps proxy, Express's `req.ip` (`trust proxy: 1`) is the proxy's egress, not the reader: measured in production on 2026-10-11 against `/api/health`, `RateLimit-Remaining` for one connection on one instance went 97, 98, 98, 97, 99, so the key changed from request to request and no budget belonged to any reader.
+
+`server/src/middleware/clientIp.ts` (first in `app.ts`) sets `req.ip` to the reader. `X-Forwarded-For` arrives as `reader[:port], proxy-egress`; what a caller writes sits on the LEFT, so the entry is counted **from the right** (`CLIENT_IP_FROM_RIGHT`) and a forged prefix cannot move it. The port is stripped and IPv6 is grouped by /64. If the chain does not have the expected shape it falls back to Express's value: the worst case is the old behavior, never a free budget.
+
+**How to check it in production:** `RateLimit-Remaining` on `GET /api/health` must drop by exactly one per request for the same reader, whatever the connection, and must not change when you add a leading `X-Forwarded-For` value. If it still jumps, the chain has more entries than assumed: the first requests of each process log the SHAPE of the header (entry count, `v4`/`v4:port`, never an address) under `client-ip`; raise `CLIENT_IP_FROM_RIGHT` to the count that puts the reader in position.
 
 ## Database Models
 

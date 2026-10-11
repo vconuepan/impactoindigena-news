@@ -101,7 +101,9 @@ export function dailyVisitorHash(ip: string, ua: string | undefined | null, dayS
  * every visitor geolocated "NL", observed in production 23-jul-2026). The
  * original client is the FIRST entry of X-Forwarded-For, which the SWA proxy
  * appends as "ip" or "ip:port". Spoofable by a direct caller, which is fine
- * here: this feeds aggregate analytics only — rate limiting keeps using req.ip.
+ * here: this feeds aggregate analytics only. (Rate limiting no longer depends on
+ * req.ip being the proxy: middleware/clientIp.ts resolves the reader from the
+ * RIGHT of X-Forwarded-For, which a caller cannot forge.)
  */
 export function clientIpForAnalytics(
   xff: string | string[] | undefined,
