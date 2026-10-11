@@ -31,6 +31,11 @@ nul
 # Non-coding-related project files
 DOCS/
 
+# Compliance working documents (EILE, legal consultations): never in the public repo.
+# Explicit because DOCS/ only matched .compliance/docs/ through core.ignorecase on macOS;
+# on a case-sensitive filesystem (Linux, CI) that rule does not cover it.
+.compliance/
+
 # Project management repo (separate git repo, contains sensitive strategy/personal data)
 pm/
 
