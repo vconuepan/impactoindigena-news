@@ -78,6 +78,27 @@ describe('redactSensitiveQuery', () => {
     expect(out).toBe('/api/auth/magic/verify?token=[REDACTED]')
   })
 
+  /**
+   * Las URL de confirmacion llevan el `token` y el `email` en la query. En las
+   * alertas el token es ademas la credencial de baja PERMANENTE (unsubscribeByToken
+   * ignora el vencimiento), y los logs se descargan y comparten para depurar.
+   */
+  it('hides token and email on the subscription and alert confirmation URLs', () => {
+    expect(
+      redactSensitiveQuery('/api/alerts/confirm?token=0b1c2d3e-aaaa-bbbb-cccc-111122223333&email=lectora%40example.com'),
+    ).toBe('/api/alerts/confirm?token=[REDACTED]&email=[REDACTED]')
+    expect(
+      redactSensitiveQuery('/api/subscribe/confirm?token=SECRET&email=lectora@example.com'),
+    ).toBe('/api/subscribe/confirm?token=[REDACTED]&email=[REDACTED]')
+  })
+
+  it('hides token and email wherever they appear, and keeps the other params', () => {
+    expect(redactSensitiveQuery('/api/anything?page=2&email=a@b.cl&token=T&x=1')).toBe(
+      '/api/anything?page=2&email=[REDACTED]&token=[REDACTED]&x=1',
+    )
+    expect(redactSensitiveQuery('/api/anything?unsubscribe_token=T')).toBe('/api/anything?unsubscribe_token=[REDACTED]')
+  })
+
   // Sin esto, una URL normal con `code` o `state` quedaría ilegible en los logs.
   it('leaves unrelated URLs untouched', () => {
     expect(redactSensitiveQuery('/api/stories?code=CL&state=active')).toBe(

@@ -9,7 +9,7 @@ import prisma from '../lib/prisma.js'
 import { config } from '../config.js'
 import * as brevo from './brevo.js'
 import { publisherFromUrl } from '../lib/publisher.js'
-import { createLogger } from '../lib/logger.js'
+import { createLogger, maskEmail } from '../lib/logger.js'
 import { escapeHtml } from '../lib/escapeHtml.js'
 
 const log = createLogger('alerts')
@@ -41,7 +41,7 @@ export async function subscribeToAlerts(email: string, topics: string[]): Promis
       where: { id: existing.id },
       data: { topics },
     })
-    log.info({ email }, 'updated alert topics for existing subscriber')
+    log.info({ email: maskEmail(email) }, 'updated alert topics for existing subscriber')
     return
   }
 
@@ -58,7 +58,7 @@ export async function subscribeToAlerts(email: string, topics: string[]): Promis
   })
 
   await sendConfirmationEmail(email, token, topics)
-  log.info({ email, topics }, 'alert subscription created, confirmation sent')
+  log.info({ email: maskEmail(email), topics }, 'alert subscription created, confirmation sent')
 }
 
 // ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ export async function confirmAlert(token: string, email: string): Promise<void> 
     where: { id: sub.id },
     data: { confirmedAt: new Date() },
   })
-  log.info({ email }, 'alert subscription confirmed')
+  log.info({ email: maskEmail(email) }, 'alert subscription confirmed')
 }
 
 // ---------------------------------------------------------------------------
@@ -195,7 +195,7 @@ export async function sendDailyAlerts(): Promise<void> {
       sent++
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
-      log.warn({ email: sub.email, err: msg }, 'failed to send alert email')
+      log.warn({ email: maskEmail(sub.email), err: msg }, 'failed to send alert email')
     }
   }
 

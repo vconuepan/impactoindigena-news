@@ -9,7 +9,7 @@ import rateLimit from 'express-rate-limit'
 import { z } from 'zod'
 import { validateBody } from '../../middleware/validate.js'
 import * as alertsService from '../../services/alerts.js'
-import { createLogger } from '../../lib/logger.js'
+import { createLogger, maskEmail } from '../../lib/logger.js'
 
 const router = Router()
 const log    = createLogger('public:alerts')
@@ -63,7 +63,7 @@ router.get('/confirm', async (req, res) => {
     await alertsService.confirmAlert(token, email)
     res.redirect(`${clientUrl}/alertas?confirmed=true`)
   } catch (err: any) {
-    log.warn({ err: err?.message, email }, 'alert confirmation failed')
+    log.warn({ err: err?.message, email: maskEmail(email) }, 'alert confirmation failed')
     const reason = err?.message === 'Confirmation link has expired' ? 'expired' : 'invalid'
     res.redirect(`${clientUrl}/alertas?confirmed=${reason}`)
   }

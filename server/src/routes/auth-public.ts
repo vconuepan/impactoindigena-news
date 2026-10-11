@@ -4,7 +4,7 @@ import prisma from '../lib/prisma.js'
 import * as brevo from '../services/brevo.js'
 import { generateMemberToken, hashToken } from '../services/auth.js'
 import { magicLinkLimiter } from '../middleware/rateLimit.js'
-import { createLogger } from '../lib/logger.js'
+import { createLogger, maskEmail } from '../lib/logger.js'
 
 const router = Router()
 const log = createLogger('auth-public')
@@ -101,7 +101,7 @@ router.post('/magic', magicLinkLimiter, async (req, res) => {
         return
       }
     } catch (err) {
-      log.warn({ err, email: normalizedEmail }, 'email verification failed, proceeding')
+      log.warn({ err, email: maskEmail(normalizedEmail) }, 'email verification failed, proceeding')
     }
 
     // Rate limit: check if a non-expired token exists (created < 60s ago)
@@ -128,11 +128,11 @@ router.post('/magic', magicLinkLimiter, async (req, res) => {
     })
 
     await sendMagicLinkEmail(normalizedEmail, token, redirectTo)
-    log.info({ email: normalizedEmail }, 'magic link sent')
+    log.info({ email: maskEmail(normalizedEmail) }, 'magic link sent')
 
     res.status(204).end()
   } catch (err) {
-    log.error({ err, email: normalizedEmail }, 'failed to send magic link')
+    log.error({ err, email: maskEmail(normalizedEmail) }, 'failed to send magic link')
     res.status(500).json({ error: 'Failed to send magic link' })
   }
 })
@@ -186,7 +186,7 @@ router.get('/magic/verify', async (req, res) => {
     const targetPath = rawPath.replace(/[\r\n\0]/g, '').trim()
     const redirectUrl = `${CLIENT_URL}${targetPath.startsWith('/') ? targetPath : '/' + targetPath}`
 
-    log.info({ userId: user.id, email: user.email }, 'magic link verified, member cookie set')
+    log.info({ userId: user.id, email: maskEmail(user.email) }, 'magic link verified, member cookie set')
     res.redirect(303, redirectUrl)
   } catch (err) {
     log.error({ err, tokenPrefix: token?.slice(0, 8) }, 'magic link verification failed')
@@ -214,7 +214,7 @@ router.post('/magic/resend', magicLinkLimiter, async (req, res) => {
         return
       }
     } catch (err) {
-      log.warn({ err, email: normalizedEmail }, 'email verification failed on resend, proceeding')
+      log.warn({ err, email: maskEmail(normalizedEmail) }, 'email verification failed on resend, proceeding')
     }
 
     const token = randomUUID()
@@ -228,11 +228,11 @@ router.post('/magic/resend', magicLinkLimiter, async (req, res) => {
     })
 
     await sendMagicLinkEmail(normalizedEmail, token, redirectTo)
-    log.info({ email: normalizedEmail }, 'magic link resent')
+    log.info({ email: maskEmail(normalizedEmail) }, 'magic link resent')
 
     res.status(204).end()
   } catch (err) {
-    log.error({ err, email: normalizedEmail }, 'failed to resend magic link')
+    log.error({ err, email: maskEmail(normalizedEmail) }, 'failed to resend magic link')
     res.status(500).json({ error: 'Failed to resend magic link' })
   }
 })

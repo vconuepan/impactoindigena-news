@@ -5,7 +5,7 @@ import { config } from '../../config.js'
 import { validateBody } from '../../middleware/validate.js'
 import * as subscribeService from '../../services/subscribe.js'
 import { EmailValidationError, EmailDeliveryError } from '../../services/subscribe.js'
-import { createLogger } from '../../lib/logger.js'
+import { createLogger, maskEmail } from '../../lib/logger.js'
 
 const router = Router()
 const log = createLogger('public:subscribe')
@@ -65,7 +65,7 @@ router.get('/confirm', async (req, res) => {
     await subscribeService.confirmSubscription(token, email)
     res.redirect(`${clientUrl}/subscribed`)
   } catch (err: any) {
-    log.warn({ err, email }, 'confirmation failed')
+    log.warn({ err, email: maskEmail(email) }, 'confirmation failed')
     if (err.message === 'Confirmation link has expired') {
       res.redirect(`${clientUrl}/subscribed?error=expired`)
     } else {

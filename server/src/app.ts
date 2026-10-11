@@ -109,13 +109,17 @@ app.use((req, res, next) => {
  * de formato.
  */
 export function redactSensitiveQuery(url: string): string {
-  if (url.includes('/magic/')) {
-    return url.replace(/([?&])token=[^&]*/g, '$1token=[REDACTED]')
+  // `token` y `email` se ocultan en CUALQUIER ruta, no solo en las que se
+  // conocian: las URL de confirmacion de la suscripcion y de las alertas llevan
+  // las dos cosas en la query. En las alertas el token es ademas la credencial de
+  // baja permanente (`unsubscribeByToken` ignora el vencimiento), y el correo es
+  // un dato personal que la Politica promete no dejar en los logs.
+  let out = url.replace(/([?&])(token|unsubscribe_token|email)=[^&]*/gi, '$1$2=[REDACTED]')
+  // `code` y `state` si dependen de la ruta: en /api/stories son filtros legitimos.
+  if (out.includes('/oauth/')) {
+    out = out.replace(/([?&])(code|state)=[^&]*/g, '$1$2=[REDACTED]')
   }
-  if (url.includes('/oauth/')) {
-    return url.replace(/([?&])(code|state)=[^&]*/g, '$1$2=[REDACTED]')
-  }
-  return url
+  return out
 }
 
 // Request logging — single line per request, no redundant fields
