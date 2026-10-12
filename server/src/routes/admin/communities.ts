@@ -2,7 +2,8 @@ import { Router } from 'express'
 import { createLogger } from '../../lib/logger.js'
 import prisma from '../../lib/prisma.js'
 import { writeAuditLog } from '../../services/audit.js'
-import { getReviewMode } from '../../lib/communityVisibility.js'
+import { config } from '../../config.js'
+import { getReviewMode, publicCommunityWhere, temasVivos } from '../../lib/communityVisibility.js'
 import { reconcileCommunityReviews } from '../../services/communityReview.js'
 
 const router = Router()
@@ -44,6 +45,99 @@ function parseKeywords(raw: unknown): { ok: true; keywords: string[] } | { ok: f
   if (limpias.length === 0 || limpias.length > 40) return { ok: false, error: 'entre 1 y 40 palabras clave' }
   return { ok: true, keywords: limpias }
 }
+
+const EJEMPLOS = 5
+const EJEMPLOS_POR_PALABRA = 3
+const NOTA = { id: true, slug: true, title: true, datePublished: true } as const
+const MAS_RECIENTE_PRIMERO = { datePublished: 'desc' } as const
+
+/**
+ * POST /api/admin/communities/:id/keywords-preview
+ * Body: { keywords: string[] }  (la lista propuesta, con la misma validacion que el PATCH)
+ *
+ * Mide el cambio ANTES de guardarlo, sin escribir nada. La pertenencia se coteja
+ * por subcadena (`contains`) sobre titulo, resumen y titulo de la fuente, asi que
+ * una palabra corta puede arrastrar notas ajenas: el 3-oct-2026 «cam» calzaba en
+ * 92 notas publicadas y solo 6 eran sobre la CAM.
+ *
+ * Mide PERTENENCIA (publicada, relevancia 3 o mas, palabras clave), no
+ * visibilidad: la retencion por vertical se decide aparte y nota por nota. Si
+ * midiera con el modo, en `enforce` una nota que solo calza con la palabra nueva
+ * no tendria fila de revision y contaria como si la palabra no trajera nada; la
+ * fila se la crea el conciliador al guardar. Devuelve `mode` para que la
+ * pantalla lo advierta.
+ *
+ * Entran y salen son diferencias de conjuntos de ids, con las dos listas leidas
+ * en una misma transaccion (REPEATABLE READ): nunca dan negativo aunque el
+ * pipeline publique entre medio, y no hace falta un `NOT` sobre la condicion,
+ * que con titulo o resumen NULL perderia notas.
+ */
+router.post('/:id/keywords-preview', async (req, res) => {
+  try {
+    const parsed = parseKeywords(req.body?.keywords)
+    if (!parsed.ok) {
+      res.status(400).json({ error: parsed.error })
+      return
+    }
+
+    const community = await prisma.community.findUnique({
+      where: { id: req.params.id },
+      select: { id: true, keywords: true, issueIds: true },
+    })
+    if (!community) {
+      res.status(404).json({ error: 'Community not found' })
+      return
+    }
+
+    const temas = await temasVivos()
+    const mode = await getReviewMode(community.id)
+    // Sin la exclusion del modo, a proposito (ver arriba).
+    const pertenencia = (keywords: string[]) =>
+      publicCommunityWhere({ community: { ...community, keywords }, temas, mode: 'off', learningMode: config.gate.learningMode })
+
+    const [actualNotas, propuestaNotas] = await prisma.$transaction(
+      [
+        prisma.story.findMany({ where: pertenencia(community.keywords), select: NOTA, orderBy: MAS_RECIENTE_PRIMERO }),
+        prisma.story.findMany({ where: pertenencia(parsed.keywords), select: NOTA, orderBy: MAS_RECIENTE_PRIMERO }),
+      ],
+      { isolationLevel: 'RepeatableRead' },
+    )
+    const idsActual = new Set(actualNotas.map((n) => n.id))
+    const idsPropuesta = new Set(propuestaNotas.map((n) => n.id))
+    const entran = propuestaNotas.filter((n) => !idsActual.has(n.id))
+    const salen = actualNotas.filter((n) => !idsPropuesta.has(n.id))
+
+    const vigentes = new Set(community.keywords.map((k) => k.toLowerCase()))
+    const nuevas = parsed.keywords.filter((k) => !vigentes.has(k.toLowerCase()))
+    const propuestas = new Set(parsed.keywords.map((k) => k.toLowerCase()))
+    const quitadas = community.keywords.filter((k) => !propuestas.has(k.toLowerCase()))
+
+    const porPalabra = await Promise.all(
+      nuevas.map(async (keyword) => {
+        const where = pertenencia([keyword])
+        const [notas, ejemplos] = await Promise.all([
+          prisma.story.count({ where }),
+          prisma.story.findMany({ where, select: NOTA, orderBy: MAS_RECIENTE_PRIMERO, take: EJEMPLOS_POR_PALABRA }),
+        ])
+        return { keyword, notas, ejemplos }
+      }),
+    )
+
+    res.json({
+      mode,
+      actual: actualNotas.length,
+      propuesta: propuestaNotas.length,
+      entran: { total: entran.length, ejemplos: entran.slice(0, EJEMPLOS) },
+      salen: { total: salen.length, ejemplos: salen.slice(0, EJEMPLOS) },
+      nuevas: porPalabra,
+      quitadas,
+      keywords: parsed.keywords,
+    })
+  } catch (err) {
+    log.error({ err }, 'failed to preview community keywords')
+    res.status(500).json({ error: 'Failed to preview keywords' })
+  }
+})
 
 /**
  * PATCH /api/admin/communities/:id

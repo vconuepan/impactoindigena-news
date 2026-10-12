@@ -7,6 +7,7 @@ import { queryClient } from './lib/query'
 import { datosDePortadaAntesDeMontar } from './lib/arranque-portada'
 import { HOMEPAGE_SNAPSHOT_URL } from './config'
 import { AuthProvider } from './lib/auth'
+import { instalarRecargaPorVersion } from './lib/recarga-por-version'
 import App from './App'
 import './i18n'
 import './index.css'
@@ -30,6 +31,10 @@ if (import.meta.env.DEV) {
     axe.default(React, ReactDOM, 1000)
   })
 }
+
+// Un despliegue borra los chunks anteriores: la pestaña abierta se recarga sola
+// una vez en vez de quedar rota al navegar. Detalle en lib/recarga-por-version.ts.
+instalarRecargaPorVersion()
 
 function montar(): void {
   ReactDOM.createRoot(document.getElementById('root')!).render(

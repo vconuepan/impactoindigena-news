@@ -110,7 +110,14 @@ falso positivo (7.3) y no se corrige con la lista.
 2. **`grupo mapuche` en singular** como encuadre que atribuye: retendria 10
    titulares argentinos y una nota cultural («el grupo mapuche Los Peñis del
    Sur», musical). Quedo fuera por esa colision; entra si la direccion prefiere
-   el falso positivo. El corpus
+   el falso positivo. **Remedido el 2026-10-11 con el matcher real y las listas
+   vigentes:** de los 10 titulares argentinos, 9 ya los retiene la Lista A por
+   otro termino (`ram`, `usurp`, `acusa`, `delincuen`, `desaloj`...); el unico
+   que aportaria es «Grupo mapuche declara "la guerra" a Argentina y Chile». En
+   las verticales (430 Mapuche, 121 Araucania, texto corto) aparece en 3 y 2
+   notas: las del conflicto ya estan retenidas por la A y la unica que sumaria es
+   la cultural de Los Peñis del Sur, en las dos. Aporte neto: un acierto en 888
+   contra un falso positivo cultural por vertical. El corpus
 y la linea base viven en `otras-voces/estrategia/datos/puelmapu-2026-10-03/`.
 
 **Pendientes:** ampliar a 30-50 noticias reales etiquetadas a mano (curacion
