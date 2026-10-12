@@ -96,6 +96,13 @@ export const config = {
      * 2011. 0 = sin limite.
      */
     maxSourceAgeMonths: parseInt(process.env.MAX_SOURCE_AGE_MONTHS || "18", 10),
+    /**
+     * Ventana de un feed de sitemap (services/sitemapFeed.ts): solo entran las
+     * URL con `lastmod` de los ultimos N dias. 14 cubre dos semanas de un
+     * municipio que publica en rafagas (Nueva Imperial: 16 notas en 14 dias,
+     * medido el 12-oct-2026). 0 = sin limite.
+     */
+    sitemapMaxAgeDays: parseInt(process.env.SITEMAP_MAX_AGE_DAYS || "14", 10),
     httpTimeoutMs: parseInt(process.env.HTTP_TIMEOUT_MS || "10000", 10),
     minContentLength: parseInt(process.env.MIN_CONTENT_LENGTH || "300", 10),
     staleAfterEmptyCrawls: parseInt(

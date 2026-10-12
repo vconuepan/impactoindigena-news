@@ -185,4 +185,50 @@ describe('parseFeed', () => {
       })
     )
   })
+
+  // Sitemap como fuente para los municipios sin RSS (12-oct-2026; ver sitemapFeed.ts).
+  describe('sitemap', () => {
+    const reciente = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    const SITEMAP = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+      <url><loc>https://nuevaimperial.cl/noticias</loc><lastmod>${reciente}</lastmod></url>
+      <url><loc>https://nuevaimperial.cl/noticias/trafkintu-en-la-plaza-24694</loc><lastmod>${reciente}</lastmod></url>
+      <url><loc>https://nuevaimperial.cl/secciones/turismo/rutas</loc><lastmod>${reciente}</lastmod></url>
+    </urlset>`
+
+    it('un urlset no pasa por el parser RSS y entrega las URL recientes', async () => {
+      mockAxiosGet.mockResolvedValue(axiosResponse(SITEMAP, 200, { etag: '"abc"' }))
+
+      const result = await parseFeed('https://nuevaimperial.cl/sitemap.xml')
+
+      expect(mockParseString).not.toHaveBeenCalled()
+      expect(result.error).toBeNull()
+      expect(result.cacheHeaders).toEqual({ etag: '"abc"', lastModified: null })
+      expect(result.items.map((i) => i.url).sort()).toEqual([
+        'https://nuevaimperial.cl/noticias/trafkintu-en-la-plaza-24694',
+        'https://nuevaimperial.cl/secciones/turismo/rutas',
+      ])
+    })
+
+    it('el filtro #solo= se aplica y no viaja al servidor', async () => {
+      mockAxiosGet.mockResolvedValue(axiosResponse(SITEMAP))
+
+      const result = await parseFeed('https://nuevaimperial.cl/sitemap.xml#solo=/noticias/')
+
+      expect(mockAxiosGet).toHaveBeenCalledWith('https://nuevaimperial.cl/sitemap.xml', expect.anything())
+      expect(result.items.map((i) => i.url)).toEqual(['https://nuevaimperial.cl/noticias/trafkintu-en-la-plaza-24694'])
+    })
+
+    it('un indice de sitemaps devuelve un error legible, no un feed vacio', async () => {
+      mockAxiosGet.mockResolvedValue(
+        axiosResponse('<?xml version="1.0"?><sitemapindex xmlns="x"><sitemap><loc>https://a.cl/post-sitemap.xml</loc></sitemap></sitemapindex>'),
+      )
+
+      const result = await parseFeed('https://mtraiguen.cl/sitemap_index.xml')
+
+      expect(mockParseString).not.toHaveBeenCalled()
+      expect(result.items).toEqual([])
+      expect(result.error).toMatch(/sitemap hijo/)
+    })
+  })
 })
+

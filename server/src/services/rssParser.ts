@@ -12,6 +12,7 @@ import { ELMOSTRADOR_FEED_URL, scrapeElMostrador } from './elMostradorScraper.js
 import { DESCONCIERTO_FEED_URL, scrapeElDesconcierto } from './elDesconciertoScraper.js'
 import { BIOBIO_FEED_URL, scrapeBioBio } from './biobioScraper.js'
 import { CONADI_FEED_URL, scrapeConadi } from './conadiScraper.js'
+import { itemsDesdeSitemap, separarFiltroSitemap, tipoSitemap } from './sitemapFeed.js'
 
 const SCRAPED_FEED_URLS = new Set([...DISD_SCRAPED_URLS, AUSTRAL_FEED_URL, ELMOSTRADOR_FEED_URL, DESCONCIERTO_FEED_URL, BIOBIO_FEED_URL, CONADI_FEED_URL])
 
@@ -50,6 +51,9 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
   if (feedUrl === CONADI_FEED_URL) return scrapeConadi(feedUrl)
   if (SCRAPED_FEED_URLS.has(feedUrl)) return scrapeDISD(feedUrl)
 
+  // Un sitemap puede llevar un filtro de ruta nuestro (#solo=/noticias/) que no viaja al servidor.
+  const { fetchUrl, soloPrefijo } = separarFiltroSitemap(feedUrl)
+
   try {
     const headers: Record<string, string> = {
       // Mimic a real browser so sites that block generic bots (UN, OHCHR, etc.) respond correctly
@@ -67,8 +71,8 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
     // initial URL and to every redirect hop — closing the DNS-rebinding-via-
     // redirect hole the synchronous beforeRedirect check left open. 304 (from
     // the conditional GET above) is a non-redirect 3xx that must pass through.
-    const response = await crawlLimiter.run(feedUrl, () =>
-      withRetry(() => safeAxiosGet(feedUrl, {
+    const response = await crawlLimiter.run(fetchUrl, () =>
+      withRetry(() => safeAxiosGet(fetchUrl, {
         timeout: config.crawl.httpTimeoutMs,
         headers,
         responseType: 'text',
@@ -87,6 +91,27 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
         },
         error: null,
       }
+    }
+
+    const cacheDeRespuesta = {
+      etag: response.headers['etag'] || null,
+      lastModified: response.headers['last-modified'] || null,
+    }
+
+    // Sitios sin RSS que publican sitemap fechado (ver sitemapFeed.ts).
+    const sitemap = typeof response.data === 'string' ? tipoSitemap(response.data) : null
+    if (sitemap === 'indice') {
+      return { items: [], notModified: false, cacheHeaders: {}, error: 'sitemap indice: cargar el feed con la URL de un sitemap hijo' }
+    }
+    if (sitemap === 'urlset') {
+      const items = itemsDesdeSitemap(response.data, {
+        ahora: new Date(),
+        maxAgeDays: config.crawl.sitemapMaxAgeDays,
+        limit: config.crawl.rssItemLimit,
+        soloPrefijo,
+      })
+      log.debug({ feedUrl, items: items.length }, 'sitemap parsed')
+      return { items, notModified: false, cacheHeaders: cacheDeRespuesta, error: null }
     }
 
     const feed = await parser.parseString(response.data)
@@ -116,10 +141,7 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
     return {
       items,
       notModified: false,
-      cacheHeaders: {
-        etag: response.headers['etag'] || null,
-        lastModified: response.headers['last-modified'] || null,
-      },
+      cacheHeaders: cacheDeRespuesta,
       error: null,
     }
   } catch (err) {
