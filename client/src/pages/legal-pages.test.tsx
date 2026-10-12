@@ -190,12 +190,16 @@ describe('la Politica no promete lo que no hace ni cita lo que la ley no dice', 
   })
 
   it('si Brevo mide aperturas y clics, el titular no dice «Sin rastreo» a secas', () => {
+    // Medido el 12-oct-2026 en el informe agregado de Brevo: tambien los correos
+    // transaccionales (alertas, resumenes, bienvenida, acceso) registran
+    // aperturas. Por eso la frase dice «los correos que te enviamos», no solo
+    // los del boletin.
     renderPage(<PrivacyPage />)
     const celda = screen.getAllByText('Brevo').find((n) => n.tagName === 'TD')
     const fila = celda!.closest('tr')
     if (!/apertura/.test(fila?.textContent ?? '')) return
     expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Sin rastreo en el sitio/)
-    expect(document.body.textContent).toMatch(/miden aperturas y clics/)
+    expect(document.body.textContent).toMatch(/correos que te enviamos sí miden aperturas y clics/)
   })
 
   it('el aviso de consentimiento de comunidades cita la ley vigente', () => {

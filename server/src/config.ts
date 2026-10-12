@@ -93,6 +93,12 @@ export const config = {
       process.env.STALE_AFTER_EMPTY_CRAWLS || "5",
       10
     ),
+    // Sin DIFFBOT_TOKEN (o PIPFEED_API_KEY) el tier de API externa se salta y la
+    // extraccion queda en selector + Readability. Asi corre produccion desde al
+    // menos el 11-oct-2026, y por eso la Politica de Privacidad (v3.4) ya no
+    // declara a Diffbot como encargado. Si se configura una de esas claves en
+    // produccion, agregar al proveedor a la tabla de encargados de PrivacyPage
+    // ANTES: recibe el texto de las noticias, con datos de terceros.
     extractionApi: (process.env.EXTRACTION_API || "diffbot") as
       | "diffbot"
       | "pipfeed",

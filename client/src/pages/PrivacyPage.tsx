@@ -34,7 +34,7 @@ export default function PrivacyPage() {
             Sin cookies.<br className="hidden md:block" /> Sin rastreo en el sitio.
           </h1>
           <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto">
-            Para leer el sitio no usamos cookies ni rastreo; solo preferencias técnicas en tu navegador. Los correos del boletín sí miden aperturas y clics. Tratamos los datos mínimos que nos das voluntariamente.
+            Para leer el sitio no usamos cookies ni rastreo; solo preferencias técnicas en tu navegador. Los correos que te enviamos sí miden aperturas y clics. Tratamos los datos mínimos que nos das voluntariamente.
           </p>
         </div>
       </div>
@@ -228,12 +228,6 @@ export default function PrivacyPage() {
                   <td className="align-top py-2 pr-4">Almacenamiento y entrega de las imágenes del sitio</td>
                   <td className="align-top py-2 pr-4">EE.&nbsp;UU. / global</td>
                   <td className="align-top py-2">Imágenes editoriales. Tu navegador las pide directamente a este servicio, así que la conexión le expone tu dirección IP; no le entregamos ningún otro dato tuyo</td>
-                </tr>
-                <tr className="border-b border-neutral-100">
-                  <td className="align-top py-2 pr-4">Diffbot</td>
-                  <td className="align-top py-2 pr-4">Extracción del texto de noticias de fuentes de acceso público</td>
-                  <td className="align-top py-2 pr-4">EE.&nbsp;UU.</td>
-                  <td className="align-top py-2">Texto de los artículos de fuentes públicas, que puede incluir nombres, cargos y citas de terceros mencionados en la noticia (sin datos de lectores)</td>
                 </tr>
                 <tr>
                   <td className="align-top py-2 pr-4">OpenStreetMap</td>
