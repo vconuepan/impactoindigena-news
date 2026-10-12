@@ -89,8 +89,6 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   // --- Content ---
   // generate_editorial: domingos 2 AM (antes del lunes)
   { jobName: 'generate_editorial',  cronExpression: '0 2 * * 0' },
-  // scrape_docip: diario 11 PM (baja carga horaria)
-  { jobName: 'scrape_docip',        cronExpression: '0 23 * * *' },
   // ingest_agenda: diario 1 AM — pobla "Incidencia Internacional" desde RSS/iCal
   { jobName: 'ingest_agenda',       cronExpression: '0 1 * * *',  enabled: true },
   // agenda_weekly_digest: viernes 6 AM — resumen semanal de la agenda. Queda

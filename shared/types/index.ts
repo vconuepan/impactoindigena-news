@@ -56,7 +56,6 @@ export type JobName =
   | 'generate_newsletter'
   | 'send_newsletter'
   | 'send_private_newsletter'
-  | 'scrape_docip'
   | 'send_community_digest'
   | 'send_alerts'
   | 'generate_editorial'
