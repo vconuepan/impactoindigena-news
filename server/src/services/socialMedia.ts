@@ -6,6 +6,7 @@ import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { buildBlueskyPickBestPrompt } from '../prompts/index.js'
 import type { StoryForBlueskyPick } from '../prompts/index.js'
 import { blueskyPickBestSchema } from '../schemas/bluesky.js'
+import { withheldInEnforcedVerticals } from './communityReview.js'
 
 const log = createLogger('social-media')
 
@@ -28,6 +29,11 @@ export interface AutoPostChannel {
  * the point: a disabled channel can never keep a story in the running (which
  * would burn an LLM pick on a story nothing ends up posting), and enabling a
  * channel picks up the backlog on its own.
+ *
+ * A story that a vertical in enforce does not show (pending, held, or still
+ * without a review row) is never a candidate: a story withheld in Voces Mapuche
+ * must not become the story of the day on six channels (director's decision,
+ * 2026-10-11). See withheldInEnforcedVerticals in communityReview.ts.
  *
  * @returns Array of candidate story IDs
  */
@@ -53,7 +59,12 @@ export async function findAutoPostCandidates(
 
   if (publishedStories.length === 0) return []
 
-  const storyIds = publishedStories.map((s) => s.id)
+  const withheld = await withheldInEnforcedVerticals(publishedStories.map((s) => s.id))
+  if (withheld.size > 0) {
+    log.info({ withheld: withheld.size }, 'stories withheld by a vertical in enforce excluded from auto-post')
+  }
+  const storyIds = publishedStories.map((s) => s.id).filter((id) => !withheld.has(id))
+  if (storyIds.length === 0) return []
 
   // One query per channel, in parallel.
   const postedPerChannel = await Promise.all(

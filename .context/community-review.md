@@ -45,9 +45,11 @@ Membership is decided with the same `where` as the public page (`membershipWhere
 
 **Text evaluated:** `config.gate.textSource` (`GATE_TEXT_SOURCE`, default `short` = title + label + summary; `full` adds the source body). **Director decided `short` on 2026-10-04** (simulation on production: short holds 204/389 Mapuche and 49/107 Araucanía without learning mode; full holds 265 and 62). Recorded per row in `gate_text_source`.
 
-**Score** (`gate_score`, orders the editor queue): 3 confrontation frame · 2 any Lista A term · 1 reserved (two Lista B families, pending director) · 0 learning mode only.
+**Score** (`gate_score`, orders the editor queue): 3 confrontation frame · 2 any Lista A term · 1 **B+B** · 0 learning mode only.
 
-**`GATE_VERSION`** (`gate.ts`): hash of both lists and the acronym length. Changing a list re-evaluates machine rows only.
+**B+B** (director's decision, 2026-10-11): with no Lista A term and no confrontation frame, two Lista B terms from **different families** corroborate each other (reason `listB+B:<term>`, score 1, bulk-releasable). Families (`FAMILIAS_B` in `gate.ts`): `fuerza` (operations, protocol 7.3.2), `justicia` (prosecutors, courts, criminal process, 7.3.8), `contexto` (everything else). Two `contexto` terms do not corroborate. Chosen by measurement over 1,842 texts with every candidate judged against the protocol: 34 extra holds, 31 pertinent (91 %); nine fine families with any pair gave 98 and 41 noise. Numbers and the rejected variants: `server/eval/README.md`.
+
+**`GATE_VERSION`** (`gate.ts`): hash of both lists, the acronym length and the B+B families. Changing any of them re-evaluates machine rows only (B+B moved it from `9ce02db75908` to `57bad3d4ed9d`, so the first reconciler run after the deploy re-evaluates every machine row in both verticals; human rows are untouched).
 
 ## Reconciler
 
@@ -64,7 +66,7 @@ Job `reconcile_community_reviews`, hourly at :17, **seeded disabled**. Per verti
 | Endpoint | What |
 |---|---|
 | `GET /` | Verticals under review (mode ≠ off) with `communityReviewStats` each, plus `learningMode` and `bulkReleaseMaxScore` |
-| `GET /:slug?state=&page=&pageSize=` | The queue: ordered by `gateScore desc, publishedAt desc` (index `story_community_reviews_queue_idx`), each row with the story and `alsoIn` (same story in other verticals) |
+| `GET /:slug?state=&page=&pageSize=` | The queue: ordered by `gateScore desc`, then the **story's** `datePublished desc`, then `id` (the row's `published_at` is null while pending, so ordering by it was random within a score; fixed 2026-10-06 in `12bd992`). Each row with the story and `alsoIn` (same story in other verticals) |
 | `GET /:slug/stats` | «hoy se ven N · si aplicaras, M», counts by state, `missingRows`, queue age. **While learning mode is on, M is a projection** (`visibleIfEnforcedProjected: true`): auto + released + pending rows with `gateScore = 0`, i.e. what the gate would not hold without learning mode. The real enforce `where` would give 0 (every machine row is pending), which is what the director saw on 2026-10-06 |
 | `GET /:slug/mode-preview?mode=` | Exact number of stories that would be hidden, **before** changing anything. Reads only |
 | `PUT /:slug/mode` | Upserts `community_review_modes`. **409** to `enforce` while learning mode is on. Leaving `off` runs the reconciler so the queue exists at once |
@@ -79,12 +81,30 @@ Job `reconcile_community_reviews`, hourly at :17, **seeded disabled**. Per verti
 
 ## Keywords and queue age (Tanda B, item 15)
 
-`PATCH /api/admin/communities/:id` accepts `keywords: string[]` (1–40, each 2–60 chars, deduplicated case-insensitively). It writes `audit_log` `community.keywords` with `from`/`to`, and if the vertical is under review runs `reconcileCommunityReviews({ force: true })` for it at once. `communityReviewStats` returns `oldestPendingAt/Hours` and `queueAlert` (true when the oldest pending exceeds `config.gate.queueAlertHours`, env `REVIEW_QUEUE_ALERT_HOURS`, default 48, **and learning mode is off**: with learning mode on everything is pending by design). `GET /api/admin/integration-health` carries `communityReviews.verticals[]` with the same fields.
+`PATCH /api/admin/communities/:id` accepts `keywords: string[]` (1–40, each 2–60 chars, deduplicated case-insensitively). It writes `audit_log` `community.keywords` with `from`/`to`, and if the vertical is under review runs `reconcileCommunityReviews({ force: true })` for it at once. `communityReviewStats` returns `oldestPendingAt/Hours` and `queueAlert` (true when the oldest pending exceeds `config.gate.queueAlertHours`, env `REVIEW_QUEUE_ALERT_HOURS`, default 48, **and learning mode is off**: with learning mode on everything is pending by design). **Queue age is measured from the row's `created_at`**, when the story entered the queue. Until 2026-10-11 it used `published_at ?? gate_evaluated_at`, and the reconciler rewrites `gate_evaluated_at` on every list change: a week-old queue looked brand new after each gate update and the alert switched itself off. A row the reconciler deletes and later recreates (keywords changed) starts over, which is correct: the story re-entered the queue. `GET /api/admin/integration-health` carries `communityReviews.verticals[]` with the same fields.
+
+## Turning learning mode off (Tanda C)
+
+Director's decision, 2026-10-11, «ambos»: by date **and** with data. `learningExitCriteria(communityId)` in `communityReview.ts`, returned as `stats.learningExit` and shown at `/admin/revision` (`LearningExitPanel`) only while learning mode is on. Three conditions, all required, each with its number:
+
+| Condition | How it is computed | Config (env) |
+|---|---|---|
+| Two weeks under review | First row of the vertical (`MIN(created_at)`, the shadow backfill: 4-oct 19:46 UTC for Mapuche) + 14 days → 18-oct | `GATE_LEARNING_EXIT_MIN_DAYS` (14) |
+| One week with the queue up to date | No row waited more than `queueAlertHours` without a human decision. Up to date since the last overdue row was decided (`MAX(reviewed_at)` where `reviewed_at > created_at + 48 h`), or since the start if none ever was; not up to date if a pending row is overdue now | `GATE_LEARNING_EXIT_WINDOW_DAYS` (7) |
+| ≥ 9 of 10 score-0 stories released | Human decisions in the window on rows with `gate_score = 0` (the ones the gate would let through on its own): released ≥ 90 % of released + held, **and at least 10 decisions** («9 of 10» needs 10 to mean anything). Compared in integers, not floats | `GATE_LEARNING_EXIT_SCORE0_RATIO` (0.9), `GATE_LEARNING_EXIT_SCORE0_MIN` (10) |
+
+Counts use each row's **current** state. «Entered the queue» is `created_at`, which the machine upsert resets when a row goes from `auto` to `pending` and a human «reopen» resets when the row goes back to `pending` from `released`/`held`; a row that stays `pending` keeps it. One query; verified against a local PostgreSQL 18 with the session in `America/Santiago`, and the upsert transitions verified the same way. It informs and blocks nothing: learning mode is turned off in Azure (`GATE_LEARNING_MODE=false`).
+
+**Known limits** (adversarial review, 2026-10-11; none fixable without a migration, all narrow): an overdue `pending` row that the reconciler deletes (its story left the vertical) leaves no trace, so the queue can read as up to date when it briefly was not; and if the publish hook fails and the reconciler creates the row later, the wait is undercounted by up to one reconciler interval (an hour).
+
+## Autopost (Tanda C)
+
+Director's decision, 2026-10-11: autopost excludes what a vertical in `enforce` does not show. `findAutoPostCandidates` (`services/socialMedia.ts`) drops every id returned by `withheldInEnforcedVerticals` before asking the channels or the LLM. That function returns, per vertical whose **effective** mode is `enforce`, the candidate stories that belong to it (`membershipWhere`, the page's `where`) and have no `auto`/`released` row: pending, held, or still without a row (closed by default, same as the page). With learning mode on it returns nothing without querying (no vertical can be in effective enforce). **It fails closed**: if the modes cannot be read it withholds every candidate and that autopost run is skipped, the opposite of `getReviewMode` (which reads errors as `off` so the page never empties), because a post can wait for the next run and a held story on six channels cannot be taken back. `jobs/blueskyAutoPost.ts` is legacy and not registered in `handlers.ts`; the only automatic path is `social_auto_post`.
 
 ## Switching on (director)
 
-1. Apply the SQL; `db:migrate:resolve`. It is inert (no mode rows → everything `off`), so it is safe **before** the deploy, and doing it first avoids one failed query per vertical page view (Postgres logs a `relation does not exist` ERROR for each while the code runs without the tables; the app itself reads `off` and serves normally). 2. Deploy the code. 3. Simulate the backfill: baseline numbers. 4. `INSERT INTO community_review_modes (community_id, mode) SELECT id, 'shadow' FROM communities WHERE slug IN ('mapuche','wallmapu-araucania') ON CONFLICT (community_id) DO UPDATE SET mode = EXCLUDED.mode, updated_at = CURRENT_TIMESTAMP;` 5. Choose the text source; `:apply`. 6. Enable the reconciler job. 7. Work the queue in shadow at `/admin/revision`. 8. Turn learning mode off per the director's criterion. 9. Vertical to `enforce`; redeploy the frontend so the prerendered vertical page refreshes.
+1. Apply the SQL; `db:migrate:resolve`. It is inert (no mode rows → everything `off`), so it is safe **before** the deploy, and doing it first avoids one failed query per vertical page view (Postgres logs a `relation does not exist` ERROR for each while the code runs without the tables; the app itself reads `off` and serves normally). 2. Deploy the code. 3. Simulate the backfill: baseline numbers. 4. `INSERT INTO community_review_modes (community_id, mode) SELECT id, 'shadow' FROM communities WHERE slug IN ('mapuche','wallmapu-araucania') ON CONFLICT (community_id) DO UPDATE SET mode = EXCLUDED.mode, updated_at = CURRENT_TIMESTAMP;` 5. Choose the text source; `:apply`. 6. Enable the reconciler job. 7. Work the queue in shadow at `/admin/revision`. 8. Turn learning mode off when the panel says the director's criterion is met (above). 9. Vertical to `enforce`; redeploy the frontend so the prerendered vertical page refreshes.
 
 ## Not covered here
 
-Brand domains and per-domain SEO (D3). Per-brand relevance (D5). Per-vertical permissions. Autopost exclusion of held stories (director's decision).
+Brand domains and per-domain SEO (D3). Per-brand relevance (D5). Per-vertical permissions. «grupo mapuche» in the singular as a Lista A term (measured 2026-10-11, recommendation «do not include», awaits the director).

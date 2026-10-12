@@ -7,6 +7,9 @@ describe('etiquetas de la revisión por marca', () => {
     expect(razonLabel('listA:condena')).toEqual({ texto: 'Lista A: condena', variant: 'orange' })
     expect(razonLabel('listB+corroborated:policia').texto).toBe('Lista B (corroborada): policia')
     expect(razonLabel('learning_mode').texto).toBe('Modo aprendizaje')
+    // B+B (11-oct-2026): dos familias de la Lista B se corroboran entre sí.
+    expect(razonLabel('listB+B:tribunal')).toEqual({ texto: 'Lista B (dos familias): tribunal', variant: 'yellow' })
+    expect(razonLabel('listB+B:restitu', 'Ordenan la restitución de tierras').texto).toBe('Lista B (dos familias): restitución')
   })
 
   it('extrae los términos a resaltar sin el encuadre ni el modo aprendizaje', () => {
@@ -20,6 +23,7 @@ describe('etiquetas de la revisión por marca', () => {
   it('el puntaje se lee con su origen', () => {
     expect(puntajeLabel(3).variant).toBe('red')
     expect(puntajeLabel(0).texto).toBe('0')
+    expect(puntajeLabel(1)).toEqual({ texto: '1 · B+B', variant: 'yellow' })
   })
 
   it('muestra el término como aparece en la nota, no la raíz de la lista', () => {

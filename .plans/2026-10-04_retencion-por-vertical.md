@@ -279,6 +279,13 @@ Tiempos de propagación de una liberación o una retención, según los TTL de h
 
 Ninguna bloquea la Tanda A. La 2 bloquea la carga inicial; la 3 y la 5, el paso a `enforce`.
 
+Decididas: la 1 (sí, 3-oct), la 2 («el corto», 4-oct) y, el 11-oct, la 3, la 5 y la 6 («sí a las cuatro»). La 4, permisos por vertical, queda para después. Implementación, en el worktree `vocesindigenas-d4c`, rama `d4-tanda-c`, 11 y 12-oct-2026:
+
+16. ✅ B+B (decisión 6): `FAMILIAS_B` en `gate.ts` con tres familias, fuerza (7.3.2), justicia (7.3.8) y contexto; dos de contexto no se corroboran. Razón `listB+B:`, puntaje 1. Elegida por medición: 34 retenciones nuevas en 1.842 textos, 31 pertinentes, contra 98 y 41 de ruido con nueve familias y cualquier par. Detalle en `server/eval/README.md`. `GATE_VERSION` pasa de `9ce02db75908` a `57bad3d4ed9d`: el primer conciliador tras el despliegue reevalúa todas las filas de máquina.
+17. ✅ Autopost (decisión 3): `findAutoPostCandidates` excluye lo que una vertical en `enforce` efectivo no muestra, y `runSocialAutoPost` vuelve a mirar antes de cada publicación. Falla cerrado.
+18. ✅ Apagado del aprendizaje (decisión 5): `learningExitCriteria` y el panel «Para apagar el modo aprendizaje» en `/admin/revision`, con las tres condiciones y sus cifras. Informa, no bloquea.
+19. ✅ La espera de la cola se mide desde que la nota entró a la cola (`created_at`), que se reinicia cuando la fila vuelve a `pending` desde otro estado o desde un «reabrir». Antes se medía desde la última reevaluación y la alerta se apagaba sola en cada cambio del gate.
+
 ### 13. Fuentes
 
 - Registros del panel: workflow `wf_2f5ba578-ebe`, 4 de octubre de 2026, en la sesión del proyecto `otras-voces`.

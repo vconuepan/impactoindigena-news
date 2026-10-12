@@ -9,6 +9,7 @@ import {
   effectiveMode,
   isReviewMode,
   publicCommunityWhere,
+  reviewExclusion,
   temasVivos,
   type CommunityForVisibility,
   type ReviewMode,
@@ -85,14 +86,15 @@ export function gateTextFor(story: Pick<StoryForGate, 'title' | 'titleLabel' | '
  * liberar en masa (solo puntaje 0 y 1):
  *   3  encuadre narrativo «confrontacion»
  *   2  algun termino de la Lista A
- *   1  reservado: dos señales de la Lista B de familias distintas, si el director
- *      aprueba esa regla (hoy una B corroborada implica A o encuadre, puntaje >= 2)
+ *   1  B+B: dos terminos de la Lista B de familias distintas (aprobada por el
+ *      director el 11-oct-2026; familias en gate.ts, FAMILIAS_B). Una B
+ *      corroborada por A o por el encuadre ya tiene puntaje 2 o 3.
  *   0  retenida solo por el modo aprendizaje, o no retenida
  */
 export function gateScore(result: Pick<GateResult, 'reasons'>): number {
   if (result.reasons.includes('frame:confrontacion')) return 3
   if (result.reasons.some((r) => r.startsWith('listA:'))) return 2
-  if (result.reasons.some((r) => r.startsWith('listB+corroborated:'))) return 1
+  if (result.reasons.some((r) => r.startsWith('listB+B:') || r.startsWith('listB+corroborated:'))) return 1
   return 0
 }
 
@@ -163,6 +165,14 @@ function utc(d: Date | null): Prisma.Sql {
  *   - si la decidio una persona (released/held), NO se toca: el WHERE lo impide;
  *   - si es de maquina, se reescribe lo del gate, y published_at se conserva si
  *     ya tenia valor (nunca vuelve a null) o se fija ahora si la nota pasa a auto.
+ *
+ * `created_at` es CUANDO LA NOTA ENTRO A LA COLA, y de el se mide cuanto lleva
+ * esperando (la alerta de 48 h y el criterio para apagar el aprendizaje). Por eso
+ * una fila que estaba en auto y la reevaluacion pasa a pending (cambio de listas,
+ * de palabras clave o de la nota) lo reinicia: entra a la cola ahora, no el dia en
+ * que nacio como auto. Una pendiente que sigue pendiente lo conserva. Visto en la
+ * revision adversarial del 11-oct-2026: sin esto, una nota recien retenida
+ * aparecia con «216 h» y encendia la alerta.
  */
 export function machineUpsertSql(rev: MachineReview, now: Date): Prisma.Sql {
   return Prisma.sql`
@@ -191,6 +201,11 @@ export function machineUpsertSql(rev: MachineReview, now: Date): Prisma.Sql {
                              story_community_reviews.published_at,
                              CASE WHEN EXCLUDED.review_state = 'auto' THEN ${utc(now)} ELSE NULL END
                            ),
+      created_at         = CASE
+                             WHEN story_community_reviews.review_state <> 'pending' AND EXCLUDED.review_state = 'pending'
+                             THEN EXCLUDED.created_at
+                             ELSE story_community_reviews.created_at
+                           END,
       updated_at         = EXCLUDED.updated_at
     WHERE story_community_reviews.review_state IN ('auto', 'pending')
   `
@@ -419,11 +434,124 @@ export interface CommunityReviewStats {
   byState: Record<ReviewState, number>
   /** Notas que encajan en la vertical y aun no tienen fila: las invisibles en enforce. */
   missingRows: number
-  /** La pendiente mas vieja (por fecha de publicacion en la vertical), o null si no hay pendientes. */
+  /**
+   * Desde cuando espera la pendiente mas vieja: cuando su fila entro a la cola
+   * (`created_at`), o null si no hay pendientes. No se mide por la fecha de
+   * evaluacion: el conciliador la reescribe cada vez que cambian las listas, y
+   * con eso una cola de una semana parecia recien llegada y la alerta se apagaba
+   * sola en cada cambio del gate.
+   */
   oldestPendingAt: Date | null
   oldestPendingHours: number | null
   /** true cuando la pendiente mas vieja supera config.gate.queueAlertHours. */
   queueAlert: boolean
+  /** Si ya se cumple el criterio del director para apagar el modo aprendizaje. */
+  learningExit: LearningExitCriteria
+}
+
+/**
+ * El criterio del director para apagar el modo aprendizaje (11-oct-2026,
+ * «ambos»): por fecha Y por datos. Las tres condiciones, cada una con su cifra,
+ * para que la pantalla diga cuanto falta y no solo si/no.
+ */
+export interface LearningExitCriteria {
+  /** Cuando la vertical entro en revision: su primera fila (la carga inicial en sombra). */
+  reviewSince: Date | null
+  /** reviewSince + minDays. Antes de esa fecha no se apaga. */
+  earliestOffAt: Date | null
+  dateMet: boolean
+  /**
+   * Desde cuando la cola esta al dia: ninguna nota espero mas de queueAlertHours
+   * sin que una persona la decidiera. null si hoy hay una pendiente vencida.
+   */
+  queueCurrentSince: Date | null
+  queueCurrentDays: number
+  queueMet: boolean
+  /** Decisiones de personas sobre notas de puntaje 0 en la ventana: las que el gate habria dejado pasar. */
+  score0Decided: number
+  score0Released: number
+  score0Met: boolean
+  met: boolean
+  thresholds: {
+    minDays: number
+    windowDays: number
+    score0ReleaseRatio: number
+    score0MinDecisions: number
+    queueAlertHours: number
+  }
+}
+
+const DIA_MS = 86_400_000
+
+/**
+ * Lee de las filas de la vertical lo que el criterio necesita, en una sola
+ * consulta. Las cuentas usan el estado ACTUAL de cada fila: una nota liberada y
+ * despues reabierta no cuenta como liberada. Una fila reabierta pierde su
+ * `reviewed_at`, asi que para la cola cuenta como no decidida desde que entro:
+ * es el error del lado prudente.
+ */
+export async function learningExitCriteria(communityId: string, now: Date = new Date()): Promise<LearningExitCriteria> {
+  const { minDays, windowDays, score0ReleaseRatio, score0MinDecisions } = config.gate.learningExit
+  const queueAlertHours = config.gate.queueAlertHours
+  const rows = await prisma.$queryRaw<
+    Array<{
+      review_since: Date | null
+      overdue_now: boolean | null
+      last_overdue_end: Date | null
+      score0_decided: number | null
+      score0_released: number | null
+    }>
+  >`
+    SELECT
+      MIN(created_at) AS review_since,
+      BOOL_OR(review_state = 'pending' AND created_at < ${utc(now)} - (${queueAlertHours}::int * interval '1 hour')) AS overdue_now,
+      MAX(reviewed_at) FILTER (
+        WHERE review_state IN ('released', 'held')
+          AND reviewed_at > created_at + (${queueAlertHours}::int * interval '1 hour')
+      ) AS last_overdue_end,
+      (COUNT(*) FILTER (
+        WHERE review_state IN ('released', 'held') AND gate_score = 0
+          AND reviewed_at >= ${utc(now)} - (${windowDays}::int * interval '1 day')
+      ))::int AS score0_decided,
+      (COUNT(*) FILTER (
+        WHERE review_state = 'released' AND gate_score = 0
+          AND reviewed_at >= ${utc(now)} - (${windowDays}::int * interval '1 day')
+      ))::int AS score0_released
+    FROM story_community_reviews
+    WHERE community_id = ${communityId}
+  `
+  const r = Array.isArray(rows) ? rows[0] : undefined
+  const reviewSince = r?.review_since ?? null
+  const earliestOffAt = reviewSince ? new Date(reviewSince.getTime() + minDays * DIA_MS) : null
+  const dateMet = earliestOffAt !== null && now.getTime() >= earliestOffAt.getTime()
+
+  // Al dia desde la ultima vez que una nota vencida fue decidida; si nunca vencio
+  // ninguna, desde que la vertical entro en revision. Si hoy hay una vencida, no lo esta.
+  const queueCurrentSince = r?.overdue_now ? null : (r?.last_overdue_end ?? reviewSince)
+  const queueCurrentDays = queueCurrentSince ? Math.max(0, Math.floor((now.getTime() - queueCurrentSince.getTime()) / DIA_MS)) : 0
+  const queueMet = queueCurrentSince !== null && queueCurrentDays >= windowDays
+
+  const score0Decided = Number(r?.score0_decided ?? 0)
+  const score0Released = Number(r?.score0_released ?? 0)
+  // Entero y con tolerancia, porque el umbral se puede cambiar por variable de
+  // entorno: con 0.9 la coma flotante no molesta, pero 0.55 * 100 da
+  // 55.00000000000001, y 55 liberadas de 100 deben cumplir.
+  const score0Needed = Math.ceil(score0ReleaseRatio * score0Decided - 1e-9)
+  const score0Met = score0Decided >= score0MinDecisions && score0Released >= score0Needed
+
+  return {
+    reviewSince,
+    earliestOffAt,
+    dateMet,
+    queueCurrentSince,
+    queueCurrentDays,
+    queueMet,
+    score0Decided,
+    score0Released,
+    score0Met,
+    met: dateMet && queueMet && score0Met,
+    thresholds: { minDays, windowDays, score0ReleaseRatio, score0MinDecisions, queueAlertHours },
+  }
 }
 
 /**
@@ -449,7 +577,7 @@ export async function communityReviewStats(community: CommunityForVisibility, mo
       },
     ],
   }
-  const [visibleToday, visibleIfEnforced, missingRows, grouped, oldest] = await Promise.all([
+  const [visibleToday, visibleIfEnforced, missingRows, grouped, oldest, learningExit] = await Promise.all([
     prisma.story.count({ where: publicCommunityWhere({ community, temas, mode, learningMode }) }),
     prisma.story.count({
       where: learningMode ? proyeccionSinAprendizaje : publicCommunityWhere({ community, temas, mode: 'enforce', learningMode: false }),
@@ -458,15 +586,16 @@ export async function communityReviewStats(community: CommunityForVisibility, mo
     prisma.storyCommunityReview.groupBy({ by: ['reviewState'], where: { communityId: community.id }, _count: { _all: true } }),
     prisma.storyCommunityReview.findFirst({
       where: { communityId: community.id, reviewState: 'pending' },
-      orderBy: [{ publishedAt: 'asc' }, { gateEvaluatedAt: 'asc' }],
-      select: { publishedAt: true, gateEvaluatedAt: true },
+      orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+      select: { createdAt: true },
     }),
+    learningExitCriteria(community.id),
   ])
   const byState: Record<ReviewState, number> = { auto: 0, pending: 0, released: 0, held: 0 }
   for (const g of grouped) {
     if (g.reviewState in byState) byState[g.reviewState as ReviewState] = g._count._all
   }
-  const oldestPendingAt = oldest ? (oldest.publishedAt ?? oldest.gateEvaluatedAt) : null
+  const oldestPendingAt = oldest ? oldest.createdAt : null
   const oldestPendingHours = oldestPendingAt ? Math.floor((Date.now() - oldestPendingAt.getTime()) / 3_600_000) : null
   // Con el aprendizaje encendido todo es pendiente por diseño: la alerta solo tiene sentido cuando el gate ya decide.
   const queueAlert = !learningMode && oldestPendingHours !== null && oldestPendingHours >= config.gate.queueAlertHours
@@ -482,5 +611,47 @@ export async function communityReviewStats(community: CommunityForVisibility, mo
     oldestPendingAt,
     oldestPendingHours,
     queueAlert,
+    learningExit,
   }
+}
+
+/**
+ * Las notas, de entre `storyIds`, que alguna vertical en `enforce` EFECTIVO no
+ * muestra: encajan en ella y no tienen fila `auto` ni `released` (pendientes,
+ * retenidas, o todavia sin fila, que en enforce es lo mismo: cierre por defecto).
+ *
+ * Para el autopost a redes (decision del director del 11-oct-2026: «excluir
+ * pendientes y retenidas de una vertical en enforce»). Sin esto, una nota
+ * retenida en Voces Mapuche podia ser la nota del dia en seis canales media
+ * hora despues de publicarse en la casa grande.
+ *
+ * Con el aprendizaje encendido ninguna vertical esta en enforce efectivo
+ * (effectiveMode la degrada a sombra): devuelve vacio sin consultar.
+ *
+ * NUNCA lanza, y ante un error FALLA CERRADO: devuelve todas las notas, y el
+ * autopost se salta esa corrida. Es al reves que getReviewMode, que trata un
+ * error como 'off' para que la pagina no se vacie; aca los costos no son
+ * simetricos: saltarse una corrida cuesta un post que sale en la siguiente, y
+ * publicar en redes una nota retenida no se deshace.
+ */
+export async function withheldInEnforcedVerticals(storyIds: string[]): Promise<Set<string>> {
+  const retenidas = new Set<string>()
+  if (storyIds.length === 0 || config.gate.learningMode) return retenidas
+  try {
+    const enforced = (await communitiesUnderReview()).filter((c) => effectiveMode(c.mode, config.gate.learningMode) === 'enforce')
+    if (enforced.length === 0) return retenidas
+    const temas = await temasVivos()
+    for (const c of enforced) {
+      const visible = reviewExclusion(c.id, 'enforce')!
+      const ocultas = await prisma.story.findMany({
+        where: { AND: [{ id: { in: storyIds } }, membershipWhere(c, temas), { NOT: visible }] },
+        select: { id: true },
+      })
+      for (const s of ocultas) retenidas.add(s.id)
+    }
+  } catch (err) {
+    log.error({ err, count: storyIds.length }, 'could not read verticals in enforce; withholding every candidate from this autopost run')
+    for (const id of storyIds) retenidas.add(id)
+  }
+  return retenidas
 }

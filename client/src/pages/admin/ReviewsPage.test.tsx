@@ -161,4 +161,62 @@ describe('ReviewsPage', () => {
     expect(tab).toHaveTextContent('!')
     expect(api.queue).toHaveBeenCalledWith('wallmapu-araucania', { state: 'held', page: 1, pageSize: 25 })
   })
+
+  const criterio = {
+    reviewSince: '2026-10-04T19:46:00Z',
+    earliestOffAt: '2026-10-18T19:46:00Z',
+    dateMet: false,
+    queueCurrentSince: null,
+    queueCurrentDays: 0,
+    queueMet: false,
+    score0Decided: 0,
+    score0Released: 0,
+    score0Met: false,
+    met: false,
+    thresholds: { minDays: 14, windowDays: 7, score0ReleaseRatio: 0.9, score0MinDecisions: 10, queueAlertHours: 48 },
+  }
+
+  it('con el aprendizaje encendido muestra el criterio para apagarlo', async () => {
+    api.verticals.mockResolvedValue({
+      learningMode: true,
+      bulkReleaseMaxScore: 1,
+      data: [{ slug: 'mapuche', mode: 'shadow', stats: { ...stats, learningExit: criterio } }],
+    })
+    renderPage()
+    const panel = await screen.findByRole('region', { name: 'Criterio para apagar el modo aprendizaje' })
+    expect(panel).toHaveTextContent('Todavía no se cumple')
+    expect(panel).toHaveTextContent('se cumple el 18 oct')
+  })
+
+  it('con el aprendizaje apagado, o con un backend que no trae el criterio, no lo muestra', async () => {
+    api.verticals.mockResolvedValue({
+      learningMode: false,
+      bulkReleaseMaxScore: 1,
+      data: [
+        { slug: 'mapuche', mode: 'shadow', stats: { ...stats, learningMode: false, learningExit: criterio } },
+        { slug: 'wallmapu-araucania', mode: 'shadow', stats },
+      ],
+    })
+    renderPage()
+    await screen.findByRole('tab', { name: /Voces Mapuche/ })
+    expect(screen.queryByRole('region', { name: 'Criterio para apagar el modo aprendizaje' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('tab', { name: /Voces Araucanía/ }))
+    await waitFor(() => expect(screen.getByRole('tab', { name: /Voces Araucanía/ })).toHaveAttribute('aria-selected', 'true'))
+    expect(screen.queryByRole('region', { name: 'Criterio para apagar el modo aprendizaje' })).not.toBeInTheDocument()
+  })
+
+  it('la razón B+B y su puntaje se leen en la cola', async () => {
+    api.queue.mockResolvedValue({
+      slug: 'mapuche',
+      mode: 'shadow',
+      data: [fila(4, 1, ['listB+B:carabineros', 'listB+B:predio'])],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      totalPages: 1,
+    })
+    renderPage()
+    expect(await screen.findByText('Lista B (dos familias): carabineros')).toBeInTheDocument()
+    expect(screen.getByText('1 · B+B')).toBeInTheDocument()
+  })
 })

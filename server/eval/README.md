@@ -6,7 +6,9 @@ runner es un test de vitest (`server/src/lib/gate.golden.test.ts`), asi que
 **corre en CI en cada push** (job *Server tests*).
 
 Portado del fork `otras-voces` el 2026-10-03 (decision D1 del director: del
-fork se rescata solo el gate). El gate aun no esta cableado al pipeline.
+fork se rescata solo el gate). Desde el 2026-10-04 lo usa la retencion por
+vertical (D4, `server/src/services/communityReview.ts`); la casa grande sigue
+publicando sin el.
 
 ## Formato (una linea JSON por caso)
 
@@ -32,9 +34,11 @@ fork se rescata solo el gate). El gate aun no esta cableado al pipeline.
 
 ## Estado
 
-48 casos: 18 del set inicial curado del lado chileno (10 sensibles / 8 neutrales),
-24 del Puelmapu agregados el 2026-10-04 (12 sensibles `ps*` / 12 neutrales `pn*`) y
-6 de la refutacion adversarial del mismo dia (`ps13`-`ps16`, `pn13`-`pn14`),
+52 casos: 18 del set inicial curado del lado chileno (10 sensibles / 8 neutrales),
+24 del Puelmapu agregados el 2026-10-04 (12 sensibles `ps*` / 12 neutrales `pn*`),
+4 de la regla B+B del 2026-10-11 (`bb01`-`bb02` sensibles, `bn01`-`bn02`
+neutrales: dos terminos de contexto no se corroboran, una sola familia tampoco) y
+6 de la refutacion adversarial del 2026-10-04 (`ps13`-`ps16`, `pn13`-`pn14`),
 parafrasis de titulares reales de prensa argentina sin nombres de personas
 privadas. Los neutrales del Puelmapu prueban a proposito terminos de la Lista B
 sin corroboracion (Villa Mascardi como lugar turistico, el INAI firmando
@@ -101,13 +105,63 @@ detenido la extraccion»; `acusa`: una obra de teatro; `sabotaje`, `represion`,
 `muerte`, `huelga de hambre`: contexto historico). Es el precio del sesgo al
 falso positivo (7.3) y no se corrige con la lista.
 
-## Dos cambios de regla que esperan decision de la direccion
+## B+B: dos familias de la Lista B se corroboran (decidido el 2026-10-11)
 
-1. **Dos aciertos de la Lista B de familias distintas corroboran** (lugar del
-   conflicto + fuerza u operativo; justicia + territorio). Medido: retendria
-   ademas 34 titulares argentinos (26 pertinentes), 16 notas de la vertical y 4
-   globales. Hoy el unico corroborador de la B es la A o el encuadre del LLM.
-2. **`grupo mapuche` en singular** como encuadre que atribuye: retendria 10
+**Decision del director:** «sí» a que dos señales B de familias distintas
+corroboren, con puntaje 1 en la cola. La propuesta del 2026-10-04 daba dos
+ejemplos (lugar del conflicto + fuerza u operativo; justicia + territorio) y
+unas cifras (34 titulares argentinos, 16 notas de la vertical, 4 globales), pero
+no dejo escritas las familias: no se pudieron recuperar, y se definieron y
+midieron de nuevo.
+
+**Las familias** (`FAMILIAS_B` en `gate.ts`): `fuerza` (operativos, protocolo
+7.3.2), `justicia` (Fiscalia, tribunales y proceso penal, 7.3.8) y `contexto`
+(todo lo demas: lugar, partes, organismos, encuadre, hechos). Dos de contexto
+no se corroboran.
+
+**Como se eligieron, medido el 2026-10-11.** Corpus: 433 notas de Voces Mapuche,
+121 de Voces Araucania y 400 globales (API publica, titulo + etiqueta +
+resumen, el texto corto que evalua el gate) y los 888 titulares argentinos.
+Matcher: `evaluateGate` real, sin encuadre (la API publica no lo expone: para
+las verticales las cifras son un techo, porque parte de esas notas ya la retiene
+el encuadre «confrontacion»). Con nueve familias finas y cualquier par, B+B
+sumaba 98 textos sin termino de la Lista A. Cada uno lo juzgaron contra el
+protocolo (7.2 y 7.3) dos jueces independientes de lentes opuestas («aplica el
+protocolo» y «defiende al lector de una cola inutil»), con desempate en los 16
+desacuerdos: 57 pertinentes, 41 ruido.
+
+| Regla | Retiene | Pertinentes | Ruido |
+|---|---|---|---|
+| Cualquier par de nueve familias | 98 | 57 (58 %) | 41 |
+| Dos familias de un «nucleo» (territorio, fuerza, justicia, hecho, organizacion) | 27 | 20 (74 %) | 7 |
+| Solo los dos pares de la propuesta (territorio + fuerza, justicia + territorio) | 16 | 15 (94 %) | 1 |
+| **Fuerza o justicia + otra familia (la elegida)** | **34** | **31 (91 %)** | **3** |
+| La elegida + encuadre con territorio | 61 | 45 (74 %) | 16 |
+
+Por par: justicia con territorio 10 de 11 pertinentes, justicia con encuadre 8
+de 9, fuerza con territorio 7 de 7, fuerza con justicia 4 de 4. El ruido estaba
+en «contexto + contexto»: encuadre con territorio, 13 de 30 ruido («conflicto» y
+«territorio ancestral» en notas culturales); organismos con territorio, 7 de 11
+ruido (CONADI y «restitucion» en notas presupuestarias); e «incendio forestal». Los
+tres falsos positivos de la elegida: una advertencia politica que menciona
+«tribunales internacionales», un debate constitucional en Quebec con un fallo de
+la Corte Suprema, y una columna mexicana donde «fallo» es el verbo fallar.
+
+Lo que la elegida suma, sin encuadre y sin aprendizaje: 8 notas de Voces
+Mapuche, 2 de Araucania, 6 globales y 21 titulares argentinos. Comprobado contra
+el gate anterior en 11.052 evaluaciones (cada texto con y sin encuadre, con y
+sin aprendizaje): B+B no quita ninguna retencion ni ninguna razon; solo agrega.
+
+**Lo que deja fuera a sabiendas** (26 de los 57 pertinentes): sobre todo
+categorias 7.3.12 y 7.3.13 (cultura en territorio en conflicto, personas
+identificables) y ocho titulares argentinos sobre Villa Mascardi, cinco de
+ellos con «conflicto». Ampliar a «encuadre + territorio» los cubriria a cambio de 13
+falsos positivos mas por cada 14 aciertos; si se quiere, es un cambio de una
+linea y se mide igual.
+
+## Un cambio de regla que espera decision de la direccion
+
+1. **`grupo mapuche` en singular** como encuadre que atribuye: retendria 10
    titulares argentinos y una nota cultural («el grupo mapuche Los Peñis del
    Sur», musical). Quedo fuera por esa colision; entra si la direccion prefiere
    el falso positivo. **Remedido el 2026-10-11 con el matcher real y las listas

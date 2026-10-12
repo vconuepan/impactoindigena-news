@@ -234,6 +234,22 @@ rule CommunityReview {
     -- The machine writes only states auto | pending. A row a human set to
     -- released | held is never overwritten by any re-evaluation.
     -- published_at in the vertical is set once and never reset.
+    -- The gate holds on: learning mode, the confrontation frame, a Lista A
+    -- term, a Lista B term corroborated by either of those, or (B+B, since
+    -- 2026-10-11) two Lista B terms of different families: fuerza, justicia,
+    -- contexto; two contexto terms do not corroborate. Score: 3 frame,
+    -- 2 Lista A, 1 B+B, 0 learning mode only.
+}
+
+invariant LearningModeExitCriterion {
+    -- Director's decision, 2026-10-11 («ambos»). Learning mode may be turned
+    -- off for a vertical only when ALL hold:
+    --   the vertical has been under review for 14 days (first row + 14 days),
+    --   no row has waited more than queue_alert_hours without a human
+    --     decision for the last 7 days,
+    --   humans released >= 90 % of at least 10 score-0 decisions in those 7 days.
+    -- The editor screen reports each condition; nothing enforces it in code:
+    -- learning mode is an App Service setting the director changes.
 }
 
 invariant VerticalVisibility {

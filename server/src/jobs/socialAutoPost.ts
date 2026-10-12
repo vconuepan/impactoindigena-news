@@ -5,6 +5,7 @@ import { isMastodonConfigured } from '../lib/mastodon.js'
 import { isTwitterConfigured } from '../lib/twitter.js'
 import { findAutoPostCandidates, pickBestStoryForSocial } from '../services/socialMedia.js'
 import type { AutoPostChannel } from '../services/socialMedia.js'
+import { withheldInEnforcedVerticals } from '../services/communityReview.js'
 import {
   generateDraft as generateBlueskyDraft,
   publishPost as publishBlueskyPost,
@@ -160,6 +161,14 @@ export async function runSocialAutoPost(): Promise<void> {
 
       log.info({ channel: channel.name, storyId }, 'generating draft')
       const draft = await channel.generateDraft(storyId)
+
+      // Candidates were filtered minutes ago (LLM pick, drafts, 2 s between
+      // channels): a vertical in enforce may have withheld the story since.
+      // Check again right before each publish, which cannot be undone.
+      if ((await withheldInEnforcedVerticals([storyId])).has(storyId)) {
+        log.warn({ channel: channel.name, storyId }, 'story withheld by a vertical in enforce during the run; auto-post stopped')
+        break
+      }
 
       log.info({ channel: channel.name, postId: draft.id }, 'publishing')
       await channel.publishPost(draft.id)

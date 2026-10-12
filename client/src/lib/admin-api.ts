@@ -905,9 +905,27 @@ export interface ReviewStats {
   visibleIfEnforcedProjected?: boolean
   byState: Record<ReviewState, number>
   missingRows: number
+  /** Desde que la pendiente más vieja entró a la cola (no desde su última reevaluación). */
   oldestPendingAt: string | null
   oldestPendingHours: number | null
   queueAlert: boolean
+  /** El criterio del director para apagar el modo aprendizaje (11-oct-2026). Opcional: un backend anterior no lo trae. */
+  learningExit?: LearningExitCriteria
+}
+
+/** Por fecha Y con datos: dos semanas en revisión, una semana con la cola al día y ≥ 9 de 10 de puntaje 0 liberadas. */
+export interface LearningExitCriteria {
+  reviewSince: string | null
+  earliestOffAt: string | null
+  dateMet: boolean
+  queueCurrentSince: string | null
+  queueCurrentDays: number
+  queueMet: boolean
+  score0Decided: number
+  score0Released: number
+  score0Met: boolean
+  met: boolean
+  thresholds: { minDays: number; windowDays: number; score0ReleaseRatio: number; score0MinDecisions: number; queueAlertHours: number }
 }
 
 export interface ReviewVertical {
