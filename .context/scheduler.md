@@ -53,7 +53,7 @@ Until 2026-09-08 neither call passed a timezone, so node-cron used the process c
 | Job Name | Handler | Default Schedule |
 |----------|---------|-----------------|
 | `crawl_feeds` | `runCrawlFeeds` | `0 */6 * * *` (every 6h) |
-| `preassess_stories` | `runPreassessStories` | Configurable |
+| `preassess_stories` | `runPreassessStories` | Configurable. Throws (so `lastError` and the alert fire) when the first pass lets through under 50 % of the queue or a pass makes no progress; see `llm-analysis.md` |
 | `assess_stories` | `runAssessStories` | Configurable |
 | `select_stories` | `runSelectStories` | Configurable |
 | `publish_stories` | `runPublishStories` | Configurable |

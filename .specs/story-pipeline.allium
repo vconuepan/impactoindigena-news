@@ -96,7 +96,9 @@ entity Cluster {
 
 rule PreAssess {
     when: PreAssessJobRuns(story)
-    -- Polls for stories where status = fetched.
+    -- Polls for stories where status = fetched and dateCrawled is within the
+    -- last PREASSESS_MAX_AGE_DAYS days (default 14). Older fetched stories are
+    -- left as they are: a story that old is not news for the front page.
 
     -- LLM assigns issue + conservative rating + emotion + country
     -- Subject and geography are two axes, not one. The classifier only ever

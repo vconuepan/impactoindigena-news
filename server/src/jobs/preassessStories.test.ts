@@ -26,8 +26,50 @@ describe('runPreassessStories', () => {
 
     await runPreassessStories()
 
-    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('fetched')
+    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('fetched', { hoursAgo: 14 * 24 })
     expect(mockPreAssessStories).toHaveBeenCalledWith(['story-1', 'story-2'])
+  })
+
+  it('termina con error si el primer pase deja pasar menos de la mitad', async () => {
+    // La corrida persiste lo que pudo, pero el scheduler tiene que enterarse:
+    // antes esto aparecia como "completado" con 888 de 889 lotes caidos.
+    const ids = Array.from({ length: 10 }, (_, i) => `story-${i}`)
+    mockGetStoryIdsByStatus
+      .mockResolvedValueOnce(ids)          // pase 1
+      .mockResolvedValueOnce(ids.slice(1)) // remaining tras el pase 1
+      .mockResolvedValueOnce(ids.slice(1)) // pase 2
+      .mockResolvedValue([])               // remaining tras el pase 2: nada
+    mockPreAssessStories
+      .mockResolvedValueOnce([{ storyId: 'story-0', rating: 3, emotionTag: 'calm', narrativeFrame: null }])
+      .mockResolvedValueOnce(ids.slice(1).map(id => ({ storyId: id, rating: 3, emotionTag: 'calm', narrativeFrame: null })))
+
+    await expect(runPreassessStories()).rejects.toThrow(/solo 1 de 10 historias pasaron en el primer pase \(10 %\)/)
+    // El segundo pase igual corrio: el error no corta el trabajo, lo reporta.
+    expect(mockPreAssessStories).toHaveBeenCalledTimes(2)
+  })
+
+  it('termina con error si un pase no avanza nada', async () => {
+    mockGetStoryIdsByStatus.mockResolvedValue(['story-1', 'story-2'])
+    mockPreAssessStories.mockResolvedValue([])
+
+    await expect(runPreassessStories()).rejects.toThrow(/0 de 2 historias pasaron en el pase 1/)
+    expect(mockPreAssessStories).toHaveBeenCalledTimes(1)
+  })
+
+  it('no lanza cuando el primer pase es sano aunque queden rezagadas', async () => {
+    mockGetStoryIdsByStatus
+      .mockResolvedValueOnce(['story-1', 'story-2', 'story-3'])
+      .mockResolvedValueOnce(['story-3'])
+      .mockResolvedValueOnce(['story-3'])
+      .mockResolvedValue([])
+    mockPreAssessStories
+      .mockResolvedValueOnce([
+        { storyId: 'story-1', rating: 3, emotionTag: 'calm', narrativeFrame: 'alianza' },
+        { storyId: 'story-2', rating: 5, emotionTag: 'calm', narrativeFrame: null },
+      ])
+      .mockResolvedValueOnce([{ storyId: 'story-3', rating: 2, emotionTag: 'calm', narrativeFrame: null }])
+
+    await expect(runPreassessStories()).resolves.toBeUndefined()
   })
 
   it('does nothing when no fetched stories', async () => {
@@ -35,7 +77,7 @@ describe('runPreassessStories', () => {
 
     await runPreassessStories()
 
-    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('fetched')
+    expect(mockGetStoryIdsByStatus).toHaveBeenCalledWith('fetched', { hoursAgo: 14 * 24 })
     expect(mockPreAssessStories).not.toHaveBeenCalled()
   })
 })

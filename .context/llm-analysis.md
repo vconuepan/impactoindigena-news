@@ -141,3 +141,34 @@ See `.context/prompting.md` for GPT-5 prompt design principles that must be foll
 | `server/src/prompts/` | Prompt builders (shared, preassess, assess, select, podcast) |
 | `server/src/services/analysis.ts` | Orchestration: runBatchClassification, preAssessStories, reclassifyStories, assessStory, selectStories |
 | `server/src/schemas/llm.ts` | Zod schemas with `.describe()` format guidance for all LLM output |
+
+
+## Guardrail on the classification enums (2026-10-12)
+
+`withStructuredOutput` validates the whole batch against the Zod schema, so one
+article with a value outside the enum used to throw an `OutputParserException`
+and send the other nine back to `fetched` for the next pass. Measured in
+production on 2026-10-12: 888 of 889 pre-assessment batches failed on
+`narrativeFrame: "calm"` (the emotion-tag default, copied into the frame for
+stories that are not about indigenous peoples), the `fetched` queue reached
+8,882 stories and each run re-sent all of them five times. Nothing alerted,
+because `Promise.allSettled` swallowed the batches and the job completed.
+
+Two locks, both in code (the prompt instruction is soft and stays soft):
+
+- `schemas/llm.ts`: `EMOTION_TAG_SCHEMA` is `.catch("calm")` and
+  `NARRATIVE_FRAME_SCHEMA` is `.nullable().catch(null)`. zod-to-json-schema
+  unwraps the catch, so the model still receives the full enum (plus `null` as a
+  legal "none applies"); invalid values are corrected at write time. `batch
+  complete` logs `noFrameCount` per batch.
+- `jobs/preassessStories.ts`: if the first pass lets through fewer than half the
+  stories, or a pass makes no progress, the job throws **after** persisting what
+  it could, so `lastError`, the panel badge and the failure alert fire.
+
+`rating` stays strict: a missing rating still fails its batch.
+
+The job also only takes `fetched` stories crawled in the last
+`PREASSESS_MAX_AGE_DAYS` days (14, `config.preassess.maxAgeDays`). In steady state
+the queue drains every six hours and the window is invisible; it exists so that
+the backlog left by the parser failure is not pushed to assess and the front page
+as if it were today's news.

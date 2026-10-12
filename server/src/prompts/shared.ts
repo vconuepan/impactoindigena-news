@@ -98,14 +98,15 @@ Use EXACTLY these Spanish values (the valid enum values are: confrontacion, resi
 - resiliencia: El artículo muestra cómo un pueblo o comunidad indígena supera adversidades, se recupera de traumas o preserva su cultura frente a presiones externas.
 - protagonismo: El artículo muestra a un pueblo o comunidad indígena como agente activo que lidera, innova, negocia o decide su propio futuro.
 - alianza: El artículo muestra cooperación, acuerdos, alianzas o diálogos entre pueblos indígenas y otros actores (Estado, empresas, sociedad civil, academia).
-If the story scores 1-2 (not about indigenous peoples), use the frame that best approximates the article's content.
+If no frame applies (typically a story that scores 1-2 because it is not about indigenous peoples), use null. Never put an emotion tag value (calm, uplifting, frustrating, scary) in this field.
 </NARRATIVE FRAME>`
 
 /**
  * Compact description for Zod schema .describe() calls.
  */
 export const NARRATIVE_FRAME_SCHEMA_DESCRIPTION =
-  'Narrative frame — must be EXACTLY one of: confrontacion, resiliencia, protagonismo, alianza. ' +
+  'Narrative frame — must be EXACTLY one of: confrontacion, resiliencia, protagonismo, alianza, or null when none applies ' +
+  '(e.g. the article is not about indigenous peoples). Never an emotion tag value such as calm. ' +
   'confrontacion: conflicto o resistencia frente a actores externos. ' +
   'resiliencia: superación de adversidades o preservación cultural. ' +
   'protagonismo: liderazgo activo, innovación o autodeterminación. ' +

@@ -39,10 +39,12 @@ function getGuidelines(issue: { promptFactors: string; promptAntifactors: string
 
 // --- Shared batch classification helper ---
 
-interface BatchClassificationOptions<T extends { articleId: string; issueSlug: string; emotionTag: string; narrativeFrame: string }> {
+interface BatchClassificationOptions<T extends { articleId: string; issueSlug: string; emotionTag: string; narrativeFrame: string | null }> {
   storyIds: string[]
   llm: ChatOpenAI
-  schema: z.ZodType<{ articles: T[] }>
+  // Input `unknown`: los enums llevan `.catch()`, que acepta cualquier entrada
+  // y la corrige al parsear (ver schemas/llm.ts). Lo que importa es la salida.
+  schema: z.ZodType<{ articles: T[] }, z.ZodTypeDef, unknown>
   buildPrompt: (stories: StoryForPreassess[], issues: IssueForPreassess[]) => string
   buildUpdate: (item: T, issueId: string | null) => Prisma.StoryUpdateInput
   /** Whether to assign feed issue to stories not returned by the LLM. Default true (pre-assess behavior). */
@@ -53,7 +55,7 @@ interface BatchClassificationOptions<T extends { articleId: string; issueSlug: s
   label: string
 }
 
-async function runBatchClassification<T extends { articleId: string; issueSlug: string; emotionTag: string; narrativeFrame: string }>(
+async function runBatchClassification<T extends { articleId: string; issueSlug: string; emotionTag: string; narrativeFrame: string | null }>(
   options: BatchClassificationOptions<T>,
 ): Promise<{ storyId: string; item: T }[]> {
   const { storyIds, llm, schema, buildPrompt, buildUpdate, fallbackToFeedIssue = true, onProgress, batchSize, concurrency, label } = options
@@ -134,7 +136,11 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
         await rateLimitDelay()
         const response = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
         batchesDone++
-        log.info({ progress: `${batchesDone}/${totalBatches}`, resultCount: response.articles.length, batch: batchLabel }, 'batch complete')
+        // `noFrameCount`: articulos que llegaron sin encuadre valido y el esquema
+        // dejo en null (ver el candado en schemas/llm.ts). Se cuenta por lote y
+        // no se avisa por articulo: en una cola de miles seria ruido.
+        const noFrameCount = (response.articles as T[]).filter(a => a.narrativeFrame === null).length
+        log.info({ progress: `${batchesDone}/${totalBatches}`, resultCount: response.articles.length, noFrameCount, batch: batchLabel }, 'batch complete')
 
         const storyMap = new Map(batch.map(s => [s.id, s]))
         const batchResults: { storyId: string; item: T }[] = []
@@ -230,7 +236,7 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
 export async function preAssessStories(
   storyIds: string[],
   onProgress?: ProgressCallback,
-): Promise<{ storyId: string; rating: number; emotionTag: string; narrativeFrame: string }[]> {
+): Promise<{ storyId: string; rating: number; emotionTag: string; narrativeFrame: string | null }[]> {
   const results = await runBatchClassification({
     storyIds,
     llm: getMediumLLM(),
@@ -266,7 +272,7 @@ export async function preAssessStories(
 export async function reclassifyStories(
   storyIds: string[],
   onProgress?: ProgressCallback,
-): Promise<{ storyId: string; emotionTag: string; narrativeFrame: string }[]> {
+): Promise<{ storyId: string; emotionTag: string; narrativeFrame: string | null }[]> {
   const results = await runBatchClassification({
     storyIds,
     llm: getSmallLLM(),
@@ -296,7 +302,7 @@ export async function reclassifyStories(
 export async function tagEmotionOnly(
   storyIds: string[],
   onProgress?: ProgressCallback,
-): Promise<{ storyId: string; emotionTag: string; narrativeFrame: string }[]> {
+): Promise<{ storyId: string; emotionTag: string; narrativeFrame: string | null }[]> {
   const results = await runBatchClassification({
     storyIds,
     llm: getSmallLLM(),

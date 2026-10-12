@@ -45,6 +45,15 @@ export const config = {
     batchSize: 10,
     contentMaxLength: 1200,
     modelTier: "medium" as const,
+    /**
+     * Solo entran al pre-analisis las historias crawleadas hace menos de esto.
+     * En regimen la cola se vacia cada seis horas y la ventana no se nota; lo
+     * que acota es el arrastre: el 12-oct-2026 habia 8.882 `fetched` acumuladas
+     * desde junio por un lote que nunca parseaba (ver jobs/preassessStories.ts),
+     * y sin ventana la primera corrida sana las habria mandado todas al
+     * assess y a la portada como si fueran de hoy.
+     */
+    maxAgeDays: parseInt(process.env.PREASSESS_MAX_AGE_DAYS || "14", 10),
   },
   assess: {
     contentMaxLength: 4000,

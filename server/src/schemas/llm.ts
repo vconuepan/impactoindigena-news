@@ -1,12 +1,33 @@
 import { z } from "zod";
 import { EMOTION_TAG_SCHEMA_DESCRIPTION, NARRATIVE_FRAME_SCHEMA_DESCRIPTION } from "../prompts/shared.js";
 
+// Candado determinista sobre los dos enums de clasificacion.
+//
+// `withStructuredOutput` valida el LOTE entero con este esquema: un solo valor
+// fuera del enum en uno de los diez articulos tiraba un OutputParserException y
+// los otros nueve quedaban en `fetched` para el pase siguiente, donde volvia a
+// pasar lo mismo. Medido el 12-oct-2026 en produccion: 888 de 889 lotes
+// fallaban por `narrativeFrame: "calm"` (el valor por defecto de la etiqueta
+// emocional, copiado al encuadre en articulos que no tratan de pueblos
+// indigenas), la cola llego a 8.882 historias y cada corrida la reenviaba
+// cinco veces al modelo.
+//
+// `.catch()` corrige el valor en el punto de escritura sin tocar lo que ve el
+// modelo: zod-to-json-schema desenvuelve el catch y manda el enum tal cual, y
+// `.nullable()` le ofrece ademas un "ninguno" legal. La instruccion del prompt
+// sigue siendo blanda; esto es lo que la hace cierta.
+export const EMOTION_TAGS = ["uplifting", "frustrating", "scary", "calm"] as const;
+export const NARRATIVE_FRAMES = ["confrontacion", "resiliencia", "protagonismo", "alianza"] as const;
+
 const EMOTION_TAG_SCHEMA = z
-  .enum(["uplifting", "frustrating", "scary", "calm"])
+  .enum(EMOTION_TAGS)
+  .catch("calm")
   .describe(EMOTION_TAG_SCHEMA_DESCRIPTION);
 
 const NARRATIVE_FRAME_SCHEMA = z
-  .enum(["confrontacion", "resiliencia", "protagonismo", "alianza"])
+  .enum(NARRATIVE_FRAMES)
+  .nullable()
+  .catch(null)
   .describe(NARRATIVE_FRAME_SCHEMA_DESCRIPTION);
 
 /**

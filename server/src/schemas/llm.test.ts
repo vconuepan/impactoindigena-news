@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { assessResultSchema, extractQuoteAttributionSchema, extractTitleLabelSchema } from './llm.js'
+import { toJsonSchema } from '@langchain/core/utils/json_schema'
+import { assessResultSchema, extractQuoteAttributionSchema, extractTitleLabelSchema, preAssessResultSchema } from './llm.js'
 
 describe('assessResultSchema', () => {
   const validResponse = {
@@ -108,5 +109,48 @@ describe('capitalization guardrail in title guidance', () => {
       ratingGuidelines: '',
     } as never)
     expect(prompt).not.toContain('en minúsculas excepto nombres propios')
+  })
+})
+
+describe('candado de los enums de clasificacion (preAssessResultSchema)', () => {
+  // 12-oct-2026: 888 de 889 lotes caian porque UN articulo traia
+  // `narrativeFrame: "calm"`, y los otros nueve volvian a la cola. El candado
+  // corrige el valor al escribir y deja pasar el lote.
+  const base = { articleId: 'a', issueSlug: 'derechos-indigenas', rating: 2, emotionTag: 'calm', country: '' }
+
+  it('un encuadre invalido queda en null y no hunde el lote', () => {
+    const parsed = preAssessResultSchema.parse({
+      articles: [
+        { ...base, articleId: 'a', narrativeFrame: 'calm' },
+        { ...base, articleId: 'b', narrativeFrame: 'alianza' },
+        { ...base, articleId: 'c', narrativeFrame: null },
+      ],
+    })
+    expect(parsed.articles.map(a => a.narrativeFrame)).toEqual([null, 'alianza', null])
+  })
+
+  it('una emocion invalida cae al valor por defecto, calm', () => {
+    const parsed = preAssessResultSchema.parse({
+      articles: [{ ...base, emotionTag: 'confrontacion', narrativeFrame: 'protagonismo' }],
+    })
+    expect(parsed.articles[0].emotionTag).toBe('calm')
+  })
+
+  it('el rating sigue siendo estricto: sin rating, el lote falla', () => {
+    const { rating, ...sinRating } = base
+    expect(preAssessResultSchema.safeParse({ articles: [{ ...sinRating, narrativeFrame: 'alianza' }] }).success).toBe(false)
+  })
+
+  it('el modelo sigue viendo el enum completo, y null como opcion legal', () => {
+    // Lo que LangChain manda como definicion de la funcion: el catch se
+    // desenvuelve y el enum queda; nullable agrega null. Si esto cambiara,
+    // el modelo dejaria de tener las opciones a la vista.
+    const json: any = toJsonSchema(preAssessResultSchema)
+    const frame = json.properties.articles.items.properties.narrativeFrame
+    const variants = (frame.anyOf ?? [frame]).map((v: any) => v.enum ?? v.type)
+    expect(variants).toContainEqual(['confrontacion', 'resiliencia', 'protagonismo', 'alianza'])
+    expect(variants).toContainEqual('null')
+    const emotion = json.properties.articles.items.properties.emotionTag
+    expect(emotion.enum).toEqual(['uplifting', 'frustrating', 'scary', 'calm'])
   })
 })

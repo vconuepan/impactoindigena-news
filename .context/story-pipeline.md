@@ -53,7 +53,7 @@ Stories get a URL slug (e.g. `ai-breakthrough-in-protein-folding`) when they are
 | Job | Schedule | What It Does |
 |-----|----------|--------------|
 | `crawl_feeds` | Every 6 hours | Fetches RSS feeds, extracts content, creates stories as `fetched` |
-| `preassess_stories` | Configurable | Batch pre-screens all `fetched` stories |
+| `preassess_stories` | Configurable | Batch pre-screens the `fetched` stories crawled in the last `PREASSESS_MAX_AGE_DAYS` days (14). Older ones stay `fetched` untouched; throws when the first pass lets through under 50 % |
 | `assess_stories` | Configurable | Full analysis on `pre_analyzed` stories with rating >= 3 |
 | `select_stories` | Configurable | Selects top ~50% of `analyzed` stories with `relevance >= 5` (both configurable via `config.selection.*`), batched into groups of ≤20 |
 | `publish_stories` | Configurable | Publishes all `selected` stories, sets `datePublished` if not already set |
