@@ -422,6 +422,24 @@ function QuoteDivider({ stories }: { stories: PublicStory[] }) {
  *
  * Sin iconos a proposito. El par icono+boton redondeado era la mitad de lo que
  * hacia leer el bloque anterior como una landing de producto.
+ *
+ * ── La frase (12-oct-2026) ───────────────────────────────────────────────────
+ *
+ * Hasta el 12-oct-2026 decia «Cubrimos las historias que ponen a los pueblos
+ * indigenas como protagonistas, no como victimas», fija en espanol tambien para
+ * quien lee en ingles. Tres cosas estaban mal. El sujeto era el medio
+ * («Cubrimos»), y la regla de la casa es que la agencia es de los pueblos.
+ * Decia como se encuadra, no para que existe el medio. Y prometia solo
+ * protagonismo cuando el pipeline publica cuatro marcos —confrontacion,
+ * resiliencia, protagonismo, alianza (`NARRATIVE_FRAME_PROMPT_BLOCK`)—, asi
+ * que la frase no describia lo que la portada muestra.
+ *
+ * La frase nueva pone a los pueblos de sujeto, con un verbo por marco —deciden,
+ * negocian, resisten, crean—, y en la segunda oracion dice lo que el medio hace
+ * con eso: elegir sus noticias cada dia con criterio indigena, el descriptor
+ * que el director fijo el 4-oct («Criterio editorial indigena»). Vive en los
+ * locales como el resto del bloque, y `locales/regla-agencia.test.ts` impide
+ * que vuelva a entrar con un sujeto que no sean los pueblos.
  */
 function StatementSection() {
   const { t } = useTranslation()
@@ -470,7 +488,7 @@ function StatementSection() {
            */
           style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'rgba(255,255,255,0.75)' }}
         >
-          Nuestra misión
+          {t('mission.eyebrow')}
         </span>
       </div>
 
@@ -486,7 +504,7 @@ function StatementSection() {
           maxWidth: '680px',
         }}
       >
-        Cubrimos las historias que ponen a los pueblos indígenas como protagonistas, no como víctimas.
+        {t('mission.statement')}
       </p>
 
       {/* La promesa del medio, heredada del banner que este bloque reemplaza */}
@@ -518,7 +536,7 @@ function StatementSection() {
           className="font-dm-sans text-white/70 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-white rounded"
           style={{ fontSize: '13px', fontWeight: '600', padding: '10px 4px', textDecoration: 'none' }}
         >
-          Nuestra metodología →
+          {t('mission.method')}
         </Link>
       </div>
     </section>

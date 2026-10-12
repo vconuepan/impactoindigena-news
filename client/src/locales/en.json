@@ -192,6 +192,11 @@
     "button": "Support us on Ko-fi",
     "opensInNewTab": "(opens in new tab)"
   },
+  "mission": {
+    "eyebrow": "Our mission",
+    "statement": "Indigenous peoples decide, negotiate, resist and create. This is their news, chosen every day with indigenous editorial judgment.",
+    "method": "Our methodology →"
+  },
   "landing": {
     "readStories": "Read today's stories",
     "subscribeNewsletter": "Subscribe to newsletter"

@@ -192,6 +192,11 @@
     "button": "Apóyanos en Ko-fi",
     "opensInNewTab": "(abre en nueva pestaña)"
   },
+  "mission": {
+    "eyebrow": "Nuestra misión",
+    "statement": "Los pueblos indígenas deciden, negocian, resisten y crean. Estas son sus noticias, elegidas cada día con criterio indígena.",
+    "method": "Nuestra metodología →"
+  },
   "landing": {
     "readStories": "Leer las noticias de hoy",
     "subscribeNewsletter": "Suscribirse al boletín"
