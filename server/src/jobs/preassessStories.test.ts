@@ -48,12 +48,28 @@ describe('runPreassessStories', () => {
     expect(mockPreAssessStories).toHaveBeenCalledTimes(2)
   })
 
-  it('termina con error si un pase no avanza nada', async () => {
+  it('termina con error si el primer pase no avanza nada', async () => {
     mockGetStoryIdsByStatus.mockResolvedValue(['story-1', 'story-2'])
     mockPreAssessStories.mockResolvedValue([])
 
-    await expect(runPreassessStories()).rejects.toThrow(/0 de 2 historias pasaron en el pase 1/)
+    await expect(runPreassessStories()).rejects.toThrow(/0 de 2 historias pasaron en el primer pase/)
     expect(mockPreAssessStories).toHaveBeenCalledTimes(1)
+  })
+
+  it('unos rezagados que no avanzan en un pase posterior no son un error', async () => {
+    // 12-oct: la primera corrida sana hizo 4.135 de 4.145 y el ultimo lote de 10
+    // volvio con un 400 de Azure en cada pase. Eso se registra, no se alerta.
+    const ids = Array.from({ length: 20 }, (_, i) => `story-${i}`)
+    mockGetStoryIdsByStatus
+      .mockResolvedValueOnce(ids)              // pase 1
+      .mockResolvedValueOnce(['story-19'])     // remaining
+      .mockResolvedValueOnce(['story-19'])     // pase 2
+    mockPreAssessStories
+      .mockResolvedValueOnce(ids.slice(0, 19).map(id => ({ storyId: id, rating: 2, emotionTag: 'calm', narrativeFrame: null })))
+      .mockResolvedValueOnce([])
+
+    await expect(runPreassessStories()).resolves.toBeUndefined()
+    expect(mockPreAssessStories).toHaveBeenCalledTimes(2)
   })
 
   it('no lanza cuando el primer pase es sano aunque queden rezagadas', async () => {

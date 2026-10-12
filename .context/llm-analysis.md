@@ -81,6 +81,15 @@ Two traps when working on this file:
 - **Word boundaries must be Unicode-aware.** JavaScript's `\b` treats accented vowels as non-word characters, so entries ending in one (`Perú`, `Canadá`) never matched. Use the `NOT_LETTER_BEFORE` / `NOT_LETTER_AFTER` lookarounds, never `\b`.
 - **Never measure the guardrail with its own whitelist.** Running `fixCapitalization()` over published titles to count what's still broken always returns zero — a whitelist can only miss terms it doesn't know. Measure the whole defect class instead: acronyms and place names in lowercase, listed or not.
 
+## Translation Guardrail
+
+`services/translation.ts` translates the six display fields (`titleLabel`, `title`, `summary`, `quote`, `marketingBlurb`, `relevanceSummary`) into `*En` columns right after publish (`jobs/publishStories.ts`). Two defenses, both added 2026-10-12 after measuring on the public API that 3131 of 3958 published stories had `title_en` identical to `title`:
+
+- **Output fields are named differently from the input fields** (`titleEn`, never `title`), and the translator gets its role through a `SystemMessage`. From 2026-05-10 (`a1a2a73`, `functionCalling` forced for Azure compatibility) to 2026-10-12 the schema reused the input names and gpt-4o-mini filled the function by copying the Spanish values. Reproduced live on 3 stories: 3/3 copies with the same names, 0/3 with `*En` names plus the system message. `functionCalling` stays; what changed is what the model receives.
+- **Deterministic copy check at the write point.** If `titleEn` or `summaryEn` equals the Spanish original (case- and whitespace-insensitive), nothing is written and `TranslationUnchangedError` is thrown; `translateStoriesBatch` counts it as failed and the site falls back to Spanish, which is what was already happening. `titleLabel` is exempt on purpose: a short kicker made of proper nouns ("COP30") is legitimately identical in both languages.
+
+The unit test mocks the LLM, so it cannot catch the model copying; only the write-point check can. Backfill of the 290 untranslated and the copied ones: `npm run translations:backfill` (dry run, no model calls) then `npm run translations:backfill:apply`, optionally `-- --limit N`.
+
 ## Shared Batch Classification
 
 Both pre-assessment and reclassification use `runBatchClassification()` in `analysis.ts` — a generic helper that handles DB fetching, issue slug resolution, batching, semaphore-gated concurrent LLM calls, progress reporting, and DB transaction writes. Callers provide the LLM instance, schema, prompt builder, and an update function that determines which fields to write per story. The `fallbackToFeedIssue` option controls whether stories omitted from the LLM response get their `issueId` overwritten to the feed default (enabled for pre-assessment, disabled for reclassification to preserve existing assignments).
@@ -162,8 +171,10 @@ Two locks, both in code (the prompt instruction is soft and stays soft):
   legal "none applies"); invalid values are corrected at write time. `batch
   complete` logs `noFrameCount` per batch.
 - `jobs/preassessStories.ts`: if the first pass lets through fewer than half the
-  stories, or a pass makes no progress, the job throws **after** persisting what
-  it could, so `lastError`, the panel badge and the failure alert fire.
+  stories, or the first pass makes no progress at all, the job throws **after**
+  persisting what it could, so `lastError`, the panel badge and the failure alert
+  fire. Stragglers that never come back right in a later pass (on 2026-10-12, 10 of
+  4,145 in one batch Azure rejected with a 400) only log a warning.
 
 `rating` stays strict: a missing rating still fails its batch.
 

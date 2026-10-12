@@ -43,7 +43,15 @@ export async function runPreassessStories(): Promise<void> {
     // If this pass made no progress, stop to avoid a tight loop on persistent failures
     if (results.length === 0) {
       log.warn({ pass, remaining: ids.length }, 'no progress in pass — stopping to avoid loop')
-      throw new Error(`pre-assessment: 0 de ${ids.length} historias pasaron en el pase ${pass}; revisar "batch failed" en el log`)
+      // Solo es un error si es el PRIMER pase: ahi "nada paso" significa que el
+      // modelo o el esquema estan rotos para toda la cola. En un pase posterior
+      // significa rezagados que el modelo no logra devolver bien (el 12-oct, la
+      // primera corrida sana dejo 10 de 4.145 en un lote que Azure rechazaba con
+      // 400) y eso no convierte en fallida una corrida que hizo el 99 %.
+      if (pass === 1) {
+        throw new Error(`pre-assessment: 0 de ${ids.length} historias pasaron en el primer pase; revisar "batch failed" en el log`)
+      }
+      break
     }
 
     // If all were processed, we're done
