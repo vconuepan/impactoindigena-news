@@ -9,7 +9,7 @@ import {
   FacebookAuthError,
 } from '../lib/facebook.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
-import { buildFacebookPostPrompt } from '../prompts/facebook.js'
+import { buildFacebookPostPrompt, withAiLabel } from '../prompts/facebook.js'
 import { config } from '../config.js'
 
 const log = createLogger('facebook-service')
@@ -160,7 +160,7 @@ export async function publishPost(postId: string) {
   const storyUrl = `${config.siteUrl}/stories/${post.story.slug}`
 
   try {
-    const result = await createPagePost(post.postText, storyUrl)
+    const result = await createPagePost(withAiLabel(post.postText), storyUrl)
 
     const updated = await prisma.facebookPost.update({
       where: { id: postId },
