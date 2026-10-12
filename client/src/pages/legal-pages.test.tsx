@@ -117,6 +117,25 @@ describe('el tercero que recibe la IP del lector esta declarado', () => {
     expect(seccion?.textContent).toMatch(/direcci[oó]n IP/)
   })
 
+  it('la Politica declara que los datos de lectores transitan por Static Web Apps si la API va por su proxy', () => {
+    // Hasta la v3.3 la Politica decia que esa entrega «no involucra datos de
+    // suscriptores». Pero el despliegue compila el cliente con VITE_API_URL=""
+    // (mismo origen), asi que TODA peticion a /api —suscripcion, sesion,
+    // membresias, ARCO— cruza el proxy de Static Web Apps antes de llegar a
+    // Chile. Si algun dia la API se llama directo, este test debe reescribirse.
+    const workflow = readFileSync(
+      path.resolve(__dirname, '../../../.github/workflows/deploy-azure-frontend.yml'),
+      'utf8',
+    )
+    if (!/VITE_API_URL:\s*""/.test(workflow)) return
+    renderPage(<PrivacyPage />)
+    const celda = screen.getAllByText('Azure Static Web Apps').find((n) => n.tagName === 'TD')
+    const fila = celda!.closest('tr')
+    expect(fila?.textContent).toMatch(/API/)
+    expect(fila?.textContent).toMatch(/correo/)
+    expect(document.body.textContent).not.toMatch(/no involucra datos de suscriptores/)
+  })
+
   it('la Politica de Privacidad ya no dice que Cloudflare R2 va «sin datos de lectores»', () => {
     // R2 sirve las imagenes directo al navegador de cada lector, asi que recibe
     // su IP igual que cualquier servidor. La frase anterior era inexacta.
@@ -126,5 +145,66 @@ describe('el tercero que recibe la IP del lector esta declarado', () => {
     const fila = filas[0].closest('tr')
     expect(fila?.textContent).not.toMatch(/sin datos de lectores/)
     expect(fila?.textContent).toMatch(/direcci[oó]n IP/)
+  })
+})
+
+/**
+ * Correcciones del 12-oct-2026 (Politica v3.4). Una revision contra el texto
+ * oficial de las leyes encontro afirmaciones que eran inexactas en cualquier
+ * lectura juridica. Cada test fija una, con su razon.
+ */
+describe('la Politica no promete lo que no hace ni cita lo que la ley no dice', () => {
+  it('no declara «deber de secreto» sobre las noticias que publica', () => {
+    // El art. 14 bis de la 21.719 pone bajo secreto el resultado de organizar o
+    // clasificar datos de fuentes publicas. Voces clasifica y PUBLICA: declarar
+    // ese deber describia como secreto lo que el sitio difunde.
+    renderPage(<PrivacyPage />)
+    expect(document.body.textContent).not.toMatch(/deber de secreto/i)
+  })
+
+  it('no funda el origen etnico de terceros en lo que publico «la fuente»', () => {
+    // El art. 16 a) exige que el dato sensible lo haya hecho publico EL TITULAR.
+    // Que un medio publique la pertenencia de una persona a un pueblo no la
+    // convierte en eso. La regla de fondo esta en consulta juridica; lo que no
+    // puede volver es la cita equivocada.
+    renderPage(<PrivacyPage />)
+    const texto = document.body.textContent ?? ''
+    expect(texto).not.toMatch(/o la fuente hicieron/)
+    expect(texto).not.toMatch(/art\. 16 a\)/)
+  })
+
+  it('no da por firmadas garantias de transferencia que no constan', () => {
+    // «las transferencias se amparan en… clausulas contractuales tipo»: no hay
+    // constancia de que se hayan suscrito con ningun proveedor. Cuando se firmen,
+    // la Politica nombrara la garantia de cada destino.
+    renderPage(<PrivacyPage />)
+    expect(document.body.textContent).not.toMatch(/se\s+amparan en garant/)
+  })
+
+  it('la gratuidad de hoy es la de la 19.628, no la de la 21.719', () => {
+    // «el acceso es gratuito al menos una vez por trimestre» es el estandar de la
+    // 21.719 dicho en presente: prometia menos que el art. 12 de la 19.628, que
+    // hace absolutamente gratuitas la informacion, modificacion y eliminacion.
+    renderPage(<PrivacyPage />)
+    expect(document.body.textContent).toMatch(/absolutamente gratuitas/)
+  })
+
+  it('si Brevo mide aperturas y clics, el titular no dice «Sin rastreo» a secas', () => {
+    renderPage(<PrivacyPage />)
+    const celda = screen.getAllByText('Brevo').find((n) => n.tagName === 'TD')
+    const fila = celda!.closest('tr')
+    if (!/apertura/.test(fila?.textContent ?? '')) return
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toMatch(/Sin rastreo en el sitio/)
+    expect(document.body.textContent).toMatch(/miden aperturas y clics/)
+  })
+
+  it('el aviso de consentimiento de comunidades cita la ley vigente', () => {
+    // Pedia el consentimiento «conforme a la Ley 21.719», que rige recien el
+    // 1-dic-2026. Hoy el dato sensible exige consentimiento (art. 10 de la
+    // 19.628), y que sea expreso viene de su art. 4°. La version de la Politica
+    // para el 1-dic actualizara tambien este aviso.
+    const fuente = readFileSync(path.resolve(__dirname, 'CommunityPage.tsx'), 'utf8')
+    expect(fuente).toMatch(/artículos 4° y 10 de la Ley 19\.628/)
+    expect(fuente).not.toMatch(/membresía conforme a la Ley 21\.719/)
   })
 })

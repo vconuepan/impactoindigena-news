@@ -31,10 +31,10 @@ export default function PrivacyPage() {
         <div className="max-w-2xl mx-auto text-center">
           <span className="inline-block text-xs font-bold uppercase tracking-widest text-brand-400 mb-4">Privacidad</span>
           <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-6">
-            Sin cookies.<br className="hidden md:block" /> Sin rastreo.
+            Sin cookies.<br className="hidden md:block" /> Sin rastreo en el sitio.
           </h1>
           <p className="text-lg text-white/70 leading-relaxed max-w-xl mx-auto">
-            Para los lectores no usamos cookies ni rastreo; solo preferencias técnicas en tu navegador. Tratamos los datos mínimos que nos das voluntariamente.
+            Para leer el sitio no usamos cookies ni rastreo; solo preferencias técnicas en tu navegador. Los correos del boletín sí miden aperturas y clics. Tratamos los datos mínimos que nos das voluntariamente.
           </p>
         </div>
       </div>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.3 · vigente desde el 11 de septiembre de 2026.
+            Versión 3.4 · vigente desde el 12 de octubre de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -84,7 +84,9 @@ export default function PrivacyPage() {
             que esta política hace a sus artículos describen el estándar al que
             estamos migrando y la forma en que operaremos a partir de esa fecha;{" "}
             <strong>no importan la asunción de obligaciones exigibles con
-            anterioridad a su entrada en vigencia</strong>.
+            anterioridad a su entrada en vigencia</strong>. Cuando citamos un
+            artículo «de la Ley 21.719», nos referimos al artículo de la Ley
+            19.628 en el texto que le da el artículo primero de la Ley 21.719.
           </p>
           <p className="mt-3">
             Como medio dedicado a pueblos indígenas, adherimos además a los
@@ -116,11 +118,9 @@ export default function PrivacyPage() {
             para divulgarlas. Ese contenido puede incluir datos personales de
             terceros que aparecen en las noticias (por ejemplo, autoridades,
             dirigentes y personas citadas): sus nombres, declaraciones y el texto
-            de los artículos. Te informamos que esta parte de los datos proviene de fuentes de acceso
-            público y la tratamos con deber de secreto. Desde el 1 de diciembre
-            de 2026, esa información al titular será exigida por el artículo 14
-            ter letra j) de la Ley 21.719 y el deber de secreto por su artículo
-            14 bis; nos estamos adecuando a ambos.
+            de los artículos. Te informamos que esta parte de los datos proviene
+            de fuentes de acceso público: los medios de comunicación que cada
+            noticia identifica y enlaza.
           </p>
           <p className="mt-3">
             El universo de personas comprendido abarca: suscriptores del boletín y
@@ -160,12 +160,7 @@ export default function PrivacyPage() {
             el Sitio ni para suscribirte al boletín o a las alertas. Como cubrimos
             asuntos de pueblos indígenas, el contenido editorial proveniente de medios públicos
             puede, en ciertos casos, revelar el <strong>origen étnico</strong> de
-            personas identificables. Cuando ello ocurre respecto de declaraciones o
-            información que la propia persona o la fuente hicieron{" "}
-            <strong>manifiestamente públicas</strong>, el tratamiento se limita a los
-            fines informativos en que fueron publicadas. Desde el 1 de diciembre
-            de 2026 ese supuesto queda expresamente recogido en el artículo 16
-            letra a) de la Ley 21.719. Aplicamos minimización: evitamos
+            personas identificables. Aplicamos minimización: evitamos
             exponer atributos sensibles de personas privadas más allá de lo que la
             noticia de interés público requiere, y atendemos solicitudes de
             rectificación o supresión.
@@ -206,27 +201,27 @@ export default function PrivacyPage() {
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Azure Static Web Apps</td>
-                  <td className="align-top py-2 pr-4">Entrega de las páginas del sitio</td>
+                  <td className="align-top py-2 pr-4">Entrega de las páginas del sitio y paso de las peticiones a la API</td>
                   <td className="align-top py-2 pr-4">EE.&nbsp;UU. (red de distribución global)</td>
-                  <td className="align-top py-2">Archivos estáticos del sitio. Como en toda entrega por internet, la conexión expone tu dirección IP al servidor que te sirve la página; no la almacenamos</td>
+                  <td className="align-top py-2">Las páginas del sitio y, en tránsito entre tu navegador y el servidor en Chile, todo lo que envías y recibes: entre otros, tu correo al suscribirte al boletín o a alertas o al iniciar sesión, tus membresías a comunidades, tus comentarios y búsquedas, y la descarga o eliminación de tus datos. Como en toda conexión por internet, también tu dirección IP</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Microsoft Azure OpenAI</td>
                   <td className="align-top py-2 pr-4">Clasificación, resumen y traducción con IA; búsqueda semántica</td>
-                  <td className="align-top py-2 pr-4">EE.&nbsp;UU.</td>
-                  <td className="align-top py-2">Contenido editorial de noticias de fuentes públicas —incluidos nombres, cargos y citas de terceros, y el pueblo indígena divulgado por la fuente (art. 16 a)— y, por separado, las consultas del buscador, que no se asocian a tu identidad</td>
+                  <td className="align-top py-2 pr-4">Recurso en EE.&nbsp;UU.; cada petición puede procesarse en cualquier región de Azure</td>
+                  <td className="align-top py-2">Contenido editorial de noticias de fuentes públicas —incluidos nombres, cargos y citas de terceros y, cuando la fuente lo divulga, el pueblo indígena al que pertenecen— y, por separado, las consultas del buscador, que no se asocian a tu identidad</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Microsoft Azure AI Foundry</td>
                   <td className="align-top py-2 pr-4">Generación de imágenes editoriales</td>
-                  <td className="align-top py-2 pr-4">Suecia (UE)</td>
+                  <td className="align-top py-2 pr-4">Recurso en Suecia (UE); cada petición puede procesarse en cualquier región de Azure</td>
                   <td className="align-top py-2">Texto descriptivo para generar imágenes (sin datos de lectores)</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Brevo</td>
-                  <td className="align-top py-2 pr-4">Envío de boletines y correos; verificación de correo</td>
+                  <td className="align-top py-2 pr-4">Envío de boletines y correos</td>
                   <td className="align-top py-2 pr-4">Unión Europea</td>
-                  <td className="align-top py-2">Correo y nombre de suscriptores; métricas de apertura/clic</td>
+                  <td className="align-top py-2">Correo y nombre de suscriptores; métricas de apertura/clic; el contenido de cada correo que te enviamos, que en las comunidades de tipo pueblo nombra la comunidad</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Cloudflare R2</td>
@@ -253,23 +248,35 @@ export default function PrivacyPage() {
           {/* 7. Transferencias */}
           <h2 className="section-heading mt-10">Transferencias internacionales</h2>
           <p>
-            <strong>Tus datos viven en Chile</strong>: la base de datos y el
-            servidor de la API están en Microsoft Azure, Región Chile Central.
-            Las páginas del sitio, en cambio, se entregan desde una red de
-            distribución global cuyo punto de origen está en{" "}
-            <strong>EE.&nbsp;UU.</strong>, como es habitual en la web; esa
-            entrega no involucra datos de suscriptores. Los demás servicios
-            auxiliares operan fuera de Chile según la tabla anterior: en{" "}
-            <strong>EE.&nbsp;UU.</strong> los servicios de IA de Azure OpenAI,
-            Cloudflare (imágenes) y Diffbot (extracción); en la{" "}
-            <strong>Unión Europea</strong> Brevo y la generación de imágenes en
-            Suecia; y en el <strong>Reino Unido</strong> las teselas del mapa,
-            que solo se piden si abres esa página. Para los destinos respecto de los cuales no exista una
-            declaración de nivel adecuado de protección, las transferencias se
-            amparan en garantías idóneas, en particular las{" "}
-            <strong>cláusulas contractuales tipo</strong> aprobadas por la
-            autoridad chilena, y no se autorizan transferencias ulteriores sin
-            base legal.
+            Tu registro de suscriptor y de miembro se guarda en Chile: la base de
+            datos y el servidor de la API están en Microsoft Azure, Región Chile
+            Central. Para llegar a ese servidor, lo que envías desde el sitio
+            (suscripción al boletín o a alertas, inicio de sesión, membresía a
+            comunidades, comentarios, búsquedas, descarga o eliminación de tus
+            datos), y lo que el servidor te devuelve, pasa por Azure Static Web
+            Apps, de Microsoft, cuyo recurso está en <strong>EE.&nbsp;UU.</strong>{" "}
+            <strong>Brevo</strong>, en la <strong>Unión Europea</strong>, guarda
+            tu correo y tu nombre para enviarte el boletín y procesa el contenido
+            de cada correo que te enviamos; si perteneces a una comunidad de tipo{" "}
+            <em>pueblo</em>, ese contenido nombra la comunidad. Están en{" "}
+            <strong>EE.&nbsp;UU.</strong> el recurso de Azure OpenAI que procesa
+            el texto de las noticias y las consultas del buscador, y en Suecia el
+            que genera las imágenes; ambos usan el tipo de despliegue «Global
+            Standard» de Microsoft, que puede procesar cada petición en cualquier
+            región de Azure. Las
+            imágenes (Cloudflare) y el mapa (OpenStreetMap, Reino Unido) los
+            pide directamente tu navegador, que así les expone tu dirección IP.
+          </p>
+          <p className="mt-3">
+            La Ley 19.628, vigente hoy, no contiene reglas específicas sobre
+            transferencias internacionales de datos. Desde el 1 de diciembre de
+            2026, la Ley
+            21.719 las permite, entre otras vías, hacia países que la Agencia de
+            Protección de Datos Personales declare con un nivel adecuado de
+            protección, o con garantías adecuadas suscritas con quien recibe los
+            datos (artículos 27 y 28). Hoy ningún país está declarado con ese
+            nivel. Antes de esa fecha indicaremos en esta página la garantía que
+            ampara cada transferencia a los encargados de la tabla anterior.
           </p>
 
           {/* 8. Conservación */}
@@ -297,10 +304,15 @@ export default function PrivacyPage() {
             juez de letras en lo civil de nuestro domicilio. Desde el 1 de
             diciembre de 2026, cuando rija la Ley 21.719, el plazo de respuesta
             pasará a ser de <strong>30 días corridos</strong>, prorrogable por una
-            sola vez hasta por 30 días adicionales (artículo 11). El ejercicio de
-            los derechos de rectificación, supresión y oposición es{" "}
-            <strong>siempre gratuito</strong>; el acceso es gratuito al menos una
-            vez por trimestre.
+            sola vez hasta por 30 días adicionales (artículo 11).{" "}
+            <strong>Ejercer tus derechos no tiene costo.</strong> Hoy la ley
+            dispone que «la información, modificación o eliminación de los datos
+            serán absolutamente gratuitas» (artículo 12, inciso quinto, de la Ley
+            19.628); desde
+            el 1 de diciembre de 2026, la rectificación, la supresión y la
+            oposición serán siempre gratuitas, y el acceso, al menos una vez por
+            trimestre (artículo 10 de la Ley 21.719). Nosotros no cobraremos por
+            ninguno.
           </p>
           <p className="mt-3">
             Si eres miembro con sesión iniciada, puedes además{" "}

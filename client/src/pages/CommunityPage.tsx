@@ -114,7 +114,7 @@ function JoinBlock({ slug, communityName, communityType }: { slug: string; commu
             <p className="text-sm font-medium text-neutral-700">Confirma tu consentimiento</p>
             <p className="text-xs text-neutral-500">
               Esta es una comunidad-pueblo. Necesitamos tu consentimiento expreso para
-              mantener tu membresía conforme a la Ley 21.719.
+              mantener tu membresía conforme a los artículos 4° y 10 de la Ley 19.628.
             </p>
             {consentNotice}
             <button

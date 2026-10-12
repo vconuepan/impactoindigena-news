@@ -27,7 +27,7 @@ export default function CookiesPage() {
 
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 1.3 · vigente desde el 7 de septiembre de 2026.
+            Versión 1.4 · vigente desde el 4 de octubre de 2026.
           </p>
           <h2 className="section-heading mt-8">Responsable</h2>
           <p>
