@@ -159,9 +159,11 @@ ellos con «conflicto». Ampliar a «encuadre + territorio» los cubriria a camb
 falsos positivos mas por cada 14 aciertos; si se quiere, es un cambio de una
 linea y se mide igual.
 
-## Un cambio de regla que espera decision de la direccion
+## Un cambio de regla descartado por la direccion (12-oct-2026)
 
-1. **`grupo mapuche` en singular** como encuadre que atribuye: retendria 10
+1. **`grupo mapuche` en singular** como encuadre que atribuye. **Decision del
+   director, 2026-10-12: NO se incluye**, por el aporte neto medido abajo. Se
+   deja el registro para no volver a medirlo. Retendria 10
    titulares argentinos y una nota cultural («el grupo mapuche Los Peñis del
    Sur», musical). Quedo fuera por esa colision; entra si la direccion prefiere
    el falso positivo. **Remedido el 2026-10-11 con el matcher real y las listas
