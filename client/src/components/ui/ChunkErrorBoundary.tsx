@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import type { ReactNode, ErrorInfo } from 'react'
+import { esFallaDeChunk, recargarUnaVez } from '../../lib/recarga-por-version'
 
 interface Props {
   children: ReactNode
@@ -21,6 +22,9 @@ export class ChunkErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('ChunkErrorBoundary caught error:', error, info)
+    // Un chunk borrado por un despliegue posterior: la version nueva se trae sola,
+    // una vez. Cualquier otro error, o una segunda falla, deja el boton de abajo.
+    if (esFallaDeChunk(error) && !navigator.webdriver) recargarUnaVez()
   }
 
   render() {
