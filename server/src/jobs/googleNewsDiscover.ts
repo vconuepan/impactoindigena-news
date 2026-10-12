@@ -37,7 +37,7 @@ const MIN_CONTENT_LENGTH = 300
  * Queries a ejecutar en cada ciclo de descubrimiento.
  * Cubren distintos temas y regiones/idiomas.
  */
-const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
+export const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
   // Español — Chile y Latinoamérica
   { query: 'pueblos indígenas',                region: 'CL:es' },
   { query: 'derechos indígenas',               region: 'CL:es' },
@@ -130,6 +130,37 @@ const SEARCH_QUERIES: Array<{ query: string; region: string }> = [
   { query: 'titulación tierras indígenas',                   region: 'CL:es' },
   { query: 'restitución territorial indígena',               region: 'CL:es' },
   { query: 'indigenous land title ruling',                   region: 'US:en' },
+
+  // Las busquedas de Google News de la primera ola de fuentes (3-oct-2026) pasan
+  // a Bing el 11-oct-2026 por decision del director. El RSS de Google News dejo
+  // de traer la URL real del articulo en la descripcion (0 de 100 items el
+  // 11-oct) y el rastreador se quedaba con news.google.com/rss/articles/..., que
+  // es una pagina de JavaScript sin texto: en una semana las ocho busquedas
+  // publicaron CERO notas. Bing News tampoco admite OR (las dos busquedas
+  // compuestas devolvieron 0 items), asi que van separadas. Medido contra Bing
+  // el 11-oct (items / de la ultima semana): La Araucania 12/7 · Temuco 9/5 (la
+  // mitad futbol; lo descarta la relevancia) · Angol 11/8 · Villarrica 8/2 ·
+  // Pucon 12/5 · "Padre Las Casas" 12/3 · GORE 6/2 · Malleco 11/5 · Cautin 10/2 ·
+  // mapuche AR 12/10 · mapudungun 12/0. Soy Temuco y Araucania Diario no se
+  // alcanzan por busqueda (site: no funciona): necesitan fuente directa.
+
+  // Voces Araucania: criterio territorial, «trata sobre la region». Malleco y
+  // Cautin no estaban en la ola; son las dos provincias de la region y se
+  // sumaron medidas (decision tecnica, 11-oct-2026; se quitan en una linea).
+  { query: 'La Araucanía',                                    region: 'CL:es' },
+  { query: 'Temuco',                                          region: 'CL:es' },
+  { query: 'Angol',                                           region: 'CL:es' },
+  { query: 'Villarrica',                                      region: 'CL:es' },
+  { query: 'Pucón',                                           region: 'CL:es' },
+  { query: '"Padre Las Casas"',                               region: 'CL:es' },
+  { query: '"Gobierno Regional de La Araucanía"',             region: 'CL:es' },
+  { query: 'Malleco',                                         region: 'CL:es' },
+  { query: 'Cautín',                                          region: 'CL:es' },
+
+  // Voces Mapuche: el Wallmapu entero, Chile y Argentina (decision del 3-oct-2026).
+  // «mapuche» en Chile ya esta mas arriba; esta es la mirada desde el Puelmapu.
+  { query: 'mapuche',                                         region: 'AR:es' },
+  { query: 'mapudungun',                                      region: 'CL:es' },
 ]
 
 export async function runGoogleNewsDiscover(): Promise<void> {
