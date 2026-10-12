@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateGate, GATE_VERSION, LISTA_A, LISTA_B, LARGO_SIGLA } from './gate.js'
+import { evaluateGate, familiaB, FAMILIAS_B, GATE_VERSION, LISTA_A, LISTA_B, LARGO_SIGLA } from './gate.js'
 import { createHash } from 'node:crypto'
 
 const NOT_LEARNING = { learningMode: false }
@@ -161,23 +161,86 @@ describe('evaluateGate', () => {
   })
 })
 
+// B+B (decision del director, 2026-10-11): dos terminos de la Lista B de familias
+// distintas se corroboran entre si. Familias: fuerza (7.3.2), justicia (7.3.8) y
+// contexto (todo lo demas). Dos de contexto NO se corroboran.
+describe('evaluateGate · B+B', () => {
+  it('retiene fuerza + contexto sin A ni encuadre: lugar del conflicto y operativo', () => {
+    const r = evaluateGate({ narrativeFrame: null, text: 'Carabineros llegó al predio de la comunidad en Ercilla' }, NOT_LEARNING)
+    expect(r.decision).toBe('held_for_review')
+    expect(r.reasons).toEqual(expect.arrayContaining(['listB+B:carabineros', 'listB+B:predio']))
+    expect(r.reasons.some((x) => x.startsWith('listA:'))).toBe(false)
+    expect(r.signals).toEqual([])
+  })
+
+  it('retiene justicia + contexto: un tribunal sobre tierras es categoria 7.3.8', () => {
+    const r = evaluateGate({ narrativeFrame: 'protagonismo', text: 'La Corte Suprema confirma la restitucion de tierras a una comunidad de Mashue' }, NOT_LEARNING)
+    expect(r.held).toBe(true)
+    expect(r.reasons).toEqual(expect.arrayContaining(['listB+B:corte suprema', 'listB+B:restitu']))
+  })
+
+  it('retiene fuerza + justicia', () => {
+    const r = evaluateGate({ narrativeFrame: null, text: 'La PDI y la Fiscalía revisan el caso de la comunidad' }, NOT_LEARNING)
+    expect(r.held).toBe(true)
+    expect(r.reasons).toEqual(expect.arrayContaining(['listB+B:pdi', 'listB+B:fiscalia']))
+  })
+
+  it('NO retiene dos terminos de contexto: la machi, el lonko y la CONADI en una ceremonia', () => {
+    const r = evaluateGate({ narrativeFrame: 'protagonismo', text: 'La machi y el lonko encabezaron la ceremonia junto a la CONADI' }, NOT_LEARNING)
+    expect(r.decision).toBe('auto_publish')
+    expect(r.signals).toEqual(expect.arrayContaining(['listB:machi', 'listB:lonko', 'listB:conadi']))
+  })
+
+  it('NO retiene dos terminos de la misma familia: Carabineros y la PDI dirigiendo el tránsito (ejemplo del protocolo 7.2)', () => {
+    const r = evaluateGate({ narrativeFrame: null, text: 'Carabineros y la PDI dirigen el tránsito durante la fiesta costumbrista' }, NOT_LEARNING)
+    expect(r.decision).toBe('auto_publish')
+    expect(r.signals).toEqual(expect.arrayContaining(['listB:carabineros', 'listB:pdi']))
+  })
+
+  it('con A o encuadre la B queda como corroborada, no como B+B', () => {
+    const r = evaluateGate({ narrativeFrame: 'confrontacion', text: 'Carabineros llegó al predio de la comunidad' }, NOT_LEARNING)
+    expect(r.reasons).toEqual(expect.arrayContaining(['listB+corroborated:carabineros', 'listB+corroborated:predio']))
+    expect(r.reasons.some((x) => x.startsWith('listB+B:'))).toBe(false)
+  })
+
+  it('bajo el modo aprendizaje registra igual la razon B+B (ordena la cola)', () => {
+    const r = evaluateGate({ narrativeFrame: null, text: 'Carabineros llegó al predio de la comunidad' }, { learningMode: true })
+    expect(r.reasons).toEqual(expect.arrayContaining(['learning_mode', 'listB+B:carabineros', 'listB+B:predio']))
+  })
+})
+
+describe('FAMILIAS_B', () => {
+  it('cada termino con nombre de familia esta en la Lista B, y en una sola familia', () => {
+    const todos = Object.values(FAMILIAS_B).flat()
+    expect(todos.filter((t) => !LISTA_B.includes(t))).toEqual([])
+    expect(new Set(todos).size).toBe(todos.length)
+  })
+  it('lo que no es fuerza ni justicia es contexto', () => {
+    expect(familiaB('carabineros')).toBe('fuerza')
+    expect(familiaB('tribunal')).toBe('justicia')
+    expect(familiaB('predio')).toBe('contexto')
+    expect(familiaB('termino-que-no-existe')).toBe('contexto')
+  })
+})
+
 // Retencion por vertical (D4): cada fila guarda con que reglas se evaluo, y el
 // conciliador reevalua las decisiones de maquina cuando la huella cambia.
 describe('GATE_VERSION', () => {
-  it('es la huella de las dos listas y del largo de sigla', () => {
-    const esperado = createHash('sha1')
-      .update(['A', ...LISTA_A, 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA)].join('\n'))
-      .digest('hex')
-      .slice(0, 12)
-    expect(GATE_VERSION).toBe(esperado)
+  const familias = Object.entries(FAMILIAS_B).flatMap(([f, ts]) => [`B+B:${f}`, ...ts])
+  const huella = (partes: string[]) => createHash('sha1').update(partes.join('\n')).digest('hex').slice(0, 12)
+
+  it('es la huella de las dos listas, del largo de sigla y de las familias de B+B', () => {
+    expect(GATE_VERSION).toBe(huella(['A', ...LISTA_A, 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA), ...familias]))
     expect(GATE_VERSION).toMatch(/^[0-9a-f]{12}$/)
   })
   it('cambia si cambia un termino', () => {
-    const otra = createHash('sha1')
-      .update(['A', ...LISTA_A, 'termino-nuevo', 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA)].join('\n'))
-      .digest('hex')
-      .slice(0, 12)
-    expect(otra).not.toBe(GATE_VERSION)
+    expect(huella(['A', ...LISTA_A, 'termino-nuevo', 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA), ...familias])).not.toBe(GATE_VERSION)
+  })
+  it('cambia si un termino cambia de familia: la regla B+B cambio y hay que reevaluar', () => {
+    expect(huella(['A', ...LISTA_A, 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA), ...familias, 'predio'])).not.toBe(GATE_VERSION)
+  })
+  it('no es la huella de antes de B+B (las filas viejas se reevaluan)', () => {
+    expect(huella(['A', ...LISTA_A, 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA)])).not.toBe(GATE_VERSION)
   })
 })
 

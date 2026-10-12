@@ -59,7 +59,8 @@ export function textoCorto(story: { title: string | null; titleLabel: string | n
 
 /**
  * Una razón del gate, legible: 'frame:confrontacion' → «Encuadre: confrontación»,
- * 'listA:condena' → «Lista A: condena», 'listB+corroborated:policia' → «Lista B (corroborada): policia».
+ * 'listA:condena' → «Lista A: condena», 'listB+corroborated:policia' → «Lista B (corroborada): policia»,
+ * 'listB+B:tribunal' → «Lista B (dos familias): tribunal» (regla B+B, 11-oct-2026).
  * Con `texto`, el término se muestra como aparece en la nota (ver terminoVisible).
  */
 export function razonLabel(razon: string, texto?: string): { texto: string; variant: BadgeVariant } {
@@ -73,6 +74,8 @@ export function razonLabel(razon: string, texto?: string): { texto: string; vari
       return { texto: `Lista A: ${termino}`, variant: 'orange' }
     case 'listB+corroborated':
       return { texto: `Lista B (corroborada): ${termino}`, variant: 'yellow' }
+    case 'listB+B':
+      return { texto: `Lista B (dos familias): ${termino}`, variant: 'yellow' }
     case 'listB':
       return { texto: `Lista B: ${termino}`, variant: 'gray' }
     default:
@@ -95,7 +98,7 @@ export function terminosDe(razones: string[], señales: string[]): string[] {
 export function puntajeLabel(score: number): { texto: string; variant: BadgeVariant } {
   if (score >= 3) return { texto: '3 · encuadre', variant: 'red' }
   if (score === 2) return { texto: '2 · lista A', variant: 'orange' }
-  if (score === 1) return { texto: '1 · lista B', variant: 'yellow' }
+  if (score === 1) return { texto: '1 · B+B', variant: 'yellow' }
   return { texto: '0', variant: 'gray' }
 }
 

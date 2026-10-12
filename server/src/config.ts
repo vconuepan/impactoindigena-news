@@ -338,6 +338,18 @@ export const config = {
     // Alerta del editor de verticales: horas que puede esperar la nota pendiente
     // mas vieja antes de marcarse en rojo (diseño D4, item 11 de la seccion 10).
     queueAlertHours: parseInt(process.env.REVIEW_QUEUE_ALERT_HOURS || '48', 10),
+    // Criterio para apagar el modo aprendizaje, decision del director del
+    // 11-oct-2026 («ambos»): dos semanas desde que la vertical entro en revision
+    // (4-oct → 18-oct) Y una semana con la cola al dia y el editor liberando al
+    // menos 9 de cada 10 notas de puntaje 0. Lo muestra /admin/revision; no
+    // bloquea nada: el aprendizaje se apaga en Azure con GATE_LEARNING_MODE=false.
+    learningExit: {
+      minDays: parseInt(process.env.GATE_LEARNING_EXIT_MIN_DAYS || '14', 10),
+      windowDays: parseInt(process.env.GATE_LEARNING_EXIT_WINDOW_DAYS || '7', 10),
+      score0ReleaseRatio: parseFloat(process.env.GATE_LEARNING_EXIT_SCORE0_RATIO || '0.9'),
+      // «9 de cada 10» necesita al menos 10 decisiones para significar algo.
+      score0MinDecisions: parseInt(process.env.GATE_LEARNING_EXIT_SCORE0_MIN || '10', 10),
+    },
   },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),

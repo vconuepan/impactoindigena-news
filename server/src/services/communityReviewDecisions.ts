@@ -197,15 +197,29 @@ interface DecisionInput {
   actor: AuditActor
 }
 
+/**
+ * Lo que deja «reabrir»: la fila vuelve a lo que dijo la maquina. Si vuelve a
+ * pendiente desde una decision humana, VUELVE A ENTRAR a la cola y su espera
+ * empieza de nuevo (`createdAt` es la entrada a la cola, ver machineUpsertSql):
+ * corregir una decision de hace diez dias no es una nota que espero diez dias, y
+ * sin esto una sola correccion le costaba al criterio de apagado su semana
+ * entera de cola al dia.
+ */
+function reopenData(gateDecision: string, fromState: string, now: Date): Prisma.StoryCommunityReviewUpdateManyMutationInput {
+  const estado = stateFromMachine(gateDecision)
+  const vuelveALaCola = estado === 'pending' && fromState !== 'pending'
+  return { reviewState: estado, reviewCode: null, reviewNote: null, reviewedBy: null, reviewedAt: null, ...(vuelveALaCola ? { createdAt: now } : {}) }
+}
+
 /** Los campos que cambia cada decision. `reopen` devuelve la fila a lo que dijo la maquina. */
-function dataFor(input: DecisionInput, gateDecision: string, now: Date): Prisma.StoryCommunityReviewUpdateManyMutationInput {
+function dataFor(input: DecisionInput, gateDecision: string, now: Date, fromState: string): Prisma.StoryCommunityReviewUpdateManyMutationInput {
   switch (input.decision) {
     case 'release':
       return { reviewState: 'released', reviewCode: null, reviewNote: input.note ?? null, reviewedBy: input.actor.userId ?? null, reviewedAt: now }
     case 'hold':
       return { reviewState: 'held', reviewCode: input.code!, reviewNote: input.note ?? null, reviewedBy: input.actor.userId ?? null, reviewedAt: now }
     case 'reopen':
-      return { reviewState: stateFromMachine(gateDecision), reviewCode: null, reviewNote: null, reviewedBy: null, reviewedAt: null }
+      return reopenData(gateDecision, fromState, now)
   }
 }
 
@@ -225,7 +239,7 @@ export async function decideReview(args: { community: ReviewCommunityRef; storyI
   if (!row) throw new ReviewError(404, 'La nota no esta registrada en esta vertical')
 
   const now = new Date()
-  const data = dataFor(args, row.gateDecision, now)
+  const data = dataFor(args, row.gateDecision, now, row.reviewState)
   const updated = await prisma.storyCommunityReview.update({ where: { id: row.id }, data })
 
   await writeAuditLog({
@@ -284,23 +298,24 @@ export async function decideReviews(args: { community: ReviewCommunityRef; story
   const now = new Date()
   let updated = 0
   if (args.decision === 'reopen') {
-    // Cada fila vuelve a SU estado de maquina: dos grupos, dos updateMany.
-    const porEstado = new Map<ReviewState, string[]>()
+    // Cada fila vuelve a SU estado de maquina, y las que vuelven a la cola
+    // reinician su espera: a lo sumo tres grupos, un updateMany por grupo.
+    const grupos = new Map<string, { data: Prisma.StoryCommunityReviewUpdateManyMutationInput; ids: string[] }>()
     for (const r of rows) {
-      const estado = stateFromMachine(r.gateDecision)
-      porEstado.set(estado, [...(porEstado.get(estado) ?? []), r.id])
+      const data = reopenData(r.gateDecision, r.reviewState, now)
+      const clave = `${data.reviewState}|${'createdAt' in data}`
+      const g = grupos.get(clave) ?? { data, ids: [] }
+      g.ids.push(r.id)
+      grupos.set(clave, g)
     }
-    for (const [estado, rowIds] of porEstado) {
-      const res = await prisma.storyCommunityReview.updateMany({
-        where: { id: { in: rowIds } },
-        data: { reviewState: estado, reviewCode: null, reviewNote: null, reviewedBy: null, reviewedAt: null },
-      })
+    for (const { data, ids: rowIds } of grupos.values()) {
+      const res = await prisma.storyCommunityReview.updateMany({ where: { id: { in: rowIds } }, data })
       updated += res.count
     }
   } else {
     const res = await prisma.storyCommunityReview.updateMany({
       where: { id: { in: rows.map((r) => r.id) } },
-      data: dataFor(args, '', now),
+      data: dataFor(args, '', now, ''),
     })
     updated = res.count
   }

@@ -36,6 +36,8 @@ const mockChannels = vi.hoisted(() => ({
 vi.mock('../config.js', () => mockConfig)
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('../services/socialMedia.js', () => mockSocial)
+const mockWithheld = vi.hoisted(() => vi.fn(async (_ids: string[]) => new Set<string>()))
+vi.mock('../services/communityReview.js', () => ({ withheldInEnforcedVerticals: mockWithheld }))
 vi.mock('../lib/bluesky.js', () => ({ isBlueskyConfigured: () => true }))
 vi.mock('../lib/mastodon.js', () => ({ isMastodonConfigured: () => true }))
 vi.mock('../lib/twitter.js', () => ({ isTwitterConfigured: () => true }))
@@ -149,6 +151,39 @@ describe('runSocialAutoPost', () => {
 
     await expect(runSocialAutoPost()).resolves.toBeUndefined()
 
+    expect(mockChannels.linkedin.publishPost).toHaveBeenCalledWith('post-1')
+  })
+
+  // Decision del director, 2026-10-11: lo que una vertical en enforce no muestra
+  // no sale a redes. Entre elegir la nota y publicarla pasan una eleccion del LLM,
+  // un borrador por canal y 2 s entre canales: se vuelve a mirar antes de cada
+  // publicacion, porque un post no se deshace.
+  it('stops before publishing if a vertical in enforce withheld the story during the run', async () => {
+    mockConfig.config.bluesky.autoPost.enabled = true
+    mockConfig.config.linkedin.autoPost.enabled = true
+    mockSocial.findAutoPostCandidates.mockResolvedValue(['story-1'])
+    mockSocial.pickBestStoryForSocial.mockResolvedValue({ storyId: 'story-1', reasoning: 'best' })
+    mockChannels.bluesky.generateDraft.mockResolvedValue({ id: 'bsky-1' })
+    mockWithheld.mockResolvedValueOnce(new Set(['story-1']))
+
+    await runSocialAutoPost()
+
+    expect(mockWithheld).toHaveBeenCalledWith(['story-1'])
+    expect(mockChannels.bluesky.publishPost).not.toHaveBeenCalled()
+    expect(mockChannels.linkedin.generateDraft).not.toHaveBeenCalled()
+    expect(mockChannels.linkedin.publishPost).not.toHaveBeenCalled()
+  })
+
+  it('checks again before each channel and publishes while the story stays visible', async () => {
+    mockConfig.config.linkedin.autoPost.enabled = true
+    mockSocial.findAutoPostCandidates.mockResolvedValue(['story-1'])
+    mockSocial.pickBestStoryForSocial.mockResolvedValue({ storyId: 'story-1', reasoning: 'best' })
+    mockChannels.linkedin.generateDraft.mockResolvedValue({ id: 'post-1' })
+    mockChannels.linkedin.publishPost.mockResolvedValue(undefined)
+
+    await runSocialAutoPost()
+
+    expect(mockWithheld).toHaveBeenCalledTimes(1)
     expect(mockChannels.linkedin.publishPost).toHaveBeenCalledWith('post-1')
   })
 })

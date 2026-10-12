@@ -110,6 +110,20 @@ describe('POST /api/admin/reviews/:slug/decide', () => {
     expect(mockPrisma.storyCommunityReview.update.mock.calls[0][0].data).toEqual({ reviewState: 'auto', reviewCode: null, reviewNote: null, reviewedBy: null, reviewedAt: null })
   })
 
+  // Revision adversarial del 11-oct-2026: la espera se mide desde created_at; una
+  // nota que vuelve a pendiente desde una decision humana vuelve a entrar a la
+  // cola, y su espera empieza de nuevo. Sin esto, corregir una decision vieja
+  // contaba como una nota vencida y el criterio de apagado perdia la semana.
+  it('reabrir a pendiente reinicia la entrada a la cola; a auto, no', async () => {
+    mockPrisma.storyCommunityReview.findUnique.mockResolvedValue({ ...fila, reviewState: 'released', gateDecision: 'held_for_review' })
+    mockPrisma.storyCommunityReview.update.mockResolvedValue({})
+    await request(app).post('/api/admin/reviews/mapuche/decide').set(authHeader()).send({ storyId: UUID(1), decision: 'reopen' })
+    const data = mockPrisma.storyCommunityReview.update.mock.calls[0][0].data
+    expect(data).toMatchObject({ reviewState: 'pending', reviewedAt: null })
+    expect(data.createdAt).toBeInstanceOf(Date)
+    expect(Date.now() - data.createdAt.getTime()).toBeLessThan(5_000)
+  })
+
   it('404 si la nota no tiene fila en la vertical', async () => {
     mockPrisma.storyCommunityReview.findUnique.mockResolvedValue(null)
     expect((await request(app).post('/api/admin/reviews/mapuche/decide').set(authHeader()).send({ storyId: UUID(9), decision: 'release' })).status).toBe(404)
@@ -158,6 +172,30 @@ describe('POST /api/admin/reviews/:slug/bulk-decide', () => {
     expect(call.data).toMatchObject({ reviewState: 'held', reviewCode: 'sensitive' })
     // Por id de FILA, no de nota: con storyIds no cambiaria nada y nadie lo veria.
     expect(call.where).toEqual({ id: { in: ['r1', 'r2', 'r3'] } })
+  })
+})
+
+describe('POST /api/admin/reviews/:slug/bulk-decide · reabrir', () => {
+  it('cada fila vuelve a su estado de maquina; solo las que vuelven a pendiente desde una decision reinician su espera', async () => {
+    mockPrisma.storyCommunityReview.findMany.mockResolvedValue([
+      { id: 'r1', storyId: UUID(1), reviewState: 'released', gateDecision: 'held_for_review', gateScore: 0, gateReasons: [] },
+      { id: 'r2', storyId: UUID(2), reviewState: 'held', gateDecision: 'auto_publish', gateScore: 0, gateReasons: [] },
+      { id: 'r3', storyId: UUID(3), reviewState: 'pending', gateDecision: 'held_for_review', gateScore: 0, gateReasons: [] },
+    ])
+    mockPrisma.storyCommunityReview.updateMany.mockResolvedValue({ count: 1 })
+    const res = await request(app)
+      .post('/api/admin/reviews/mapuche/bulk-decide')
+      .set(authHeader())
+      .send({ storyIds: [UUID(1), UUID(2), UUID(3)], decision: 'reopen' })
+    expect(res.status).toBe(200)
+    expect(res.body.updated).toBe(3)
+    const llamadas = mockPrisma.storyCommunityReview.updateMany.mock.calls.map((c) => c[0])
+    const de = (id: string) => llamadas.find((c) => c.where.id.in.includes(id))!.data
+    expect(de('r1')).toMatchObject({ reviewState: 'pending' })
+    expect(de('r1').createdAt).toBeInstanceOf(Date)
+    expect(de('r2')).toEqual({ reviewState: 'auto', reviewCode: null, reviewNote: null, reviewedBy: null, reviewedAt: null })
+    // Ya estaba pendiente: no salio de la cola, su espera sigue corriendo.
+    expect(de('r3')).toEqual({ reviewState: 'pending', reviewCode: null, reviewNote: null, reviewedBy: null, reviewedAt: null })
   })
 })
 

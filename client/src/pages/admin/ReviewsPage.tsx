@@ -13,6 +13,7 @@ import { useToast } from '../../components/ui/Toast'
 import { ReviewModeControl } from '../../components/admin/ReviewModeControl'
 import { ReviewDetailPanel } from '../../components/admin/ReviewDetailPanel'
 import { ReviewHoldDialog } from '../../components/admin/ReviewHoldDialog'
+import { LearningExitPanel } from '../../components/admin/LearningExitPanel'
 import { useAuth } from '../../lib/auth'
 import { ApiError, type ReviewCode, type ReviewQueueItem, type ReviewState } from '../../lib/admin-api'
 import { formatDate } from '../../lib/constants'
@@ -178,6 +179,7 @@ export default function ReviewsPage() {
           {marca && slug && (
             <>
               <ReviewModeControl slug={slug} stats={marca.stats} isAdmin={user?.role === 'admin'} />
+              {marca.stats.learningMode && marca.stats.learningExit && <LearningExitPanel criteria={marca.stats.learningExit} />}
 
               <div className="flex flex-wrap gap-2 text-xs">
                 {(['pending', 'held', 'released', 'auto'] as ReviewState[]).map((s) => (

@@ -33,6 +33,8 @@ vi.mock('./llm.js', () => ({
 vi.mock('../prompts/index.js', () => ({
   buildBlueskyPickBestPrompt: vi.fn(() => 'pick prompt'),
 }))
+const mockWithheld = vi.hoisted(() => vi.fn(async (_ids: string[]) => new Set<string>()))
+vi.mock('./communityReview.js', () => ({ withheldInEnforcedVerticals: mockWithheld }))
 
 const { findAutoPostCandidates, pickBestStoryForSocial } = await import('./socialMedia.js')
 
@@ -107,6 +109,29 @@ describe('findAutoPostCandidates', () => {
 
     expect(result).toEqual([])
     expect(mockPrisma.twitterPost.findMany).not.toHaveBeenCalled()
+  })
+
+  // Decision del director, 2026-10-11: lo que una vertical en enforce no muestra
+  // no sale a redes. Se excluye ANTES de preguntar a los canales y antes del LLM.
+  it('excludes stories withheld by a vertical in enforce', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([{ id: 'story-1' }, { id: 'story-2' }, { id: 'story-3' }])
+    mockWithheld.mockResolvedValueOnce(new Set(['story-2']))
+    const bluesky = channel('bluesky')
+
+    const result = await findAutoPostCandidates(25, [bluesky])
+
+    expect(mockWithheld).toHaveBeenCalledWith(['story-1', 'story-2', 'story-3'])
+    expect(result).toEqual(['story-1', 'story-3'])
+    expect(bluesky.publishedStoryIds).toHaveBeenCalledWith(['story-1', 'story-3'])
+  })
+
+  it('returns empty without asking the channels when every story is withheld', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([{ id: 'story-1' }])
+    mockWithheld.mockResolvedValueOnce(new Set(['story-1']))
+    const bluesky = channel('bluesky')
+
+    expect(await findAutoPostCandidates(25, [bluesky])).toEqual([])
+    expect(bluesky.publishedStoryIds).not.toHaveBeenCalled()
   })
 })
 

@@ -21,7 +21,9 @@
  *  - el texto contiene un termino de la Lista A (siempre sensible);
  *  - el texto contiene un termino de la Lista B Y hay una senal que lo
  *    corrobore (un acierto de Lista A o el encuadre `confrontacion`). La Lista B
- *    sola NO retiene, para no saturar la cola: una nota cultural sobre una machi pasa.
+ *    sola NO retiene, para no saturar la cola: una nota cultural sobre una machi pasa;
+ *  - B+B: dos terminos de la Lista B de FAMILIAS distintas se corroboran entre
+ *    si (decision del director, 2026-10-11). Ver FAMILIAS_B.
  *
  * Regla de oro (seccion 7.3): ante la duda, revision humana. El clasificador se
  * sesga al falso positivo. El encuadre narrativo (LLM) es la senal primaria; las
@@ -135,6 +137,44 @@ export const LISTA_B: string[] = [
   'terrateniente', 'latifund', 'legitima defensa', 'prefectura',
 ]
 
+/**
+ * Familias de la Lista B para la regla B+B (decision del director, 2026-10-11:
+ * «dos señales B de familias distintas corroboran»; puntaje 1 en la cola).
+ *
+ * El protocolo (7.2) dice que la B dispara solo con «violencia, proceso penal o
+ * categoria 7.3». Dos de esas categorias tienen vocabulario propio en la B: los
+ * operativos (7.3.2) y la Fiscalia y los tribunales (7.3.8). Esas son las dos
+ * familias con nombre; todo lo demas (lugar, partes, organismos, encuadre,
+ * hechos) es `contexto`. Asi la regla se lee literal, «dos familias
+ * distintas», y los dos ejemplos de la propuesta original caen dentro: lugar +
+ * fuerza, justicia + territorio. Dos terminos de contexto NO se corroboran.
+ *
+ * Por que tres familias y no nueve. Medido el 2026-10-11 con este matcher sobre
+ * 1.842 textos (433 notas de Voces Mapuche, 121 de Araucania, 400 globales y
+ * 888 titulares argentinos), con cada candidata juzgada contra el protocolo por
+ * dos jueces de lentes opuestas y desempate: con nueve familias y cualquier par,
+ * B+B retenia 98 textos y 41 eran ruido (58 % pertinentes); con estas tres
+ * retiene 34 y 3 son ruido (91 %). El ruido venia de «contexto + contexto»:
+ * encuadre con territorio («conflicto» y «territorio ancestral» en notas
+ * culturales), organismos con territorio (CONADI y «restitucion» en notas
+ * presupuestarias) e «incendio forestal». Detalle en server/eval/README.md.
+ */
+export const FAMILIAS_B = {
+  fuerza: ['carabineros', 'pdi', 'gendarme', 'policia', 'fuerzas de seguridad', 'fuerzas federales', 'ministerio de seguridad', 'operativo', 'ejercito', 'prefectura'],
+  justicia: ['fiscalia', 'fiscal', 'juez', 'tribunal', 'juzgado', 'ministerio publico', 'orden judicial', 'corte suprema', 'casacion', 'delito', 'presunt', 'fallo', 'litigio', 'amparo'],
+} as const satisfies Record<string, readonly string[]>
+
+export type FamiliaB = keyof typeof FAMILIAS_B | 'contexto'
+
+const FAMILIA_DE = new Map<string, FamiliaB>(
+  (Object.entries(FAMILIAS_B) as Array<[FamiliaB, readonly string[]]>).flatMap(([familia, terminos]) => terminos.map((t) => [t, familia] as [string, FamiliaB])),
+)
+
+/** La familia de un termino de la Lista B; lo que no es fuerza ni justicia es contexto. */
+export function familiaB(termino: string): FamiliaB {
+  return FAMILIA_DE.get(termino) ?? 'contexto'
+}
+
 /** Minusculas sin diacriticos (é→e, ñ→n): el cotejo ignora tildes. */
 function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -169,8 +209,11 @@ export function evaluateGate(input: GateInput, options: GateOptions): GateResult
 
   const listBHits = LISTA_B.filter((t) => matches(text, t))
   const corroborated = listAHits.length > 0 || isConfrontacion
+  // B+B: sin A ni encuadre, dos familias distintas de la B se corroboran entre si.
+  const bPlusB = !corroborated && new Set(listBHits.map(familiaB)).size >= 2
   for (const t of listBHits) {
     if (corroborated) reasons.push(`listB+corroborated:${t}`)
+    else if (bPlusB) reasons.push(`listB+B:${t}`)
     else signals.push(`listB:${t}`)
   }
 
@@ -188,10 +231,18 @@ export function evaluateGate(input: GateInput, options: GateOptions): GateResult
  * guarda en cada fila (gate_version) y el conciliador reevalua las decisiones de
  * maquina cuando cambia: asi, cada ajuste de las listas durante la calibracion
  * se propaga solo a lo que decidio la maquina, nunca a lo que decidio una persona.
- * Cambia si cambia cualquier termino, el orden de las listas o el largo de sigla.
+ * Cambia si cambia cualquier termino, el orden de las listas, el largo de sigla
+ * o las familias de la regla B+B.
  */
 export const GATE_VERSION: string = createHash('sha1')
-  .update(['A', ...LISTA_A, 'B', ...LISTA_B, 'SIGLA', String(LARGO_SIGLA)].join('\n'))
+  .update(
+    [
+      'A', ...LISTA_A,
+      'B', ...LISTA_B,
+      'SIGLA', String(LARGO_SIGLA),
+      ...Object.entries(FAMILIAS_B).flatMap(([familia, terminos]) => [`B+B:${familia}`, ...terminos]),
+    ].join('\n'),
+  )
   .digest('hex')
   .slice(0, 12)
 

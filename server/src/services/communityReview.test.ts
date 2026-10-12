@@ -56,6 +56,23 @@ describe('gateScore', () => {
     expect(gateScore({ reasons: ['learning_mode'] })).toBe(0)
     expect(gateScore({ reasons: [] })).toBe(0)
   })
+  it('B+B da puntaje 1, tambien bajo el aprendizaje, y se libera en masa', () => {
+    expect(gateScore({ reasons: ['listB+B:carabineros', 'listB+B:predio'] })).toBe(1)
+    expect(gateScore({ reasons: ['learning_mode', 'listB+B:tribunal', 'listB+B:restitu'] })).toBe(1)
+  })
+})
+
+describe('evaluateForCommunity · B+B', () => {
+  const OPERATIVO = { ...STORY, title: 'Carabineros llegó al predio de la comunidad', titleLabel: null, summary: null, narrativeFrame: null }
+  it('sin aprendizaje: pendiente con puntaje 1', () => {
+    const r = evaluateForCommunity(OPERATIVO, MAPUCHE, { learningMode: false, textSource: 'short' })
+    expect(r.reviewState).toBe('pending')
+    expect(r.gateScore).toBe(1)
+    expect(r.gateReasons).toEqual(expect.arrayContaining(['listB+B:carabineros', 'listB+B:predio']))
+  })
+  it('con aprendizaje: sigue pendiente, pero con puntaje 1 y no 0 (sin el aprendizaje seguiria retenida)', () => {
+    expect(evaluateForCommunity(OPERATIVO, MAPUCHE, { learningMode: true, textSource: 'short' }).gateScore).toBe(1)
+  })
 })
 
 describe('marcaFor', () => {
@@ -100,6 +117,11 @@ describe('machineUpsertSql', () => {
     const texto = sql.strings.join('?')
     // gate_evaluated_at, published_at, created_at, updated_at y el CASE del ON CONFLICT
     expect((texto.match(/::timestamptz AT TIME ZONE 'UTC'/g) ?? []).length).toBe(5)
+  })
+  it('created_at es la entrada a la cola: se reinicia solo cuando la fila pasa a pending desde otro estado', () => {
+    const sql = machineUpsertSql(evaluateForCommunity(STORY, MAPUCHE, { learningMode: true, textSource: 'short' }), new Date())
+    const texto = sql.strings.join('?').replace(/\s+/g, ' ')
+    expect(texto).toContain("created_at = CASE WHEN story_community_reviews.review_state <> 'pending' AND EXCLUDED.review_state = 'pending' THEN EXCLUDED.created_at ELSE story_community_reviews.created_at END")
   })
   it('published_at nunca vuelve a null: COALESCE con lo que ya tenia', () => {
     const sql = machineUpsertSql(evaluateForCommunity(STORY, MAPUCHE, { learningMode: false, textSource: 'short' }), new Date())
