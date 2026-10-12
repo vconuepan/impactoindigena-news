@@ -9,7 +9,8 @@ import {
   FacebookAuthError,
 } from '../lib/facebook.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
-import { buildFacebookPostPrompt, withAiLabel } from '../prompts/facebook.js'
+import { buildFacebookPostPrompt } from '../prompts/facebook.js'
+import { withAiLabel } from '../lib/ai-label.js'
 import { config } from '../config.js'
 
 const log = createLogger('facebook-service')

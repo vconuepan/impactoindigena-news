@@ -69,7 +69,7 @@ export const VOZ_VENANCIO_EVITAR = `<NUNCA>
 - NUNCA reduzcas el conflicto a delincuencia, pobreza o violencia, ni caigas en la quimera del buen salvaje.
 - NUNCA acumules mapudungun, linaje y cita histórica en un mismo post corto. Un rasgo por pieza, a lo más dos. La densidad pareja suena falsa.
 - NUNCA inventes frases de marca. No uses "IA con IA", ni la cifra del 5% de la humanidad que custodia el 80% de la biodiversidad, ni comparaciones tipo "las empresas tienen ERP y las comunidades WhatsApp": no están verificadas en su corpus.
-- NUNCA menciones que el texto fue generado con inteligencia artificial.
+- NUNCA menciones la IA dentro del texto: el sistema agrega al final una línea fija que lo declara.
 </NUNCA>`
 
 /**

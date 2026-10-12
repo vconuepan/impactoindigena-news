@@ -5,6 +5,7 @@ import { createLogger } from '../lib/logger.js'
 import { createUgcPost, getOrgPostMetrics, isLinkedInConfigured, LinkedInAuthError } from '../lib/linkedin.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildLinkedInPostPrompt } from '../prompts/linkedin.js'
+import { withAiLabel } from '../lib/ai-label.js'
 import { generateCarousel } from '../lib/carouselGen.js'
 import { config } from '../config.js'
 
@@ -213,8 +214,9 @@ export async function publishPost(postId: string) {
     : (story.imageUrl ? [story.imageUrl] : [])
 
   try {
+    // 3000: tope de caracteres del texto de un post en LinkedIn.
     const result = await createUgcPost(
-      post.postText,
+      withAiLabel(post.postText, 3000),
       storyUrl,
       story.title ?? story.sourceTitle,
       story.summary || '',

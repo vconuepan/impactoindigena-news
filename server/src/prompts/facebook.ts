@@ -12,23 +12,6 @@ export interface StoryForFacebookPost {
 }
 
 /**
- * Línea fija que cierra cada post de la Página y declara el uso de IA. El sitio
- * etiqueta sus resúmenes como generados por IA, y la Página dice lo mismo.
- *
- * Va en código y no en el prompt porque es una regla binaria, y una
- * instrucción al modelo es blanda: hasta el 12-oct-2026 el prompt ordenaba lo
- * contrario («Nunca mencionar que fue generado por IA»). Se agrega al publicar,
- * no al generar, para que una edición del borrador en el panel no la borre.
- */
-export const FACEBOOK_AI_LABEL = 'Texto elaborado con apoyo de IA a partir de la noticia original.'
-
-export function withAiLabel(postText: string): string {
-  const text = postText.trimEnd()
-  if (text.endsWith(FACEBOOK_AI_LABEL)) return text
-  return `${text}\n\n${FACEBOOK_AI_LABEL}`
-}
-
-/**
  * Post para la PÁGINA de Facebook de Voces Indígenas.
  *
  * A diferencia de Instagram y LinkedIn, que hablan en primera persona desde el

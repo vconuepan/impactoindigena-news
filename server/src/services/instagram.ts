@@ -7,6 +7,7 @@ import { generateCarousel } from '../lib/carouselGen.js'
 import { generateStoryImage } from '../lib/imageGen.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildInstagramCaptionPrompt } from '../prompts/instagram.js'
+import { withAiLabel } from '../lib/ai-label.js'
 import { config } from '../config.js'
 const log = createLogger('instagram-service')
 
@@ -243,7 +244,9 @@ export async function publishPost(postId: string) {
     include: { story: { include: { feed: true, issue: true } } },
   })
 
-  void runPublish(postId, slideUrls, post.caption).catch(async (err) => {
+  // 2200: tope de caracteres del caption en Instagram (el mismo con que se
+  // recorta el borrador al generarlo). La línea de IA cabe siempre entera.
+  void runPublish(postId, slideUrls, withAiLabel(post.caption, 2200)).catch(async (err) => {
     log.error({ err, postId }, 'background Instagram publish crashed')
     await prisma.instagramPost
       .update({ where: { id: postId }, data: { status: 'failed', error: err instanceof Error ? err.message : 'Publish failed' } })
