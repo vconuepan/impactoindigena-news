@@ -162,10 +162,17 @@ rule FindCandidates {
         where status = published
         and date_published >= now - config.lookback_hours.hours
         and title != null and summary != null and slug != null
+        and not withheld_in_enforced_vertical(this)
         and enabled_channels.any(ch =>
             not exists SocialPost where story = this
                 and channel = ch.name and status = published
         )
+    -- withheld_in_enforced_vertical (director's decision, 2026-10-11): the
+    -- story belongs to a vertical whose EFFECTIVE review mode is enforce and
+    -- that vertical does not show it (row pending or held, or no row yet).
+    -- See invariant VerticalVisibility in story-pipeline.allium. If the review
+    -- modes cannot be read, every story counts as withheld and the run posts
+    -- nothing (fails closed).
 
     if candidates.count > 0:
         ensures: PickBestStory(candidates, enabled_channels)
