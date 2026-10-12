@@ -6,6 +6,7 @@ import { PageHeader } from '../../components/ui/PageHeader'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorState } from '../../components/ui/ErrorState'
 import { useToast } from '../../components/ui/Toast'
+import { CommunityKeywordsPanel } from '../../components/admin/CommunityKeywordsPanel'
 
 const TYPE_LABEL: Record<string, string> = {
   PUEBLO: 'Pueblo',
@@ -135,7 +136,33 @@ function CoordinatesEditor({ community }: { community: AdminCommunity }) {
   )
 }
 
+function KeywordsCell({ community, onEdit }: { community: AdminCommunity; onEdit: () => void }) {
+  const keywords = community.keywords ?? []
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      {keywords.length === 0 ? (
+        <span className="text-xs italic text-neutral-400">Por temas</span>
+      ) : (
+        <>
+          {keywords.slice(0, 3).map((kw) => (
+            <span key={kw} className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-700">{kw}</span>
+          ))}
+          {keywords.length > 3 && <span className="text-xs text-neutral-400">+{keywords.length - 3}</span>}
+        </>
+      )}
+      <button
+        onClick={onEdit}
+        className="ml-1 text-xs text-brand-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+        aria-label={`Editar palabras clave de ${community.name}`}
+      >
+        Editar
+      </button>
+    </div>
+  )
+}
+
 export default function CommunitiesAdminPage() {
+  const [editando, setEditando] = useState<AdminCommunity | null>(null)
   const { data, isLoading, isError } = useQuery({
     queryKey: ['admin', 'communities'],
     queryFn: () => adminApi.communities.list(),
@@ -149,7 +176,7 @@ export default function CommunitiesAdminPage() {
 
       <PageHeader
         title="Comunidades"
-        description="Activa o desactiva comunidades, y añade coordenadas para mostrarlas en el mapa"
+        description="Activa o desactiva comunidades, edita las palabras clave que deciden qué notas les pertenecen y añade coordenadas para el mapa"
       />
 
       {isLoading ? (
@@ -163,6 +190,7 @@ export default function CommunitiesAdminPage() {
               <tr className="border-b border-neutral-200 bg-neutral-50">
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wide">Comunidad</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wide">Tipo</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wide">Palabras clave</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-neutral-600 uppercase tracking-wide">Coordenadas</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-neutral-600 uppercase tracking-wide">Miembros</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-neutral-600 uppercase tracking-wide">Activa</th>
@@ -186,6 +214,9 @@ export default function CommunitiesAdminPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
+                    <KeywordsCell community={community} onEdit={() => setEditando(community)} />
+                  </td>
+                  <td className="px-4 py-3">
                     <CoordinatesEditor community={community} />
                   </td>
                   <td className="px-4 py-3 text-right text-neutral-600">
@@ -199,6 +230,15 @@ export default function CommunitiesAdminPage() {
             </tbody>
           </table>
         </div>
+      )}
+
+      {editando && (
+        <CommunityKeywordsPanel
+          key={editando.id}
+          community={editando}
+          open
+          onClose={() => setEditando(null)}
+        />
       )}
     </>
   )

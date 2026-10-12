@@ -48,6 +48,28 @@ export interface AdminCommunity {
   _count: { members: number }
 }
 
+export interface KeywordsPreviewStory {
+  slug: string
+  title: string
+  datePublished: string | null
+}
+
+/** Efecto medido de una lista de palabras clave propuesta, antes de guardarla. */
+export interface KeywordsPreview {
+  mode: 'off' | 'shadow' | 'enforce'
+  /** Notas que pertenecen hoy a la vertical: publicadas, relevancia 3 o más y palabras clave. Sin la retención por vertical, que se decide aparte. */
+  actual: number
+  /** Notas que pertenecerían con la lista propuesta. */
+  propuesta: number
+  entran: { total: number; ejemplos: KeywordsPreviewStory[] }
+  salen: { total: number; ejemplos: KeywordsPreviewStory[] }
+  /** Cada palabra nueva, medida por sí sola. */
+  nuevas: Array<{ keyword: string; notas: number; ejemplos: KeywordsPreviewStory[] }>
+  quitadas: string[]
+  /** La lista tal como se guardaría: limpia y sin duplicados. */
+  keywords: string[]
+}
+
 export interface MemberMembership {
   joinedAt: string
   community: CommunityRef
@@ -671,6 +693,11 @@ export const adminApi = {
     updateKeywords: (id: string, keywords: string[]) =>
       request<AdminCommunity>(`/communities/${id}`, {
         method: 'PATCH',
+        body: JSON.stringify({ keywords }),
+      }),
+    previewKeywords: (id: string, keywords: string[]) =>
+      request<KeywordsPreview>(`/communities/${id}/keywords-preview`, {
+        method: 'POST',
         body: JSON.stringify({ keywords }),
       }),
   },
