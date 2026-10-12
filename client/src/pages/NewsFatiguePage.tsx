@@ -260,7 +260,7 @@ export default function NewsFatiguePage() {
               </Link>
             </li>
             <li>
-              <strong>Sin rastreo.</strong> Sin cookies, sin perfiles de análisis, sin rastreadores de terceros.
+              <strong>Sin rastreo en el sitio.</strong> Sin cookies, sin perfiles de análisis, sin rastreadores de terceros.
             </li>
             <li>
               <strong>Sin burbujas de personalización.</strong> Todo el mundo ve las mismas historias curadas.

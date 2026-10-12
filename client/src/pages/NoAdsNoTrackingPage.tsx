@@ -95,8 +95,8 @@ export default function NoAdsNoTrackingPage() {
             </tbody>
           </table>
           <p className="text-xs text-neutral-400 mt-1">
-            * Dos salvedades. Nuestro proveedor de newsletter registra aperturas de correo y clics
-            en enlaces; no podemos desactivarlo y no usamos esos datos para perfiles ni publicidad.
+            * Dos salvedades. Nuestro proveedor de correo registra aperturas y clics en los correos
+            que te enviamos, no solo en el boletín; no usamos esos datos para perfiles ni publicidad.
             Y el mapa de comunidades dibuja su fondo con teselas de OpenStreetMap, que tu navegador
             pide a un servidor externo: no instala cookies, pero esa conexión expone tu dirección IP.
             Solo ocurre si abres esa página. Consulta

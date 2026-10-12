@@ -202,6 +202,19 @@ describe('la Politica no promete lo que no hace ni cita lo que la ley no dice', 
     expect(document.body.textContent).toMatch(/correos que te enviamos sí miden aperturas y clics/)
   })
 
+  it('las paginas de producto no prometen mas privacidad que la Politica', () => {
+    // La Politica dice «Sin rastreo en el sitio» porque los correos miden
+    // aperturas y clics. Hasta el 12-oct-2026, /compare ademas prometia «sin
+    // recoleccion de datos» —falso: guardamos correos— y se marcaba «Sin
+    // rastreo» frente a un competidor criticado por los pixeles de su newsletter.
+    const leer = (archivo: string) => readFileSync(path.resolve(__dirname, archivo), 'utf8')
+    for (const archivo of ['ComparePage.tsx', 'MethodologyPage.tsx', 'NewsFatiguePage.tsx']) {
+      expect(leer(archivo), archivo).not.toMatch(/sin recolección de datos/i)
+      expect(leer(archivo), archivo).not.toMatch(/Sin rastreo[,.']/)
+    }
+    expect(leer('NoAdsNoTrackingPage.tsx')).toMatch(/correos\s+que te enviamos, no solo en el boletín/)
+  })
+
   it('el aviso de consentimiento de comunidades cita la ley vigente', () => {
     // Pedia el consentimiento «conforme a la Ley 21.719», que rige recien el
     // 1-dic-2026. Hoy el dato sensible exige consentimiento (art. 10 de la

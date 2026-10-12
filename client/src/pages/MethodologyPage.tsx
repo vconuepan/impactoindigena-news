@@ -249,7 +249,7 @@ export default function MethodologyPage() {
               tal.
             </li>
             <li>
-              <strong>No vendemos datos.</strong> Sin rastreo, sin perfiles de analítica, sin
+              <strong>No vendemos datos.</strong> Sin rastreo en el sitio, sin perfiles de analítica, sin
               publicidad.
             </li>
           </ul>
