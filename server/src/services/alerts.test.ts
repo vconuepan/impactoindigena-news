@@ -306,8 +306,9 @@ describe('cambiar los temas de una suscripcion confirmada exige doble confirmaci
       mockPrisma.alertSubscription.findFirst.mockResolvedValue(PENDIENTE)
       mockPrisma.alertSubscription.updateMany.mockResolvedValue({ count: 1 })
 
-      await confirmAlert('token-del-cambio', 'lectora@example.com')
+      const resultado = await confirmAlert('token-del-cambio', 'lectora@example.com')
 
+      expect(resultado).toBe('changed')
       expect(mockPrisma.alertSubscription.updateMany).toHaveBeenCalledWith({
         where: { email: 'lectora@example.com', confirmedAt: { not: null }, active: true, id: { not: 'sub-pendiente' } },
         data: { topics: ['mineria', 'agua'] },
@@ -338,8 +339,9 @@ describe('cambiar los temas de una suscripcion confirmada exige doble confirmaci
       mockPrisma.alertSubscription.findFirst.mockResolvedValue({ ...PENDIENTE, email: 'nueva@example.com' })
       mockPrisma.alertSubscription.updateMany.mockResolvedValue({ count: 0 }) // no hay otra confirmada
 
-      await confirmAlert('token-del-cambio', 'nueva@example.com')
+      const resultado = await confirmAlert('token-del-cambio', 'nueva@example.com')
 
+      expect(resultado).toBe('confirmed')
       expect(mockPrisma.alertSubscription.update).toHaveBeenCalledWith({
         where: { id: 'sub-pendiente' },
         data: { confirmedAt: expect.any(Date) },
@@ -350,8 +352,9 @@ describe('cambiar los temas de una suscripcion confirmada exige doble confirmaci
     it('volver a abrir un enlace de alta ya confirmado es inocuo', async () => {
       mockPrisma.alertSubscription.findFirst.mockResolvedValue({ ...PENDIENTE, confirmedAt: new Date() })
 
-      await confirmAlert('token-del-cambio', 'lectora@example.com')
+      const resultado = await confirmAlert('token-del-cambio', 'lectora@example.com')
 
+      expect(resultado).toBe('already')
       expect(mockPrisma.alertSubscription.updateMany).not.toHaveBeenCalled()
       expect(mockPrisma.alertSubscription.update).not.toHaveBeenCalled()
     })

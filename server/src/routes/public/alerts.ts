@@ -1,7 +1,8 @@
 /**
  * Alert subscription routes
  * POST /api/alerts/subscribe   — opt-in to topic alerts
- * GET  /api/alerts/confirm     — confirm via email token
+ * GET  /api/alerts/confirm     — the email link: only REDIRECTS to /alertas
+ * POST /api/alerts/confirm     — the confirmation itself, from the site's button
  * POST /api/alerts/unsubscribe — deactivate alerts
  */
 import { Router } from 'express'
@@ -35,6 +36,13 @@ const unsubscribeSchema = z.object({
   token: z.string().uuid(),
 })
 
+// Token Y correo: el token prueba que el enlace llego a esa bandeja, y el correo
+// tiene que coincidir con el de la fila. Es lo mismo que exigia el GET.
+const confirmSchema = z.object({
+  token: z.string().uuid(),
+  email: z.string().email().max(255),
+})
+
 router.post('/subscribe', alertLimiter, validateBody(subscribeSchema), async (req, res) => {
   try {
     await alertsService.subscribeToAlerts(req.body.email, req.body.topics)
@@ -50,22 +58,49 @@ router.post('/subscribe', alertLimiter, validateBody(subscribeSchema), async (re
   }
 })
 
-router.get('/confirm', async (req, res) => {
-  const { token, email } = req.query as { token?: string; email?: string }
+/**
+ * El enlace del correo. NO confirma: solo lleva a /alertas con el token, donde un
+ * boton hace el POST de abajo.
+ *
+ * Hasta el 11-oct-2026 este GET confirmaba al abrirse. Los filtros de correo
+ * corporativos (Safe Links y similares) abren los enlaces para revisarlos antes
+ * que la persona, asi que un pedido de cambio de temas hecho por un tercero
+ * quedaba aplicado sin que la titular hiciera nada: justo lo que la doble
+ * confirmacion venia a impedir. Un GET no debe cambiar estado; abrir el enlace
+ * ahora es inocuo. Los correos ya enviados apuntan aqui y siguen funcionando.
+ */
+router.get('/confirm', (req, res) => {
+  const { token, email } = req.query as { token?: unknown; email?: unknown }
   const clientUrl = process.env.CLIENT_URL || 'https://vocesindigenas.org'
 
-  if (!token || !email) {
-    res.redirect(`${clientUrl}/alertas?confirmed=error`)
+  if (typeof token !== 'string' || !token || typeof email !== 'string' || !email) {
+    res.redirect(303, `${clientUrl}/alertas?confirmed=invalid`)
     return
   }
 
+  // URLSearchParams codifica los valores: un correo con `&` o `#` no puede
+  // agregar parametros ni cambiar el destino, que siempre es nuestro sitio.
+  const destino = new URL('/alertas', clientUrl)
+  destino.searchParams.set('confirm_token', token)
+  destino.searchParams.set('email', email)
+  res.redirect(303, destino.toString())
+})
+
+router.post('/confirm', alertLimiter, validateBody(confirmSchema), async (req, res) => {
+  const { token, email } = req.body as { token: string; email: string }
   try {
-    await alertsService.confirmAlert(token, email)
-    res.redirect(`${clientUrl}/alertas?confirmed=true`)
-  } catch (err: any) {
-    log.warn({ err: err?.message, email: maskEmail(email) }, 'alert confirmation failed')
-    const reason = err?.message === 'Confirmation link has expired' ? 'expired' : 'invalid'
-    res.redirect(`${clientUrl}/alertas?confirmed=${reason}`)
+    const result = await alertsService.confirmAlert(token, email)
+    res.json({ success: true, result })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg === 'Confirmation link has expired' || msg === 'Invalid confirmation link') {
+      // Sin distinguir si fallo el token o el correo: no es un oraculo de quien esta suscrito.
+      log.warn({ err: msg, email: maskEmail(email) }, 'alert confirmation failed')
+      res.status(400).json({ error: msg === 'Confirmation link has expired' ? 'expired' : 'invalid' })
+      return
+    }
+    log.error({ err: msg, email: maskEmail(email) }, 'alert confirmation error')
+    res.status(500).json({ error: 'Failed to confirm' })
   }
 })
 

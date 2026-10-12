@@ -78,10 +78,17 @@ function mismosTemas(actuales: string[], pedidos: string[]): boolean {
 // Confirm
 // ---------------------------------------------------------------------------
 
-export async function confirmAlert(token: string, email: string): Promise<void> {
+/**
+ * Lo que paso al confirmar: un alta nueva (`confirmed`), un cambio de temas
+ * aplicado a la suscripcion que ya existia (`changed`), o un enlace que ya se
+ * habia usado (`already`). La pagina le dice a la persona cual de las tres.
+ */
+export type AlertConfirmResult = 'confirmed' | 'changed' | 'already'
+
+export async function confirmAlert(token: string, email: string): Promise<AlertConfirmResult> {
   const sub = await prisma.alertSubscription.findFirst({ where: { token, email } })
   if (!sub) throw new Error('Invalid confirmation link')
-  if (sub.confirmedAt) return // already confirmed
+  if (sub.confirmedAt) return 'already'
 
   if (new Date() > sub.expiresAt) throw new Error('Confirmation link has expired')
 
@@ -99,7 +106,7 @@ export async function confirmAlert(token: string, email: string): Promise<void> 
   if (count > 0) {
     await prisma.alertSubscription.deleteMany({ where: { id: sub.id } })
     log.info({ email: maskEmail(email) }, 'alert topics change confirmed and applied')
-    return
+    return 'changed'
   }
 
   await prisma.alertSubscription.update({
@@ -107,6 +114,7 @@ export async function confirmAlert(token: string, email: string): Promise<void> 
     data: { confirmedAt: new Date() },
   })
   log.info({ email: maskEmail(email) }, 'alert subscription confirmed')
+  return 'confirmed'
 }
 
 // ---------------------------------------------------------------------------

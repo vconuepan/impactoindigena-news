@@ -96,4 +96,16 @@ describe('logs: el correo y el token no se escriben crudos', () => {
     expect(log).not.toContain(TOKEN)
     expect(log).toContain('/api/alerts/confirm?token=[REDACTED]&email=[REDACTED]')
   })
+
+  // La confirmacion de verdad es ahora un POST desde el sitio: el correo y el token
+  // viajan en el cuerpo, que no se escribe, y el fallo se anota con maskEmail.
+  it('confirmar una alerta por POST tampoco deja el correo ni el token en el log', async () => {
+    const res = await request(app).post('/api/alerts/confirm').send({ token: TOKEN, email: CORREO })
+    expect(res.status).toBe(400)
+
+    const log = todoLoEscrito()
+    expect(log).toContain('alert confirmation failed')
+    expect(log).not.toContain(CORREO)
+    expect(log).not.toContain(TOKEN)
+  })
 })
