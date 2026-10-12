@@ -62,6 +62,11 @@ entity Story {
     relevance: Integer?                                  -- 1-10 detailed
     marketing_blurb: String?
 
+    -- English display fields, set by rule Translate after publish.
+    -- Null means "not translated": the public site falls back to Spanish.
+    title_en: String?
+    summary_en: String?
+
     -- Publishing fields (immutable after first set)
     slug: String?
     date_published: Timestamp?
@@ -218,6 +223,25 @@ rule Publish {
     ensures: story.slug = new_slug
     ensures: story.date_published = story.date_published ?? now
     ensures: story.status = published
+}
+
+rule Translate {
+    when: Publish(story) completed
+    -- Same job, right after the status change. Non-fatal: a failed
+    -- translation leaves the EN fields untouched and the story published.
+
+    ensures: story.title_en = translate(story.title) or story.title_en = null
+    ensures: story.summary_en = translate(story.summary) or story.summary_en = null
+}
+
+invariant TranslationIsNotACopy {
+    -- A translation identical to the Spanish original is a failed
+    -- translation, not a translation. From 2026-05-10 to 2026-10-12 the
+    -- translator schema let the model copy the input: 3131 of 3958 published
+    -- stories. Enforced in code at the write point (TranslationUnchangedError).
+    forall story: Story
+        story.title_en != null implies normalize(story.title_en) != normalize(story.title)
+        story.summary_en != null implies normalize(story.summary_en) != normalize(story.summary)
 }
 
 -- ─── Retention per vertical (D4, Las Otras Voces) ──────────────────

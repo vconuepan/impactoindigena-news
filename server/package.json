@@ -84,6 +84,7 @@
     "migration:fix-title-caps": "tsx src/scripts/migrations/fix-title-capitalization.ts",
     "migration:fix-title-caps:apply": "tsx src/scripts/migrations/fix-title-capitalization.ts --apply",
     "translations:backfill": "tsx src/scripts/backfill-translations.ts",
+    "translations:backfill:apply": "tsx src/scripts/backfill-translations.ts --apply",
     "images:backfill": "tsx src/scripts/backfill-images.ts"
   },
   "dependencies": {
