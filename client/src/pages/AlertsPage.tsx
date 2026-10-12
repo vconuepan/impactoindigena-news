@@ -1,10 +1,10 @@
 /**
  * /alertas — subscribe to topic-based daily email alerts
  */
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useSearchParams, Link } from 'react-router-dom'
-import { publicApi } from '../lib/api'
+import { publicApi, ApiError } from '../lib/api'
 
 // Predefined topics the user can subscribe to
 const TOPICS = [
@@ -26,8 +26,18 @@ const TOPICS = [
 
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 
+// El envio es UN correo al dia con las notas de las ultimas 24 h (sendDailyAlerts),
+// no uno por noticia. Lo comparten la caja nueva y el aviso heredado ?confirmed=true.
+const TEXTO_ALTA = 'Recibirás un correo al día cuando haya noticias nuevas sobre tus temas.'
+
+/**
+ * Estado de la confirmacion. `error` es el unico que deja reintentar: los otros
+ * cuatro son finales.
+ */
+type Confirmacion = 'idle' | 'enviando' | 'confirmed' | 'changed' | 'expired' | 'invalid' | 'error'
+
 export default function AlertsPage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const confirmed  = searchParams.get('confirmed')
   // Enlace ANTIGUO, de correos anteriores al 10-jun-2026. Ya no da de baja: el
   // servidor exige el token porque identificar por correo permitia que
@@ -35,6 +45,23 @@ export default function AlertsPage() {
   // quien llegue por ahi como hacerlo, en vez de dejarlo sin salida.
   const unsubEmailLegado = searchParams.get('unsubscribe')
   const unsubToken = searchParams.get('unsubscribe_token')
+
+  // Confirmacion de alertas (alta o cambio de temas). El enlace del correo pasa por
+  // GET /api/alerts/confirm, que NO confirma: redirige aca con el token. Confirmar
+  // es apretar el boton, que hace un POST. Los filtros de correo corporativos
+  // abren los enlaces para revisarlos antes que la persona; si abrir la pagina
+  // confirmara, un cambio de temas pedido por un tercero quedaria aplicado solo.
+  //
+  // Se guardan al montar porque despues de confirmar se sacan de la URL, y la
+  // caja tiene que seguir mostrando el resultado.
+  const [pendiente] = useState(() => {
+    const token = searchParams.get('confirm_token')
+    const correo = searchParams.get('email')
+    return token && correo ? { token, email: correo } : null
+  })
+  const [confirmacion, setConfirmacion] = useState<Confirmacion>('idle')
+  // Un ref y no el estado: dos clics seguidos llegan antes de que React repinte.
+  const enviandoRef = useRef(false)
 
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set())
   const [email, setEmail]     = useState('')
@@ -65,6 +92,39 @@ export default function AlertsPage() {
     }
   }
 
+  /** Saca el token y el correo de la barra de direcciones: ya no sirven. */
+  function limpiarUrl() {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('confirm_token')
+        next.delete('email')
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  async function handleConfirm() {
+    if (!pendiente || enviandoRef.current) return
+    enviandoRef.current = true
+    setConfirmacion('enviando')
+    try {
+      const { result } = await publicApi.confirmAlerts(pendiente)
+      setConfirmacion(result === 'changed' ? 'changed' : 'confirmed')
+      limpiarUrl()
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 400) {
+        setConfirmacion(err.message === 'expired' ? 'expired' : 'invalid')
+        limpiarUrl()
+        return
+      }
+      // Red caida, limite de intentos o error del servidor: se puede reintentar.
+      setConfirmacion('error')
+      enviandoRef.current = false
+    }
+  }
+
   async function handleUnsubscribe() {
     if (!unsubToken) return
     try {
@@ -83,6 +143,7 @@ export default function AlertsPage() {
           name="description"
           content="Suscríbete a alertas diarias sobre pueblos o temas específicos: Mapuche, litio, Amazonia, consulta previa y más."
         />
+        {pendiente && <meta name="robots" content="noindex" />}
       </Helmet>
 
       <div className="max-w-2xl mx-auto px-4 py-12">
@@ -90,7 +151,7 @@ export default function AlertsPage() {
         {confirmed === 'true' && (
           <div className="mb-8 bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
             <p className="text-emerald-800 font-semibold text-base mb-1">¡Alertas activadas!</p>
-            <p className="text-emerald-700 text-sm">Recibirás un email cada vez que haya nuevas noticias sobre tus temas.</p>
+            <p className="text-emerald-700 text-sm">{TEXTO_ALTA}</p>
           </div>
         )}
 
@@ -100,6 +161,57 @@ export default function AlertsPage() {
               {confirmed === 'expired' ? 'Enlace expirado' : 'Enlace inválido'}
             </p>
             <p className="text-red-700 text-sm">Vuelve a suscribirte para recibir un enlace nuevo.</p>
+          </div>
+        )}
+
+        {/* Confirmacion con boton: abrir el enlace no confirma nada */}
+        {pendiente && (
+          <div className="mb-8 bg-neutral-50 border border-neutral-200 rounded-xl p-6 text-center">
+            {(confirmacion === 'idle' || confirmacion === 'enviando' || confirmacion === 'error') && (
+              <>
+                <p className="text-neutral-900 font-semibold text-base mb-2">Confirma tus alertas</p>
+                <p className="text-neutral-700 text-sm mb-4 leading-relaxed">
+                  Para activar las alertas de{' '}
+                  {/* Un correo no tiene puntos de corte: sin esto, uno largo se sale de la caja en un telefono. */}
+                  <strong className="[overflow-wrap:anywhere]">{pendiente.email}</strong>, o aplicar el
+                  cambio de temas que pediste, confirma aquí. Si no lo pediste, cierra esta
+                  página y no cambia nada.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleConfirm}
+                  disabled={confirmacion === 'enviando'}
+                  className="px-4 py-2 bg-brand-800 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors disabled:opacity-50"
+                >
+                  {confirmacion === 'enviando' ? 'Confirmando…' : 'Confirmar'}
+                </button>
+              </>
+            )}
+            <div role="status" aria-live="polite">
+              {confirmacion === 'error' && (
+                <p className="text-red-700 text-sm mt-3">No se pudo confirmar. Intenta de nuevo en unos minutos.</p>
+              )}
+              {confirmacion === 'confirmed' && (
+                <>
+                  <p className="text-emerald-800 font-semibold text-base mb-1">¡Alertas activadas!</p>
+                  <p className="text-emerald-700 text-sm">{TEXTO_ALTA}</p>
+                </>
+              )}
+              {confirmacion === 'changed' && (
+                <>
+                  <p className="text-emerald-800 font-semibold text-base mb-1">Tus temas se actualizaron</p>
+                  <p className="text-emerald-700 text-sm">Desde ahora recibirás alertas sobre los temas nuevos.</p>
+                </>
+              )}
+              {(confirmacion === 'expired' || confirmacion === 'invalid') && (
+                <>
+                  <p className="text-red-800 font-semibold text-base mb-1">
+                    {confirmacion === 'expired' ? 'Enlace expirado' : 'Enlace inválido'}
+                  </p>
+                  <p className="text-red-700 text-sm">Vuelve a suscribirte para recibir un enlace nuevo.</p>
+                </>
+              )}
+            </div>
           </div>
         )}
 

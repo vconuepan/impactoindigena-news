@@ -297,6 +297,15 @@ export const publicApi = {
       body: JSON.stringify({ email, topics }),
     }),
 
+  // La confirmacion es un POST desde el boton de /alertas: abrir el enlace del
+  // correo no confirma nada (los filtros de correo abren los enlaces solos).
+  confirmAlerts: (params: { token: string; email: string }) =>
+    request<{ success: boolean; result: 'confirmed' | 'changed' | 'already' }>('/alerts/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    }),
+
   // Solo token: el correo como identificador permitia dar de baja a terceros.
   unsubscribeAlerts: (params: { token: string }) =>
     request<{ success: boolean }>('/alerts/unsubscribe', {
