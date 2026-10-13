@@ -228,7 +228,7 @@ export default function ReviewsPage() {
                     </thead>
                     <tbody>
                       {filas.map((f) => {
-                        const p = puntajeLabel(f.gateScore)
+                        const p = puntajeLabel(f.gateScore, f.gateReasons)
                         const razones = f.gateReasons.filter((r) => r !== 'learning_mode')
                         const texto = textoCorto(f.story)
                         return (

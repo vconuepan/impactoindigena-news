@@ -34,7 +34,7 @@ export function ReviewDetailPanel({ item, onClose, onRelease, onHold, onReopen, 
   const texto = item ? textoCorto(item.story) : ''
   const titulo = item?.story.title || item?.story.sourceTitle || ''
   const humano = item ? item.reviewState === 'released' || item.reviewState === 'held' : false
-  const puntaje = item ? puntajeLabel(item.gateScore) : null
+  const puntaje = item ? puntajeLabel(item.gateScore, item.gateReasons) : null
 
   return (
     <EditPanel open={!!item} onClose={onClose} title={titulo}>

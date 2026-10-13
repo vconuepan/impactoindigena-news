@@ -95,10 +95,19 @@ export function terminosDe(razones: string[], señales: string[]): string[] {
   return [...terminos]
 }
 
-export function puntajeLabel(score: number): { texto: string; variant: BadgeVariant } {
-  if (score >= 3) return { texto: '3 · encuadre', variant: 'red' }
+/**
+ * Etiqueta del puntaje de la cola. El 1 tiene dos orígenes desde el 13-oct-2026:
+ * B+B, o el encuadre «confrontación» solo (sin términos de las listas), que se
+ * bajó de 3 a 1 tras medir que 39 de 44 eran disputas sin riesgo. Se distinguen
+ * por las razones, para que el editor sepa qué está liberando.
+ */
+export function puntajeLabel(score: number, reasons: string[] = []): { texto: string; variant: BadgeVariant } {
+  if (score >= 3) return { texto: '3 · encuadre y lista', variant: 'red' }
   if (score === 2) return { texto: '2 · lista A', variant: 'orange' }
-  if (score === 1) return { texto: '1 · B+B', variant: 'yellow' }
+  if (score === 1) {
+    const soloEncuadre = reasons.includes('frame:confrontacion') && !reasons.some((r) => r.startsWith('listB+B:'))
+    return { texto: soloEncuadre ? '1 · solo encuadre' : '1 · B+B', variant: 'yellow' }
+  }
   return { texto: '0', variant: 'gray' }
 }
 

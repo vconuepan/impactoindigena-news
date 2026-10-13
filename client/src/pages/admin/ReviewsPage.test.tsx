@@ -219,4 +219,23 @@ describe('ReviewsPage', () => {
     expect(await screen.findByText('Lista B (dos familias): carabineros')).toBeInTheDocument()
     expect(screen.getByText('1 · B+B')).toBeInTheDocument()
   })
+
+  it('el encuadre solo se rotula «1 · solo encuadre» en la cola y en el panel de detalle (13-oct-2026)', async () => {
+    api.queue.mockResolvedValue({
+      slug: 'mapuche',
+      mode: 'shadow',
+      data: [fila(5, 1, ['frame:confrontacion'])],
+      total: 1,
+      page: 1,
+      pageSize: 25,
+      totalPages: 1,
+    })
+    renderPage('/admin/revision?open=s5')
+    // en la fila de la cola
+    expect(await screen.findByText('1 · solo encuadre')).toBeInTheDocument()
+    // y en el panel lateral, que abre la URL (?open=) y rotula «Puntaje …»
+    expect(await screen.findByText('Puntaje 1 · solo encuadre')).toBeInTheDocument()
+    expect(screen.queryByText(/B\+B/)).not.toBeInTheDocument()
+  })
 })
+

@@ -84,17 +84,28 @@ export function gateTextFor(story: Pick<StoryForGate, 'title' | 'titleLabel' | '
 /**
  * Fuerza de la señal, para ordenar la cola del editor y decidir que se puede
  * liberar en masa (solo puntaje 0 y 1):
- *   3  encuadre narrativo «confrontacion»
+ *   3  encuadre narrativo «confrontacion» corroborado por la Lista A o la B
  *   2  algun termino de la Lista A
  *   1  B+B: dos terminos de la Lista B de familias distintas (aprobada por el
- *      director el 11-oct-2026; familias en gate.ts, FAMILIAS_B). Una B
- *      corroborada por A o por el encuadre ya tiene puntaje 2 o 3.
+ *      director el 11-oct-2026; familias en gate.ts, FAMILIAS_B); o el encuadre
+ *      «confrontacion» SOLO, sin ningun termino de las listas
  *   0  retenida solo por el modo aprendizaje, o no retenida
+ *
+ * El encuadre solo baja a 1 por decision del director del 13-oct-2026, tras
+ * medir la cola: de 44 notas retenidas unicamente por el encuadre, 5 necesitaban
+ * revision segun la seccion 7 del protocolo y 39 eran disputas politicas o de
+ * consulta (otras-voces, estrategia/datos/encuadre-2026-10-12). Sigue reteniendo
+ * (ante la duda, revision humana), pero se puede liberar en masa leyendo los
+ * titulos. No cuenta como visible en la proyeccion «si aplicaras», que solo suma
+ * el puntaje 0.
  */
 export function gateScore(result: Pick<GateResult, 'reasons'>): number {
-  if (result.reasons.includes('frame:confrontacion')) return 3
-  if (result.reasons.some((r) => r.startsWith('listA:'))) return 2
-  if (result.reasons.some((r) => r.startsWith('listB+B:') || r.startsWith('listB+corroborated:'))) return 1
+  const encuadre = result.reasons.includes('frame:confrontacion')
+  const listaA = result.reasons.some((r) => r.startsWith('listA:'))
+  const listaB = result.reasons.some((r) => r.startsWith('listB+B:') || r.startsWith('listB+corroborated:'))
+  if (encuadre && (listaA || listaB)) return 3
+  if (listaA) return 2
+  if (encuadre || listaB) return 1
   return 0
 }
 
@@ -298,6 +309,8 @@ export interface ReconcileReport {
   mode: ReviewMode
   created: number
   reevaluated: number
+  /** Filas de maquina cuyo puntaje guardado no seguia la regla vigente de gateScore. */
+  rescored: number
   deleted: number
   byState: Record<ReviewState, number>
 }
@@ -305,12 +318,30 @@ export interface ReconcileReport {
 const RECONCILE_BATCH = 200
 
 /**
+ * Filas cuyo puntaje guardado difiere del que da hoy gateScore con sus mismas
+ * razones, agrupadas por puntaje nuevo. Un cambio en la regla del puntaje no
+ * cambia GATE_VERSION (es D4, no el gate), asi que sin este paso las filas
+ * existentes conservarian el puntaje viejo para siempre.
+ */
+export function puntajesViejos(rows: Array<{ story_id: string; gate_reasons: string[]; gate_score: number }>): Map<number, string[]> {
+  const porPuntaje = new Map<number, string[]>()
+  for (const r of rows) {
+    const nuevo = gateScore({ reasons: r.gate_reasons })
+    if (nuevo === r.gate_score) continue
+    porPuntaje.set(nuevo, [...(porPuntaje.get(nuevo) ?? []), r.story_id])
+  }
+  return porPuntaje
+}
+
+/**
  * EL CONCILIADOR (job reconcile_community_reviews, y la carga inicial). Por cada
  * vertical en revision:
  *   1. crea filas para notas que encajan y no tienen (cambios de palabras clave,
  *      notas publicadas antes de encender la revision, caminos sin gancho);
  *   2. reevalua las filas de maquina si cambiaron las listas, el texto evaluado o
- *      el modo aprendizaje, o si la nota se edito despues de evaluarse;
+ *      el modo aprendizaje, o si la nota se edito despues de evaluarse; y
+ *      recalcula el puntaje guardado si cambio la regla de gateScore (sin tocar
+ *      el estado de la fila);
  *   3. borra las filas de maquina cuya nota ya no encaja o ya no esta publicada;
  *   4. nunca toca released ni held.
  * Idempotente: una segunda corrida sin cambios no escribe nada. LANZA ante
@@ -398,6 +429,25 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
       }
     }
 
+    // 2b. Puntaje con la regla vigente. Solo filas de maquina y solo la columna
+    //     gate_score: el estado, las razones y las decisiones humanas no se tocan.
+    const puntuadas = await prisma.$queryRaw<Array<{ story_id: string; gate_reasons: string[]; gate_score: number }>>`
+      SELECT story_id, gate_reasons, gate_score
+        FROM story_community_reviews
+       WHERE community_id = ${community.id}
+         AND review_state IN ('auto', 'pending')
+    `
+    let rescored = 0
+    for (const [puntaje, ids] of puntajesViejos(puntuadas)) {
+      for (let i = 0; i < ids.length; i += 1000) {
+        const res = await prisma.storyCommunityReview.updateMany({
+          where: { communityId: community.id, reviewState: { in: [...MACHINE_STATES] }, storyId: { in: ids.slice(i, i + 1000) } },
+          data: { gateScore: puntaje },
+        })
+        rescored += res.count
+      }
+    }
+
     const grouped = await prisma.storyCommunityReview.groupBy({
       by: ['reviewState'],
       where: { communityId: community.id },
@@ -408,7 +458,7 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
       if (g.reviewState in byState) byState[g.reviewState as ReviewState] = g._count._all
     }
 
-    const report: ReconcileReport = { slug: community.slug, mode: community.mode, created, reevaluated, deleted, byState }
+    const report: ReconcileReport = { slug: community.slug, mode: community.mode, created, reevaluated, rescored, deleted, byState }
     log.info(report, 'community reviews reconciled')
     reports.push(report)
   }

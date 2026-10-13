@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockPrisma = vi.hoisted(() => ({
   issue: { findMany: vi.fn() },
   story: { findMany: vi.fn(), count: vi.fn() },
-  storyCommunityReview: { findMany: vi.fn(), deleteMany: vi.fn(), groupBy: vi.fn() },
+  storyCommunityReview: { findMany: vi.fn(), deleteMany: vi.fn(), groupBy: vi.fn(), updateMany: vi.fn() },
   $queryRaw: vi.fn(),
   $executeRaw: vi.fn(),
 }))
@@ -12,6 +12,7 @@ vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 const {
   gateTextFor,
   gateScore,
+  puntajesViejos,
   marcaFor,
   evaluateForCommunity,
   machineUpsertSql,
@@ -55,6 +56,13 @@ describe('gateScore', () => {
     expect(gateScore({ reasons: ['listB+corroborated:fundo'] })).toBe(1)
     expect(gateScore({ reasons: ['learning_mode'] })).toBe(0)
     expect(gateScore({ reasons: [] })).toBe(0)
+  })
+  it('el encuadre «confrontacion» solo da 1; corroborado por la Lista A o la B sigue en 3 (decision del 13-oct-2026)', () => {
+    // Medido: de 44 notas retenidas solo por el encuadre, 5 necesitaban revision.
+    expect(gateScore({ reasons: ['frame:confrontacion'] })).toBe(1)
+    expect(gateScore({ reasons: ['learning_mode', 'frame:confrontacion'] })).toBe(1)
+    expect(gateScore({ reasons: ['learning_mode', 'frame:confrontacion', 'listA:desaloj'] })).toBe(3)
+    expect(gateScore({ reasons: ['frame:confrontacion', 'listB+corroborated:fundo'] })).toBe(3)
   })
   it('B+B da puntaje 1, tambien bajo el aprendizaje, y se libera en masa', () => {
     expect(gateScore({ reasons: ['listB+B:carabineros', 'listB+B:predio'] })).toBe(1)
@@ -171,6 +179,18 @@ describe('registerCommunityReviews (el gancho) nunca lanza', () => {
   })
 })
 
+describe('puntajesViejos', () => {
+  it('agrupa por puntaje nuevo solo las filas cuyo puntaje guardado no sigue la regla vigente', () => {
+    const m = puntajesViejos([
+      { story_id: 'solo-encuadre', gate_reasons: ['learning_mode', 'frame:confrontacion'], gate_score: 3 },
+      { story_id: 'encuadre-y-a', gate_reasons: ['learning_mode', 'frame:confrontacion', 'listA:desaloj'], gate_score: 3 },
+      { story_id: 'aprendizaje', gate_reasons: ['learning_mode'], gate_score: 0 },
+      { story_id: 'b-mal-guardada', gate_reasons: ['listB+B:tribunal', 'listB+B:predio'], gate_score: 0 },
+    ])
+    expect(Object.fromEntries(m)).toEqual({ 1: ['solo-encuadre', 'b-mal-guardada'] })
+  })
+})
+
 describe('reconcileCommunityReviews', () => {
   beforeEach(() => vi.clearAllMocks())
 
@@ -204,5 +224,35 @@ describe('reconcileCommunityReviews', () => {
       storyId: { in: ['huerfana'] },
     })
     expect(rep.byState.pending).toBe(1)
+  })
+
+  it('recalcula el puntaje guardado de las filas de maquina sin tocar su estado ni las humanas', async () => {
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([{ id: 'c-mapuche', slug: 'mapuche', keywords: ['mapuche'], issue_ids: [], mode: 'shadow' }]) // verticales
+      .mockResolvedValueOnce([]) // filas viejas
+      .mockResolvedValueOnce([
+        { story_id: 's1', gate_reasons: ['learning_mode', 'frame:confrontacion'], gate_score: 3 },
+        { story_id: 's2', gate_reasons: ['learning_mode', 'frame:confrontacion', 'listA:atentado'], gate_score: 3 },
+      ]) // puntajes guardados
+    mockPrisma.issue.findMany.mockResolvedValue([])
+    mockPrisma.story.findMany
+      .mockResolvedValueOnce([]) // faltantes
+      .mockResolvedValueOnce([{ id: 's1' }, { id: 's2' }]) // siguen encajando
+    mockPrisma.storyCommunityReview.findMany.mockResolvedValue([{ storyId: 's1' }, { storyId: 's2' }])
+    mockPrisma.storyCommunityReview.updateMany.mockResolvedValue({ count: 1 })
+    mockPrisma.storyCommunityReview.groupBy.mockResolvedValue([{ reviewState: 'pending', _count: { _all: 2 } }])
+
+    const [rep] = await reconcileCommunityReviews()
+
+    expect(rep.rescored).toBe(1)
+    expect(mockPrisma.storyCommunityReview.updateMany).toHaveBeenCalledOnce()
+    expect(mockPrisma.storyCommunityReview.updateMany.mock.calls[0][0]).toEqual({
+      where: { communityId: 'c-mapuche', reviewState: { in: ['auto', 'pending'] }, storyId: { in: ['s1'] } },
+      data: { gateScore: 1 },
+    })
+    // la lectura de puntajes es solo de filas de maquina
+    expect(String(mockPrisma.$queryRaw.mock.calls[2][0].join(''))).toContain("review_state IN ('auto', 'pending')")
+    // y no reescribe la fila: ningun upsert
+    expect(mockPrisma.$executeRaw).not.toHaveBeenCalled()
   })
 })

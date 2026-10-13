@@ -26,6 +26,12 @@ describe('etiquetas de la revisión por marca', () => {
     expect(puntajeLabel(1)).toEqual({ texto: '1 · B+B', variant: 'yellow' })
   })
 
+  it('el 1 del encuadre solo se rotula distinto del 1 de B+B (13-oct-2026)', () => {
+    expect(puntajeLabel(1, ['learning_mode', 'frame:confrontacion'])).toEqual({ texto: '1 · solo encuadre', variant: 'yellow' })
+    expect(puntajeLabel(1, ['listB+B:tribunal', 'listB+B:predio']).texto).toBe('1 · B+B')
+    expect(puntajeLabel(3, ['frame:confrontacion', 'listA:desaloj']).texto).toBe('3 · encuadre y lista')
+  })
+
   it('muestra el término como aparece en la nota, no la raíz de la lista', () => {
     const texto = 'Gobierno de Neuquén niega personería a comunidades Mapuche\nLa Justicia ordenó el desalojo; hay tres detenidos tras la detención.'
     expect(terminoVisible('desaloj', texto)).toBe('desalojo')
