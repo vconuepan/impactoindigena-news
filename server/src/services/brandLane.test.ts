@@ -24,7 +24,7 @@ vi.mock('../config.js', async (importOriginal) => {
   return { config: { ...orig.config, brandLane: brandLaneConfig } }
 })
 
-const { aplicarJuicio, motivoSeguro, juzgarPendientes, runBrandLaneOnce, seleccionarTerritorial, seleccionarRescate, ordenarRescate, sinCandidatasRecientes, origenesActivos, siguenVigentes, tomarCandidatasTerritoriales, horaEn, TAMANO_LOTE } =
+const { aplicarJuicio, motivoSeguro, juzgarPendientes, runBrandLaneOnce, seleccionarTerritorial, seleccionarRescate, ordenarRescate, sinCandidatasRecientes, origenesActivos, siguenVigentes, tomarCandidatasTerritoriales, horaEn, publicarElegidas, origenesQuePublican, validarRedaccion, slugDeMarca, TAMANO_LOTE } =
   await import('./brandLane.js')
 const { buildTerritorialPrompt, buildMapuchePrompt } = await import('../prompts/brandLane.js')
 const { MOTIVO_GENERICO } = await import('../lib/brandLanguage.js')
@@ -461,5 +461,72 @@ describe('primera corrida en producción, 13-oct-2026: el modelo recibe el esque
     const porId = Object.fromEntries(mockPrisma.storyBrandAssessment.update.mock.calls.map((c) => [c[0].where.id, c[0].data]))
     expect(porId.a1).toMatchObject({ state: 'discarded', axis: null })
     expect(porId.a2).toMatchObject({ state: 'evaluated' })
+  })
+})
+
+describe('entrega 2: publicación en modo aplicar', () => {
+  const enforce = { ...ARAUCANIA, mode: 'enforce' as const }
+  const elegida = (n: number, story: Record<string, unknown> = {}) => ({
+    id: `a${n}`,
+    storyId: `s${n}`,
+    story: { title: null, summary: null, sourceTitle: `Titular ${n} en Angol`, sourceContent: `Cuerpo ${n}`, ...story },
+  })
+
+  it('solo publica lo de un carril en modo aplicar; en sombra no toca nada', async () => {
+    expect(origenesQuePublican(ARAUCANIA)).toEqual([])
+    expect(origenesQuePublican(enforce)).toEqual(['term', 'feed'])
+    expect(origenesQuePublican({ criterion: 'escala_mapuche', mode: 'enforce', rescueMode: 'shadow' })).toEqual([])
+    expect(origenesQuePublican({ criterion: 'escala_mapuche', mode: 'shadow', rescueMode: 'enforce' })).toEqual(['rescue'])
+    expect(await publicarElegidas(ARAUCANIA, AHORA)).toBe(0)
+    expect(mockPrisma.storyBrandAssessment.findMany).not.toHaveBeenCalled()
+  })
+
+  it('redacta lo que no tiene título, registrando la llamada antes, y publica con slug de la vertical', async () => {
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([elegida(1)])
+    mockPrisma.$queryRaw.mockResolvedValue([{ n: 3 }])
+    mockInvoke.mockResolvedValue({ title: 'Angol inaugura su nuevo CESFAM', summary: 'El centro atenderá a vecinos de tres sectores rurales.' })
+    expect(await publicarElegidas(enforce, AHORA)).toBe(1)
+    expect(mockPrisma.brandLaneCall.create.mock.calls[0][0].data).toMatchObject({ kind: 'redact', articles: 1 })
+    expect(mockPrisma.brandLaneCall.create.mock.invocationCallOrder[0]).toBeLessThan(mockInvoke.mock.invocationCallOrder[0])
+    expect(mockStructured.mock.calls[0][1]).toMatchObject({ name: 'redaccion_de_marca' })
+    expect(mockPrisma.storyBrandAssessment.update.mock.calls[0][0].data).toMatchObject({
+      state: 'published',
+      brandTitle: 'Angol inaugura su nuevo CESFAM',
+      brandSlug: 'angol-inaugura-su-nuevo-cesfam-s1',
+    })
+  })
+
+  it('el rescate usa el título y el resumen que ya trae, sin llamar al modelo', async () => {
+    const rescate = { ...ARAUCANIA, criterion: 'escala_mapuche' as const, mode: 'shadow' as const, rescueMode: 'enforce' as const }
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([elegida(2, { title: 'Comunidades de Coñaripe piden a Conadi la compra comprometida', summary: 'Resumen.' })])
+    expect(await publicarElegidas(rescate, AHORA)).toBe(1)
+    expect(mockInvoke).not.toHaveBeenCalled()
+    expect(mockPrisma.brandLaneCall.create).not.toHaveBeenCalled()
+  })
+
+  it('si la redacción rompe una regla de lenguaje, no se publica: queda descartada con su motivo', async () => {
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([elegida(3)])
+    mockPrisma.$queryRaw.mockResolvedValue([{ n: 0 }])
+    mockInvoke.mockResolvedValue({ title: 'Minera asegura que cumple con el Convenio 169', summary: 'La empresa dice que cumple con el Convenio 169.' })
+    expect(await publicarElegidas(enforce, AHORA)).toBe(0)
+    expect(mockPrisma.storyBrandAssessment.update.mock.calls[0][0].data).toMatchObject({ state: 'discarded', discardReason: 'language' })
+  })
+
+  it('con el tope del día alcanzado no redacta: la elegida espera la corrida siguiente', async () => {
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([elegida(4)])
+    mockPrisma.$queryRaw.mockResolvedValue([{ n: 20 }])
+    expect(await publicarElegidas(enforce, AHORA)).toBe(0)
+    expect(mockInvoke).not.toHaveBeenCalled()
+    expect(mockPrisma.storyBrandAssessment.update).not.toHaveBeenCalled()
+  })
+
+  it('validarRedaccion exige título y resumen razonables', () => {
+    expect(validarRedaccion({ title: ' ', summary: 'x' })).toMatchObject({ ok: false, motivo: 'error' })
+    expect(validarRedaccion({ title: 'x'.repeat(200), summary: 'y' })).toMatchObject({ ok: false, motivo: 'error' })
+    expect(validarRedaccion({ title: 'Un título', summary: 'Un resumen.' })).toEqual({ ok: true })
+  })
+
+  it('el slug de marca lleva el título y un trozo del id', () => {
+    expect(slugDeMarca('¿Qué pasó en Pucón?', 'abc-123-def')).toBe('que-paso-en-pucon-abc123')
   })
 })

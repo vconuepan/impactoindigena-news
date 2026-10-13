@@ -105,3 +105,11 @@ export const ESQUEMA_MODELO_MAPUCHE = esquemaEstricto(
   'juicio_escala_mapuche',
   'Un juicio por cada artículo recibido, con todos sus campos.',
 )
+
+/** Título y resumen de vitrina de una nota que entra a la vertical solo por la marca (modo aplicar). */
+export const brandRedaccionSchema = z.object({
+  title: z.string().describe('Título informativo en español, de 90 caracteres como máximo.'),
+  summary: z.string().describe('Resumen en español de dos o tres oraciones, de 400 caracteres como máximo.'),
+})
+export type BrandRedaccion = z.infer<typeof brandRedaccionSchema>
+export const ESQUEMA_MODELO_REDACCION = esquemaEstricto(brandRedaccionSchema, 'redaccion_de_marca', 'El título y el resumen de vitrina del artículo.')

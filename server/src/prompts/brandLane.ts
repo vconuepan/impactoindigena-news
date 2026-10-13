@@ -88,3 +88,37 @@ ${REGLAS_COMUNES}
 
 ${bloqueArticulos(articulos)}`
 }
+
+/**
+ * Redacción de vitrina (diseño D5, sección 4): solo para lo que el carril eligió
+ * y solo en modo aplicar. Las reglas salen del protocolo editorial (documento
+ * público: secciones 1.3, 3 y 8) y de las reglas de lenguaje de la Fundación. El
+ * resultado pasa después por una verificación determinista (lib/brandLanguage.ts):
+ * si una regla calza, la nota no se publica.
+ */
+export function buildRedaccionPrompt(marca: 'araucania' | 'mapuche', articulo: ArticuloJuez): string {
+  const medio = marca === 'araucania' ? 'Voces Araucanía, que cubre La Araucanía con todos los actores que conviven en ella' : 'Voces Mapuche, que cubre al pueblo mapuche en el Wallmapu entero'
+  return `<ROLE>
+Editor de ${medio}.
+</ROLE>
+
+<GOAL>
+Escribir un título y un resumen en español para este artículo, solo con lo que el artículo dice.
+</GOAL>
+
+<REGLAS>
+- Título informativo, de 90 caracteres como máximo. Resumen de dos o tres oraciones, de 400 caracteres como máximo.
+- Nombrar el hecho, no calificarlo. Todo término de parte va atribuido a quien lo dice y nunca en voz propia: «terrorista», «usurpación», «presos políticos», «recuperación territorial», «violencia rural», «enfrentamiento».
+- Presunción de inocencia: el estado procesal exacto (detenido, formalizado, imputado, condenado). Nadie es «el responsable» sin condena firme.
+- Nunca el nombre de un niño, niña o adolescente ni el de una víctima: se nombra su rol.
+- El sujeto de la primera oración nunca es el medio, la plataforma ni una fundación: es quien actúa en la noticia.
+- El Convenio 169 de la OIT obliga al Estado: ninguna empresa «cumple el Convenio 169».
+- Sin vocabulario de diversidad empresarial («diversidad de proveedores», «gasto diverso», «minorías»).
+- Las organizaciones indígenas no se presentan como competidoras entre sí.
+- No se atribuyen afiliaciones, membresías ni respaldos institucionales que el artículo no diga.
+- No se infiere la pertenencia de nadie a un pueblo: solo se dice si el artículo la declara.
+- No se agregan datos que el artículo no trae.
+</REGLAS>
+
+${bloqueArticulos([articulo])}`
+}

@@ -8,14 +8,18 @@ import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { senalRegional, deduplicar, tituloDedup, comunaPrincipal } from '../lib/brandRegion.js'
 import { utc } from '../lib/sqlTime.js'
 import { sensiblesDelTitulo } from '../lib/brandSensitive.js'
-import { pareceNombrarPersona, MOTIVO_GENERICO } from '../lib/brandLanguage.js'
+import { pareceNombrarPersona, MOTIVO_GENERICO, infraccionesDeLenguaje } from '../lib/brandLanguage.js'
+import { slugify } from '../utils/slugify.js'
 import { seleccionarAraucania, reglasDesdeBalance, type Admitida } from '../lib/brandSelection.js'
-import { buildTerritorialPrompt, buildMapuchePrompt, type ArticuloJuez } from '../prompts/brandLane.js'
+import { buildTerritorialPrompt, buildMapuchePrompt, buildRedaccionPrompt, type ArticuloJuez } from '../prompts/brandLane.js'
 import {
   brandTerritorialResultSchema,
   brandMapucheResultSchema,
   ESQUEMA_MODELO_TERRITORIAL,
   ESQUEMA_MODELO_MAPUCHE,
+  ESQUEMA_MODELO_REDACCION,
+  brandRedaccionSchema,
+  type BrandRedaccion,
   type BrandTerritorialItem,
   type BrandMapucheItem,
 } from '../schemas/brandLane.js'
@@ -601,6 +605,128 @@ export async function seleccionarRescate(c: BrandCriteria, ahora: Date): Promise
   return ids
 }
 
+// --- Publicación (solo en modo aplicar) ---------------------------------------
+
+const LARGO_TITULO = 110
+const LARGO_RESUMEN = 600
+
+/**
+ * Qué orígenes se publican: solo los de un carril en modo aplicar. Lo que entra
+ * por palabras clave ya está publicado en el sitio global y no se toca.
+ */
+export function origenesQuePublican(c: Pick<BrandCriteria, 'criterion' | 'mode' | 'rescueMode'>): string[] {
+  if (c.criterion === 'territorial') return c.mode === 'enforce' ? ['term', 'feed'] : []
+  return c.rescueMode === 'enforce' ? ['rescue'] : []
+}
+
+/**
+ * Verificación determinista de la vitrina (diseño D5, sección 8): largo
+ * razonable y ninguna regla de lenguaje de la Fundación con candado. Las reglas 1
+ * y 5 (agencia, competencia entre organizaciones indígenas) no tienen verificación
+ * determinista: van en el prompt, declarado.
+ */
+export function validarRedaccion(r: BrandRedaccion): { ok: true } | { ok: false; motivo: 'language' | 'error'; detalle: string } {
+  const titulo = r.title.trim()
+  const resumen = r.summary.trim()
+  if (!titulo || !resumen) return { ok: false, motivo: 'error', detalle: 'título o resumen vacío' }
+  if (titulo.length > LARGO_TITULO || resumen.length > LARGO_RESUMEN) return { ok: false, motivo: 'error', detalle: 'título o resumen demasiado largo' }
+  const infracciones = infraccionesDeLenguaje(`${titulo}\n${resumen}`)
+  if (infracciones.length > 0) return { ok: false, motivo: 'language', detalle: infracciones.join(', ') }
+  return { ok: true }
+}
+
+/** Slug de la ficha en la vertical: el título y seis caracteres del id, para que no choque. */
+export function slugDeMarca(titulo: string, storyId: string): string {
+  return `${slugify(titulo, 70)}-${storyId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toLowerCase()}`
+}
+
+/**
+ * Publica para la vertical lo que el carril eligió, solo en modo aplicar.
+ * - Lo que murió en el pre-filtro no tiene título ni resumen: se redacta, con una
+ *   llamada que se cuenta en el tope ANTES de hacerse.
+ * - El rescate de Mapuche ya trae título y resumen de la evaluación global: se usan,
+ *   sin llamada.
+ * - Todo pasa validarRedaccion; si falla, la nota queda descartada con su motivo.
+ * Nunca escribe en stories: la nota sigue 'rejected' para el sitio global y se ve
+ * en la vertical solo con su fila de D4 en auto o released (diseño, 7.2).
+ */
+export async function publicarElegidas(c: BrandCriteria, ahora: Date): Promise<number> {
+  const origenes = origenesQuePublican(c)
+  if (origenes.length === 0) return 0
+  const elegidas = await prisma.storyBrandAssessment.findMany({
+    where: { communityId: c.communityId, state: 'selected', redactedAt: null, sourceSignal: { in: origenes } },
+    orderBy: { selectedAt: 'asc' },
+    select: { id: true, storyId: true, story: { select: { title: true, summary: true, sourceTitle: true, sourceContent: true } } },
+  })
+  let publicadas = 0
+  for (const e of elegidas) {
+    let redaccion: BrandRedaccion | null = null
+    if (e.story.title && e.story.summary) {
+      redaccion = { title: e.story.title, summary: e.story.summary }
+    } else {
+      if ((await llamadasDeHoy(c.communityId, ahora)) >= c.dailyCallCap) {
+        log.info({ slug: c.slug }, 'brand lane: daily call cap reached before redaction; it waits for the next run')
+        break
+      }
+      const llamada = randomUUID()
+      await prisma.brandLaneCall.create({ data: { id: llamada, communityId: c.communityId, kind: 'redact', articles: 1 } })
+      let error: string | null = null
+      try {
+        await rateLimitDelay()
+        const res = await getMediumLLM()
+          .withStructuredOutput(ESQUEMA_MODELO_REDACCION, { name: 'redaccion_de_marca', method: 'functionCalling' })
+          .invoke([
+            new HumanMessage(
+              buildRedaccionPrompt(c.criterion === 'territorial' ? 'araucania' : 'mapuche', {
+                id: e.storyId,
+                title: e.story.sourceTitle,
+                content: e.story.sourceContent,
+              }),
+            ),
+          ])
+        redaccion = brandRedaccionSchema.parse(res)
+      } catch (err) {
+        error = err instanceof Error ? err.message.slice(0, 300) : 'error del modelo'
+        log.warn({ slug: c.slug, storyId: e.storyId, err }, 'brand lane redaction failed')
+      }
+      try {
+        await prisma.brandLaneCall.update({ where: { id: llamada }, data: { ok: error === null, error } })
+      } catch (err) {
+        log.warn({ slug: c.slug, err }, 'brand lane: could not close the call record')
+      }
+      if (!redaccion) {
+        await prisma.storyBrandAssessment.update({
+          where: { id: e.id },
+          data: { state: 'discarded', discardReason: 'error', redactedAt: ahora, lastError: error },
+        })
+        continue
+      }
+    }
+    const v = validarRedaccion(redaccion)
+    if (!v.ok) {
+      await prisma.storyBrandAssessment.update({
+        where: { id: e.id },
+        data: { state: 'discarded', discardReason: v.motivo, redactedAt: ahora, lastError: v.detalle },
+      })
+      continue
+    }
+    await prisma.storyBrandAssessment.update({
+      where: { id: e.id },
+      data: {
+        state: 'published',
+        brandTitle: redaccion.title.trim(),
+        brandSummary: redaccion.summary.trim(),
+        brandSlug: slugDeMarca(redaccion.title, e.storyId),
+        redactedAt: ahora,
+        publishedAt: ahora,
+        lastError: null,
+      },
+    })
+    publicadas++
+  }
+  return publicadas
+}
+
 // --- Corrida -----------------------------------------------------------------
 
 export interface BrandLaneReport {
@@ -610,6 +736,8 @@ export interface BrandLaneReport {
   candidatas: number
   llamadas: number
   seleccionadas: number
+  /** Notas publicadas por la marca en esta corrida (solo en modo aplicar). */
+  publicadas: number
   /** Sin candidatas nuevas en 24 horas: el pre-filtro falló el 99 % de los lotes durante meses sin que nadie lo viera. */
   sinCandidatas24h: boolean
 }
@@ -646,8 +774,9 @@ export async function runBrandLaneOnce(ahora: Date = new Date()): Promise<BrandL
     const llamadas = await juzgarPendientes(c, ahora)
     if (c.criterion === 'territorial' && c.mode !== 'off') seleccionadas += (await seleccionarTerritorial(c, ahora)).length
     if (c.criterion === 'escala_mapuche' && c.rescueMode !== 'off') seleccionadas += (await seleccionarRescate(c, ahora)).length
+    const publicadas = await publicarElegidas(c, ahora)
     const sinCandidatas24h = await sinCandidatasRecientes(c.communityId, ahora)
-    const report = { slug: c.slug, mode: c.mode, rescueMode: c.rescueMode, candidatas, llamadas, seleccionadas, sinCandidatas24h }
+    const report = { slug: c.slug, mode: c.mode, rescueMode: c.rescueMode, candidatas, llamadas, seleccionadas, publicadas, sinCandidatas24h }
     if (sinCandidatas24h) log.warn(report, 'brand lane: no new candidates in 24 hours')
     else log.info(report, 'brand lane run')
     reports.push(report)
