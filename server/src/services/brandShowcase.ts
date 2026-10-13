@@ -169,3 +169,45 @@ export async function fichaDeVitrina(communityId: string, brandSlug: string): Pr
     select: VITRINA_SELECT,
   }) as unknown as Promise<NotaDeVitrina | null>
 }
+
+/**
+ * Un ítem de las superficies que eligen pocas notas y arman su propio enlace (el
+ * RSS, el digest y la bienvenida): la misma forma para lo publicado y para la
+ * vitrina, para mezclarlos por fecha en un solo lugar.
+ */
+export interface ItemDeSuperficie {
+  id: string
+  title: string
+  url: string
+  summary: string | null
+  sourceTitle: string | null
+  fecha: Date | null
+  /** Para el RSS: el tema de lo publicado; la vertical, en lo de marca (no lleva tema). */
+  categoria: string
+}
+
+/** Los ítems de la vitrina de una vertical, con su enlace absoluto a la ficha. */
+export async function itemsDeVitrina(
+  community: { id: string; slug: string; name: string },
+  siteUrl: string,
+  opts: { take: number; desde?: Date },
+): Promise<ItemDeSuperficie[]> {
+  const notas = await notasDeVitrina(community.id, opts)
+  return notas
+    .filter((n) => n.brandSlug)
+    .map((n) => ({
+      id: n.story.id,
+      title: n.brandTitle ?? n.story.sourceTitle,
+      url: `${siteUrl}${enlaceDeVitrina(community.slug, n.brandSlug as string)}`,
+      summary: n.brandSummary,
+      sourceTitle: n.story.feed.displayTitle || n.story.feed.title,
+      fecha: n.brandDate,
+      categoria: community.name,
+    }))
+}
+
+/** Mezcla lo publicado con la vitrina, de lo más nuevo a lo más viejo, y deja `take`. */
+export function mezclarItems(publicadas: ItemDeSuperficie[], deMarca: ItemDeSuperficie[], take: number): ItemDeSuperficie[] {
+  const f = (x: ItemDeSuperficie) => x.fecha?.getTime() ?? 0
+  return mezclarPorFecha(publicadas, deMarca, f, f, 0, take) as ItemDeSuperficie[]
+}

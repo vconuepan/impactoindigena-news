@@ -82,7 +82,8 @@ describe('una sola regla para lo que muestra una vertical', () => {
   it('la vitrina de marca (D5) solo la leen las superficies adaptadas, y ninguna arma su where a mano', () => {
     // services/brandShowcase.ts es el unico lugar que decide que nota de marca se ve en una vertical.
     const usan = archivos().filter((f) => /services\/brandShowcase\.js/.test(readFileSync(path.join(SRC, f), 'utf8')))
-    expect(usan.sort()).toEqual(['routes/public/communities.ts'])
+    // La página y la bienvenida (communities.ts), el RSS (feed.ts) y el digest. Señales y opendata, no: siguen solo con lo publicado.
+    expect(usan.sort()).toEqual(['jobs/sendCommunityDigest.ts', 'routes/public/communities.ts', 'routes/public/feed.ts'])
     for (const f of archivos()) {
       if (f === 'services/brandShowcase.ts') continue
       const codigo = readFileSync(path.join(SRC, f), 'utf8')

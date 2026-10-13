@@ -7,11 +7,21 @@ import * as storyService from '../../services/story.js'
 import * as issueService from '../../services/issue.js'
 import prisma from '../../lib/prisma.js'
 import { publicCommunityWhere, temasVivos, getReviewMode } from '../../lib/communityVisibility.js'
+import { itemsDeVitrina, mezclarItems, type ItemDeSuperficie } from '../../services/brandShowcase.js'
 
 const router = Router()
 const log = createLogger('feed')
 
 const feedCache = new TTLCache<string>(config.feed.cacheMaxAge * 1000)
+
+/**
+ * Saca de la caché el RSS de una vertical: al cambiar el modo de la marca (D5),
+ * la vitrina entra o sale del RSS sin esperar los 15 minutos (diseño D5, 9.5).
+ * Los lectores que ya lo bajaron lo conservan hasta su propio max-age.
+ */
+export function invalidarFeedComunidad(slug: string): void {
+  feedCache.invalidate(`feed:community:${slug}`)
+}
 
 function getSiteUrl(): string {
   return config.siteUrl
@@ -123,14 +133,25 @@ router.get('/comunidad/:slug', async (req, res) => {
         feedPath: `/api/feed/comunidad/${slug}`,
       })
 
-      for (const story of stories) {
+      // Lo publicado y, si la marca está en modo aplicar, su vitrina (D5), por fecha.
+      const publicadas: ItemDeSuperficie[] = stories.map((story) => ({
+        id: story.id,
+        title: story.title || story.sourceTitle,
+        url: `${siteUrl}/stories/${story.slug || story.id}`,
+        summary: story.summary,
+        sourceTitle: story.sourceTitle,
+        fecha: story.datePublished ? new Date(story.datePublished) : new Date(story.dateCrawled),
+        categoria: story.issue?.name || 'General',
+      }))
+      const deMarca = await itemsDeVitrina({ id: community.id, slug, name: community.name }, siteUrl, { take: config.feed.size })
+      for (const item of mezclarItems(publicadas, deMarca, config.feed.size)) {
         feed.addItem({
-          title: story.title || story.sourceTitle,
-          id: story.id,
-          link: `${siteUrl}/stories/${story.slug || story.id}`,
-          description: story.summary || undefined,
-          date: story.datePublished ? new Date(story.datePublished) : new Date(story.dateCrawled),
-          category: [{ name: story.issue?.name || 'General' }],
+          title: item.title,
+          id: item.id,
+          link: item.url,
+          description: item.summary || undefined,
+          date: item.fecha ?? new Date(),
+          category: [{ name: item.categoria }],
           author: [{ name: 'Voces Indígenas', link: getSiteUrl() }],
         })
       }

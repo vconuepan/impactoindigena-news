@@ -4,23 +4,17 @@ import { sendTransactional } from '../services/brevo.js'
 import { createLogger } from '../lib/logger.js'
 import { escapeHtml } from '../lib/escapeHtml.js'
 import { publicCommunityWhere, temasVivos, getReviewMode } from '../lib/communityVisibility.js'
+import { itemsDeVitrina, mezclarItems, type ItemDeSuperficie } from '../services/brandShowcase.js'
 
 const log = createLogger('send_community_digest')
 
 const SITE_URL = config.siteUrl || 'https://vocesindigenas.org'
 const LOOKBACK_DAYS = 7
 
-interface DigestStory {
-  title: string | null
-  slug: string
-  summary: string | null
-  sourceTitle: string | null
-  datePublished: Date | null
-}
-
 interface DigestSection {
   community: { name: string; slug: string; type: string }
-  stories: DigestStory[]
+  /** Lo publicado y la vitrina de marca (D5), cada uno con su enlace ya armado. */
+  stories: ItemDeSuperficie[]
 }
 
 /**
@@ -40,15 +34,15 @@ function buildDigestHtml(userName: string, sections: DigestSection[]): string {
 
       const storyRows = stories
         .map((s) => {
-          const storyUrl = `${SITE_URL}/stories/${s.slug}`
+          const storyUrl = s.url
           // Nada de esto es nuestro: el titulo de la fuente sale de la pagina de un
           // tercero y el titulo y el resumen los escribe un modelo a partir de ella.
           // Se codifican al entrar a la plantilla, o llegan al correo como marcado.
-          const title = escapeHtml(s.title || s.slug)
+          const title = escapeHtml(s.title)
           const summary = s.summary || ''
           const source = escapeHtml(s.sourceTitle || '')
-          const date = s.datePublished
-            ? new Date(s.datePublished).toLocaleDateString('es-CL', {
+          const date = s.fecha
+            ? new Date(s.fecha).toLocaleDateString('es-CL', {
                 day: 'numeric',
                 month: 'long',
               })
@@ -247,10 +241,21 @@ export async function runSendCommunityDigest(): Promise<void> {
         orderBy: { datePublished: 'desc' },
         take: 5,
       })
+      // Lo publicado de la semana y, si la marca está en modo aplicar, su vitrina (D5).
+      const publicadas: ItemDeSuperficie[] = stories.map((s) => ({
+        id: s.slug ?? '',
+        title: s.title || s.sourceTitle || s.slug || '',
+        url: `${SITE_URL}/stories/${s.slug}`,
+        summary: s.summary,
+        sourceTitle: s.sourceTitle,
+        fecha: s.datePublished,
+        categoria: community.name,
+      }))
+      const deMarca = await itemsDeVitrina(community, SITE_URL, { take: 5, desde: since })
+      const items = mezclarItems(publicadas, deMarca, 5)
 
-      if (stories.length > 0) {
-        // slug is never null on published stories; cast to satisfy the interface
-        sections.push({ community, stories: stories as DigestStory[] })
+      if (items.length > 0) {
+        sections.push({ community, stories: items })
       }
     }
 

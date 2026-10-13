@@ -5,7 +5,7 @@ import prisma from '../../lib/prisma.js'
 import { config } from '../../config.js'
 import { requireMember } from '../../middleware/auth.js'
 import { sendTransactional } from '../../services/brevo.js'
-import { vitrinaEncendida, notasDeVitrina, contarVitrina, comoNotaPublica, mezclarPorFecha, fichaDeVitrina } from '../../services/brandShowcase.js'
+import { vitrinaEncendida, notasDeVitrina, contarVitrina, comoNotaPublica, mezclarPorFecha, fichaDeVitrina, itemsDeVitrina, mezclarItems, type ItemDeSuperficie } from '../../services/brandShowcase.js'
 import {
   buildCommunityCondition,
   temasVivos,
@@ -457,20 +457,31 @@ async function sendWelcomeEmail(
       mode: await getReviewMode(community.id),
       learningMode: config.gate.learningMode,
     }),
-    select: { title: true, slug: true, summary: true, sourceTitle: true },
+    select: { title: true, slug: true, summary: true, sourceTitle: true, datePublished: true },
     orderBy: { datePublished: 'desc' },
     take: 3,
   })
+  // Lo publicado y, si la marca está en modo aplicar, su vitrina (D5), por fecha.
+  const publicadas: ItemDeSuperficie[] = stories.map((s) => ({
+    id: s.slug ?? '',
+    title: s.title || s.sourceTitle || s.slug || '',
+    url: `${SITE_URL}/stories/${s.slug}`,
+    summary: s.summary,
+    sourceTitle: s.sourceTitle,
+    fecha: s.datePublished,
+    categoria: community.name,
+  }))
+  const items = mezclarItems(publicadas, await itemsDeVitrina(community, SITE_URL, { take: 3 }), 3)
 
   const firstName = userName && !userName.includes('@') ? userName.split(' ')[0] : null
   // El nombre lo escribio quien se une, y titulo, resumen y fuente salen de la
   // pagina de un tercero: se codifican al entrar a la plantilla.
   const greeting = firstName ? `Hola ${escapeHtml(firstName)}` : 'Hola'
 
-  const storyRows = stories
+  const storyRows = items
     .map((s) => {
-      const storyUrl = `${SITE_URL}/stories/${s.slug}`
-      const title = escapeHtml(s.title || s.slug)
+      const storyUrl = s.url
+      const title = escapeHtml(s.title)
       const summary = s.summary ? escapeHtml(s.summary.slice(0, 140)) + (s.summary.length > 140 ? '…' : '') : ''
       return `
       <tr>
@@ -508,7 +519,7 @@ async function sendWelcomeEmail(
           </td>
         </tr>
 
-        ${stories.length > 0 ? `
+        ${items.length > 0 ? `
         <tr>
           <td style="padding:8px 32px 0;">
             <p style="margin:0 0 4px;font-size:12px;color:#8c7e6a;font-family:sans-serif;text-transform:uppercase;letter-spacing:1px;">Últimas noticias</p>
