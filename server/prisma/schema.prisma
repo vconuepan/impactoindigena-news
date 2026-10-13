@@ -115,6 +115,7 @@ model Story {
   facebookPosts          FacebookPost[]
   communityPosts         CommunityPost[]
   communityReviews       StoryCommunityReview[]
+  brandAssessments       StoryBrandAssessment[]
   createdAt              DateTime     @default(now()) @map("created_at")
   updatedAt              DateTime     @updatedAt @map("updated_at")
 
@@ -164,6 +165,7 @@ model Feed {
   htmlSelector            String?   @map("html_selector")
   feedCategory            String    @default("INDIGENOUS") @map("feed_category")
   stories            Story[]
+  brands             FeedBrand[]
   createdAt          DateTime  @default(now()) @map("created_at")
   updatedAt          DateTime  @updatedAt @map("updated_at")
 
@@ -550,6 +552,9 @@ model Community {
   posts            CommunityPost[]
   reviewMode       CommunityReviewMode?
   storyReviews     StoryCommunityReview[]
+  brandCriteria    CommunityBrandCriteria?
+  brandFeeds       FeedBrand[]
+  brandAssessments StoryBrandAssessment[]
 
   @@index([slug])
   @@map("communities")
@@ -847,5 +852,87 @@ model StoryCommunityReview {
   @@index([communityId, reviewState, gateScore(sort: Desc)], map: "story_community_reviews_queue_idx")
   @@index([storyId])
   @@map("story_community_reviews")
+}
+
+// --- Criterio por marca (D5) ---
+// Diseño: otras-voces (repo privado), estrategia/d5-criterio-por-marca.md.
+// Carril lateral que solo suma: nunca escribe stories.status ni su relevancia.
+// Migración: 20261013000000_add_brand_lane. Sin fila de criterio, la vertical
+// está apagada; el código tolera que estas tablas no existan.
+
+model CommunityBrandCriteria {
+  communityId       String    @id @map("community_id")
+  community         Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  /// 'territorial' | 'escala_mapuche'
+  criterion         String
+  /// 'off' | 'shadow' | 'enforce'
+  mode              String    @default("off")
+  /// 'off' | 'shadow' | 'enforce' (solo Voces Mapuche)
+  rescueMode        String    @default("off") @map("rescue_mode")
+  /// Pautas de la marca. Las carga el director desde el repo privado.
+  guidelines        String    @default("")
+  guidelinesVersion Int       @default(0) @map("guidelines_version")
+  relevanceMin      Int       @map("relevance_min") @db.SmallInt
+  dailyTarget       Int       @default(0) @map("daily_target") @db.SmallInt
+  balance           Json      @default("{}")
+  dailyCallCap      Int       @default(20) @map("daily_call_cap") @db.SmallInt
+  updatedBy         String?   @map("updated_by")
+  updatedAt         DateTime  @default(now()) @map("updated_at")
+
+  @@map("community_brand_criteria")
+}
+
+model FeedBrand {
+  feedId      String    @map("feed_id")
+  feed        Feed      @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@id([feedId, communityId])
+  @@map("feed_brands")
+}
+
+model StoryBrandAssessment {
+  id                   String    @id @default(uuid())
+  storyId              String    @map("story_id")
+  story                Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  communityId          String    @map("community_id")
+  community            Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  /// 'term' | 'feed' | 'keyword' | 'rescue'
+  sourceSignal         String    @map("source_signal")
+  matchedTerms         String[]  @default([]) @map("matched_terms")
+  admitted             Boolean?
+  admissionReason      String?   @map("admission_reason")
+  brandScore           Int?      @map("brand_score") @db.SmallInt
+  axis                 String?
+  place                String?
+  sensitiveFlagsJudge  String[]  @default([]) @map("sensitive_flags_judge")
+  sensitiveFlagsFilter String[]  @default([]) @map("sensitive_flags_filter")
+  /// 'candidate' | 'evaluated' | 'discarded' | 'selected' | 'published'
+  state                String    @default("candidate")
+  discardReason        String?   @map("discard_reason")
+  brandTitle           String?   @map("brand_title")
+  brandSummary         String?   @map("brand_summary")
+  brandSlug            String?   @unique @map("brand_slug")
+  brandDate            DateTime? @map("brand_date")
+  guidelinesVersion    Int?      @map("guidelines_version")
+  model                String?
+  batchId              String?   @map("batch_id")
+  attempts             Int       @default(0) @db.SmallInt
+  lastError            String?   @map("last_error")
+  tokensIn             Int?      @map("tokens_in")
+  tokensOut            Int?      @map("tokens_out")
+  evaluatedAt          DateTime? @map("evaluated_at")
+  redactedAt           DateTime? @map("redacted_at")
+  selectedAt           DateTime? @map("selected_at")
+  publishedAt          DateTime? @map("published_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([storyId, communityId])
+  @@index([communityId, state, brandScore(sort: Desc)], map: "story_brand_assessments_selection_idx")
+  @@index([communityId, evaluatedAt], map: "story_brand_assessments_calls_idx")
+  @@map("story_brand_assessments")
 }
 
