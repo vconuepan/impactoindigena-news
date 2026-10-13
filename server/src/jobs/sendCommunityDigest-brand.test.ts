@@ -58,4 +58,14 @@ describe('digest semanal con la vitrina de marca', () => {
     expect(body).not.toContain('/comunidad/wallmapu-araucania/n/')
     expect(mockPrisma.storyBrandAssessment.findMany).not.toHaveBeenCalled()
   })
+
+  it('manda como máximo cinco notas por vertical, aunque haya más en la semana', async () => {
+    marca.mode = 'shadow'
+    mockPrisma.story.findMany.mockResolvedValue(
+      Array.from({ length: 8 }, (_, i) => ({ id: `s${i}`, title: `Nota ${i}`, slug: `nota-${i}`, summary: 'R', sourceTitle: 'F', datePublished: new Date(Date.UTC(2026, 9, 12 - i)), narrativeFrame: null, feedId: 'f' })),
+    )
+    await runSendCommunityDigest()
+    const { body } = sendTransactional.mock.calls[0][0]
+    expect((body.match(/\/stories\/nota-/g) ?? []).length).toBe(5)
+  })
 })

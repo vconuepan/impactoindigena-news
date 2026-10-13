@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { VISIBLE_WHEN_ENFORCED } from '../lib/communityVisibility.js'
+import { equilibrarDestacadas, reglasDestacadas, type ReglasDestacadas } from '../lib/brandBalance.js'
 
 /**
  * LA VITRINA DE MARCA (D5, entrega 2): lo que la marca publicó en una vertical y
@@ -177,6 +178,10 @@ export async function fichaDeVitrina(communityId: string, brandSlug: string): Pr
  */
 export interface ItemDeSuperficie {
   id: string
+  /** Para elegir destacadas (Voces Mapuche): la nota, su encuadre y su feed. */
+  storyId: string
+  encuadre: string | null
+  feedId: string | null
   title: string
   url: string
   summary: string | null
@@ -197,6 +202,9 @@ export async function itemsDeVitrina(
     .filter((n) => n.brandSlug)
     .map((n) => ({
       id: n.story.id,
+      storyId: n.story.id,
+      encuadre: n.story.narrativeFrame,
+      feedId: n.story.feedId,
       title: n.brandTitle ?? n.story.sourceTitle,
       url: `${siteUrl}${enlaceDeVitrina(community.slug, n.brandSlug as string)}`,
       summary: n.brandSummary,
@@ -211,3 +219,60 @@ export function mezclarItems(publicadas: ItemDeSuperficie[], deMarca: ItemDeSupe
   const f = (x: ItemDeSuperficie) => x.fecha?.getTime() ?? 0
   return mezclarPorFecha(publicadas, deMarca, f, f, 0, take) as ItemDeSuperficie[]
 }
+
+// --- Destacadas de Voces Mapuche (D5, ítem 9) -----------------------------------
+
+/**
+ * Las reglas de destacadas de una vertical, si su marca ordena destacadas: solo la
+ * escala Mapuche en modo aplicar (diseño D5, 9.4: «Mapuche primero, el orden de
+ * destacadas»). Para las demás, null: el orden de siempre. Nunca lanza.
+ */
+export async function reglasDeDestacadas(communityId: string): Promise<ReglasDestacadas | null> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ criterion: string; mode: string; balance: unknown }>>`
+      SELECT criterion, mode, balance FROM community_brand_criteria WHERE community_id = ${communityId}
+    `
+    const r = Array.isArray(rows) ? rows[0] : undefined
+    return r && r.criterion === 'escala_mapuche' && r.mode === 'enforce' ? reglasDestacadas(r.balance) : null
+  } catch {
+    return null
+  }
+}
+
+export interface CandidataDestacada {
+  storyId: string
+  encuadre: string | null
+  feedId: string | null
+  fecha: Date | null
+}
+
+/**
+ * Elige `n` destacadas entre candidatas ordenadas de la más nueva a la más vieja.
+ * Con la escala Mapuche en modo aplicar, con la regla de equilibrio
+ * (lib/brandBalance.ts) y la nota de marca de cada una; si no, las `n` más
+ * recientes, como siempre. Ordena y no quita: el listado sigue completo.
+ */
+export async function elegirDestacadas<T>(communityId: string, candidatas: T[], n: number, de: (x: T) => CandidataDestacada): Promise<T[]> {
+  const reglas = await reglasDeDestacadas(communityId)
+  if (!reglas || candidatas.length === 0) return candidatas.slice(0, n)
+  const ids = candidatas.map((x) => de(x).storyId)
+  const notas = await prisma.storyBrandAssessment.findMany({
+    where: { communityId, storyId: { in: ids } },
+    select: { storyId: true, brandScore: true, axis: true, place: true },
+  })
+  const porId = new Map(notas.map((a) => [a.storyId, a]))
+  const elegidos = equilibrarDestacadas(
+    candidatas.map((x) => {
+      const c = de(x)
+      const a = porId.get(c.storyId)
+      return { id: c.storyId, nota: a?.brandScore ?? null, eje: a?.axis ?? null, lugar: a?.place ?? null, encuadre: c.encuadre, feed: c.feedId, fecha: c.fecha ?? new Date(0) }
+    }),
+    n,
+    reglas,
+  )
+  const porStory = new Map(candidatas.map((x) => [de(x).storyId, x]))
+  return elegidos.map((id) => porStory.get(id)).filter((x): x is T => x !== undefined)
+}
+
+/** Cuántas candidatas se leen para elegir destacadas: las de la semana alcanzan de sobra. */
+export const CANDIDATAS_DESTACADAS = 30

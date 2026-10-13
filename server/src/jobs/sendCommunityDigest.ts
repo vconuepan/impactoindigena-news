@@ -4,7 +4,7 @@ import { sendTransactional } from '../services/brevo.js'
 import { createLogger } from '../lib/logger.js'
 import { escapeHtml } from '../lib/escapeHtml.js'
 import { publicCommunityWhere, temasVivos, getReviewMode } from '../lib/communityVisibility.js'
-import { itemsDeVitrina, mezclarItems, type ItemDeSuperficie } from '../services/brandShowcase.js'
+import { itemsDeVitrina, mezclarItems, elegirDestacadas, CANDIDATAS_DESTACADAS, type ItemDeSuperficie } from '../services/brandShowcase.js'
 
 const log = createLogger('send_community_digest')
 
@@ -232,18 +232,24 @@ export async function runSendCommunityDigest(): Promise<void> {
           ],
         },
         select: {
+          id: true,
           title: true,
           slug: true,
           summary: true,
           sourceTitle: true,
           datePublished: true,
+          narrativeFrame: true,
+          feedId: true,
         },
         orderBy: { datePublished: 'desc' },
-        take: 5,
+        take: CANDIDATAS_DESTACADAS,
       })
       // Lo publicado de la semana y, si la marca está en modo aplicar, su vitrina (D5).
       const publicadas: ItemDeSuperficie[] = stories.map((s) => ({
-        id: s.slug ?? '',
+        id: s.id,
+        storyId: s.id,
+        encuadre: s.narrativeFrame,
+        feedId: s.feedId,
         title: s.title || s.sourceTitle || s.slug || '',
         url: `${SITE_URL}/stories/${s.slug}`,
         summary: s.summary,
@@ -251,8 +257,10 @@ export async function runSendCommunityDigest(): Promise<void> {
         fecha: s.datePublished,
         categoria: community.name,
       }))
-      const deMarca = await itemsDeVitrina(community, SITE_URL, { take: 5, desde: since })
-      const items = mezclarItems(publicadas, deMarca, 5)
+      const deMarca = await itemsDeVitrina(community, SITE_URL, { take: CANDIDATAS_DESTACADAS, desde: since })
+      // Cinco destacadas: las más recientes o, con la escala Mapuche en modo aplicar, con equilibrio (D5, ítem 9).
+      const candidatas = mezclarItems(publicadas, deMarca, CANDIDATAS_DESTACADAS)
+      const items = await elegirDestacadas(community.id, candidatas, 5, (x) => x)
 
       if (items.length > 0) {
         sections.push({ community, stories: items })

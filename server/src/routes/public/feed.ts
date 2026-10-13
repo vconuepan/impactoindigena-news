@@ -136,6 +136,9 @@ router.get('/comunidad/:slug', async (req, res) => {
       // Lo publicado y, si la marca está en modo aplicar, su vitrina (D5), por fecha.
       const publicadas: ItemDeSuperficie[] = stories.map((story) => ({
         id: story.id,
+        storyId: story.id,
+        encuadre: null,
+        feedId: null,
         title: story.title || story.sourceTitle,
         url: `${siteUrl}/stories/${story.slug || story.id}`,
         summary: story.summary,

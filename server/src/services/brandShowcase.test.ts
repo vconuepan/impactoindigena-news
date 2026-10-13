@@ -6,7 +6,7 @@ const mockPrisma = vi.hoisted(() => ({
 }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
-const { vitrinaEncendida, vitrinaWhere, notasDeVitrina, mezclarPorFecha, comoNotaPublica, enlaceDeVitrina, fichaDeVitrina } = await import('./brandShowcase.js')
+const { vitrinaEncendida, vitrinaWhere, notasDeVitrina, mezclarPorFecha, comoNotaPublica, enlaceDeVitrina, fichaDeVitrina, reglasDeDestacadas, elegirDestacadas } = await import('./brandShowcase.js')
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -68,5 +68,56 @@ describe('la vitrina de marca (D5, entrega 2)', () => {
     mockPrisma.storyBrandAssessment.findFirst.mockResolvedValueOnce(null)
     expect(await fichaDeVitrina('c1', 'x')).toBeNull()
     expect(mockPrisma.storyBrandAssessment.findFirst.mock.calls[0][0].where).toMatchObject({ brandSlug: 'x', state: 'published' })
+  })
+})
+
+describe('destacadas de Voces Mapuche (D5, ítem 9)', () => {
+  const balance = { confrontacionMaxDestacadas: 0.3334, ejeDirectorMinDestacadas: 1, puelmapuMinDestacadas: 1, porFeedMaxDestacadas: 3 }
+  const c = (id: string, dia: number, encuadre: string | null = null) => ({ storyId: id, encuadre, feedId: `f-${id}`, fecha: new Date(Date.UTC(2026, 9, dia)) })
+
+  it('solo la escala Mapuche en modo aplicar ordena destacadas', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'escala_mapuche', mode: 'enforce', balance }])
+    expect(await reglasDeDestacadas('c1')).toMatchObject({ confrontacionMax: 0.3334, ejeDirectorMin: 1 })
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'escala_mapuche', mode: 'shadow', balance }])
+    expect(await reglasDeDestacadas('c1')).toBeNull()
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'enforce', balance: {} }])
+    expect(await reglasDeDestacadas('c1')).toBeNull()
+    mockPrisma.$queryRaw.mockRejectedValueOnce(new Error('sin tabla'))
+    expect(await reglasDeDestacadas('c1')).toBeNull()
+  })
+
+  it('sin reglas: las n más recientes, sin leer notas de marca', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([])
+    const r = await elegirDestacadas('c1', [c('a', 13), c('b', 12), c('d', 11)], 2, (x) => x)
+    expect(r.map((x) => x.storyId)).toEqual(['a', 'b'])
+    expect(mockPrisma.storyBrandAssessment.findMany).not.toHaveBeenCalled()
+  })
+
+  it('con la escala en modo aplicar: nota de marca, tope de confrontación y un eje del director', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'escala_mapuche', mode: 'enforce', balance }])
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValueOnce([
+      { storyId: 'k1', brandScore: 6, axis: 'conflicto', place: 'araucania' },
+      { storyId: 'k2', brandScore: 6, axis: 'conflicto', place: 'araucania' },
+      { storyId: 'k3', brandScore: 6, axis: 'conflicto', place: 'araucania' },
+      { storyId: 't1', brandScore: 5, axis: 'territorio_derechos', place: 'araucania' },
+      { storyId: 't2', brandScore: 5, axis: 'territorio_derechos', place: 'araucania' },
+      { storyId: 't3', brandScore: 5, axis: 'territorio_derechos', place: 'puelmapu' },
+      { storyId: 'l1', brandScore: 4, axis: 'lengua', place: 'gulumapu' },
+    ])
+    const cands = [c('k1', 13, 'confrontacion'), c('k2', 13, 'confrontacion'), c('k3', 12, 'confrontacion'), c('t1', 12), c('t2', 11), c('t3', 11), c('l1', 10)]
+    const r = (await elegirDestacadas('c1', cands, 5, (x) => x)).map((x) => x.storyId)
+    expect(r).toHaveLength(5)
+    expect(r.filter((id) => id.startsWith('k'))).toHaveLength(1)
+    expect(r).toContain('l1')
+  })
+
+  it('la nota de marca decide entre candidatas sin otra regla en juego: gana la de más nota, aunque sea más vieja', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'escala_mapuche', mode: 'enforce', balance: { ...balance, ejeDirectorMinDestacadas: 0, puelmapuMinDestacadas: 0 } }])
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValueOnce([
+      { storyId: 'nueva', brandScore: 3, axis: 'territorio_derechos', place: 'araucania' },
+      { storyId: 'vieja', brandScore: 8, axis: 'territorio_derechos', place: 'araucania' },
+    ])
+    const r = await elegirDestacadas('c1', [c('nueva', 13), c('vieja', 10)], 1, (x) => x)
+    expect(r.map((x) => x.storyId)).toEqual(['vieja'])
   })
 })

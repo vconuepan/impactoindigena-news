@@ -5,7 +5,7 @@ import prisma from '../../lib/prisma.js'
 import { config } from '../../config.js'
 import { requireMember } from '../../middleware/auth.js'
 import { sendTransactional } from '../../services/brevo.js'
-import { vitrinaEncendida, notasDeVitrina, contarVitrina, comoNotaPublica, mezclarPorFecha, fichaDeVitrina, itemsDeVitrina, mezclarItems, type ItemDeSuperficie } from '../../services/brandShowcase.js'
+import { vitrinaEncendida, notasDeVitrina, contarVitrina, comoNotaPublica, mezclarPorFecha, fichaDeVitrina, itemsDeVitrina, mezclarItems, elegirDestacadas, CANDIDATAS_DESTACADAS, type ItemDeSuperficie } from '../../services/brandShowcase.js'
 import {
   buildCommunityCondition,
   temasVivos,
@@ -276,14 +276,17 @@ router.get('/:slug/signals', async (req, res) => {
       prisma.story.findMany({
         where: { ...baseWhere, datePublished: { gte: periodStart } },
         select: {
+          id: true,
           slug: true,
           title: true,
           datePublished: true,
           relevance: true,
+          narrativeFrame: true,
+          feedId: true,
           issue: { select: { slug: true, name: true } },
         },
         orderBy: { datePublished: 'desc' },
-        take: 5,
+        take: CANDIDATAS_DESTACADAS,
       }),
     ])
 
@@ -343,7 +346,10 @@ router.get('/:slug/signals', async (req, res) => {
         calm: emotionMap['calm'] ?? 0,
         untagged: emotionMap['untagged'] ?? 0,
       },
-      recentHeadlines: headlines.map((h) => ({
+      // Cinco titulares: los más recientes o, con la escala Mapuche en modo aplicar, con equilibrio (D5, ítem 9).
+      recentHeadlines: (
+        await elegirDestacadas(community.id, headlines, 5, (h) => ({ storyId: h.id, encuadre: h.narrativeFrame, feedId: h.feedId, fecha: h.datePublished }))
+      ).map((h) => ({
         slug: h.slug,
         title: h.title,
         publishedAt: h.datePublished,
@@ -457,13 +463,16 @@ async function sendWelcomeEmail(
       mode: await getReviewMode(community.id),
       learningMode: config.gate.learningMode,
     }),
-    select: { title: true, slug: true, summary: true, sourceTitle: true, datePublished: true },
+    select: { id: true, title: true, slug: true, summary: true, sourceTitle: true, datePublished: true, narrativeFrame: true, feedId: true },
     orderBy: { datePublished: 'desc' },
-    take: 3,
+    take: CANDIDATAS_DESTACADAS,
   })
   // Lo publicado y, si la marca está en modo aplicar, su vitrina (D5), por fecha.
   const publicadas: ItemDeSuperficie[] = stories.map((s) => ({
-    id: s.slug ?? '',
+    id: s.id,
+    storyId: s.id,
+    encuadre: s.narrativeFrame,
+    feedId: s.feedId,
     title: s.title || s.sourceTitle || s.slug || '',
     url: `${SITE_URL}/stories/${s.slug}`,
     summary: s.summary,
@@ -471,7 +480,9 @@ async function sendWelcomeEmail(
     fecha: s.datePublished,
     categoria: community.name,
   }))
-  const items = mezclarItems(publicadas, await itemsDeVitrina(community, SITE_URL, { take: 3 }), 3)
+  // Tres destacadas: las más recientes o, con la escala Mapuche en modo aplicar, con equilibrio (D5, ítem 9).
+  const candidatas = mezclarItems(publicadas, await itemsDeVitrina(community, SITE_URL, { take: CANDIDATAS_DESTACADAS }), CANDIDATAS_DESTACADAS)
+  const items = await elegirDestacadas(community.id, candidatas, 3, (x) => x)
 
   const firstName = userName && !userName.includes('@') ? userName.split(' ')[0] : null
   // El nombre lo escribio quien se une, y titulo, resumen y fuente salen de la
