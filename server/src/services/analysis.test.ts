@@ -159,6 +159,37 @@ describe('preAssessStories', () => {
       data: { issueId: story.feed.issue.id, relevancePre: 5, emotionTag: 'calm', countryFocus: null, status: 'pre_analyzed' },
     })
   })
+
+  it('un lote completo de 10 llega entero al modelo y pasan los 10', async () => {
+    // Hasta el 12-oct-2026 el decimo articulo de cada lote no entraba al
+    // prompt (ver formatArticlesBlock); el modelo no podia devolverlo y el
+    // job lo contaba como fallido. El modelo simulado responde solo por los
+    // articulos que de verdad vio, como el real.
+    const issue = sampleIssue()
+    mockPrisma.issue.findMany.mockResolvedValue([issue])
+    const ids = Array.from({ length: 10 }, (_, i) => `story-${i + 1}`)
+    mockPrisma.story.findMany.mockResolvedValue(ids.map(id => storyWithRelations({ id })))
+    mockPrisma.story.update.mockResolvedValue({})
+
+    const mockStructuredLlm = {
+      invoke: vi.fn().mockImplementation(async (messages: any[]) => {
+        const prompt = String(messages[0].content)
+        const seen = [...prompt.matchAll(/Article ID: (\S+)/g)].map(m => m[1])
+        return {
+          articles: seen.map(articleId => ({ articleId, issueSlug: issue.slug, rating: 3, emotionTag: 'calm', narrativeFrame: null })),
+        }
+      }),
+    }
+    mockGetMediumLLM.mockReturnValue({ withStructuredOutput: () => mockStructuredLlm })
+    const onProgress = vi.fn()
+
+    const results = await preAssessStories(ids, onProgress)
+
+    expect(mockStructuredLlm.invoke).toHaveBeenCalledTimes(1)
+    expect(results.map(r => r.storyId).sort()).toEqual([...ids].sort())
+    expect(onProgress).toHaveBeenCalledWith({ type: 'completed', count: 10 })
+    expect(onProgress).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'failed' }))
+  })
 })
 
 describe('reclassifyStories', () => {

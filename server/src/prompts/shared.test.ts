@@ -61,6 +61,70 @@ describe('formatArticlesBlock', () => {
   })
 })
 
+describe('formatArticlesBlock — presupuesto del lote', () => {
+  // Un articulo cuesta 1, o 1,5 si su contenido trae caracteres chinos. Entra
+  // si su costo cabe en lo que queda del presupuesto (batchSize); el que no
+  // cabe no lo consume. Hasta el 12-oct-2026 se descontaba antes de comparar
+  // con `> 0` y el decimo articulo de cada lote completo nunca llegaba al
+  // modelo: el primer pase del preassess dejaba pasar el 88,6 %.
+  const LATIN = 'Comunidad mapuche presenta proyecto de turismo'
+  const HAN = '原住民族的土地权利'
+  const story = (i: number, content: string): StoryForPrompt => ({
+    id: `story-${String(i).padStart(2, '0')}`,
+    title: `Titulo ${i}`,
+    content,
+  })
+  const includedIds = (block: string) =>
+    [...block.matchAll(/Article ID: (\S+)/g)].map(m => m[1])
+
+  it('incluye los 10 articulos de un lote completo sin caracteres chinos', () => {
+    const stories = Array.from({ length: 10 }, (_, i) => story(i, LATIN))
+    expect(includedIds(formatArticlesBlock(stories, 10, 5000))).toEqual(stories.map(s => s.id))
+  })
+
+  it('un articulo que llena justo el presupuesto entra', () => {
+    // Dos chinos con presupuesto 3: 1,5 + 1,5 = 3, no lo supera.
+    const stories = [story(0, HAN), story(1, HAN)]
+    expect(includedIds(formatArticlesBlock(stories, 3, 5000))).toEqual(['story-00', 'story-01'])
+  })
+
+  it('con 10 articulos chinos entran 6 (9 de 10) y el septimo no (10,5)', () => {
+    const stories = Array.from({ length: 10 }, (_, i) => story(i, HAN))
+    expect(includedIds(formatArticlesBlock(stories, 10, 5000))).toEqual(
+      stories.slice(0, 6).map(s => s.id),
+    )
+  })
+
+  it('el articulo que no cabe no consume presupuesto: uno posterior que si cabe entra', () => {
+    // 6 latinos + 2 chinos = 9. El tercer chino (10,5) no cabe; el latino que
+    // sigue (10) si.
+    const stories = [
+      ...Array.from({ length: 6 }, (_, i) => story(i, LATIN)),
+      story(6, HAN),
+      story(7, HAN),
+      story(8, HAN),
+      story(9, LATIN),
+    ]
+    const ids = includedIds(formatArticlesBlock(stories, 10, 5000))
+    expect(ids).not.toContain('story-08')
+    expect(ids).toContain('story-09')
+    expect(ids).toHaveLength(9)
+  })
+
+  it('en toda mezcla de 10: nunca supera el presupuesto y no deja fuera nada que aun cabria', () => {
+    for (let mask = 0; mask < 1 << 10; mask++) {
+      const stories = Array.from({ length: 10 }, (_, i) => story(i, mask & (1 << i) ? HAN : LATIN))
+      const cost = (s: StoryForPrompt) => (s.content === HAN ? 1.5 : 1)
+      const ids = new Set(includedIds(formatArticlesBlock(stories, 10, 5000)))
+      const used = stories.filter(s => ids.has(s.id)).reduce((sum, s) => sum + cost(s), 0)
+      expect(used).toBeLessThanOrEqual(10)
+      for (const s of stories.filter(s => !ids.has(s.id))) {
+        expect(cost(s)).toBeGreaterThan(10 - used)
+      }
+    }
+  })
+})
+
 describe('buildPreassessPrompt — prompt-injection hardening', () => {
   it('guards and sanitizes crawled article content', () => {
     const prompt = buildPreassessPrompt(

@@ -214,6 +214,13 @@ export function formatIssuesBlock(issues: IssueForPrompt[]): string {
 /**
  * Format an array of stories as the `<ARTICLES>` prompt block,
  * using capacity tracking to handle Chinese-character articles.
+ *
+ * Presupuesto: cada articulo cuesta 1, o 1,5 si su contenido trae caracteres
+ * chinos, y entra si su costo cabe en lo que queda de `batchSize`. El que no
+ * cabe no consume presupuesto y queda fuera de esta llamada (el preassess lo
+ * reintenta en el pase siguiente). Hasta el 12-oct-2026 se descontaba antes de
+ * comparar con `> 0`: el decimo articulo de cada lote completo nunca llegaba
+ * al modelo, y el primer pase del preassess dejaba pasar el 88,6 %.
  */
 export function formatArticlesBlock(
   stories: StoryForPrompt[],
@@ -226,12 +233,9 @@ export function formatArticlesBlock(
   let block = `<ARTICLES>\n${UNTRUSTED_CONTENT_GUARD}`
   let capacity = batchSize
   for (const story of stories) {
-    if (containsChineseCharacters(story.content)) {
-      capacity -= 1.5
-    } else {
-      capacity -= 1
-    }
-    if (capacity > 0) {
+    const cost = containsChineseCharacters(story.content) ? 1.5 : 1
+    if (capacity - cost >= 0) {
+      capacity -= cost
       block += `\n\n-----\nArticle ID: ${story.id}`
       block += `\nTitle: ${sanitizeUntrustedContent(story.title)}`
       block += `\n${sanitizeUntrustedContent(story.content.substring(0, contentMaxLength))} ...`
