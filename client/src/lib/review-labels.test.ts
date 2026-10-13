@@ -32,6 +32,17 @@ describe('etiquetas de la revisión por marca', () => {
     expect(puntajeLabel(3, ['frame:confrontacion', 'listA:desaloj']).texto).toBe('3 · encuadre y lista')
   })
 
+  it('la señal del carril de marca (D5) se rotula como tal y no se libera en masa', () => {
+    expect(razonLabel('carril-juez:victimas')).toEqual({ texto: 'Carril (juez): víctimas', variant: 'orange' })
+    expect(razonLabel('carril-juez:proceso_penal').texto).toBe('Carril (juez): proceso penal')
+    expect(razonLabel('carril-filtro:estrangul', 'Mujer es hallada estrangulada en Renaico').texto).toBe('Carril (filtro): estrangulada')
+    // la categoría del juez no es una palabra de la nota: no se resalta; el término del filtro sí
+    expect(terminosDe(['carril-juez:violencia', 'carril-filtro:estrangul'], [])).toEqual(['estrangul'])
+    expect(puntajeLabel(2, ['carril-juez:victimas']).texto).toBe('2 · carril')
+    expect(puntajeLabel(2, ['listA:homicid', 'carril-juez:victimas']).texto).toBe('2 · lista A')
+    expect(puntajeLabel(2).texto).toBe('2 · lista A')
+  })
+
   it('muestra el término como aparece en la nota, no la raíz de la lista', () => {
     const texto = 'Gobierno de Neuquén niega personería a comunidades Mapuche\nLa Justicia ordenó el desalojo; hay tres detenidos tras la detención.'
     expect(terminoVisible('desaloj', texto)).toBe('desalojo')

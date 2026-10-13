@@ -112,10 +112,10 @@ export async function llamadasDeHoy(communityId: string, ahora: Date): Promise<n
   return Number(r.lotes) + Number(r.redacciones)
 }
 
-/** Motivo apto para guardarse: corto y sin nombres de personas. */
+/** Motivo apto para guardarse: 20 palabras como máximo (diseño, sección 3) y sin nombres de personas. */
 export function motivoSeguro(motivo: string | null | undefined): string | null {
   if (!motivo) return null
-  const corto = motivo.split(/\s+/).slice(0, 25).join(' ')
+  const corto = motivo.split(/\s+/).slice(0, 20).join(' ')
   return pareceNombrarPersona(corto) ? MOTIVO_GENERICO : corto
 }
 
@@ -433,9 +433,46 @@ export async function rechazadasAMano(ids: string[]): Promise<Set<string>> {
   return new Set(rows.map((r) => r.id))
 }
 
-const EJES_DEL_DIRECTOR = new Set(['lengua', 'saber', 'economia_propia', 'propuestas', 'protagonismo'])
+const DIAS_DEFICIT = 30
 
-/** Selección del rescate: nota de marca ≥ umbral, hasta el cupo del día, primero los cinco ejes del director. */
+/**
+ * Orden del rescate, pura: primero los ejes que la vertical mostró menos en los
+ * últimos 30 días (diseño, sección 5: «con prioridad a los ejes en déficit»),
+ * después la nota de marca y, a igual nota, la más reciente.
+ */
+export function ordenarRescate<T extends { axis: string | null; brandScore: number | null; brandDate: Date | null }>(
+  evaluadas: T[],
+  cuentaPorEje: Map<string, number>,
+): T[] {
+  const cuenta = (eje: string | null) => (eje ? cuentaPorEje.get(eje) ?? 0 : Number.POSITIVE_INFINITY)
+  return [...evaluadas].sort(
+    (a, b) =>
+      cuenta(a.axis) - cuenta(b.axis) ||
+      (b.brandScore ?? 0) - (a.brandScore ?? 0) ||
+      (b.brandDate?.getTime() ?? 0) - (a.brandDate?.getTime() ?? 0),
+  )
+}
+
+/**
+ * Cuántas notas de cada eje mostró la vertical en 30 días: las suyas, puntuadas
+ * con la escala de marca, más lo que el carril ya rescató.
+ */
+export async function ejesDeLaVertical(communityId: string, ahora: Date): Promise<Map<string, number>> {
+  const desde = new Date(ahora.getTime() - DIAS_DEFICIT * 86_400_000)
+  const rows = await prisma.$queryRaw<Array<{ axis: string; n: bigint | number }>>`
+    SELECT axis, count(*) AS n
+      FROM story_brand_assessments
+     WHERE community_id = ${communityId}
+       AND axis IS NOT NULL
+       AND brand_date >= ${desde}
+       AND ((source_signal = 'keyword' AND state IN ('evaluated', 'selected', 'published'))
+         OR (source_signal = 'rescue' AND state IN ('selected', 'published')))
+     GROUP BY axis
+  `
+  return new Map(rows.map((r) => [r.axis, Number(r.n)]))
+}
+
+/** Selección del rescate: nota de marca ≥ umbral, hasta el cupo del día, primero los ejes en déficit. */
 export async function seleccionarRescate(c: BrandCriteria, ahora: Date): Promise<string[]> {
   const hoy = inicioDelDia(ahora)
   const yaHoy = await prisma.storyBrandAssessment.count({ where: { communityId: c.communityId, sourceSignal: 'rescue', selectedAt: { gte: hoy } } })
@@ -445,16 +482,11 @@ export async function seleccionarRescate(c: BrandCriteria, ahora: Date): Promise
     where: { communityId: c.communityId, sourceSignal: 'rescue', state: 'evaluated', brandScore: { gte: c.relevanceMin } },
     select: { id: true, brandScore: true, axis: true, brandDate: true },
   })
-  const ids = evaluadas
-    .sort(
-      (a, b) =>
-        Number(EJES_DEL_DIRECTOR.has(b.axis ?? '')) - Number(EJES_DEL_DIRECTOR.has(a.axis ?? '')) ||
-        (b.brandScore ?? 0) - (a.brandScore ?? 0) ||
-        (b.brandDate?.getTime() ?? 0) - (a.brandDate?.getTime() ?? 0),
-    )
+  if (evaluadas.length === 0) return []
+  const ids = ordenarRescate(evaluadas, await ejesDeLaVertical(c.communityId, ahora))
     .slice(0, cupo)
     .map((r) => r.id)
-  if (ids.length > 0) await prisma.storyBrandAssessment.updateMany({ where: { id: { in: ids } }, data: { state: 'selected', selectedAt: ahora } })
+  await prisma.storyBrandAssessment.updateMany({ where: { id: { in: ids } }, data: { state: 'selected', selectedAt: ahora } })
   return ids
 }
 
@@ -467,6 +499,20 @@ export interface BrandLaneReport {
   candidatas: number
   llamadas: number
   seleccionadas: number
+  /** Sin candidatas nuevas en 24 horas: el pre-filtro falló el 99 % de los lotes durante meses sin que nadie lo viera. */
+  sinCandidatas24h: boolean
+}
+
+const HORAS_ALERTA = 24
+
+/** true si la marca no recibió candidatas nuevas en las últimas 24 horas. */
+export async function sinCandidatasRecientes(communityId: string, ahora: Date): Promise<boolean> {
+  const ultima = await prisma.storyBrandAssessment.findFirst({
+    where: { communityId },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
+  })
+  return !ultima || ahora.getTime() - ultima.createdAt.getTime() > HORAS_ALERTA * 3_600_000
 }
 
 /** Una corrida del carril para cada marca encendida. Con D5_ENABLED=false no hace nada. */
@@ -489,8 +535,10 @@ export async function runBrandLaneOnce(ahora: Date = new Date()): Promise<BrandL
     const llamadas = await juzgarPendientes(c, ahora)
     if (c.criterion === 'territorial' && c.mode !== 'off') seleccionadas += (await seleccionarTerritorial(c, ahora)).length
     if (c.criterion === 'escala_mapuche' && c.rescueMode !== 'off') seleccionadas += (await seleccionarRescate(c, ahora)).length
-    const report = { slug: c.slug, mode: c.mode, rescueMode: c.rescueMode, candidatas, llamadas, seleccionadas }
-    log.info(report, 'brand lane run')
+    const sinCandidatas24h = await sinCandidatasRecientes(c.communityId, ahora)
+    const report = { slug: c.slug, mode: c.mode, rescueMode: c.rescueMode, candidatas, llamadas, seleccionadas, sinCandidatas24h }
+    if (sinCandidatas24h) log.warn(report, 'brand lane: no new candidates in 24 hours')
+    else log.info(report, 'brand lane run')
     reports.push(report)
   }
   return reports

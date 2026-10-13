@@ -81,11 +81,15 @@ export function gateTextFor(story: Pick<StoryForGate, 'title' | 'titleLabel' | '
   return parts.filter((p): p is string => typeof p === 'string' && p.trim().length > 0).join('\n')
 }
 
+/** Prefijos de las razones que agrega el carril de marca (D5): la bandera del juez y el término del filtro. */
+export const CARRIL_JUEZ = 'carril-juez:'
+export const CARRIL_FILTRO = 'carril-filtro:'
+
 /**
  * Fuerza de la señal, para ordenar la cola del editor y decidir que se puede
  * liberar en masa (solo puntaje 0 y 1):
  *   3  encuadre narrativo «confrontacion» corroborado por la Lista A o la B
- *   2  algun termino de la Lista A
+ *   2  algun termino de la Lista A, o una señal sensible del carril de marca (D5)
  *   1  B+B: dos terminos de la Lista B de familias distintas (aprobada por el
  *      director el 11-oct-2026; familias en gate.ts, FAMILIAS_B); o el encuadre
  *      «confrontacion» SOLO, sin ningun termino de las listas
@@ -101,7 +105,9 @@ export function gateTextFor(story: Pick<StoryForGate, 'title' | 'titleLabel' | '
  */
 export function gateScore(result: Pick<GateResult, 'reasons'>): number {
   const encuadre = result.reasons.includes('frame:confrontacion')
-  const listaA = result.reasons.some((r) => r.startsWith('listA:'))
+  // La señal del carril de marca (D5) pesa como la Lista A: una nota que el juez
+  // o el filtro del carril marcaron sensible no se libera en masa.
+  const listaA = result.reasons.some((r) => r.startsWith('listA:') || r.startsWith(CARRIL_JUEZ) || r.startsWith(CARRIL_FILTRO))
   const listaB = result.reasons.some((r) => r.startsWith('listB+B:') || r.startsWith('listB+corroborated:'))
   if (encuadre && (listaA || listaB)) return 3
   if (listaA) return 2
@@ -131,24 +137,68 @@ export interface MachineReview {
   publishedAt: Date | null
 }
 
+/**
+ * ¿Existe ya la tabla del carril de marca? Se pregunta por corrida y no se
+ * guarda: aparece cuando el director aplica el SQL de D5, y el código puede
+ * llegar antes. Postgres valida las tablas al planificar, así que una consulta
+ * que la nombre falla aunque la rama no se ejecute.
+ */
+export async function tablaDelCarrilExiste(): Promise<boolean> {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ existe: boolean }>>`
+      SELECT to_regclass('public.story_brand_assessments') IS NOT NULL AS existe
+    `
+    return Array.isArray(rows) && rows[0]?.existe === true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Las banderas sensibles que el carril de marca (D5) puso a notas que entraron
+ * POR el carril (término, feed o rescate), como razones del gate. Las notas que
+ * entran por palabras clave siguen como hoy (diseño D5, 7.2): su juicio de marca
+ * no toca D4.
+ */
+export async function senalesDelCarril(storyIds: string[], communityId: string): Promise<Map<string, string[]>> {
+  if (storyIds.length === 0) return new Map()
+  const rows = await prisma.$queryRaw<Array<{ story_id: string; juez: string[]; filtro: string[] }>>`
+    SELECT story_id, sensitive_flags_judge AS juez, sensitive_flags_filter AS filtro
+      FROM story_brand_assessments
+     WHERE community_id = ${communityId}
+       AND story_id = ANY(${storyIds}::text[])
+       AND source_signal <> 'keyword'
+       AND (cardinality(sensitive_flags_judge) > 0 OR cardinality(sensitive_flags_filter) > 0)
+  `
+  return new Map(
+    rows.map((r) => [r.story_id, [...(r.juez ?? []).map((f) => CARRIL_JUEZ + f), ...(r.filtro ?? []).map((t) => CARRIL_FILTRO + t)]]),
+  )
+}
+
 /** Evalua una nota para una vertical. Funcion pura: no lee ni escribe la base. */
 export function evaluateForCommunity(
   story: StoryForGate,
   community: Pick<ReviewCommunity, 'id' | 'slug'>,
   opts: { learningMode: boolean; textSource: GateTextSource },
+  carril: string[] = [],
 ): MachineReview {
   const result = evaluateGate(
     { narrativeFrame: story.narrativeFrame, text: gateTextFor(story, opts.textSource) },
     { learningMode: opts.learningMode, marca: marcaFor(community.slug) },
   )
-  const reviewState = result.held ? 'pending' : 'auto'
+  // La señal del carril sobrevive a cada reevaluación (diseño D5, 7.3): si el
+  // juez o el filtro del carril marcaron la nota, la máquina la deja pendiente
+  // diga lo que diga el gate. Nunca pisa released ni held (machineUpsertSql).
+  const held = result.held || carril.length > 0
+  const reasons = [...result.reasons, ...carril]
+  const reviewState = held ? 'pending' : 'auto'
   return {
     storyId: story.id,
     communityId: community.id,
-    gateDecision: result.decision,
-    gateReasons: result.reasons,
+    gateDecision: held ? 'held_for_review' : result.decision,
+    gateReasons: reasons,
     gateSignals: result.signals,
-    gateScore: gateScore(result),
+    gateScore: gateScore({ reasons }),
     gateLearningMode: opts.learningMode,
     gateTextSource: opts.textSource,
     gateVersion: GATE_VERSION,
@@ -282,16 +332,18 @@ export async function registerCommunityReviews(storyIds: string[]): Promise<void
     log.error({ err }, 'community review: could not read live issues; registration skipped')
     return
   }
+  const carril = await tablaDelCarrilExiste()
   for (const community of communities) {
     try {
       const stories = await prisma.story.findMany({
         where: { AND: [{ id: { in: storyIds } }, membershipWhere(community, temas)] },
         select: STORY_GATE_SELECT,
       })
+      const senales = carril ? await senalesDelCarril(stories.map((st) => st.id), community.id) : new Map<string, string[]>()
       const now = new Date()
       let pending = 0
       for (const story of stories) {
-        const rev = evaluateForCommunity(story, community, opts)
+        const rev = evaluateForCommunity(story, community, opts, senales.get(story.id))
         if (rev.reviewState === 'pending') pending++
         await prisma.$executeRaw(machineUpsertSql(rev, now))
       }
@@ -352,6 +404,7 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
   if (communities.length === 0) return []
   const temas = await temasVivos()
   const gate = gateOptions()
+  const carril = await tablaDelCarrilExiste()
   const reports: ReconcileReport[] = []
 
   for (const community of communities) {
@@ -369,15 +422,26 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
         take: RECONCILE_BATCH,
       })
       if (missing.length === 0) break
+      const senales = carril ? await senalesDelCarril(missing.map((st) => st.id), community.id) : new Map<string, string[]>()
       const now = new Date()
       for (const story of missing) {
-        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(story, community, gate), now))
+        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(story, community, gate, senales.get(story.id)), now))
         created++
       }
       if (missing.length < RECONCILE_BATCH) break
     }
 
-    // 2. Filas de maquina viejas.
+    // 2. Filas de maquina viejas. Tambien las que el carril de marca (D5) marco
+    //    despues de la ultima evaluacion: su señal tiene que llegar a la fila.
+    const porCarril = carril
+      ? Prisma.sql`OR EXISTS (
+            SELECT 1 FROM story_brand_assessments b
+             WHERE b.story_id = r.story_id
+               AND b.community_id = r.community_id
+               AND b.source_signal <> 'keyword'
+               AND (cardinality(b.sensitive_flags_judge) > 0 OR cardinality(b.sensitive_flags_filter) > 0)
+               AND b.updated_at > r.gate_evaluated_at)`
+      : Prisma.empty
     const stale = await prisma.$queryRaw<Array<{ story_id: string }>>`
       SELECT r.story_id
         FROM story_community_reviews r
@@ -390,6 +454,7 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
             OR r.gate_text_source   <> ${gate.textSource}
             OR r.gate_learning_mode <> ${gate.learningMode}
             OR s.updated_at          > r.gate_evaluated_at
+            ${porCarril}
          )
     `
     const staleIds = stale.map((r) => r.story_id)
@@ -422,9 +487,10 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
     for (let i = 0; i < toReevaluate.length; i += RECONCILE_BATCH) {
       const chunk = toReevaluate.slice(i, i + RECONCILE_BATCH)
       const stories = await prisma.story.findMany({ where: { id: { in: chunk } }, select: STORY_GATE_SELECT })
+      const senales = carril ? await senalesDelCarril(stories.map((st) => st.id), community.id) : new Map<string, string[]>()
       const now = new Date()
       for (const story of stories) {
-        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(story, community, gate), now))
+        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(story, community, gate, senales.get(story.id)), now))
         reevaluated++
       }
     }

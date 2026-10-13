@@ -220,7 +220,7 @@ ON CONFLICT ("feed_id", "community_id") DO NOTHING;
 -- 'shadow' o 'enforce' y sin pautas cargadas.
 INSERT INTO "job_runs" ("id", "job_name", "cron_expression", "enabled", "created_at", "updated_at")
 VALUES
-  (gen_random_uuid()::text, 'brand_lane', '30 7,19 * * *', false, NOW(), NOW())
+  (gen_random_uuid()::text, 'brand_lane', '30 1,7,13,19 * * *', false, NOW(), NOW())
 ON CONFLICT ("job_name") DO NOTHING;
 
 -- Verificación DESPUÉS (esperado: 2 criterios, ambos en 'off'; 46 feeds marcados; el job deshabilitado).

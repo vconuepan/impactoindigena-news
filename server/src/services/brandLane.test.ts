@@ -5,7 +5,7 @@ import path from 'node:path'
 const mockPrisma = vi.hoisted(() => ({
   issue: { findMany: vi.fn() },
   story: { findMany: vi.fn() },
-  storyBrandAssessment: { findMany: vi.fn(), createMany: vi.fn(), update: vi.fn(), updateMany: vi.fn(), count: vi.fn() },
+  storyBrandAssessment: { findMany: vi.fn(), findFirst: vi.fn(), createMany: vi.fn(), update: vi.fn(), updateMany: vi.fn(), count: vi.fn() },
   $queryRaw: vi.fn(),
 }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
@@ -23,7 +23,9 @@ vi.mock('../config.js', async (importOriginal) => {
   return { config: { ...orig.config, brandLane: brandLaneConfig } }
 })
 
-const { aplicarJuicio, motivoSeguro, juzgarPendientes, runBrandLaneOnce, seleccionarTerritorial, TAMANO_LOTE } = await import('./brandLane.js')
+const { aplicarJuicio, motivoSeguro, juzgarPendientes, runBrandLaneOnce, seleccionarTerritorial, seleccionarRescate, ordenarRescate, sinCandidatasRecientes, TAMANO_LOTE } =
+  await import('./brandLane.js')
+const { buildTerritorialPrompt, buildMapuchePrompt } = await import('../prompts/brandLane.js')
 const { MOTIVO_GENERICO } = await import('../lib/brandLanguage.js')
 
 const ARAUCANIA = {
@@ -121,9 +123,9 @@ describe('motivoSeguro', () => {
   it('no guarda nombres de personas', () => {
     expect(motivoSeguro('La dirigenta Jeny Parra denuncia falta de consulta')).toBe(MOTIVO_GENERICO)
   })
-  it('recorta a 25 palabras y deja pasar lugares', () => {
+  it('recorta a 20 palabras (diseño, sección 3) y deja pasar lugares', () => {
     const largo = Array.from({ length: 40 }, (_, i) => `palabra${i}`).join(' ')
-    expect(motivoSeguro(largo)?.split(' ')).toHaveLength(25)
+    expect(motivoSeguro(largo)?.split(' ')).toHaveLength(20)
     expect(motivoSeguro('Obra en Padre Las Casas')).toBe('Obra en Padre Las Casas')
     expect(motivoSeguro(null)).toBeNull()
   })
@@ -228,5 +230,76 @@ describe('runBrandLaneOnce', () => {
   it('sin la tabla (migración no aplicada) no falla: ninguna marca', async () => {
     mockPrisma.$queryRaw.mockRejectedValueOnce(new Error('relation "community_brand_criteria" does not exist'))
     expect(await runBrandLaneOnce(AHORA)).toEqual([])
+  })
+})
+
+describe('rescate de Voces Mapuche: prioridad a los ejes en déficit', () => {
+  const d = (h: number) => new Date(AHORA.getTime() - h * 3_600_000)
+  const e = (id: string, axis: string | null, brandScore: number, horas = 1) => ({ id, axis, brandScore, brandDate: d(horas) })
+
+  it('el eje menos mostrado en 30 días va primero, aunque puntúe menos', () => {
+    const cuentas = new Map([['protagonismo', 9], ['lengua', 0], ['economia_propia', 2]])
+    const orden = ordenarRescate([e('p', 'protagonismo', 9), e('l', 'lengua', 7), e('x', 'economia_propia', 8)], cuentas)
+    expect(orden.map((r) => r.id)).toEqual(['l', 'x', 'p'])
+  })
+
+  it('a igual déficit decide la nota y, a igual nota, la más reciente; sin eje va al final', () => {
+    const orden = ordenarRescate([e('viejo', 'saber', 8, 30), e('nuevo', 'saber', 8, 2), e('alto', 'saber', 9), e('sin', null, 10)], new Map())
+    expect(orden.map((r) => r.id)).toEqual(['alto', 'nuevo', 'viejo', 'sin'])
+  })
+
+  it('respeta el cupo del día y marca elegidas', async () => {
+    mockPrisma.storyBrandAssessment.count.mockResolvedValue(1)
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([e('p', 'protagonismo', 9), e('l', 'lengua', 7)])
+    mockPrisma.$queryRaw.mockResolvedValue([{ axis: 'protagonismo', n: 5n }])
+    const mapuche = { ...ARAUCANIA, communityId: 'c-mapu', slug: 'mapuche', criterion: 'escala_mapuche' as const, relevanceMin: 7, dailyTarget: 2 }
+    expect(await seleccionarRescate(mapuche, AHORA)).toEqual(['l'])
+    expect(mockPrisma.storyBrandAssessment.updateMany).toHaveBeenCalledWith({ where: { id: { in: ['l'] } }, data: { state: 'selected', selectedAt: AHORA } })
+  })
+
+  it('con el cupo lleno no lee ni marca nada', async () => {
+    mockPrisma.storyBrandAssessment.count.mockResolvedValue(2)
+    const mapuche = { ...ARAUCANIA, criterion: 'escala_mapuche' as const, dailyTarget: 2 }
+    expect(await seleccionarRescate(mapuche, AHORA)).toEqual([])
+    expect(mockPrisma.storyBrandAssessment.findMany).not.toHaveBeenCalled()
+    expect(mockPrisma.storyBrandAssessment.updateMany).not.toHaveBeenCalled()
+  })
+})
+
+describe('alerta de 24 horas sin candidatas (diseño, sección 8)', () => {
+  it('avisa si nunca hubo candidatas o la última tiene más de 24 horas', async () => {
+    mockPrisma.storyBrandAssessment.findFirst.mockResolvedValueOnce(null)
+    expect(await sinCandidatasRecientes('c', AHORA)).toBe(true)
+    mockPrisma.storyBrandAssessment.findFirst.mockResolvedValueOnce({ createdAt: new Date(AHORA.getTime() - 25 * 3_600_000) })
+    expect(await sinCandidatasRecientes('c', AHORA)).toBe(true)
+  })
+  it('no avisa si hubo una en las últimas 24 horas', async () => {
+    mockPrisma.storyBrandAssessment.findFirst.mockResolvedValueOnce({ createdAt: new Date(AHORA.getTime() - 23 * 3_600_000) })
+    expect(await sinCandidatasRecientes('c', AHORA)).toBe(false)
+  })
+})
+
+describe('candado del dato sensible en el prompt', () => {
+  const art = [{ id: 's1', title: 't', content: 'c' }]
+  it('el eje mapuche y chileno exige que la nota declare la relación, y ninguna pauta lo quita', () => {
+    const p = buildTerritorialPrompt('', art)
+    expect(p).toContain('Nunca por el apellido de alguien')
+    expect(p).toContain('<REGLA_DEL_EJE_MAPUCHE_CHILENO>')
+  })
+  it('las dos marcas prohíben inferir la pertenencia de una persona y nombrar personas en el motivo', () => {
+    for (const p of [buildTerritorialPrompt('x', art), buildMapuchePrompt('x', art)]) {
+      expect(p).toContain('No se infiere la pertenencia de nadie a un pueblo por su apellido')
+      expect(p).toContain('El motivo no nombra a personas.')
+    }
+  })
+})
+
+describe('vocabulario de lugar de Voces Mapuche', () => {
+  it('lo urbano es un eje y no un lugar (diseño, sección 5): un «urbano» del modelo cae a null', async () => {
+    const { brandMapucheItemSchema, LUGARES_MAPUCHE, EJES_MAPUCHE } = await import('../schemas/brandLane.js')
+    expect(LUGARES_MAPUCHE).not.toContain('urbano')
+    expect(EJES_MAPUCHE).toContain('vida_urbana')
+    const r = brandMapucheItemSchema.parse({ articleId: 's1', score: 7, axis: 'vida_urbana', place: 'urbano', sensitive: [], reason: 'x' })
+    expect(r).toMatchObject({ axis: 'vida_urbana', place: null })
   })
 })

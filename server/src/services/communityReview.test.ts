@@ -12,6 +12,9 @@ vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 const {
   gateTextFor,
   gateScore,
+  senalesDelCarril,
+  CARRIL_JUEZ,
+  CARRIL_FILTRO,
   puntajesViejos,
   marcaFor,
   evaluateForCommunity,
@@ -203,6 +206,7 @@ describe('reconcileCommunityReviews', () => {
   it('crea las faltantes, borra solo filas de MAQUINA huerfanas y no toca las humanas', async () => {
     mockPrisma.$queryRaw
       .mockResolvedValueOnce([{ id: 'c-mapuche', slug: 'mapuche', keywords: ['mapuche'], issue_ids: [], mode: 'shadow' }]) // verticales
+      .mockResolvedValueOnce([{ existe: false }]) // tabla del carril de marca
       .mockResolvedValueOnce([]) // filas viejas
     mockPrisma.issue.findMany.mockResolvedValue([])
     mockPrisma.story.findMany
@@ -229,6 +233,7 @@ describe('reconcileCommunityReviews', () => {
   it('recalcula el puntaje guardado de las filas de maquina sin tocar su estado ni las humanas', async () => {
     mockPrisma.$queryRaw
       .mockResolvedValueOnce([{ id: 'c-mapuche', slug: 'mapuche', keywords: ['mapuche'], issue_ids: [], mode: 'shadow' }]) // verticales
+      .mockResolvedValueOnce([{ existe: false }]) // tabla del carril de marca
       .mockResolvedValueOnce([]) // filas viejas
       .mockResolvedValueOnce([
         { story_id: 's1', gate_reasons: ['learning_mode', 'frame:confrontacion'], gate_score: 3 },
@@ -251,8 +256,88 @@ describe('reconcileCommunityReviews', () => {
       data: { gateScore: 1 },
     })
     // la lectura de puntajes es solo de filas de maquina
-    expect(String(mockPrisma.$queryRaw.mock.calls[2][0].join(''))).toContain("review_state IN ('auto', 'pending')")
+    expect(String(mockPrisma.$queryRaw.mock.calls[3][0].join(''))).toContain("review_state IN ('auto', 'pending')")
     // y no reescribe la fila: ningun upsert
     expect(mockPrisma.$executeRaw).not.toHaveBeenCalled()
+  })
+})
+
+describe('la señal del carril de marca (D5, sección 7.3)', () => {
+  const opts = { learningMode: false, textSource: 'short' as const }
+  const CULTURAL = { ...STORY, sourceContent: 'Cuerpo sin terminos sensibles.' }
+
+  it('una nota que el gate dejaria en auto queda pendiente si el carril la marco, con puntaje 2', () => {
+    expect(evaluateForCommunity(CULTURAL, MAPUCHE, opts).reviewState).toBe('auto')
+    const rev = evaluateForCommunity(CULTURAL, MAPUCHE, opts, [CARRIL_JUEZ + 'victimas', CARRIL_FILTRO + 'estrangul'])
+    expect(rev).toMatchObject({ reviewState: 'pending', gateDecision: 'held_for_review', gateScore: 2, publishedAt: null })
+    expect(rev.gateReasons).toEqual(['carril-juez:victimas', 'carril-filtro:estrangul'])
+  })
+
+  it('pesa como la Lista A: no se libera en masa, y con el encuadre sube a 3', () => {
+    expect(gateScore({ reasons: ['carril-juez:violencia'] })).toBe(2)
+    expect(gateScore({ reasons: ['carril-filtro:femicid'] })).toBe(2)
+    expect(gateScore({ reasons: ['frame:confrontacion', 'carril-juez:operativo'] })).toBe(3)
+  })
+
+  it('sobrevive al modo aprendizaje y a su apagado: con o sin aprendizaje sigue pendiente', () => {
+    const senal = [CARRIL_JUEZ + 'menores']
+    expect(evaluateForCommunity(CULTURAL, MAPUCHE, { ...opts, learningMode: true }, senal).reviewState).toBe('pending')
+    expect(evaluateForCommunity(CULTURAL, MAPUCHE, { ...opts, learningMode: false }, senal).reviewState).toBe('pending')
+  })
+
+  it('la consulta lee solo lo que entro por el carril: lo que entra por palabras clave sigue como hoy (7.2)', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ story_id: 's1', juez: ['victimas'], filtro: ['estrangul'] }])
+    const m = await senalesDelCarril(['s1', 's2'], 'c-arauc')
+    expect(m.get('s1')).toEqual(['carril-juez:victimas', 'carril-filtro:estrangul'])
+    expect(m.has('s2')).toBe(false)
+    expect(String(mockPrisma.$queryRaw.mock.calls.at(-1)[0].join(''))).toContain("source_signal <> 'keyword'")
+  })
+
+  it('el gancho pasa la señal a la evaluacion cuando la tabla del carril existe', async () => {
+    vi.clearAllMocks()
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([{ id: 'c-arauc', slug: 'wallmapu-araucania', keywords: ['temuco'], issue_ids: [], mode: 'shadow' }]) // verticales
+      .mockResolvedValueOnce([{ existe: true }]) // tabla del carril
+      .mockResolvedValueOnce([{ story_id: 's1', juez: ['violencia'], filtro: [] }]) // señales
+    mockPrisma.issue.findMany.mockResolvedValue([])
+    mockPrisma.story.findMany.mockResolvedValue([CULTURAL])
+    mockPrisma.$executeRaw.mockResolvedValue(1)
+    await registerCommunityReviews(['s1'])
+    const sql = mockPrisma.$executeRaw.mock.calls[0][0]
+    expect(sql.values).toContain('pending')
+    expect(JSON.stringify(sql.values)).toContain('carril-juez:violencia')
+  })
+
+  it('sin la tabla del carril (codigo antes que el SQL), el conciliador no la nombra en ninguna consulta', async () => {
+    vi.clearAllMocks()
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([{ id: 'c-mapuche', slug: 'mapuche', keywords: ['mapuche'], issue_ids: [], mode: 'shadow' }])
+      .mockResolvedValueOnce([{ existe: false }])
+      .mockResolvedValue([])
+    mockPrisma.issue.findMany.mockResolvedValue([])
+    mockPrisma.story.findMany.mockResolvedValue([])
+    mockPrisma.storyCommunityReview.findMany.mockResolvedValue([])
+    mockPrisma.storyCommunityReview.groupBy.mockResolvedValue([])
+    await reconcileCommunityReviews()
+    // El texto de cada consulta y sus valores (un fragmento Prisma.sql anidado llega como valor).
+    for (const args of mockPrisma.$queryRaw.mock.calls.slice(2)) {
+      expect(String(args[0]) + JSON.stringify(args.slice(1))).not.toContain('story_brand_assessments')
+    }
+  })
+
+  it('con la tabla, una fila que el carril marco despues de evaluarse se reevalua', async () => {
+    vi.clearAllMocks()
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([{ id: 'c-mapuche', slug: 'mapuche', keywords: ['mapuche'], issue_ids: [], mode: 'shadow' }])
+      .mockResolvedValueOnce([{ existe: true }])
+      .mockResolvedValue([])
+    mockPrisma.issue.findMany.mockResolvedValue([])
+    mockPrisma.story.findMany.mockResolvedValue([])
+    mockPrisma.storyCommunityReview.findMany.mockResolvedValue([])
+    mockPrisma.storyCommunityReview.groupBy.mockResolvedValue([])
+    await reconcileCommunityReviews()
+    const args = mockPrisma.$queryRaw.mock.calls[2]
+    expect(String(args[0])).toContain('r.gate_evaluated_at')
+    expect(JSON.stringify(args.slice(1))).toContain('story_brand_assessments')
   })
 })

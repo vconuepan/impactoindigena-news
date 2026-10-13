@@ -78,17 +78,31 @@ export function razonLabel(razon: string, texto?: string): { texto: string; vari
       return { texto: `Lista B (dos familias): ${termino}`, variant: 'yellow' }
     case 'listB':
       return { texto: `Lista B: ${termino}`, variant: 'gray' }
+    // Carril de marca (D5): la bandera del juez es una categoría, no una palabra de la nota.
+    case 'carril-juez':
+      return { texto: `Carril (juez): ${BANDERA_LABEL[resto.join(':')] ?? resto.join(':')}`, variant: 'orange' }
+    case 'carril-filtro':
+      return { texto: `Carril (filtro): ${termino}`, variant: 'orange' }
     default:
       return { texto: razon, variant: 'gray' }
   }
 }
 
-/** Los términos que dispararon (sin el encuadre ni el modo aprendizaje), para resaltar. */
+/** Banderas sensibles del juez del carril de marca (D5), legibles. */
+export const BANDERA_LABEL: Record<string, string> = {
+  menores: 'menores',
+  victimas: 'víctimas',
+  violencia: 'violencia',
+  proceso_penal: 'proceso penal',
+  operativo: 'operativo',
+}
+
+/** Los términos que dispararon (sin el encuadre, el modo aprendizaje ni las categorías del juez del carril), para resaltar. */
 export function terminosDe(razones: string[], señales: string[]): string[] {
   const terminos = new Set<string>()
   for (const r of [...razones, ...señales]) {
     const i = r.indexOf(':')
-    if (i < 0 || r.startsWith('frame:')) continue
+    if (i < 0 || r.startsWith('frame:') || r.startsWith('carril-juez:')) continue
     const t = r.slice(i + 1).trim()
     if (t) terminos.add(t)
   }
@@ -96,14 +110,19 @@ export function terminosDe(razones: string[], señales: string[]): string[] {
 }
 
 /**
- * Etiqueta del puntaje de la cola. El 1 tiene dos orígenes desde el 13-oct-2026:
+ * Etiqueta del puntaje de la cola. El 2 sale de la Lista A o de la señal del
+ * carril de marca (D5). El 1 tiene dos orígenes desde el 13-oct-2026:
  * B+B, o el encuadre «confrontación» solo (sin términos de las listas), que se
  * bajó de 3 a 1 tras medir que 39 de 44 eran disputas sin riesgo. Se distinguen
  * por las razones, para que el editor sepa qué está liberando.
  */
 export function puntajeLabel(score: number, reasons: string[] = []): { texto: string; variant: BadgeVariant } {
   if (score >= 3) return { texto: '3 · encuadre y lista', variant: 'red' }
-  if (score === 2) return { texto: '2 · lista A', variant: 'orange' }
+  if (score === 2) {
+    // El 2 también lo da la señal sensible del carril de marca (D5) sin término de la Lista A.
+    const carril = !reasons.some((r) => r.startsWith('listA:')) && reasons.some((r) => r.startsWith('carril-'))
+    return { texto: carril ? '2 · carril' : '2 · lista A', variant: 'orange' }
+  }
   if (score === 1) {
     const soloEncuadre = reasons.includes('frame:confrontacion') && !reasons.some((r) => r.startsWith('listB+B:'))
     return { texto: soloEncuadre ? '1 · solo encuadre' : '1 · B+B', variant: 'yellow' }

@@ -41,6 +41,15 @@ const REGLAS_COMUNES = `<REGLAS>
 - Cada artículo recibido tiene exactamente una respuesta, con su Article ID.
 </REGLAS>`
 
+/**
+ * Candado del dato sensible (diseño D5, sección 3), en código y no en las
+ * pautas: ninguna pauta puede quitarlo. La calidad indígena no se identifica
+ * desde afuera, se acredita desde adentro.
+ */
+export const REGLA_EJE_MAPUCHE_CHILENO = `<REGLA_DEL_EJE_MAPUCHE_CHILENO>
+El eje mapuche_chileno se asigna solo cuando la nota declara la relación: una comunidad, una asociación o un vocero que se identifica como mapuche. Nunca por el apellido de alguien, por sus rasgos ni por el lugar donde vive o donde ocurrió el hecho. Si la nota no lo declara, se usa otro eje.
+</REGLA_DEL_EJE_MAPUCHE_CHILENO>`
+
 export function buildTerritorialPrompt(pautas: string, articulos: ArticuloJuez[]): string {
   return `<ROLE>
 Editor regional de Voces Araucanía, un medio que cubre La Araucanía completa, con todos los actores que conviven en ella.
@@ -55,6 +64,8 @@ ${pautas}
 </PAUTAS_DE_LA_MARCA>
 
 ${REGLAS_COMUNES}
+
+${REGLA_EJE_MAPUCHE_CHILENO}
 
 ${bloqueArticulos(articulos)}`
 }
