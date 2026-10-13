@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { senalRegional, deduplicar, tituloDedup } from './brandRegion.js'
+import { senalRegional, deduplicar, tituloDedup, comunaPrincipal } from './brandRegion.js'
 import { sensiblesDelTitulo, TERMINOS_SENSIBLES } from './brandSensitive.js'
 import { infraccionesDeLenguaje, pareceNombrarPersona } from './brandLanguage.js'
 import { seleccionarAraucania, reglasDesdeBalance, type Admitida } from './brandSelection.js'
@@ -135,5 +135,35 @@ describe('seleccionarAraucania', () => {
   it('descuenta lo ya elegido hoy', () => {
     const ya = [{ axis: 'region_completa', comuna: 'Temuco' }, { axis: 'region_completa', comuna: 'Angol' }]
     expect(seleccionarAraucania([a('r1', 6, 'region_completa', 'Pucón'), a('r2', 6, 'region_completa', 'Cunco')], reglas, ya)).toEqual(['r1'])
+  })
+})
+
+describe('revisión del 13-oct-2026: selección y comuna', () => {
+  const reglas = reglasDesdeBalance({ dailyTarget: 3, relevanceMin: 5, balance: { regionCompletaMin: 0.5, mapucheChilenoMaxDia: 1, porComunaMaxDia: 1 } })
+  const d = new Date('2026-10-12T12:00:00Z')
+  const a = (id: string, brandScore: number, axis: string, comuna: string | null = null): Admitida => ({ id, brandScore, axis, comuna, brandDate: d })
+  const tensiones = [a('t1', 8, 'pobreza_desarrollo', 'Temuco'), a('t2', 8, 'regionalismo_centralismo', 'Angol'), a('t3', 7, 'pobreza_desarrollo', 'Lumaco')]
+
+  it('con el día abierto, una corrida sin región completa no llena el cupo: guarda sus lugares', () => {
+    expect(seleccionarAraucania(tensiones, reglas, [], { diaAbierto: true })).toEqual(['t1'])
+  })
+
+  it('al cierre del día, sin región completa, los suelta', () => {
+    expect(seleccionarAraucania(tensiones, reglas, [], { diaAbierto: false })).toEqual(['t1', 't2', 't3'])
+  })
+
+  it('una corrida posterior del mismo día todavía puede poner la región completa', () => {
+    const r = seleccionarAraucania([a('r1', 5, 'region_completa', 'Pucón'), a('r2', 5, 'region_completa', 'Cunco'), ...tensiones], reglas, [{ axis: 'pobreza_desarrollo', comuna: 'Temuco' }], {
+      diaAbierto: true,
+    })
+    expect(r).toEqual(['r1', 'r2'])
+  })
+
+  it('los términos quedan en el orden en que aparecen, y la comuna principal salta provincias y región', () => {
+    expect(senalRegional({ title: null, sourceTitle: 'Temuco y Angol firman convenio en la Araucanía', feedEsRegional: false }).matched).toEqual(['Temuco', 'Angol', 'Araucanía'])
+    expect(comunaPrincipal(['Araucanía', 'Malleco', 'Angol'])).toBe('Angol')
+    expect(comunaPrincipal(['Cautín'])).toBeNull()
+    expect(comunaPrincipal(['Labranza'])).toBe('Temuco')
+    expect(comunaPrincipal(['Lican Ray', 'Pucón'])).toBe('Villarrica')
   })
 })

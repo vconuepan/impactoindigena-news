@@ -290,7 +290,10 @@ describe('la señal del carril de marca (D5, sección 7.3)', () => {
     const m = await senalesDelCarril(['s1', 's2'], 'c-arauc')
     expect(m.get('s1')).toEqual(['carril-juez:victimas', 'carril-filtro:estrangul'])
     expect(m.has('s2')).toBe(false)
-    expect(String(mockPrisma.$queryRaw.mock.calls.at(-1)[0].join(''))).toContain("source_signal <> 'keyword'")
+    const sql = String(mockPrisma.$queryRaw.mock.calls.at(-1)[0].join(''))
+    expect(sql).toContain("source_signal <> 'keyword'")
+    // solo lo que entró a la vertical por el carril: una candidata que un editor publica a mano no arrastra la señal
+    expect(sql).toContain("state = 'published'")
   })
 
   it('el gancho pasa la señal a la evaluacion cuando la tabla del carril existe', async () => {
@@ -339,5 +342,6 @@ describe('la señal del carril de marca (D5, sección 7.3)', () => {
     const args = mockPrisma.$queryRaw.mock.calls[2]
     expect(String(args[0])).toContain('r.gate_evaluated_at')
     expect(JSON.stringify(args.slice(1))).toContain('story_brand_assessments')
+    expect(JSON.stringify(args.slice(1))).toContain("b.state = 'published'")
   })
 })

@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
 import { HumanMessage } from '@langchain/core/messages'
+import { Prisma } from '@prisma/client'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
-import { withRetry } from '../lib/retry.js'
 import { config } from '../config.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
-import { senalRegional, deduplicar, tituloDedup } from '../lib/brandRegion.js'
+import { senalRegional, deduplicar, tituloDedup, comunaPrincipal } from '../lib/brandRegion.js'
+import { utc } from '../lib/sqlTime.js'
 import { sensiblesDelTitulo } from '../lib/brandSensitive.js'
 import { pareceNombrarPersona, MOTIVO_GENERICO } from '../lib/brandLanguage.js'
 import { seleccionarAraucania, reglasDesdeBalance, type Admitida } from '../lib/brandSelection.js'
@@ -99,17 +100,19 @@ export function inicioDelDia(ahora: Date): Date {
   return new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth(), ahora.getUTCDate()))
 }
 
-/** Llamadas al modelo ya hechas hoy por esta marca: lotes distintos juzgados más redacciones. */
+/**
+ * Llamadas al modelo hechas hoy por esta marca, contadas en brand_lane_calls:
+ * una fila por llamada, escrita ANTES de llamar. Antes se contaban lotes
+ * distintos en story_brand_assessments.batch_id, que se pisa al rejuzgar: un
+ * lote fallido y rejuzgado el mismo día dejaba de contarse (revisión del
+ * 13-oct-2026).
+ */
 export async function llamadasDeHoy(communityId: string, ahora: Date): Promise<number> {
-  const desde = inicioDelDia(ahora)
-  const rows = await prisma.$queryRaw<Array<{ lotes: bigint | number; redacciones: bigint | number }>>`
-    SELECT count(DISTINCT batch_id) FILTER (WHERE evaluated_at >= ${desde}) AS lotes,
-           count(*) FILTER (WHERE redacted_at >= ${desde}) AS redacciones
-      FROM story_brand_assessments
-     WHERE community_id = ${communityId}
+  const rows = await prisma.$queryRaw<Array<{ n: bigint | number }>>`
+    SELECT count(*) AS n FROM brand_lane_calls
+     WHERE community_id = ${communityId} AND called_at >= ${utc(inicioDelDia(ahora))}
   `
-  const r = rows[0] ?? { lotes: 0, redacciones: 0 }
-  return Number(r.lotes) + Number(r.redacciones)
+  return Number(rows[0]?.n ?? 0)
 }
 
 /** Motivo apto para guardarse: 20 palabras como máximo (diseño, sección 3) y sin nombres de personas. */
@@ -122,7 +125,60 @@ export function motivoSeguro(motivo: string | null | undefined): string | null {
 // --- Voces Araucanía: candidatas -------------------------------------------
 
 const VENTANA_CANDIDATAS_DIAS = 14
+/** Filas por página al leer la ventana de candidatas, y tope de páginas por corrida. */
+const PAGINA = 1000
+const MAX_PAGINAS = 30
+/** Tope de filas para las consultas que no paginan (rescate de Mapuche). */
 const LEER_POR_CORRIDA = 400
+
+interface FilaCandidata {
+  id: string
+  title: string | null
+  source_title: string
+  feed_regional: boolean
+  brand_date: Date
+  date_crawled: Date
+}
+
+/**
+ * Lo que murió en el pre-filtro en la ventana, sin fila del carril ni rechazo
+ * manual, de lo más nuevo a lo más viejo. Pagina por (date_crawled, id): la
+ * señal regional se mira en memoria, así que un LIMIT fijo antes de ese filtro
+ * dejaba ver solo las horas más recientes de la ventana (revisión del 13-oct).
+ */
+async function leerVentana(c: BrandCriteria, desde: Date): Promise<FilaCandidata[]> {
+  const todas: FilaCandidata[] = []
+  let cursor: { fecha: Date; id: string } | null = null
+  for (let pagina = 0; pagina < MAX_PAGINAS; pagina++) {
+    const despues: Prisma.Sql = cursor ? Prisma.sql`AND (s.date_crawled, s.id) < (${utc(cursor.fecha)}, ${cursor.id})` : Prisma.empty
+    const filas: FilaCandidata[] = await prisma.$queryRaw<FilaCandidata[]>`
+      SELECT s.id, s.title, s.source_title, (fb.feed_id IS NOT NULL) AS feed_regional,
+             COALESCE(s.source_date_published, s.date_crawled) AS brand_date, s.date_crawled
+        FROM stories s
+        LEFT JOIN feed_brands fb ON fb.feed_id = s.feed_id AND fb.community_id = ${c.communityId}
+       WHERE s.status = 'rejected'
+         AND s.relevance_pre IS NOT NULL
+         AND s.relevance IS NULL
+         AND s.cluster_id IS NULL
+         AND s.date_crawled >= ${utc(desde)}
+         ${despues}
+         AND NOT EXISTS (SELECT 1 FROM story_brand_assessments b WHERE b.story_id = s.id AND b.community_id = ${c.communityId})
+         AND NOT EXISTS (
+               SELECT 1 FROM audit_log a
+                WHERE (a.action = 'story.status' AND a.target_id = s.id AND a.metadata->>'to' = 'rejected')
+                   OR (a.action = 'story.bulk_status' AND a.metadata->>'to' = 'rejected' AND a.metadata->'ids' @> jsonb_build_array(s.id))
+             )
+       ORDER BY s.date_crawled DESC, s.id DESC
+       LIMIT ${PAGINA}
+    `
+    todas.push(...filas)
+    if (filas.length < PAGINA) return todas
+    const ultima: FilaCandidata = filas[filas.length - 1]
+    cursor = { fecha: ultima.date_crawled, id: ultima.id }
+  }
+  log.warn({ slug: c.slug, leidas: todas.length }, 'brand lane: candidate window truncated at MAX_PAGINAS')
+  return todas
+}
 
 /**
  * Inserta como candidatas las notas que murieron en el pre-filtro y tienen señal
@@ -131,36 +187,16 @@ const LEER_POR_CORRIDA = 400
  */
 export async function tomarCandidatasTerritoriales(c: BrandCriteria, ahora: Date): Promise<number> {
   const desde = new Date(ahora.getTime() - VENTANA_CANDIDATAS_DIAS * 86_400_000)
-  const filas = await prisma.$queryRaw<
-    Array<{ id: string; title: string | null; source_title: string; feed_regional: boolean; brand_date: Date }>
-  >`
-    SELECT s.id, s.title, s.source_title, (fb.feed_id IS NOT NULL) AS feed_regional,
-           COALESCE(s.source_date_published, s.date_crawled) AS brand_date
-      FROM stories s
-      LEFT JOIN feed_brands fb ON fb.feed_id = s.feed_id AND fb.community_id = ${c.communityId}
-     WHERE s.status = 'rejected'
-       AND s.relevance_pre IS NOT NULL
-       AND s.relevance IS NULL
-       AND s.cluster_id IS NULL
-       AND s.date_crawled >= ${desde}
-       AND NOT EXISTS (SELECT 1 FROM story_brand_assessments b WHERE b.story_id = s.id AND b.community_id = ${c.communityId})
-       AND NOT EXISTS (
-             SELECT 1 FROM audit_log a
-              WHERE (a.action = 'story.status' AND a.target_id = s.id AND a.metadata->>'to' = 'rejected')
-                 OR (a.action = 'story.bulk_status' AND a.metadata->>'to' = 'rejected' AND a.metadata->'ids' @> jsonb_build_array(s.id))
-           )
-     ORDER BY s.date_crawled DESC
-     LIMIT ${LEER_POR_CORRIDA}
-  `
+  const filas = await leerVentana(c, desde)
   const conSenal = filas
     .map((f) => ({ ...f, senal: senalRegional({ title: f.title, sourceTitle: f.source_title, feedEsRegional: f.feed_regional }) }))
     .filter((f) => f.senal.signal !== null)
   if (conSenal.length === 0) return 0
 
-  // Títulos ya juzgados por esta marca en la última semana: la misma noticia no se paga dos veces.
+  // Títulos ya juzgados por esta marca en la misma ventana: la misma noticia no se paga dos veces.
   const recientes = await prisma.$queryRaw<Array<{ source_title: string }>>`
     SELECT s.source_title FROM story_brand_assessments b JOIN stories s ON s.id = b.story_id
-     WHERE b.community_id = ${c.communityId} AND b.created_at >= ${new Date(ahora.getTime() - 7 * 86_400_000)}
+     WHERE b.community_id = ${c.communityId} AND b.created_at >= ${utc(desde)}
   `
   const unicas = deduplicar(conSenal.map((f) => ({ ...f, sourceTitle: f.source_title })), recientes.map((r) => tituloDedup(r.source_title)))
   const tope = config.brandLane.maxCandidatesPerRun
@@ -200,9 +236,20 @@ interface Pendiente {
   sourceContent: string
 }
 
+/**
+ * Qué orígenes de candidata se juzgan según los modos encendidos: un carril
+ * apagado no gasta llamadas en lo que dejó pendiente (revisión del 13-oct).
+ */
+export function origenesActivos(c: Pick<BrandCriteria, 'criterion' | 'mode' | 'rescueMode'>): string[] {
+  if (c.criterion === 'territorial') return c.mode === 'off' ? [] : ['term', 'feed']
+  return [...(c.mode === 'off' ? [] : ['keyword']), ...(c.rescueMode === 'off' ? [] : ['rescue'])]
+}
+
 async function pendientesDeJuicio(c: BrandCriteria, limite: number): Promise<Pendiente[]> {
+  const origenes = origenesActivos(c)
+  if (origenes.length === 0) return []
   const rows = await prisma.storyBrandAssessment.findMany({
-    where: { communityId: c.communityId, state: 'candidate', attempts: { lt: config.brandLane.maxAttempts } },
+    where: { communityId: c.communityId, state: 'candidate', attempts: { lt: config.brandLane.maxAttempts }, sourceSignal: { in: origenes } },
     orderBy: { createdAt: 'asc' },
     take: limite,
     select: { id: true, storyId: true, attempts: true, story: { select: { sourceTitle: true, sourceContent: true } } },
@@ -269,22 +316,40 @@ export async function juzgarPendientes(c: BrandCriteria, ahora: Date): Promise<n
     const articulos: ArticuloJuez[] = lote.map((p) => ({ id: p.storyId, title: p.sourceTitle, content: p.sourceContent }))
     const territorial = c.criterion === 'territorial'
     const prompt = territorial ? buildTerritorialPrompt(c.guidelines, articulos) : buildMapuchePrompt(c.guidelines, articulos)
+    // Sin withRetry: el modelo ya reintenta los transitorios por dentro (maxRetries
+    // en services/llm.ts), y un reintento exterior multiplicaba las llamadas reales
+    // por lote fuera del tope diario. Un lote que falla no se reencola en la misma
+    // corrida (diseño D5, sección 8): sus notas suman un intento y vuelven en la siguiente.
+    //
+    // ANTES de llamar: la llamada queda contada y el intento sumado. Si el proceso
+    // cae después de pagar, ni la llamada sale del tope ni las notas se reenvían sin
+    // límite (revisión del 13-oct-2026).
+    await prisma.brandLaneCall.create({ data: { id: batchId, communityId: c.communityId, kind: 'judge', articles: lote.length } })
+    await prisma.storyBrandAssessment.updateMany({
+      where: { id: { in: lote.map((p) => p.id) } },
+      data: { attempts: { increment: 1 }, batchId, evaluatedAt: new Date() },
+    })
     llamadas++
     let respuestas: Array<BrandTerritorialItem | BrandMapucheItem> = []
     let error: string | null = null
     try {
       await rateLimitDelay()
       if (territorial) {
-        const res = await withRetry(() => llm.withStructuredOutput(brandTerritorialResultSchema, { method: 'functionCalling' }).invoke([new HumanMessage(prompt)]))
+        const res = await llm.withStructuredOutput(brandTerritorialResultSchema, { method: 'functionCalling' }).invoke([new HumanMessage(prompt)])
         // LangChain tipa con la entrada del esquema; el parse es idempotente y aplica los .catch por campo.
         respuestas = brandTerritorialResultSchema.parse(res).articles
       } else {
-        const res = await withRetry(() => llm.withStructuredOutput(brandMapucheResultSchema, { method: 'functionCalling' }).invoke([new HumanMessage(prompt)]))
+        const res = await llm.withStructuredOutput(brandMapucheResultSchema, { method: 'functionCalling' }).invoke([new HumanMessage(prompt)])
         respuestas = brandMapucheResultSchema.parse(res).articles
       }
     } catch (err) {
       error = err instanceof Error ? err.message.slice(0, 300) : 'error del modelo'
       log.warn({ slug: c.slug, batchId, err }, 'brand lane batch failed')
+    }
+    try {
+      await prisma.brandLaneCall.update({ where: { id: batchId }, data: { ok: error === null, error } })
+    } catch (err) {
+      log.warn({ slug: c.slug, batchId, err }, 'brand lane: could not close the call record')
     }
 
     const porId = new Map(respuestas.map((r) => [r.articleId, r]))
@@ -337,26 +402,54 @@ export async function seleccionarTerritorial(c: BrandCriteria, ahora: Date): Pro
   const [admitidas, yaHoy] = await Promise.all([
     prisma.storyBrandAssessment.findMany({
       where: { communityId: c.communityId, state: 'evaluated', admitted: true, brandDate: { gte: desde } },
-      select: { id: true, brandScore: true, axis: true, matchedTerms: true, brandDate: true },
+      select: { id: true, storyId: true, brandScore: true, axis: true, matchedTerms: true, brandDate: true },
     }),
     prisma.storyBrandAssessment.findMany({
       where: { communityId: c.communityId, selectedAt: { gte: hoy } },
       select: { axis: true, matchedTerms: true },
     }),
   ])
-  const aSel = (r: { axis: string | null; matchedTerms: string[] }) => ({ axis: r.axis ?? '', comuna: r.matchedTerms[0] ?? null })
-  const candidatas: Admitida[] = admitidas.map((r) => ({
-    id: r.id,
-    brandScore: r.brandScore ?? 0,
-    axis: r.axis ?? '',
-    comuna: r.matchedTerms[0] ?? null,
-    brandDate: r.brandDate ?? ahora,
-  }))
-  const ids = seleccionarAraucania(candidatas, reglasDesdeBalance(c), yaHoy.map(aSel))
+  const aSel = (r: { axis: string | null; matchedTerms: string[] }) => ({ axis: r.axis ?? '', comuna: comunaPrincipal(r.matchedTerms) })
+  const vigentes = await siguenVigentes(admitidas)
+  const candidatas: Admitida[] = admitidas
+    .filter((r) => vigentes.has(r.storyId))
+    .map((r) => ({
+      id: r.id,
+      brandScore: r.brandScore ?? 0,
+      axis: r.axis ?? '',
+      comuna: comunaPrincipal(r.matchedTerms),
+      brandDate: r.brandDate ?? ahora,
+    }))
+  // Mientras el día siga abierto, los lugares de región completa se guardan aunque
+  // hoy todavía no haya: una corrida temprana no llena el cupo con tensiones
+  // (revisión del 13-oct-2026). La última corrida del día los suelta.
+  const diaAbierto = ahora.getUTCHours() < config.brandLane.selectionCloseHourUtc
+  const ids = seleccionarAraucania(candidatas, reglasDesdeBalance(c), yaHoy.map(aSel), { diaAbierto })
   if (ids.length > 0) {
     await prisma.storyBrandAssessment.updateMany({ where: { id: { in: ids } }, data: { state: 'selected', selectedAt: ahora } })
   }
   return ids
+}
+
+/**
+ * Antes de elegir, se vuelve a mirar la nota: el juicio puede llegar días
+ * después de la candidatura (revisión del 13-oct-2026). Sigue vigente si sigue
+ * 'rejected' para el sitio global y nadie la rechazó a mano; las rechazadas a
+ * mano quedan descartadas con motivo. Devuelve los storyId vigentes.
+ */
+export async function siguenVigentes(filas: Array<{ id: string; storyId: string }>): Promise<Set<string>> {
+  if (filas.length === 0) return new Set()
+  const ids = filas.map((f) => f.storyId)
+  const [stories, aMano] = await Promise.all([
+    prisma.story.findMany({ where: { id: { in: ids } }, select: { id: true, status: true } }),
+    rechazadasAMano(ids),
+  ])
+  const rechazadas = new Set(stories.filter((st) => st.status === 'rejected').map((st) => st.id))
+  const manuales = filas.filter((f) => aMano.has(f.storyId)).map((f) => f.id)
+  if (manuales.length > 0) {
+    await prisma.storyBrandAssessment.updateMany({ where: { id: { in: manuales } }, data: { state: 'discarded', discardReason: 'manual_reject' } })
+  }
+  return new Set(ids.filter((id) => rechazadas.has(id) && !aMano.has(id)))
 }
 
 // --- Voces Mapuche: notas de la vertical y rescate ---------------------------
@@ -464,7 +557,7 @@ export async function ejesDeLaVertical(communityId: string, ahora: Date): Promis
       FROM story_brand_assessments
      WHERE community_id = ${communityId}
        AND axis IS NOT NULL
-       AND brand_date >= ${desde}
+       AND brand_date >= ${utc(desde)}
        AND ((source_signal = 'keyword' AND state IN ('evaluated', 'selected', 'published'))
          OR (source_signal = 'rescue' AND state IN ('selected', 'published')))
      GROUP BY axis
@@ -478,10 +571,13 @@ export async function seleccionarRescate(c: BrandCriteria, ahora: Date): Promise
   const yaHoy = await prisma.storyBrandAssessment.count({ where: { communityId: c.communityId, sourceSignal: 'rescue', selectedAt: { gte: hoy } } })
   const cupo = Math.max(0, c.dailyTarget - yaHoy)
   if (cupo === 0) return []
-  const evaluadas = await prisma.storyBrandAssessment.findMany({
+  const todas = await prisma.storyBrandAssessment.findMany({
     where: { communityId: c.communityId, sourceSignal: 'rescue', state: 'evaluated', brandScore: { gte: c.relevanceMin } },
-    select: { id: true, brandScore: true, axis: true, brandDate: true },
+    select: { id: true, storyId: true, brandScore: true, axis: true, brandDate: true },
   })
+  if (todas.length === 0) return []
+  const vigentes = await siguenVigentes(todas)
+  const evaluadas = todas.filter((r) => vigentes.has(r.storyId))
   if (evaluadas.length === 0) return []
   const ids = ordenarRescate(evaluadas, await ejesDeLaVertical(c.communityId, ahora))
     .slice(0, cupo)

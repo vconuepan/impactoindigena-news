@@ -35,7 +35,7 @@ export function bloqueArticulos(articulos: ArticuloJuez[]): string {
 }
 
 const REGLAS_COMUNES = `<REGLAS>
-- Las etiquetas describen la nota, nunca a una persona. No se infiere la pertenencia de nadie a un pueblo por su apellido, sus rasgos o su lugar: solo cuenta lo que la nota declara (una comunidad, una asociación, un vocero que se identifica).
+- Las etiquetas describen la nota, nunca a una persona. No se infiere la pertenencia de nadie a un pueblo por su apellido, sus rasgos o su lugar. La pertenencia se acredita desde adentro: cuenta una comunidad, una asociación u organización indígena que actúa como tal, o una persona que, según la nota, se presenta así o a quien su organización presenta así. No basta con que el periodista, una autoridad u otro tercero la llame así, ni la palabra «comunero», ni que la nota nombre su comunidad. Si no está acreditada, la persona no cuenta como indígena.
 - El motivo no nombra a personas.
 - Las banderas sensibles siguen el sesgo al falso positivo: ante la duda, se marca.
 - Cada artículo recibido tiene exactamente una respuesta, con su Article ID.
@@ -47,7 +47,7 @@ const REGLAS_COMUNES = `<REGLAS>
  * desde afuera, se acredita desde adentro.
  */
 export const REGLA_EJE_MAPUCHE_CHILENO = `<REGLA_DEL_EJE_MAPUCHE_CHILENO>
-El eje mapuche_chileno se asigna solo cuando la nota declara la relación: una comunidad, una asociación o un vocero que se identifica como mapuche. Nunca por el apellido de alguien, por sus rasgos ni por el lugar donde vive o donde ocurrió el hecho. Si la nota no lo declara, se usa otro eje.
+El eje mapuche_chileno se asigna solo cuando la relación está acreditada desde adentro: una comunidad, una asociación u organización mapuche, o una persona que, según la nota, se presenta como mapuche o a quien su organización presenta así. Nunca por el apellido de alguien, por sus rasgos, por el lugar donde vive o donde ocurrió el hecho, por la palabra «comunero» ni porque el periodista u otro tercero la llame mapuche. Si no está acreditada, se usa otro eje.
 </REGLA_DEL_EJE_MAPUCHE_CHILENO>`
 
 export function buildTerritorialPrompt(pautas: string, articulos: ArticuloJuez[]): string {

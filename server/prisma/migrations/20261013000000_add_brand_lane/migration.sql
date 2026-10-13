@@ -24,6 +24,12 @@
 --                              propio y el título y resumen que se muestran en la
 --                              vertical cuando la nota entra solo por la marca.
 --
+--   brand_lane_calls           una fila por cada llamada al modelo, escrita ANTES
+--                              de llamar. El tope diario se cuenta aquí: ni un
+--                              lote que falla y se rejuzga, ni una escritura que
+--                              falla después de pagar, quedan fuera de la cuenta
+--                              (revisión del 13-oct-2026).
+--
 -- Nada se agrega a stories ni a StoryStatus: un ALTER TYPE ... ADD VALUE no se
 -- deshace y una columna nueva en un modelo existente rompe findMany() si el
 -- código llega antes que este SQL. Estas tablas se borran con DROP TABLE y la
@@ -34,11 +40,12 @@
 -- La aplica el director; luego:
 --   npm run db:migrate:resolve --prefix server -- --applied 20261013000000_add_brand_lane
 
--- Verificación ANTES (esperado: 0 0 0 si es la primera vez).
+-- Verificación ANTES (esperado: 0 0 0 0 si es la primera vez).
 SELECT
   (SELECT count(*) FROM information_schema.tables WHERE table_name = 'community_brand_criteria') AS criteria,
   (SELECT count(*) FROM information_schema.tables WHERE table_name = 'feed_brands') AS feed_brands,
-  (SELECT count(*) FROM information_schema.tables WHERE table_name = 'story_brand_assessments') AS assessments;
+  (SELECT count(*) FROM information_schema.tables WHERE table_name = 'story_brand_assessments') AS assessments,
+  (SELECT count(*) FROM information_schema.tables WHERE table_name = 'brand_lane_calls') AS calls;
 
 CREATE TABLE IF NOT EXISTS "community_brand_criteria" (
   "community_id"       TEXT NOT NULL,
@@ -136,9 +143,26 @@ CREATE UNIQUE INDEX IF NOT EXISTS "story_brand_assessments_brand_slug_key"
 -- La selección y la vertical: por comunidad y estado, de la nota de marca más alta a la más baja.
 CREATE INDEX IF NOT EXISTS "story_brand_assessments_selection_idx"
   ON "story_brand_assessments" ("community_id", "state", "brand_score" DESC);
--- El tope diario: llamadas por comunidad y día.
+-- Juicios por comunidad y día (métricas de la sombra).
 CREATE INDEX IF NOT EXISTS "story_brand_assessments_calls_idx"
   ON "story_brand_assessments" ("community_id", "evaluated_at");
+
+CREATE TABLE IF NOT EXISTS "brand_lane_calls" (
+  "id"           TEXT         NOT NULL,
+  "community_id" TEXT         NOT NULL,
+  -- 'judge' (un lote de juicio) | 'redact' (título y resumen de una elegida, solo en enforce)
+  "kind"         TEXT         NOT NULL,
+  "articles"     SMALLINT     NOT NULL DEFAULT 0,
+  -- null mientras la llamada está en curso o si el proceso cayó a la mitad
+  "ok"           BOOLEAN,
+  "error"        TEXT,
+  "called_at"    TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "brand_lane_calls_pkey" PRIMARY KEY ("id"),
+  CONSTRAINT "brand_lane_calls_kind_check" CHECK ("kind" IN ('judge', 'redact'))
+);
+-- El tope diario: llamadas por comunidad y día, contadas aquí.
+CREATE INDEX IF NOT EXISTS "brand_lane_calls_community_called_idx"
+  ON "brand_lane_calls" ("community_id", "called_at");
 
 DO $$
 BEGIN
@@ -165,6 +189,11 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'story_brand_assessments_community_id_fkey') THEN
     ALTER TABLE "story_brand_assessments"
       ADD CONSTRAINT "story_brand_assessments_community_id_fkey"
+      FOREIGN KEY ("community_id") REFERENCES "communities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'brand_lane_calls_community_id_fkey') THEN
+    ALTER TABLE "brand_lane_calls"
+      ADD CONSTRAINT "brand_lane_calls_community_id_fkey"
       FOREIGN KEY ("community_id") REFERENCES "communities"("id") ON DELETE CASCADE ON UPDATE CASCADE;
   END IF;
 END $$;

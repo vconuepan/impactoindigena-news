@@ -555,6 +555,7 @@ model Community {
   brandCriteria    CommunityBrandCriteria?
   brandFeeds       FeedBrand[]
   brandAssessments StoryBrandAssessment[]
+  brandLaneCalls   BrandLaneCall[]
 
   @@index([slug])
   @@map("communities")
@@ -891,6 +892,23 @@ model FeedBrand {
 
   @@id([feedId, communityId])
   @@map("feed_brands")
+}
+
+/// Una fila por cada llamada del carril de marca (D5) al modelo, escrita ANTES de
+/// llamar: el tope diario se cuenta aquí. Migración 20261013000000_add_brand_lane.
+model BrandLaneCall {
+  id          String    @id
+  communityId String    @map("community_id")
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  /// 'judge' | 'redact'
+  kind        String
+  articles    Int       @default(0) @db.SmallInt
+  ok          Boolean?
+  error       String?
+  calledAt    DateTime  @default(now()) @map("called_at")
+
+  @@index([communityId, calledAt], map: "brand_lane_calls_community_called_idx")
+  @@map("brand_lane_calls")
 }
 
 model StoryBrandAssessment {

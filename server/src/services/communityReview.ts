@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client'
 import prisma from '../lib/prisma.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
+import { utc } from '../lib/sqlTime.js'
 import { evaluateGate, GATE_VERSION, type GateResult, type MarcaKey } from '../lib/gate.js'
 import {
   MACHINE_STATES,
@@ -156,9 +157,12 @@ export async function tablaDelCarrilExiste(): Promise<boolean> {
 
 /**
  * Las banderas sensibles que el carril de marca (D5) puso a notas que entraron
- * POR el carril (término, feed o rescate), como razones del gate. Las notas que
- * entran por palabras clave siguen como hoy (diseño D5, 7.2): su juicio de marca
- * no toca D4.
+ * a la vertical POR el carril (fila de marca en estado 'published', origen
+ * término, feed o rescate), como razones del gate. Lo que entra por palabras
+ * clave sigue como hoy (diseño D5, 7.2), aunque el carril lo haya juzgado antes:
+ * una candidata que después un editor publica a mano no arrastra la señal
+ * (revisión del 13-oct-2026). En sombra el carril no publica nada, así que esto
+ * no toca D4 hasta encender el modo aplicar.
  */
 export async function senalesDelCarril(storyIds: string[], communityId: string): Promise<Map<string, string[]>> {
   if (storyIds.length === 0) return new Map()
@@ -168,6 +172,7 @@ export async function senalesDelCarril(storyIds: string[], communityId: string):
      WHERE community_id = ${communityId}
        AND story_id = ANY(${storyIds}::text[])
        AND source_signal <> 'keyword'
+       AND state = 'published'
        AND (cardinality(sensitive_flags_judge) > 0 OR cardinality(sensitive_flags_filter) > 0)
   `
   return new Map(
@@ -205,20 +210,6 @@ export function evaluateForCommunity(
     reviewState,
     publishedAt: reviewState === 'auto' ? (story.datePublished ?? new Date()) : null,
   }
-}
-
-/**
- * Una fecha de JS como timestamp SIN zona en UTC, sea cual sea la zona de la
- * sesion de la base. Hace falta porque las columnas son `timestamp(3)` (sin
- * zona): Prisma, en sus escrituras propias, guarda UTC; pero un Date pasado
- * como parametro a SQL crudo se convierte con la zona de la sesion. Medido el
- * 4-oct-2026: con la sesion en Europe/London, gate_evaluated_at quedaba una hora
- * adelantada respecto de stories.updated_at, y el conciliador habria dejado de
- * ver como vieja una nota editada en esa hora. Azure corre en UTC y no se nota;
- * el codigo no debe depender de eso.
- */
-function utc(d: Date | null): Prisma.Sql {
-  return d === null ? Prisma.sql`NULL` : Prisma.sql`(${d}::timestamptz AT TIME ZONE 'UTC')`
 }
 
 /**
@@ -439,6 +430,7 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
              WHERE b.story_id = r.story_id
                AND b.community_id = r.community_id
                AND b.source_signal <> 'keyword'
+               AND b.state = 'published'
                AND (cardinality(b.sensitive_flags_judge) > 0 OR cardinality(b.sensitive_flags_filter) > 0)
                AND b.updated_at > r.gate_evaluated_at)`
       : Prisma.empty

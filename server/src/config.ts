@@ -384,6 +384,9 @@ export const config = {
     maxCandidatesPerRun: parseInt(process.env.D5_MAX_CANDIDATES || '40', 10),
     // Cada nota se juzga como máximo dos veces (lo fija también un CHECK).
     maxAttempts: 2,
+    // Desde esta hora UTC la selección del día ya no guarda lugares de región
+    // completa para corridas posteriores. 19 = la corrida de las 19:30 cierra el día.
+    selectionCloseHourUtc: parseInt(process.env.D5_SELECTION_CLOSE_HOUR_UTC || '19', 10),
   },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),
