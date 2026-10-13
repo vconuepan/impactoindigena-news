@@ -95,7 +95,7 @@ export default function SubscribedPage() {
     confirmacion === 'expired' || confirmacion === 'invalid'
       ? confirmacion
       : !pendiente && (errorParam || enlace.estado === 'malformado')
-        ? (errorParam ?? 'invalid')
+        ? (errorParam || 'invalid') // `||` y no `??`: con `error=` vacio `??` devolvia '' y celebraba
         : null
 
   if (fallo) {
@@ -108,6 +108,7 @@ export default function SubscribedPage() {
         <Helmet>
           <title>{titulo} - Voces Indígenas</title>
           <meta name="description" content={cuerpo} />
+          {enlace.estado !== 'ausente' && <meta name="robots" content="noindex" />}
         </Helmet>
         <div className="page-section text-center py-16">
           <h1

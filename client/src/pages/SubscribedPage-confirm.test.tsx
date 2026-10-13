@@ -178,6 +178,26 @@ describe('confirmar el boletin desde el sitio', () => {
     expect(paramsActuales().get('email')).toBeNull()
   })
 
+  it('al terminar con un enlace vencido, el foco tambien va al titulo del resultado', async () => {
+    fetchMock.mockImplementation(() => respuesta(400, { error: 'expired' }))
+    abrir(conToken)
+    await userEvent.click(await botonConfirmar())
+
+    const h1 = await titulo(T.expiredTitle)
+    await waitFor(() => expect(h1).toHaveFocus())
+  })
+
+  it('la vista de enlace vencido, que viene de un enlace con token, no se indexa', async () => {
+    fetchMock.mockImplementation(() => respuesta(400, { error: 'expired' }))
+    abrir(conToken)
+    await userEvent.click(await botonConfirmar())
+    await titulo(T.expiredTitle)
+
+    await waitFor(() => {
+      expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex')
+    })
+  })
+
   it('un enlace invalido (400 invalid) muestra el aviso de invalido y limpia la URL', async () => {
     fetchMock.mockImplementation(() => respuesta(400, { error: 'invalid' }))
     abrir(conToken)
@@ -255,6 +275,21 @@ describe('los caminos que ya existian siguen igual', () => {
     const h1 = await titulo(T.expiredTitle)
     expect(h1).not.toHaveFocus()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('un enlace malformado con `error=` vacio avisa de invalido y NO celebra', async () => {
+    // Con `??` la cadena vacia no caia a 'invalid' y la pagina daba la bienvenida.
+    abrir('/subscribed?confirm_token=basura&email=x&error=')
+    expect(await titulo(T.invalidTitle)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: T.successTitle })).not.toBeInTheDocument()
+  })
+
+  it('la vista de aviso de un enlace malformado no se indexa', async () => {
+    abrir('/subscribed?confirm_token=basura&email=x')
+    await titulo(T.invalidTitle)
+    await waitFor(() => {
+      expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe('noindex')
+    })
   })
 
   it('?error=invalid muestra el aviso de invalido', async () => {
