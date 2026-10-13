@@ -720,6 +720,15 @@ export const adminApi = {
         `/reviews/${slug}/mode`, { method: 'PUT', body: JSON.stringify({ mode }) }),
   },
 
+  // Criterio por marca (D5)
+  brand: {
+    panels: () => request<{ learningMode: boolean; enabled: boolean; data: BrandPanel[] }>('/brand'),
+    elegidas: (slug: string) => request<{ slug: string; data: BrandSelection[] }>(`/brand/${slug}/elegidas`),
+    setMode: (slug: string, body: { mode?: ReviewMode; rescueMode?: ReviewMode }) =>
+      request<{ slug: string; from: { mode: ReviewMode; rescueMode: ReviewMode }; to: { mode: ReviewMode; rescueMode: ReviewMode } }>(
+        `/brand/${slug}/mode`, { method: 'PUT', body: JSON.stringify(body) }),
+  },
+
   // Maintenance
   maintenance: {
     storyStatus: (slug: string) =>
@@ -1017,4 +1026,37 @@ if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.accessToken = accessToken
   })
+}
+
+// --- Criterio por marca (D5) ---
+
+export interface BrandPanel {
+  slug: string
+  name: string
+  communityId: string
+  criterion: 'territorial' | 'escala_mapuche'
+  mode: ReviewMode
+  rescueMode: ReviewMode
+  guidelinesVersion: number
+  tienePautas: boolean
+  dailyCallCap: number
+  dailyTarget: number
+  relevanceMin: number
+  d4Mode: ReviewMode
+  hoy: { llamadas: number; juzgadas: number; elegidas: number; publicadas: number }
+  siEncendieras: { elegidas: number; visibles: number; aLaCola: number; dias: number }
+}
+
+export interface BrandSelection {
+  storyId: string
+  titulo: string
+  eje: string | null
+  nota: number | null
+  lugar: string | null
+  origen: 'territorial' | 'rescate' | 'palabras_clave'
+  estado: string
+  motivo: string | null
+  banderas: string[]
+  fecha: string | null
+  brandSlug: string | null
 }
