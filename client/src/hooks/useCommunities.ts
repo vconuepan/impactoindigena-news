@@ -26,6 +26,15 @@ export function useCommunityStories(slug: string, params?: { page?: number; page
   })
 }
 
+export function useBrandStory(slug: string, brandSlug: string) {
+  return useQuery({
+    queryKey: ['brand-story', slug, brandSlug],
+    queryFn: () => publicApi.communities.brandStory(slug, brandSlug),
+    enabled: !!slug && !!brandSlug,
+    retry: false,
+  })
+}
+
 export function useMembership(slug: string) {
   return useQuery({
     queryKey: ['community-membership', slug],

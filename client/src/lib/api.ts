@@ -203,6 +203,8 @@ export const publicApi = {
       memberRequest<{ isMember: boolean }>(`/communities/${slug}/leave`, { method: 'DELETE' }),
     signals: (slug: string, period = '30d') =>
       request<CommunitySignals>(`/communities/${slug}/signals?period=${period}`),
+    /** La ficha de una nota que entró a la vertical por la marca (D5). */
+    brandStory: (slug: string, brandSlug: string) => request<BrandStory>(`/communities/${slug}/notas/${brandSlug}`),
   },
 
   profile: {
@@ -461,4 +463,18 @@ export interface CaseStory {
   issueName: string | null
   issueSlug: string | null
   source: string | null
+}
+
+/** Ficha de una nota que entró a una vertical por la marca (D5): sin tema ni relevancia. */
+export interface BrandStory {
+  title: string | null
+  summary: string | null
+  brandSlug: string
+  date: string | null
+  sourceUrl: string
+  sourceTitle: string
+  imageUrl: string | null
+  publisher: string
+  origen: 'territorial' | 'rescate'
+  community: { slug: string; name: string }
 }

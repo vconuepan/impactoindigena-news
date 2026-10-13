@@ -34,6 +34,7 @@ const FeedbackPagePublic = lazy(() => import('./pages/FeedbackPage'))
 const ThankYouPage = lazy(() => import('./pages/ThankYouPage'))
 const CommunityDirectoryPage = lazy(() => import('./pages/CommunityDirectoryPage'))
 const CommunityPage = lazy(() => import('./pages/CommunityPage'))
+const BrandStoryPage = lazy(() => import('./pages/BrandStoryPage'))
 const MagicLinkSentPage = lazy(() => import('./pages/MagicLinkSentPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const GuidesIndexPage = lazy(() => import('./pages/GuidesIndexPage'))
@@ -155,6 +156,7 @@ export default function App() {
         <Route path="/comunidades" element={<LazyPage><CommunityDirectoryPage /></LazyPage>} />
         <Route path="/incidencia-internacional" element={<LazyPage><IncidenciaPage /></LazyPage>} />
         <Route path="/comunidad/:slug" element={<LazyPage><CommunityPage /></LazyPage>} />
+        <Route path="/comunidad/:slug/n/:brandSlug" element={<LazyPage><BrandStoryPage /></LazyPage>} />
         <Route path="/magic-sent" element={<LazyPage><MagicLinkSentPage /></LazyPage>} />
         <Route path="/perfil" element={<LazyPage><ProfilePage /></LazyPage>} />
         <Route path="/glosario" element={<LazyPage><GlossaryPage /></LazyPage>} />

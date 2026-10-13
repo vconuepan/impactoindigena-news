@@ -79,6 +79,17 @@ describe('una sola regla para lo que muestra una vertical', () => {
     expect(usan).toEqual(['services/brandLane.ts'])
   })
 
+  it('la vitrina de marca (D5) solo la leen las superficies adaptadas, y ninguna arma su where a mano', () => {
+    // services/brandShowcase.ts es el unico lugar que decide que nota de marca se ve en una vertical.
+    const usan = archivos().filter((f) => /services\/brandShowcase\.js/.test(readFileSync(path.join(SRC, f), 'utf8')))
+    expect(usan.sort()).toEqual(['routes/public/communities.ts'])
+    for (const f of archivos()) {
+      if (f === 'services/brandShowcase.ts') continue
+      const codigo = readFileSync(path.join(SRC, f), 'utf8')
+      expect(codigo, `${f}: arma a mano el where de la vitrina; usa vitrinaWhere`).not.toMatch(/storyBrandAssessment\.\w+\(\{[^)]*state:\s*'published'[^)]*communityReviews/s)
+    }
+  })
+
   it('la pagina y el panel de señales de la vertical usan el filtro unico', () => {
     const ruta = readFileSync(path.join(SRC, 'routes/public/communities.ts'), 'utf8')
     expect((ruta.match(/publicCommunityWhere\(/g) ?? []).length).toBeGreaterThanOrEqual(2)

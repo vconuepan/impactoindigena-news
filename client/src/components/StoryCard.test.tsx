@@ -82,3 +82,42 @@ describe('StoryCard — la bajada de una nota bajo el piso de relevancia', () =>
     expect(screen.queryByText(pertinente.summary!)).toBeNull()
   })
 })
+
+describe('StoryCard — nota que entró a la vertical por la marca (D5)', () => {
+  const deMarca = {
+    ...juneau,
+    id: 'marca-1',
+    slug: null,
+    brandSlug: 'angol-inaugura-su-cesfam-abc123',
+    communitySlug: 'wallmapu-araucania',
+    title: 'Angol inaugura su nuevo CESFAM',
+    relevance: null,
+    relevanceSummary: null,
+    summary: 'Atenderá a tres sectores rurales.',
+    issue: null,
+  } as unknown as PublicStory
+
+  it.each(['equal', 'horizontal', 'compact'] as const)('en la variante %s enlaza a su ficha en la vertical, sin tema', (variant) => {
+    idioma = 'es'
+    const { container, unmount } = render(
+      <MemoryRouter>
+        <StoryCard story={deMarca} variant={variant} />
+      </MemoryRouter>,
+    )
+    const internos = [...container.querySelectorAll('a')].map((a) => a.getAttribute('href') ?? '').filter((h) => h.startsWith('/'))
+    expect(internos.length).toBeGreaterThan(0)
+    for (const h of internos) expect(h).toBe('/comunidad/wallmapu-araucania/n/angol-inaugura-su-cesfam-abc123')
+    // sin el tema del feed: no sale rotulada con un tema indígena
+    expect(screen.queryByText('Cambio climático')).toBeNull()
+    unmount()
+  })
+
+  it('una nota publicada sigue enlazando a /stories', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <StoryCard story={juneau} variant="equal" />
+      </MemoryRouter>,
+    )
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('/stories/juneau-inundaciones')
+  })
+})

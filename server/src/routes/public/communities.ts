@@ -5,6 +5,7 @@ import prisma from '../../lib/prisma.js'
 import { config } from '../../config.js'
 import { requireMember } from '../../middleware/auth.js'
 import { sendTransactional } from '../../services/brevo.js'
+import { vitrinaEncendida, notasDeVitrina, contarVitrina, comoNotaPublica, mezclarPorFecha, fichaDeVitrina } from '../../services/brandShowcase.js'
 import {
   buildCommunityCondition,
   temasVivos,
@@ -89,6 +90,49 @@ router.get('/:slug', async (req, res) => {
   }
 })
 
+/**
+ * Hasta dónde se mezclan las dos fuentes en memoria: page × pageSize de cada una.
+ * Más allá (página 51 con 20 por página), se sirve solo lo publicado: las notas
+ * de marca son pocas (3 por día como máximo) y quedan en las primeras páginas.
+ */
+const MAX_MEZCLA = 1000
+
+// GET /api/communities/:slug/notas/:brandSlug — la ficha de una nota que entró
+// a la vertical por la marca (D5). Vive en la vertical: no tiene slug global ni
+// es alcanzable por /stories. Sin tema ni bloque de relevancia (diseño, 6.6).
+router.get('/:slug/notas/:brandSlug', async (req, res) => {
+  try {
+    const rows = await prisma.$queryRaw<Array<{ id: string; name: string }>>`
+      SELECT id, name FROM communities WHERE slug = ${req.params.slug} AND active = true LIMIT 1
+    `
+    if (!rows.length) {
+      res.status(404).json({ error: 'Community not found' })
+      return
+    }
+    const n = await fichaDeVitrina(rows[0].id, req.params.brandSlug)
+    if (!n) {
+      res.status(404).json({ error: 'Story not found' })
+      return
+    }
+    res.set('Cache-Control', 'public, max-age=60')
+    res.json({
+      title: n.brandTitle,
+      summary: n.brandSummary,
+      brandSlug: n.brandSlug,
+      date: n.brandDate,
+      sourceUrl: n.story.sourceUrl,
+      sourceTitle: n.story.sourceTitle,
+      imageUrl: n.story.imageUrl,
+      publisher: n.story.feed.displayTitle || n.story.feed.title,
+      origen: n.sourceSignal === 'rescue' ? 'rescate' : 'territorial',
+      community: { slug: req.params.slug, name: rows[0].name },
+    })
+  } catch (err) {
+    log.error({ err, slug: req.params.slug }, 'failed to fetch brand story')
+    res.status(500).json({ error: 'Failed to fetch brand story' })
+  }
+})
+
 // GET /api/communities/:slug/stories?page=1&pageSize=20
 router.get('/:slug/stories', async (req, res) => {
   try {
@@ -114,6 +158,32 @@ router.get('/:slug/stories', async (req, res) => {
       mode: await getReviewMode(community.id),
       learningMode: config.gate.learningMode,
     })
+
+    // Con la vitrina de marca encendida (D5, modo aplicar), lo que la marca
+    // publicó se mezcla por fecha con lo publicado. Apagada, la consulta de siempre.
+    if (await vitrinaEncendida(community.id)) {
+      const hasta = page * pageSize
+      if (hasta <= MAX_MEZCLA) {
+        const [totalPublicadas, totalMarca, publicadas, deMarca] = await Promise.all([
+          prisma.story.count({ where }),
+          contarVitrina(community.id),
+          prisma.story.findMany({ where, select: PUBLIC_STORY_SELECT, orderBy: { datePublished: 'desc' }, take: hasta }),
+          notasDeVitrina(community.id, { take: hasta }),
+        ])
+        const total = totalPublicadas + totalMarca
+        const data = mezclarPorFecha(
+          publicadas,
+          deMarca.map((n) => comoNotaPublica(n, req.params.slug)),
+          (x) => x.datePublished?.getTime() ?? 0,
+          (x) => x.datePublished?.getTime() ?? 0,
+          (page - 1) * pageSize,
+          pageSize,
+        )
+        res.set('Cache-Control', 'public, max-age=60')
+        res.json({ data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) })
+        return
+      }
+    }
 
     const [total, stories] = await Promise.all([
       prisma.story.count({ where }),

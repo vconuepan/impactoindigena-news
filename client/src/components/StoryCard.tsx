@@ -316,7 +316,11 @@ function CardImage({
 export default function StoryCard({ story, variant = 'featured', hideSummary = false, showCategory = true }: StoryCardProps) {
   const { i18n } = useTranslation()
   const issueSlug = story.issue?.slug ?? story.feed?.issue?.slug ?? 'general-news'
-  const issueName = story.issue?.name ?? story.feed?.issue?.name ?? ''
+  // Una nota que entró por la marca (D5) no lleva tema: una multicancha en Angol
+  // no puede salir rotulada con un tema indígena (diseño D5, 6.6).
+  const issueName = story.brandSlug ? '' : (story.issue?.name ?? story.feed?.issue?.name ?? '')
+  // Su ficha vive en la vertical: no tiene slug global.
+  const href = story.brandSlug && story.communitySlug ? `/comunidad/${story.communitySlug}/n/${story.brandSlug}` : `/stories/${story.slug}`
   const colors = getCategoryColor(issueSlug)
   const [read, setRead] = useState(false)
 
@@ -358,7 +362,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   if (variant === 'featured') {
     return (
       <article className={`group relative overflow-hidden rounded-lg border border-neutral-200 bg-white`}>
-        <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg">
+        <Link to={href} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-lg">
           {/* Image area */}
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
@@ -404,7 +408,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   if (variant === 'equal') {
     return (
       <article className={`group relative overflow-hidden rounded-lg border border-neutral-200 bg-white h-full`}>
-        <Link to={`/stories/${story.slug}`} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg overflow-hidden">
+        <Link to={href} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg overflow-hidden">
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <CardImage
@@ -426,7 +430,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
           {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} />}
           {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
           <div className="flex items-start justify-between gap-1">
-            <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
+            <Link to={href} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
               <h3 className={`font-fraunces text-[17px] font-semibold text-neutral-900 mb-2.5 group-hover:text-brand-800 transition-colors leading-snug ${readTitle}`}>
                 {headlineText}
               </h3>
@@ -452,7 +456,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
             {showCategory && issueName && <CategoryPill name={issueName} hex={colors.hex} />}
             {story.narrativeFrame && <NarrativeFrameTag frame={story.narrativeFrame} />}
             <div className="flex items-start justify-between gap-2">
-              <Link to={`/stories/${story.slug}`} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
+              <Link to={href} className="block flex-1 min-w-0 focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
                 {getTitleLabel(localizedStory) && (
                   <span className="block text-[10px] font-bold uppercase tracking-widest text-neutral-400 mb-1.5 font-dm-sans">{getTitleLabel(localizedStory)}</span>
                 )}
@@ -480,7 +484,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
            * frase. En movil no pasaba: ahi la caja es `h-44` a ancho completo,
            * casi la proporcion del origen.
            */}
-          <Link to={`/stories/${story.slug}`} className="md:w-64 md:shrink-0 overflow-hidden rounded-b-lg md:rounded-b-none md:rounded-r-lg focus-visible:ring-2 focus-visible:ring-brand-500">
+          <Link to={href} className="md:w-64 md:shrink-0 overflow-hidden rounded-b-lg md:rounded-b-none md:rounded-r-lg focus-visible:ring-2 focus-visible:ring-brand-500">
             <div className="h-44 md:h-auto md:self-start md:aspect-[4/3] min-h-[160px] overflow-hidden bg-neutral-100 relative">
               {imageUrl ? (
                 <CardImage
@@ -510,7 +514,7 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
       <div className="mt-1.5 w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors.hex }} aria-hidden="true" />
       <div className="flex-1 min-w-0">
         <Link
-          to={`/stories/${story.slug}`}
+          to={href}
           className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
         >
           {getTitleLabel(localizedStory) && (

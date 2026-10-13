@@ -135,6 +135,12 @@ export interface Story {
 }
 
 export interface PublicStory extends Story {
+  /**
+   * Nota que entró a una vertical por la marca (D5): no tiene slug global y su
+   * ficha vive en la vertical, en /comunidad/:communitySlug/n/:brandSlug.
+   */
+  brandSlug?: string | null
+  communitySlug?: string | null
   feed: {
     id: string
     title: string
