@@ -270,11 +270,14 @@ describe('los caminos que ya existian siguen igual', () => {
   it.each([
     ['un token sin correo', `/subscribed?confirm_token=${TOKEN}`],
     ['un correo sin token', `/subscribed?email=${encodeURIComponent(CORREO)}`],
+    ['un token que no es uuid', `/subscribed?confirm_token=no-es-uuid&email=${encodeURIComponent(CORREO)}`],
+    ['un correo sin forma de correo', `/subscribed?confirm_token=${TOKEN}&email=basura`],
   ])('%s es un enlace recortado: avisa de invalido y no celebra ni muestra el boton', async (_nombre, ruta) => {
     abrir(ruta)
     expect(await titulo(T.invalidTitle)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: T.successTitle })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: T.confirmButton })).not.toBeInTheDocument()
+    expect(screen.queryByText('basura')).not.toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })

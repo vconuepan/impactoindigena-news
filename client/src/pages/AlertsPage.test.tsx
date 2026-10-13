@@ -212,4 +212,32 @@ describe('confirmar alertas desde el sitio', () => {
     await new Promise((r) => setTimeout(r, 20))
     expect(llamadasConfirm()).toHaveLength(0)
   })
+
+  it('al terminar, el foco va al resultado y no se pierde con el boton', async () => {
+    fetchMock.mockImplementation(() => respuesta(200, { success: true, result: 'confirmed' }))
+    abrir(conToken)
+    await userEvent.click(await botonConfirmar())
+
+    const texto = await screen.findByText(/alertas activadas/i)
+    const resultado = texto.closest('[tabindex="-1"]') as HTMLElement
+    expect(resultado, 'el resultado no es enfocable').not.toBeNull()
+    await waitFor(() => expect(resultado).toHaveFocus())
+  })
+
+  it.each([
+    ['un token que no es uuid', `/alertas?confirm_token=no-es-uuid&email=${encodeURIComponent(CORREO)}`],
+    ['un token con html', `/alertas?confirm_token=${encodeURIComponent('<img src=x onerror=alert(1)>')}&email=${encodeURIComponent(CORREO)}`],
+    ['un correo sin forma de correo', `/alertas?confirm_token=${TOKEN}&email=basura`],
+    ['un token sin correo', `/alertas?confirm_token=${TOKEN}`],
+    ['un correo sin token', `/alertas?email=${encodeURIComponent(CORREO)}`],
+  ])('%s es un enlace recortado: avisa de invalido, no ofrece confirmar ni refleja el texto', async (_nombre, ruta) => {
+    abrir(ruta)
+
+    expect(await screen.findByText('Enlace inválido')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^confirmar$/i })).not.toBeInTheDocument()
+    // El texto del enlace no se refleja. (`ubicacion` es el ayudante del test que pinta la URL.)
+    expect(screen.queryAllByText(/basura|onerror/).filter((e) => e.dataset.testid !== 'ubicacion')).toHaveLength(0)
+    await new Promise((r) => setTimeout(r, 20))
+    expect(llamadasConfirm()).toHaveLength(0)
+  })
 })

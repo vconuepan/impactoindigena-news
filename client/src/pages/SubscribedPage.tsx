@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
 import { BRAND } from '../config'
 import { publicApi, ApiError } from '../lib/api'
+import { leerEnlaceConfirmacion } from '../lib/enlaceConfirmacion'
 
 /**
  * La pagina del boletin: pide confirmar la suscripcion y, hecho eso, la celebra.
@@ -36,13 +37,10 @@ export default function SubscribedPage() {
   const { t } = useTranslation()
   const errorParam = searchParams.get('error')
 
-  // Se guardan al montar porque despues de confirmar se sacan de la URL, y la
-  // pagina tiene que seguir mostrando el resultado.
-  const [pendiente] = useState(() => {
-    const token = searchParams.get('confirm_token')
-    const correo = searchParams.get('email')
-    return token && correo ? { token, email: correo } : null
-  })
+  // Se lee al montar porque despues de confirmar se saca de la URL, y la pagina
+  // tiene que seguir mostrando el resultado.
+  const [enlace] = useState(() => leerEnlaceConfirmacion(searchParams))
+  const pendiente = enlace.estado === 'valido' ? { token: enlace.token, email: enlace.email } : null
   const [confirmacion, setConfirmacion] = useState<Confirmacion>('idle')
   // Un ref y no el estado: dos clics seguidos llegan antes de que React repinte.
   const enviandoRef = useRef(false)
@@ -90,13 +88,13 @@ export default function SubscribedPage() {
 
   // Un enlace vencido o invalido pesa mas que cualquier otra cosa. El parametro
   // `error` es el del redireccionamiento (enlaces sin token) y solo cuenta si no
-  // hay una confirmacion pendiente. Un token sin correo (o al reves) es un enlace
-  // recortado: se dice, en vez de celebrar una suscripcion que nadie confirmo.
-  const incompleto = !pendiente && (searchParams.has('confirm_token') || searchParams.has('email'))
+  // hay una confirmacion pendiente. Un enlace recortado o escrito a mano (token
+  // que no es uuid, correo sin forma de correo, uno de los dos solo) se dice,
+  // en vez de reflejar su texto o celebrar una suscripcion que nadie confirmo.
   const fallo =
     confirmacion === 'expired' || confirmacion === 'invalid'
       ? confirmacion
-      : !pendiente && (errorParam || incompleto)
+      : !pendiente && (errorParam || enlace.estado === 'malformado')
         ? (errorParam ?? 'invalid')
         : null
 

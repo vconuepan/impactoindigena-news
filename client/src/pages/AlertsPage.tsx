@@ -1,10 +1,11 @@
 /**
  * /alertas — subscribe to topic-based daily email alerts
  */
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useSearchParams, Link } from 'react-router-dom'
 import { publicApi, ApiError } from '../lib/api'
+import { leerEnlaceConfirmacion } from '../lib/enlaceConfirmacion'
 
 // Predefined topics the user can subscribe to
 const TOPICS = [
@@ -52,16 +53,23 @@ export default function AlertsPage() {
   // abren los enlaces para revisarlos antes que la persona; si abrir la pagina
   // confirmara, un cambio de temas pedido por un tercero quedaria aplicado solo.
   //
-  // Se guardan al montar porque despues de confirmar se sacan de la URL, y la
-  // caja tiene que seguir mostrando el resultado.
-  const [pendiente] = useState(() => {
-    const token = searchParams.get('confirm_token')
-    const correo = searchParams.get('email')
-    return token && correo ? { token, email: correo } : null
-  })
+  // Se lee al montar porque despues de confirmar se saca de la URL, y la caja
+  // tiene que seguir mostrando el resultado. Un enlace recortado o escrito a
+  // mano (token que no es uuid, correo sin forma de correo, uno de los dos solo)
+  // no se refleja en pantalla: se avisa de enlace invalido.
+  const [enlace] = useState(() => leerEnlaceConfirmacion(searchParams))
+  const pendiente = enlace.estado === 'valido' ? { token: enlace.token, email: enlace.email } : null
   const [confirmacion, setConfirmacion] = useState<Confirmacion>('idle')
   // Un ref y no el estado: dos clics seguidos llegan antes de que React repinte.
   const enviandoRef = useRef(false)
+  const resultadoRef = useRef<HTMLDivElement>(null)
+
+  // El resultado reemplaza al boton: sin esto el foco se queda en un boton que
+  // ya no existe y quien navega con teclado vuelve al principio de la pagina.
+  const terminada = confirmacion === 'confirmed' || confirmacion === 'changed' || confirmacion === 'expired' || confirmacion === 'invalid'
+  useEffect(() => {
+    if (terminada) resultadoRef.current?.focus()
+  }, [terminada])
 
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set())
   const [email, setEmail]     = useState('')
@@ -143,7 +151,7 @@ export default function AlertsPage() {
           name="description"
           content="Suscríbete a alertas diarias sobre pueblos o temas específicos: Mapuche, litio, Amazonia, consulta previa y más."
         />
-        {pendiente && <meta name="robots" content="noindex" />}
+        {enlace.estado !== 'ausente' && <meta name="robots" content="noindex" />}
       </Helmet>
 
       <div className="max-w-2xl mx-auto px-4 py-12">
@@ -155,7 +163,7 @@ export default function AlertsPage() {
           </div>
         )}
 
-        {(confirmed === 'expired' || confirmed === 'invalid') && (
+        {(confirmed === 'expired' || confirmed === 'invalid' || enlace.estado === 'malformado') && (
           <div className="mb-8 bg-red-50 border border-red-200 rounded-xl p-6 text-center">
             <p className="text-red-800 font-semibold text-base mb-1">
               {confirmed === 'expired' ? 'Enlace expirado' : 'Enlace inválido'}
@@ -191,25 +199,29 @@ export default function AlertsPage() {
               {confirmacion === 'error' && (
                 <p className="text-red-700 text-sm mt-3">No se pudo confirmar. Intenta de nuevo en unos minutos.</p>
               )}
-              {confirmacion === 'confirmed' && (
-                <>
-                  <p className="text-emerald-800 font-semibold text-base mb-1">¡Alertas activadas!</p>
-                  <p className="text-emerald-700 text-sm">{TEXTO_ALTA}</p>
-                </>
-              )}
-              {confirmacion === 'changed' && (
-                <>
-                  <p className="text-emerald-800 font-semibold text-base mb-1">Tus temas se actualizaron</p>
-                  <p className="text-emerald-700 text-sm">Desde ahora recibirás alertas sobre los temas nuevos.</p>
-                </>
-              )}
-              {(confirmacion === 'expired' || confirmacion === 'invalid') && (
-                <>
-                  <p className="text-red-800 font-semibold text-base mb-1">
-                    {confirmacion === 'expired' ? 'Enlace expirado' : 'Enlace inválido'}
-                  </p>
-                  <p className="text-red-700 text-sm">Vuelve a suscribirte para recibir un enlace nuevo.</p>
-                </>
+              {terminada && (
+                <div ref={resultadoRef} tabIndex={-1} className="focus:outline-none">
+                  {confirmacion === 'confirmed' && (
+                    <>
+                      <p className="text-emerald-800 font-semibold text-base mb-1">¡Alertas activadas!</p>
+                      <p className="text-emerald-700 text-sm">{TEXTO_ALTA}</p>
+                    </>
+                  )}
+                  {confirmacion === 'changed' && (
+                    <>
+                      <p className="text-emerald-800 font-semibold text-base mb-1">Tus temas se actualizaron</p>
+                      <p className="text-emerald-700 text-sm">Desde ahora recibirás alertas sobre los temas nuevos.</p>
+                    </>
+                  )}
+                  {(confirmacion === 'expired' || confirmacion === 'invalid') && (
+                    <>
+                      <p className="text-red-800 font-semibold text-base mb-1">
+                        {confirmacion === 'expired' ? 'Enlace expirado' : 'Enlace inválido'}
+                      </p>
+                      <p className="text-red-700 text-sm">Vuelve a suscribirte para recibir un enlace nuevo.</p>
+                    </>
+                  )}
+                </div>
               )}
             </div>
           </div>
