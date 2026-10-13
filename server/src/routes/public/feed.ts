@@ -146,7 +146,7 @@ router.get('/comunidad/:slug', async (req, res) => {
         fecha: story.datePublished ? new Date(story.datePublished) : new Date(story.dateCrawled),
         categoria: story.issue?.name || 'General',
       }))
-      const deMarca = await itemsDeVitrina({ id: community.id, slug, name: community.name }, siteUrl, { take: config.feed.size })
+      const deMarca = await itemsDeVitrina({ id: community.id, slug, name: community.name }, siteUrl, { take: config.feed.size, excluir: where })
       for (const item of mezclarItems(publicadas, deMarca, config.feed.size)) {
         feed.addItem({
           title: item.title,

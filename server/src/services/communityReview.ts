@@ -213,6 +213,27 @@ export async function vitrinaDeMarca(storyIds: string[], communityId: string): P
   return new Map(rows.map((r) => [r.story_id, { title: r.brand_title, summary: r.brand_summary }]))
 }
 
+/**
+ * La vitrina con que el gate juzga cada nota: solo la de las notas que se ven
+ * POR la vitrina. Una nota que además pertenece a la vertical por la vía de
+ * siempre (un editor la publicó en el sitio global después de que la marca la
+ * publicara) se muestra con su título original, y ese es el que el gate tiene
+ * que juzgar: así coincide con el gancho de publicación y la fila no oscila
+ * entre los dos textos (revisión del 13-oct). La vitrina tampoco la repite
+ * (services/brandShowcase.ts, `excluir`).
+ */
+export async function vitrinasParaJuzgar(
+  storyIds: string[],
+  communityId: string,
+  pertenenciaPropia: Prisma.StoryWhereInput,
+): Promise<Map<string, { title: string | null; summary: string | null }>> {
+  const vitrinas = await vitrinaDeMarca(storyIds, communityId)
+  if (vitrinas.size === 0) return vitrinas
+  const directas = await prisma.story.findMany({ where: { AND: [{ id: { in: [...vitrinas.keys()] } }, pertenenciaPropia] }, select: { id: true } })
+  for (const d of directas) vitrinas.delete(d.id)
+  return vitrinas
+}
+
 /** La nota con su vitrina de marca, si la tiene: título y resumen de marca, sin etiqueta. */
 export function conVitrina<T extends StoryForGate>(story: T, vitrina?: { title: string | null; summary: string | null }): T {
   if (!vitrina || !vitrina.title) return story
@@ -229,7 +250,8 @@ export async function registrarPublicadasPorMarca(communityId: string, storyIds:
     const community = (await communitiesUnderReview()).find((c) => c.id === communityId)
     if (!community) return
     const stories = await prisma.story.findMany({ where: { id: { in: storyIds } }, select: STORY_GATE_SELECT })
-    const [senales, vitrinas] = await Promise.all([senalesDelCarril(storyIds, communityId), vitrinaDeMarca(storyIds, communityId)])
+    const propia = membershipWhere(community, await temasVivos())
+    const [senales, vitrinas] = await Promise.all([senalesDelCarril(storyIds, communityId), vitrinasParaJuzgar(storyIds, communityId, propia)])
     const gate = gateOptions()
     const now = new Date()
     for (const story of stories) {
@@ -461,7 +483,8 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
   for (const community of communities) {
     // Con la tabla del carril, también lo que la marca publicó (D5): sin esto, sus
     // filas no se crearían y el paso 3 las borraría como huérfanas.
-    const membership = pertenenciaConMarca(membershipWhere(community, temas), community.id, carril)
+    const propia = membershipWhere(community, temas)
+    const membership = pertenenciaConMarca(propia, community.id, carril)
     let created = 0
     let reevaluated = 0
 
@@ -477,7 +500,7 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
       if (missing.length === 0) break
       const ids = missing.map((st) => st.id)
       const [senales, vitrinas] = carril
-        ? await Promise.all([senalesDelCarril(ids, community.id), vitrinaDeMarca(ids, community.id)])
+        ? await Promise.all([senalesDelCarril(ids, community.id), vitrinasParaJuzgar(ids, community.id, propia)])
         : [new Map<string, string[]>(), new Map<string, { title: string | null; summary: string | null }>()]
       const now = new Date()
       for (const story of missing) {
@@ -546,7 +569,7 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
       const stories = await prisma.story.findMany({ where: { id: { in: chunk } }, select: STORY_GATE_SELECT })
       const ids = stories.map((st) => st.id)
       const [senales, vitrinas] = carril
-        ? await Promise.all([senalesDelCarril(ids, community.id), vitrinaDeMarca(ids, community.id)])
+        ? await Promise.all([senalesDelCarril(ids, community.id), vitrinasParaJuzgar(ids, community.id, propia)])
         : [new Map<string, string[]>(), new Map<string, { title: string | null; summary: string | null }>()]
       const now = new Date()
       for (const story of stories) {

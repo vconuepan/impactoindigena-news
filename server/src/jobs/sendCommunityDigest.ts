@@ -219,18 +219,19 @@ export async function runSendCommunityDigest(): Promise<void> {
       if (excludedIds.has(community.id)) continue
       // El MISMO filtro que la pagina de la vertical (D4, Tanda B, item 11),
       // acotado a la semana. Una nota retenida por el editor no viaja por correo.
+      const where = {
+        AND: [
+          publicCommunityWhere({
+            community: { id: community.id, keywords: community.keywords, issueIds: community.issueIds },
+            temas,
+            mode: await getReviewMode(community.id),
+            learningMode: config.gate.learningMode,
+          }),
+          { datePublished: { gte: since } },
+        ],
+      }
       const stories = await prisma.story.findMany({
-        where: {
-          AND: [
-            publicCommunityWhere({
-              community: { id: community.id, keywords: community.keywords, issueIds: community.issueIds },
-              temas,
-              mode: await getReviewMode(community.id),
-              learningMode: config.gate.learningMode,
-            }),
-            { datePublished: { gte: since } },
-          ],
-        },
+        where,
         select: {
           id: true,
           title: true,
@@ -257,7 +258,7 @@ export async function runSendCommunityDigest(): Promise<void> {
         fecha: s.datePublished,
         categoria: community.name,
       }))
-      const deMarca = await itemsDeVitrina(community, SITE_URL, { take: CANDIDATAS_DESTACADAS, desde: since })
+      const deMarca = await itemsDeVitrina(community, SITE_URL, { take: CANDIDATAS_DESTACADAS, desde: since, excluir: where })
       // Cinco destacadas: las más recientes o, con la escala Mapuche en modo aplicar, con equilibrio (D5, ítem 9).
       const candidatas = mezclarItems(publicadas, deMarca, CANDIDATAS_DESTACADAS)
       const items = await elegirDestacadas(community.id, candidatas, 5, (x) => x)

@@ -32,7 +32,7 @@ beforeEach(() => {
   mockPrisma.user.findUnique.mockResolvedValue({ email: 'm@example.com', name: 'Ana' })
   mockPrisma.issue.findMany.mockResolvedValue([])
   mockPrisma.$queryRaw.mockImplementation(async (strings: TemplateStringsArray) =>
-    strings.join('?').includes('community_brand_criteria') ? [{ mode: 'enforce', rescue_mode: 'off' }] : [],
+    strings.join('?').includes('community_brand_criteria') ? [{ criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }] : [],
   )
   mockPrisma.story.findMany.mockResolvedValue([{ title: 'Publicada', slug: 'nota-1', summary: 'R', sourceTitle: 'F', datePublished: new Date('2026-10-10') }])
   mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([
@@ -55,5 +55,7 @@ describe('correo de bienvenida con la vitrina de marca', () => {
     const { body } = sendTransactional.mock.calls[0][0]
     expect(body).toContain('/comunidad/wallmapu-araucania/n/angol-abc')
     expect(body.indexOf('angol-abc')).toBeLessThan(body.indexOf('nota-1'))
+    // la vitrina no repite lo que ya sale por el filtro de siempre (revisión del 13-oct)
+    expect(mockPrisma.storyBrandAssessment.findMany.mock.calls[0][0].where.story.AND[1]).toEqual({ NOT: mockPrisma.story.findMany.mock.calls[0][0].where })
   })
 })

@@ -11,6 +11,7 @@ import { sensiblesDelTitulo } from '../lib/brandSensitive.js'
 import { pareceNombrarPersona, MOTIVO_GENERICO, infraccionesDeLenguaje } from '../lib/brandLanguage.js'
 import { slugify } from '../utils/slugify.js'
 import { seleccionarAraucania, reglasDesdeBalance, type Admitida } from '../lib/brandSelection.js'
+import { origenesQuePublican } from '../lib/brandOrigins.js'
 import { buildTerritorialPrompt, buildMapuchePrompt, buildRedaccionPrompt, type ArticuloJuez } from '../prompts/brandLane.js'
 import {
   brandTerritorialResultSchema,
@@ -610,14 +611,8 @@ export async function seleccionarRescate(c: BrandCriteria, ahora: Date): Promise
 const LARGO_TITULO = 110
 const LARGO_RESUMEN = 600
 
-/**
- * Qué orígenes se publican: solo los de un carril en modo aplicar. Lo que entra
- * por palabras clave ya está publicado en el sitio global y no se toca.
- */
-export function origenesQuePublican(c: Pick<BrandCriteria, 'criterion' | 'mode' | 'rescueMode'>): string[] {
-  if (c.criterion === 'territorial') return c.mode === 'enforce' ? ['term', 'feed'] : []
-  return c.rescueMode === 'enforce' ? ['rescue'] : []
-}
+/** Qué orígenes se publican: la regla vive en lib/brandOrigins.ts, compartida con la vitrina. */
+export { origenesQuePublican }
 
 /**
  * Verificación determinista de la vitrina (diseño D5, sección 8): largo
@@ -635,9 +630,87 @@ export function validarRedaccion(r: BrandRedaccion): { ok: true } | { ok: false;
   return { ok: true }
 }
 
-/** Slug de la ficha en la vertical: el título y seis caracteres del id, para que no choque. */
-export function slugDeMarca(titulo: string, storyId: string): string {
-  return `${slugify(titulo, 70)}-${storyId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toLowerCase()}`
+/**
+ * Slug de la ficha en la vertical: el título y seis caracteres del id de la FILA
+ * de marca, que es una por nota y vertical. Con el id de la nota, la misma nota
+ * publicada por dos marcas con el mismo título chocaba contra el índice único
+ * (revisión del 13-oct).
+ */
+export function slugDeMarca(titulo: string, filaId: string): string {
+  return `${slugify(titulo, 70)}-${filaId.replace(/[^a-z0-9]/gi, '').slice(0, 6).toLowerCase()}`
+}
+
+interface Elegida {
+  id: string
+  storyId: string
+  story: { title: string | null; summary: string | null; sourceTitle: string; sourceContent: string }
+}
+
+/** Redacta si hace falta, valida y publica una elegida. 'tope': no redactó porque se acabó el tope del día. */
+async function publicarUna(c: BrandCriteria, e: Elegida, ahora: Date): Promise<'publicada' | 'descartada' | 'tope'> {
+  let redaccion: BrandRedaccion | null = null
+  if (e.story.title && e.story.summary) {
+    redaccion = { title: e.story.title, summary: e.story.summary }
+  } else {
+    if ((await llamadasDeHoy(c.communityId, ahora)) >= c.dailyCallCap) {
+      log.info({ slug: c.slug }, 'brand lane: daily call cap reached before redaction; it waits for the next run')
+      return 'tope'
+    }
+    const llamada = randomUUID()
+    await prisma.brandLaneCall.create({ data: { id: llamada, communityId: c.communityId, kind: 'redact', articles: 1 } })
+    let error: string | null = null
+    try {
+      await rateLimitDelay()
+      const res = await getMediumLLM()
+        .withStructuredOutput(ESQUEMA_MODELO_REDACCION, { name: 'redaccion_de_marca', method: 'functionCalling' })
+        .invoke([
+          new HumanMessage(
+            buildRedaccionPrompt(c.criterion === 'territorial' ? 'araucania' : 'mapuche', {
+              id: e.storyId,
+              title: e.story.sourceTitle,
+              content: e.story.sourceContent,
+            }),
+          ),
+        ])
+      redaccion = brandRedaccionSchema.parse(res)
+    } catch (err) {
+      error = err instanceof Error ? err.message.slice(0, 300) : 'error del modelo'
+      log.warn({ slug: c.slug, storyId: e.storyId, err }, 'brand lane redaction failed')
+    }
+    try {
+      await prisma.brandLaneCall.update({ where: { id: llamada }, data: { ok: error === null, error } })
+    } catch (err) {
+      log.warn({ slug: c.slug, err }, 'brand lane: could not close the call record')
+    }
+    if (!redaccion) {
+      await prisma.storyBrandAssessment.update({
+        where: { id: e.id },
+        data: { state: 'discarded', discardReason: 'error', redactedAt: ahora, lastError: error },
+      })
+      return 'descartada'
+    }
+  }
+  const v = validarRedaccion(redaccion)
+  if (!v.ok) {
+    await prisma.storyBrandAssessment.update({
+      where: { id: e.id },
+      data: { state: 'discarded', discardReason: v.motivo, redactedAt: ahora, lastError: v.detalle },
+    })
+    return 'descartada'
+  }
+  await prisma.storyBrandAssessment.update({
+    where: { id: e.id },
+    data: {
+      state: 'published',
+      brandTitle: redaccion.title.trim(),
+      brandSummary: redaccion.summary.trim(),
+      brandSlug: slugDeMarca(redaccion.title, e.id),
+      redactedAt: ahora,
+      publishedAt: ahora,
+      lastError: null,
+    },
+  })
+  return 'publicada'
 }
 
 /**
@@ -647,6 +720,10 @@ export function slugDeMarca(titulo: string, storyId: string): string {
  * - El rescate de Mapuche ya trae título y resumen de la evaluación global: se usan,
  *   sin llamada.
  * - Todo pasa validarRedaccion; si falla, la nota queda descartada con su motivo.
+ * - Una nota que falla por otra causa (la base, un choque de slug) queda
+ *   descartada con su error y la cola sigue: antes, la excepción abortaba la
+ *   corrida y la misma nota volvía a encabezar la cola en cada corrida (revisión
+ *   del 13-oct).
  * Nunca escribe en stories: la nota sigue 'rejected' para el sitio global y se ve
  * en la vertical solo con su fila de D4 en auto o released (diseño, 7.2).
  */
@@ -660,69 +737,23 @@ export async function publicarElegidas(c: BrandCriteria, ahora: Date): Promise<n
   })
   const publicadasIds: string[] = []
   for (const e of elegidas) {
-    let redaccion: BrandRedaccion | null = null
-    if (e.story.title && e.story.summary) {
-      redaccion = { title: e.story.title, summary: e.story.summary }
-    } else {
-      if ((await llamadasDeHoy(c.communityId, ahora)) >= c.dailyCallCap) {
-        log.info({ slug: c.slug }, 'brand lane: daily call cap reached before redaction; it waits for the next run')
-        break
-      }
-      const llamada = randomUUID()
-      await prisma.brandLaneCall.create({ data: { id: llamada, communityId: c.communityId, kind: 'redact', articles: 1 } })
-      let error: string | null = null
+    let r: 'publicada' | 'descartada' | 'tope'
+    try {
+      r = await publicarUna(c, e, ahora)
+    } catch (err) {
+      log.error({ slug: c.slug, storyId: e.storyId, err }, 'brand lane: could not publish this note; discarded, the queue goes on')
       try {
-        await rateLimitDelay()
-        const res = await getMediumLLM()
-          .withStructuredOutput(ESQUEMA_MODELO_REDACCION, { name: 'redaccion_de_marca', method: 'functionCalling' })
-          .invoke([
-            new HumanMessage(
-              buildRedaccionPrompt(c.criterion === 'territorial' ? 'araucania' : 'mapuche', {
-                id: e.storyId,
-                title: e.story.sourceTitle,
-                content: e.story.sourceContent,
-              }),
-            ),
-          ])
-        redaccion = brandRedaccionSchema.parse(res)
-      } catch (err) {
-        error = err instanceof Error ? err.message.slice(0, 300) : 'error del modelo'
-        log.warn({ slug: c.slug, storyId: e.storyId, err }, 'brand lane redaction failed')
-      }
-      try {
-        await prisma.brandLaneCall.update({ where: { id: llamada }, data: { ok: error === null, error } })
-      } catch (err) {
-        log.warn({ slug: c.slug, err }, 'brand lane: could not close the call record')
-      }
-      if (!redaccion) {
         await prisma.storyBrandAssessment.update({
           where: { id: e.id },
-          data: { state: 'discarded', discardReason: 'error', redactedAt: ahora, lastError: error },
+          data: { state: 'discarded', discardReason: 'error', redactedAt: ahora, lastError: err instanceof Error ? err.message.slice(0, 300) : 'error al publicar' },
         })
-        continue
+      } catch (err2) {
+        log.warn({ slug: c.slug, storyId: e.storyId, err: err2 }, 'brand lane: could not mark the failed note')
       }
-    }
-    const v = validarRedaccion(redaccion)
-    if (!v.ok) {
-      await prisma.storyBrandAssessment.update({
-        where: { id: e.id },
-        data: { state: 'discarded', discardReason: v.motivo, redactedAt: ahora, lastError: v.detalle },
-      })
       continue
     }
-    await prisma.storyBrandAssessment.update({
-      where: { id: e.id },
-      data: {
-        state: 'published',
-        brandTitle: redaccion.title.trim(),
-        brandSummary: redaccion.summary.trim(),
-        brandSlug: slugDeMarca(redaccion.title, e.storyId),
-        redactedAt: ahora,
-        publishedAt: ahora,
-        lastError: null,
-      },
-    })
-    publicadasIds.push(e.storyId)
+    if (r === 'tope') break
+    if (r === 'publicada') publicadasIds.push(e.storyId)
   }
   // A la cola de D4 enseguida: se ven en la vertical solo con su fila en auto o
   // released (diseño, 7.2). El conciliador horario queda de respaldo.
@@ -757,32 +788,47 @@ export async function sinCandidatasRecientes(communityId: string, ahora: Date): 
   return !ultima || ahora.getTime() - ultima.createdAt.getTime() > HORAS_ALERTA * 3_600_000
 }
 
-/** Una corrida del carril para cada marca encendida. Con D5_ENABLED=false no hace nada. */
+async function correrMarca(c: BrandCriteria, ahora: Date): Promise<BrandLaneReport> {
+  let candidatas = 0
+  let seleccionadas = 0
+  if (c.criterion === 'territorial' && c.mode !== 'off') {
+    candidatas += await tomarCandidatasTerritoriales(c, ahora)
+  }
+  if (c.criterion === 'escala_mapuche') {
+    if (c.mode !== 'off') candidatas += await tomarMiembrosMapuche(c, ahora)
+    if (c.rescueMode !== 'off') candidatas += await tomarRescateMapuche(c, ahora)
+  }
+  const llamadas = await juzgarPendientes(c, ahora)
+  if (c.criterion === 'territorial' && c.mode !== 'off') seleccionadas += (await seleccionarTerritorial(c, ahora)).length
+  if (c.criterion === 'escala_mapuche' && c.rescueMode !== 'off') seleccionadas += (await seleccionarRescate(c, ahora)).length
+  const publicadas = await publicarElegidas(c, ahora)
+  const sinCandidatas24h = await sinCandidatasRecientes(c.communityId, ahora)
+  const report = { slug: c.slug, mode: c.mode, rescueMode: c.rescueMode, candidatas, llamadas, seleccionadas, publicadas, sinCandidatas24h }
+  if (sinCandidatas24h) log.warn(report, 'brand lane: no new candidates in 24 hours')
+  else log.info(report, 'brand lane run')
+  return report
+}
+
+/**
+ * Una corrida del carril para cada marca encendida. Con D5_ENABLED=false no hace
+ * nada. Una marca que falla no frena a la otra; al final la corrida falla con el
+ * nombre de la que falló, para que quede en job_runs (revisión del 13-oct).
+ */
 export async function runBrandLaneOnce(ahora: Date = new Date()): Promise<BrandLaneReport[]> {
   if (!config.brandLane.enabled) {
     log.info('D5_ENABLED is false: the brand lane does nothing')
     return []
   }
   const reports: BrandLaneReport[] = []
+  const fallidas: string[] = []
   for (const c of await brandCriteriaActivos()) {
-    let candidatas = 0
-    let seleccionadas = 0
-    if (c.criterion === 'territorial' && c.mode !== 'off') {
-      candidatas += await tomarCandidatasTerritoriales(c, ahora)
+    try {
+      reports.push(await correrMarca(c, ahora))
+    } catch (err) {
+      log.error({ slug: c.slug, err }, 'brand lane: this brand failed; the others go on')
+      fallidas.push(c.slug)
     }
-    if (c.criterion === 'escala_mapuche') {
-      if (c.mode !== 'off') candidatas += await tomarMiembrosMapuche(c, ahora)
-      if (c.rescueMode !== 'off') candidatas += await tomarRescateMapuche(c, ahora)
-    }
-    const llamadas = await juzgarPendientes(c, ahora)
-    if (c.criterion === 'territorial' && c.mode !== 'off') seleccionadas += (await seleccionarTerritorial(c, ahora)).length
-    if (c.criterion === 'escala_mapuche' && c.rescueMode !== 'off') seleccionadas += (await seleccionarRescate(c, ahora)).length
-    const publicadas = await publicarElegidas(c, ahora)
-    const sinCandidatas24h = await sinCandidatasRecientes(c.communityId, ahora)
-    const report = { slug: c.slug, mode: c.mode, rescueMode: c.rescueMode, candidatas, llamadas, seleccionadas, publicadas, sinCandidatas24h }
-    if (sinCandidatas24h) log.warn(report, 'brand lane: no new candidates in 24 hours')
-    else log.info(report, 'brand lane run')
-    reports.push(report)
   }
+  if (fallidas.length > 0) throw new Error(`brand lane failed for: ${fallidas.join(', ')}`)
   return reports
 }

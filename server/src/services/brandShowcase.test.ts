@@ -6,34 +6,80 @@ const mockPrisma = vi.hoisted(() => ({
 }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
-const { vitrinaEncendida, vitrinaWhere, notasDeVitrina, mezclarPorFecha, comoNotaPublica, enlaceDeVitrina, fichaDeVitrina, reglasDeDestacadas, elegirDestacadas } = await import('./brandShowcase.js')
+const { vitrinaEncendida, origenesDeVitrina, vitrinaWhere, notasDeVitrina, contarVitrina, itemsDeVitrina, mezclarPorFecha, comoNotaPublica, enlaceDeVitrina, fichaDeVitrina, reglasDeDestacadas, elegirDestacadas } = await import('./brandShowcase.js')
 
 beforeEach(() => vi.clearAllMocks())
 
 describe('la vitrina de marca (D5, entrega 2)', () => {
-  it('se enciende solo con la marca o su rescate en modo aplicar; sin tabla, apagada', async () => {
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ mode: 'shadow', rescue_mode: 'off' }])
+  it('se enciende solo con un carril que publica en modo aplicar; sin tabla, apagada', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'shadow', rescue_mode: 'off' }])
     expect(await vitrinaEncendida('c1')).toBe(false)
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ mode: 'shadow', rescue_mode: 'enforce' }])
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }])
     expect(await vitrinaEncendida('c1')).toBe(true)
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ mode: 'enforce', rescue_mode: 'off' }])
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'escala_mapuche', mode: 'shadow', rescue_mode: 'enforce' }])
     expect(await vitrinaEncendida('c1')).toBe(true)
+    // Voces Mapuche con destacadas en aplicar y el rescate en sombra: el modo de
+    // palabras clave ordena, no publica; lo rescatado antes sale de la vitrina
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'escala_mapuche', mode: 'enforce', rescue_mode: 'shadow' }])
+    expect(await vitrinaEncendida('c1')).toBe(false)
     mockPrisma.$queryRaw.mockResolvedValueOnce([])
     expect(await vitrinaEncendida('c1')).toBe(false)
     mockPrisma.$queryRaw.mockRejectedValueOnce(new Error('relation "community_brand_criteria" does not exist'))
     expect(await vitrinaEncendida('c1')).toBe(false)
   })
 
-  it('solo lo publicado por la marca y visible en D4 para esta vertical (auto o liberada)', () => {
-    expect(vitrinaWhere('c1')).toEqual({
+  it('muestra solo los orígenes en modo aplicar: el rescate de Mapuche, nunca lo de palabras clave', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'escala_mapuche', mode: 'enforce', rescue_mode: 'enforce' }])
+    expect(await origenesDeVitrina('c1')).toEqual(['rescue'])
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }])
+    expect(await origenesDeVitrina('c1')).toEqual(['term', 'feed'])
+  })
+
+  it('solo lo publicado por un origen en aplicar, con título, slug y fecha de marca, y visible en D4 para esta vertical', () => {
+    const enD4 = { communityReviews: { some: { communityId: 'c1', reviewState: { in: ['auto', 'released'] } } } }
+    expect(vitrinaWhere('c1', ['rescue'])).toEqual({
       communityId: 'c1',
       state: 'published',
-      story: { communityReviews: { some: { communityId: 'c1', reviewState: { in: ['auto', 'released'] } } } },
+      sourceSignal: { in: ['rescue'] },
+      brandTitle: { not: null },
+      brandSlug: { not: null },
+      brandDate: { not: null },
+      story: enD4,
+    })
+    // sin lo que ya sale por el filtro de siempre de la superficie
+    const desde = new Date('2026-10-06T00:00:00Z')
+    expect(vitrinaWhere('c1', ['term', 'feed'], { desde, excluir: { status: 'published' } })).toMatchObject({
+      brandDate: { not: null, gte: desde },
+      story: { AND: [enD4, { NOT: { status: 'published' } }] },
     })
   })
 
+  it('el listado, el conteo y las superficies pasan el filtro de siempre para no repetir notas', async () => {
+    const excluir = { id: 'x' }
+    mockPrisma.$queryRaw.mockResolvedValue([{ criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }])
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([])
+    mockPrisma.storyBrandAssessment.count.mockResolvedValue(0)
+    await notasDeVitrina('c1', { take: 5, excluir })
+    await contarVitrina('c1', excluir)
+    await itemsDeVitrina({ id: 'c1', slug: 's', name: 'N' }, 'https://v', { take: 5, excluir })
+    for (const llamada of [...mockPrisma.storyBrandAssessment.findMany.mock.calls, ...mockPrisma.storyBrandAssessment.count.mock.calls]) {
+      expect(llamada[0].where.story.AND[1]).toEqual({ NOT: excluir })
+    }
+    expect(mockPrisma.storyBrandAssessment.findMany).toHaveBeenCalledTimes(2)
+    mockPrisma.$queryRaw.mockReset()
+  })
+
+  it('una fila sin título de marca no llega a las superficies: nunca el titular crudo', async () => {
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }])
+    const story = { id: 's1', sourceUrl: 'https://x', sourceTitle: 'Titular crudo', imageUrl: null, narrativeFrame: null, feedId: 'f1', feed: { id: 'f1', title: 'F', displayTitle: null, issue: { name: 'X', slug: 'x' } } }
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValueOnce([
+      { brandTitle: null, brandSummary: null, brandSlug: 'sin-titulo-abc', brandDate: new Date(), brandScore: 6, axis: null, place: null, sourceSignal: 'term', story },
+    ])
+    expect(await itemsDeVitrina({ id: 'c1', slug: 's', name: 'N' }, 'https://v', { take: 5 })).toEqual([])
+  })
+
   it('apagada no consulta las notas', async () => {
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ mode: 'shadow', rescue_mode: 'off' }])
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'shadow', rescue_mode: 'off' }])
     expect(await notasDeVitrina('c1', { take: 10 })).toEqual([])
     expect(mockPrisma.storyBrandAssessment.findMany).not.toHaveBeenCalled()
   })
@@ -61,13 +107,13 @@ describe('la vitrina de marca (D5, entrega 2)', () => {
   })
 
   it('la ficha exige la vitrina encendida y la nota visible', async () => {
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ mode: 'off', rescue_mode: 'off' }])
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'off', rescue_mode: 'off' }])
     expect(await fichaDeVitrina('c1', 'x')).toBeNull()
     expect(mockPrisma.storyBrandAssessment.findFirst).not.toHaveBeenCalled()
-    mockPrisma.$queryRaw.mockResolvedValueOnce([{ mode: 'enforce', rescue_mode: 'off' }])
+    mockPrisma.$queryRaw.mockResolvedValueOnce([{ criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }])
     mockPrisma.storyBrandAssessment.findFirst.mockResolvedValueOnce(null)
     expect(await fichaDeVitrina('c1', 'x')).toBeNull()
-    expect(mockPrisma.storyBrandAssessment.findFirst.mock.calls[0][0].where).toMatchObject({ brandSlug: 'x', state: 'published' })
+    expect(mockPrisma.storyBrandAssessment.findFirst.mock.calls[0][0].where).toMatchObject({ brandSlug: 'x', state: 'published', sourceSignal: { in: ['term', 'feed'] } })
   })
 })
 

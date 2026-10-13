@@ -23,7 +23,7 @@ beforeEach(() => {
   mockPrisma.issue.findMany.mockResolvedValue([])
   mockPrisma.digestExclusion.findMany.mockResolvedValue([])
   mockPrisma.$queryRaw.mockImplementation(async (strings: TemplateStringsArray) =>
-    strings.join('?').includes('community_brand_criteria') ? [{ mode: marca.mode, rescue_mode: 'off' }] : [],
+    strings.join('?').includes('community_brand_criteria') ? [{ criterion: 'territorial', mode: marca.mode, rescue_mode: 'off' }] : [],
   )
   mockPrisma.communityMember.findMany.mockResolvedValue([
     { user: { id: 'u1', email: 'u1@example.com', name: 'Ana' }, community: { id: 'c1', slug: 'wallmapu-araucania', name: 'Araucanía', type: 'TERRITORIO', issueIds: [], keywords: ['temuco'] } },
@@ -49,6 +49,8 @@ describe('digest semanal con la vitrina de marca', () => {
     expect(body).toContain('2 noticias nuevas')
     // solo lo de la semana
     expect(mockPrisma.storyBrandAssessment.findMany.mock.calls[0][0].where.brandDate.gte).toBeInstanceOf(Date)
+    // la vitrina no repite lo que ya sale por el filtro de siempre (revisión del 13-oct)
+    expect(mockPrisma.storyBrandAssessment.findMany.mock.calls[0][0].where.story.AND[1]).toEqual({ NOT: mockPrisma.story.findMany.mock.calls[0][0].where })
   })
 
   it('con la marca en sombra, solo lo publicado', async () => {

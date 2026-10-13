@@ -16,7 +16,7 @@ vi.mock('../../services/crawler.js', () => ({ crawlFeed: vi.fn(), crawlAllDueFee
 
 const { default: app } = await import('../../app.js')
 
-const marca = vi.hoisted(() => ({ mode: 'enforce', rescue_mode: 'off' }))
+const marca = vi.hoisted(() => ({ criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }))
 const publicada = (id: string, dia: number) => ({
   id, slug: id, title: id, sourceUrl: 'u', sourceTitle: 's', titleLabel: null, datePublished: new Date(Date.UTC(2026, 9, dia)),
   relevance: 5, emotionTag: null, summary: 'x', quote: null, quoteAttribution: null, marketingBlurb: null, relevanceSummary: null,
@@ -62,6 +62,10 @@ describe('GET /api/communities/:slug/stories con la vitrina de marca', () => {
     expect(res.body.data[1]).toMatchObject({ slug: null, brandSlug: 'm12-abc', communitySlug: 'wallmapu-araucania', title: 'Título m12', issue: null })
     // la vitrina solo trae lo publicado por la marca y visible en D4
     expect(mockPrisma.storyBrandAssessment.findMany.mock.calls[0][0].where).toMatchObject({ communityId: 'c-arauc', state: 'published' })
+    // la vitrina no repite lo que ya sale por el filtro de siempre (revisión del 13-oct)
+    const filtro = mockPrisma.story.findMany.mock.calls[0][0].where
+    expect(mockPrisma.storyBrandAssessment.findMany.mock.calls[0][0].where.story.AND[1]).toEqual({ NOT: filtro })
+    expect(mockPrisma.storyBrandAssessment.count.mock.calls[0][0].where.story.AND[1]).toEqual({ NOT: filtro })
   })
 
   it('encendida: la segunda página corta la mezcla, no cada fuente', async () => {

@@ -16,6 +16,7 @@ const {
   pertenenciaConMarca,
   conVitrina,
   registrarPublicadasPorMarca,
+  vitrinasParaJuzgar,
   CARRIL_JUEZ,
   CARRIL_FILTRO,
   puntajesViejos,
@@ -369,12 +370,32 @@ describe('entrega 2: lo que la marca publica entra a D4', () => {
       .mockResolvedValueOnce([{ id: 'c-arauc', slug: 'wallmapu-araucania', keywords: ['temuco'], issue_ids: [], mode: 'shadow' }]) // verticales
       .mockResolvedValueOnce([{ story_id: 's1', juez: ['violencia'], filtro: [] }]) // señales
       .mockResolvedValueOnce([{ story_id: 's1', brand_title: 'Título de marca', brand_summary: 'Resumen de marca' }]) // vitrina
-    mockPrisma.story.findMany.mockResolvedValue([{ ...STORY, id: 's1', title: null, summary: null, titleLabel: null }])
+    mockPrisma.issue.findMany.mockResolvedValue([])
+    mockPrisma.story.findMany
+      .mockResolvedValueOnce([{ ...STORY, id: 's1', title: null, summary: null, titleLabel: null }]) // las notas
+      .mockResolvedValueOnce([]) // ninguna es miembro por la vía de siempre
     mockPrisma.$executeRaw.mockResolvedValue(1)
     await registrarPublicadasPorMarca('c-arauc', ['s1'])
     const sql = mockPrisma.$executeRaw.mock.calls[0][0]
     expect(sql.values).toContain('pending')
     expect(JSON.stringify(sql.values)).toContain('carril-juez:violencia')
+  })
+
+  it('una nota que además es miembro por la vía de siempre se juzga con su título original, no con el de marca', async () => {
+    vi.clearAllMocks()
+    mockPrisma.$queryRaw.mockResolvedValueOnce([
+      { story_id: 's1', brand_title: 'Marca 1', brand_summary: 'R1' },
+      { story_id: 's2', brand_title: 'Marca 2', brand_summary: 'R2' },
+    ])
+    mockPrisma.story.findMany.mockResolvedValueOnce([{ id: 's2' }])
+    const propia = { status: 'published' as const }
+    const v = await vitrinasParaJuzgar(['s1', 's2', 's3'], 'c1', propia)
+    expect([...v.keys()]).toEqual(['s1'])
+    expect(mockPrisma.story.findMany.mock.calls[0][0].where).toEqual({ AND: [{ id: { in: ['s1', 's2'] } }, propia] })
+    // sin vitrina no consulta la pertenencia
+    mockPrisma.$queryRaw.mockResolvedValueOnce([])
+    expect((await vitrinasParaJuzgar(['s3'], 'c1', propia)).size).toBe(0)
+    expect(mockPrisma.story.findMany).toHaveBeenCalledTimes(1)
   })
 
   it('si la vertical no está en revisión, no escribe; y nunca lanza', async () => {
@@ -401,5 +422,27 @@ describe('entrega 2: lo que la marca publica entra a D4', () => {
     expect(JSON.stringify(faltantes)).toContain('brandAssessments')
     const huerfanas = mockPrisma.story.findMany.mock.calls[1][0].where.AND[1]
     expect(JSON.stringify(huerfanas)).toContain('brandAssessments')
+  })
+
+  it('el conciliador juzga con la vitrina solo lo que no es miembro por la vía de siempre', async () => {
+    vi.clearAllMocks()
+    mockPrisma.$queryRaw.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = strings.join('?')
+      if (sql.includes('FROM community_review_modes')) return [{ id: 'c-arauc', slug: 'wallmapu-araucania', keywords: ['temuco'], issue_ids: [], mode: 'shadow' }]
+      if (sql.includes('to_regclass')) return [{ existe: true }]
+      if (sql.includes('brand_title')) return [{ story_id: 's1', brand_title: 'Título de marca', brand_summary: 'R' }]
+      return []
+    })
+    mockPrisma.issue.findMany.mockResolvedValue([])
+    mockPrisma.story.findMany.mockResolvedValueOnce([{ ...STORY, id: 's1' }]).mockResolvedValue([])
+    mockPrisma.storyCommunityReview.findMany.mockResolvedValue([])
+    mockPrisma.storyCommunityReview.groupBy.mockResolvedValue([])
+    mockPrisma.$executeRaw.mockResolvedValue(1)
+    await reconcileCommunityReviews()
+    // la segunda consulta de notas pregunta si la de vitrina es miembro con la pertenencia PROPIA, sin la marca
+    const directas = mockPrisma.story.findMany.mock.calls[1][0].where
+    expect(directas.AND[0]).toEqual({ id: { in: ['s1'] } })
+    expect(JSON.stringify(directas.AND[1])).not.toContain('brandAssessments')
+    mockPrisma.$queryRaw.mockReset()
   })
 })

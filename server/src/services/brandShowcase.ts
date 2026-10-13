@@ -1,6 +1,8 @@
+import type { Prisma } from '@prisma/client'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { VISIBLE_WHEN_ENFORCED } from '../lib/communityVisibility.js'
+import { origenesQuePublican } from '../lib/brandOrigins.js'
 import { equilibrarDestacadas, reglasDestacadas, type ReglasDestacadas } from '../lib/brandBalance.js'
 
 /**
@@ -16,35 +18,57 @@ import { equilibrarDestacadas, reglasDestacadas, type ReglasDestacadas } from '.
  * lo publicado: «mientras una superficie no esté adaptada, enforce no la
  * incluye» (diseño, 6.4). Lo vigila community-visibility-contract.test.ts.
  *
- * Una nota está en la vitrina solo si: la marca está en modo aplicar, su fila de
- * marca está 'published' y su fila de D4 de esta vertical está en auto o
- * released, en cualquier modo de D4 (diseño, 7.2). Apagar la marca la saca al
- * instante (9.5): la vitrina se lee en cada pedido.
+ * Una nota está en la vitrina solo si: el carril que la publicó (su origen) está
+ * en modo aplicar, su fila de marca está 'published' y su fila de D4 de esta
+ * vertical está en auto o released, en cualquier modo de D4 (diseño, 7.2). Pasar
+ * el carril a sombra o apagarlo la saca al instante (9.5): la vitrina se lee en
+ * cada pedido.
  */
 
 const log = createLogger('brand_showcase')
 
-/** ¿La marca de esta vertical muestra lo que publica? Modo aplicar en el carril o en el rescate. Nunca lanza. */
-export async function vitrinaEncendida(communityId: string): Promise<boolean> {
+/**
+ * Los orígenes que la vitrina de esta vertical muestra: los de un carril en modo
+ * aplicar (lib/brandOrigins.ts, la misma regla con que el carril publica). Vacío
+ * si la marca no aplica nada o no hay tabla. Nunca lanza.
+ */
+export async function origenesDeVitrina(communityId: string): Promise<string[]> {
   try {
-    const rows = await prisma.$queryRaw<Array<{ mode: string; rescue_mode: string }>>`
-      SELECT mode, rescue_mode FROM community_brand_criteria WHERE community_id = ${communityId}
+    const rows = await prisma.$queryRaw<Array<{ criterion: string; mode: string; rescue_mode: string }>>`
+      SELECT criterion, mode, rescue_mode FROM community_brand_criteria WHERE community_id = ${communityId}
     `
     const r = Array.isArray(rows) ? rows[0] : undefined
-    return !!r && (r.mode === 'enforce' || r.rescue_mode === 'enforce')
+    return r ? origenesQuePublican({ criterion: r.criterion, mode: r.mode, rescueMode: r.rescue_mode }) : []
   } catch (err) {
     log.debug({ err }, 'brand criteria unavailable, showcase off')
-    return false
+    return []
   }
 }
 
-/** El where de la vitrina: publicada por la marca y visible en D4 para esta vertical. */
-export function vitrinaWhere(communityId: string, desde?: Date) {
+/** ¿La marca de esta vertical muestra lo que publica? Algún carril en modo aplicar. Nunca lanza. */
+export async function vitrinaEncendida(communityId: string): Promise<boolean> {
+  return (await origenesDeVitrina(communityId)).length > 0
+}
+
+/**
+ * El where de la vitrina: publicada por la marca por un origen en modo aplicar,
+ * con su título, slug y fecha de marca, y visible en D4 para esta vertical.
+ *
+ * `excluir` es el filtro de siempre de la superficie: una nota que ya se ve por
+ * ahí (un editor la publicó en el sitio global después de que la marca la
+ * publicara) sale con su título original y no se repite con el de marca
+ * (revisión del 13-oct).
+ */
+export function vitrinaWhere(communityId: string, origenes: readonly string[], opts: { desde?: Date; excluir?: Prisma.StoryWhereInput } = {}) {
+  const enD4 = { communityReviews: { some: { communityId, reviewState: { in: [...VISIBLE_WHEN_ENFORCED] } } } }
   return {
     communityId,
     state: 'published',
-    ...(desde ? { brandDate: { gte: desde } } : {}),
-    story: { communityReviews: { some: { communityId, reviewState: { in: [...VISIBLE_WHEN_ENFORCED] } } } },
+    sourceSignal: { in: [...origenes] },
+    brandTitle: { not: null },
+    brandSlug: { not: null },
+    brandDate: opts.desde ? { not: null, gte: opts.desde } : { not: null },
+    story: opts.excluir ? { AND: [enD4, { NOT: opts.excluir }] } : enD4,
   }
 }
 
@@ -91,19 +115,22 @@ export interface NotaDeVitrina {
 }
 
 /** Las notas de la vitrina, de la más nueva a la más vieja. Si la vitrina está apagada, ninguna. */
-export async function notasDeVitrina(communityId: string, opts: { take: number; desde?: Date }): Promise<NotaDeVitrina[]> {
-  if (opts.take <= 0 || !(await vitrinaEncendida(communityId))) return []
+export async function notasDeVitrina(communityId: string, opts: { take: number; desde?: Date; excluir?: Prisma.StoryWhereInput }): Promise<NotaDeVitrina[]> {
+  if (opts.take <= 0) return []
+  const origenes = await origenesDeVitrina(communityId)
+  if (origenes.length === 0) return []
   return prisma.storyBrandAssessment.findMany({
-    where: vitrinaWhere(communityId, opts.desde),
+    where: vitrinaWhere(communityId, origenes, opts),
     select: VITRINA_SELECT,
     orderBy: [{ brandDate: 'desc' }, { id: 'asc' }],
     take: opts.take,
   }) as unknown as Promise<NotaDeVitrina[]>
 }
 
-export async function contarVitrina(communityId: string): Promise<number> {
-  if (!(await vitrinaEncendida(communityId))) return 0
-  return prisma.storyBrandAssessment.count({ where: vitrinaWhere(communityId) })
+export async function contarVitrina(communityId: string, excluir?: Prisma.StoryWhereInput): Promise<number> {
+  const origenes = await origenesDeVitrina(communityId)
+  if (origenes.length === 0) return 0
+  return prisma.storyBrandAssessment.count({ where: vitrinaWhere(communityId, origenes, { excluir }) })
 }
 
 /** El enlace a la ficha de una nota de marca: vive en la vertical, no en /stories (no tiene slug global). */
@@ -164,9 +191,10 @@ export function mezclarPorFecha<A, B>(a: A[], b: B[], fechaA: (x: A) => number, 
 
 /** La ficha de una nota de marca en su vertical. null si no existe, no está visible o la vitrina está apagada. */
 export async function fichaDeVitrina(communityId: string, brandSlug: string): Promise<NotaDeVitrina | null> {
-  if (!(await vitrinaEncendida(communityId))) return null
+  const origenes = await origenesDeVitrina(communityId)
+  if (origenes.length === 0) return null
   return prisma.storyBrandAssessment.findFirst({
-    where: { ...vitrinaWhere(communityId), brandSlug },
+    where: { ...vitrinaWhere(communityId, origenes), brandSlug },
     select: VITRINA_SELECT,
   }) as unknown as Promise<NotaDeVitrina | null>
 }
@@ -195,17 +223,18 @@ export interface ItemDeSuperficie {
 export async function itemsDeVitrina(
   community: { id: string; slug: string; name: string },
   siteUrl: string,
-  opts: { take: number; desde?: Date },
+  opts: { take: number; desde?: Date; excluir?: Prisma.StoryWhereInput },
 ): Promise<ItemDeSuperficie[]> {
   const notas = await notasDeVitrina(community.id, opts)
+  // Sin título de marca no hay vitrina: nunca el titular crudo de la fuente.
   return notas
-    .filter((n) => n.brandSlug)
+    .filter((n) => n.brandSlug && n.brandTitle)
     .map((n) => ({
       id: n.story.id,
       storyId: n.story.id,
       encuadre: n.story.narrativeFrame,
       feedId: n.story.feedId,
-      title: n.brandTitle ?? n.story.sourceTitle,
+      title: n.brandTitle as string,
       url: `${siteUrl}${enlaceDeVitrina(community.slug, n.brandSlug as string)}`,
       summary: n.brandSummary,
       sourceTitle: n.story.feed.displayTitle || n.story.feed.title,

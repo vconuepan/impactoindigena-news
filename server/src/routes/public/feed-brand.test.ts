@@ -24,7 +24,7 @@ beforeEach(() => {
   mockPrisma.issue.findMany.mockResolvedValue([])
   mockPrisma.$queryRaw.mockImplementation(async (strings: TemplateStringsArray) => {
     const sql = strings.join('?')
-    if (sql.includes('community_brand_criteria')) return [{ mode: marca.mode, rescue_mode: 'off' }]
+    if (sql.includes('community_brand_criteria')) return [{ criterion: 'territorial', mode: marca.mode, rescue_mode: 'off' }]
     if (sql.includes('FROM communities')) return [{ id: 'c1', name: 'Araucanía', description: null, issue_ids: [], keywords: ['temuco'] }]
     return []
   })
@@ -47,6 +47,8 @@ describe('RSS de la vertical con la vitrina de marca', () => {
     expect(res.text).toContain('/comunidad/wallmapu-araucania/n/angol-abc')
     expect(res.text.indexOf('angol-abc')).toBeLessThan(res.text.indexOf('nota-1'))
     expect(res.text).toMatch(/<category>(<!\[CDATA\[)?Araucanía/)
+    // la vitrina no repite lo que ya sale por el filtro de siempre (revisión del 13-oct)
+    expect(mockPrisma.storyBrandAssessment.findMany.mock.calls[0][0].where.story.AND[1]).toEqual({ NOT: mockPrisma.story.findMany.mock.calls[0][0].where })
   })
 
   it('al invalidar la caché, el cambio de modo se ve en el próximo pedido', async () => {

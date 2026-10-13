@@ -166,9 +166,10 @@ router.get('/:slug/stories', async (req, res) => {
       if (hasta <= MAX_MEZCLA) {
         const [totalPublicadas, totalMarca, publicadas, deMarca] = await Promise.all([
           prisma.story.count({ where }),
-          contarVitrina(community.id),
+          // Sin las que ya salen por el filtro de siempre: ni se cuentan ni se repiten.
+          contarVitrina(community.id, where),
           prisma.story.findMany({ where, select: PUBLIC_STORY_SELECT, orderBy: { datePublished: 'desc' }, take: hasta }),
-          notasDeVitrina(community.id, { take: hasta }),
+          notasDeVitrina(community.id, { take: hasta, excluir: where }),
         ])
         const total = totalPublicadas + totalMarca
         const data = mezclarPorFecha(
@@ -456,13 +457,14 @@ async function sendWelcomeEmail(
   // Las 3 notas mas recientes, con el MISMO filtro que la pagina de la vertical
   // (D4, Tanda B, item 11): antes este correo no exigia relevancia 3 y armaba
   // la pertenencia a mano. Una nota retenida por el editor no se manda.
+  const where = publicCommunityWhere({
+    community: { id: community.id, keywords: community.keywords ?? [], issueIds: community.issueIds },
+    temas: await temasVivos(),
+    mode: await getReviewMode(community.id),
+    learningMode: config.gate.learningMode,
+  })
   const stories = await prisma.story.findMany({
-    where: publicCommunityWhere({
-      community: { id: community.id, keywords: community.keywords ?? [], issueIds: community.issueIds },
-      temas: await temasVivos(),
-      mode: await getReviewMode(community.id),
-      learningMode: config.gate.learningMode,
-    }),
+    where,
     select: { id: true, title: true, slug: true, summary: true, sourceTitle: true, datePublished: true, narrativeFrame: true, feedId: true },
     orderBy: { datePublished: 'desc' },
     take: CANDIDATAS_DESTACADAS,
@@ -481,7 +483,7 @@ async function sendWelcomeEmail(
     categoria: community.name,
   }))
   // Tres destacadas: las más recientes o, con la escala Mapuche en modo aplicar, con equilibrio (D5, ítem 9).
-  const candidatas = mezclarItems(publicadas, await itemsDeVitrina(community, SITE_URL, { take: CANDIDATAS_DESTACADAS }), CANDIDATAS_DESTACADAS)
+  const candidatas = mezclarItems(publicadas, await itemsDeVitrina(community, SITE_URL, { take: CANDIDATAS_DESTACADAS, excluir: where }), CANDIDATAS_DESTACADAS)
   const items = await elegirDestacadas(community.id, candidatas, 3, (x) => x)
 
   const firstName = userName && !userName.includes('@') ? userName.split(' ')[0] : null

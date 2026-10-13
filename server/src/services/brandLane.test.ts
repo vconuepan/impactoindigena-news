@@ -247,6 +247,20 @@ describe('runBrandLaneOnce', () => {
     mockPrisma.$queryRaw.mockRejectedValueOnce(new Error('relation "community_brand_criteria" does not exist'))
     expect(await runBrandLaneOnce(AHORA)).toEqual([])
   })
+
+  it('una marca que falla no frena a la otra, y la corrida falla con su nombre', async () => {
+    const fila = (id: string, slug: string, criterion: string, mode: string) => ({
+      community_id: id, slug, keywords: [], issue_ids: [], criterion, mode, rescue_mode: 'off',
+      guidelines: '', guidelines_version: 1, relevance_min: 5, daily_target: 3, balance: {}, daily_call_cap: 20,
+    })
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([fila('c-arauc', 'wallmapu-araucania', 'territorial', 'shadow'), fila('c-mapu', 'mapuche', 'escala_mapuche', 'off')])
+      .mockRejectedValueOnce(new Error('se cayó la base a mitad de Araucanía'))
+    mockPrisma.storyBrandAssessment.findFirst.mockResolvedValue(null)
+    await expect(runBrandLaneOnce(AHORA)).rejects.toThrow('brand lane failed for: wallmapu-araucania')
+    // Mapuche corrió igual: llegó hasta la alerta de candidatas
+    expect(mockPrisma.storyBrandAssessment.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { communityId: 'c-mapu' } }))
+  })
 })
 
 describe('rescate de Voces Mapuche: prioridad a los ejes en déficit', () => {
@@ -497,7 +511,7 @@ describe('entrega 2: publicación en modo aplicar', () => {
     expect(mockPrisma.storyBrandAssessment.update.mock.calls[0][0].data).toMatchObject({
       state: 'published',
       brandTitle: 'Angol inaugura su nuevo CESFAM',
-      brandSlug: 'angol-inaugura-su-nuevo-cesfam-s1',
+      brandSlug: 'angol-inaugura-su-nuevo-cesfam-a1',
     })
     // y lo registra en D4 enseguida
     expect(mockRegistrar).toHaveBeenCalledWith('c-arauc', ['s1'])
@@ -533,7 +547,24 @@ describe('entrega 2: publicación en modo aplicar', () => {
     expect(validarRedaccion({ title: 'Un título', summary: 'Un resumen.' })).toEqual({ ok: true })
   })
 
-  it('el slug de marca lleva el título y un trozo del id', () => {
+  it('el slug de marca lleva el título y un trozo del id de la fila', () => {
     expect(slugDeMarca('¿Qué pasó en Pucón?', 'abc-123-def')).toBe('que-paso-en-pucon-abc123')
+  })
+
+  it('una nota que falla al publicar queda descartada con su error y la cola sigue', async () => {
+    const rescate = { ...ARAUCANIA, criterion: 'escala_mapuche' as const, mode: 'shadow' as const, rescueMode: 'enforce' as const }
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([
+      elegida(5, { title: 'Escuela de Tirúa enseña mapuzugun', summary: 'Resumen 5.' }),
+      elegida(6, { title: 'Cooperativa de Lumaco exporta miel', summary: 'Resumen 6.' }),
+    ])
+    mockPrisma.storyBrandAssessment.update.mockRejectedValueOnce(new Error('Unique constraint failed on the fields: (`brand_slug`)')).mockResolvedValue({})
+    expect(await publicarElegidas(rescate, AHORA)).toBe(1)
+    const datos = mockPrisma.storyBrandAssessment.update.mock.calls.map((c) => [c[0].where.id, c[0].data.state, c[0].data.discardReason ?? null])
+    expect(datos).toEqual([
+      ['a5', 'published', null],
+      ['a5', 'discarded', 'error'],
+      ['a6', 'published', null],
+    ])
+    expect(mockRegistrar).toHaveBeenCalledWith('c-arauc', ['s6'])
   })
 })
