@@ -19,10 +19,11 @@ export interface ArticuloJuez {
 export const LARGO_CUERPO = 1200
 
 /**
- * Bloque de artículos con formateador PROPIO: el común (formatArticlesBlock)
- * descuenta antes de comparar y nunca envía el décimo artículo de un lote. Aquí
- * van todos los recibidos; el servicio verifica que vuelvan tantas respuestas
- * como artículos se enviaron.
+ * Bloque de artículos con formateador PROPIO. El común (formatArticlesBlock) no
+ * enviaba el décimo artículo de cada lote hasta el arreglo del 13-oct-2026
+ * (463c32e); el carril mantiene el suyo para no depender de su presupuesto de
+ * caracteres. Aquí van todos los recibidos, y el servicio verifica que vuelvan
+ * tantas respuestas como artículos se enviaron.
  */
 export function bloqueArticulos(articulos: ArticuloJuez[]): string {
   let block = `<ARTICLES>\n${UNTRUSTED_CONTENT_GUARD}`

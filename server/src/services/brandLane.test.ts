@@ -160,7 +160,7 @@ describe('juzgarPendientes: candados de costo', () => {
     expect(mockInvoke).toHaveBeenCalledTimes(1)
   })
 
-  it('el lote lleva sus ocho artículos completos (el formateador común perdía el último)', async () => {
+  it('el lote lleva sus ocho artículos completos, con formateador propio', async () => {
     mockPrisma.storyBrandAssessment.findMany.mockResolvedValue(Array.from({ length: TAMANO_LOTE }, (_, i) => pendiente(i)))
     mockInvoke.mockResolvedValue({ articles: [] })
     await juzgarPendientes(ARAUCANIA, AHORA)
