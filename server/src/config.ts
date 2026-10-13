@@ -260,6 +260,11 @@ export const config = {
       10
     ),
     rateLimitMax: parseInt(process.env.SUBSCRIBE_RATE_LIMIT_MAX || "3", 10),
+    // Confirmar tiene su propio tope, mas holgado que el del alta: el token es un
+    // UUID inadivinable, asi que el limite solo frena el abuso, y no debe
+    // competir con el alta (alta, alta, confirmar daba 429 al cuarto intento de
+    // un mismo lector, por ejemplo una oficina detras de una misma IP).
+    confirmRateLimitMax: parseInt(process.env.SUBSCRIBE_CONFIRM_RATE_LIMIT_MAX || "10", 10),
   },
   relatedStories: {
     displayCount: 4,

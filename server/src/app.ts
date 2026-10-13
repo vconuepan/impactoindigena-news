@@ -200,7 +200,9 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     }
   }
 
-  log.error({ err, method: req.method, url: req.originalUrl }, 'unhandled error')
+  // Redactada como la linea HTTP: un GET de confirmacion que falla por dentro no
+  // debe dejar el token ni el correo crudos en el log.
+  log.error({ err, method: req.method, url: redactSensitiveQuery(req.originalUrl) }, 'unhandled error')
   res.status(500).json({ error: 'Internal server error' })
 })
 

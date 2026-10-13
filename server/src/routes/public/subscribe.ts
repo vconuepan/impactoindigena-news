@@ -18,6 +18,16 @@ const subscribeLimiter = rateLimit({
   message: { error: 'Too many subscription attempts. Please try again later.' },
 })
 
+// Confirmar NO comparte el cupo del alta: con uno solo, alta + alta + confirmar
+// agotaba los tres intentos de un mismo lector y el cuarto daba 429.
+const confirmLimiter = rateLimit({
+  windowMs: config.subscribe.rateLimitWindowMs,
+  max: config.subscribe.confirmRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many confirmation attempts. Please try again later.' },
+})
+
 const subscribeSchema = z.object({
   email: z.string().email('Invalid email address').max(255),
   firstName: z.string().max(100).optional(),
@@ -82,7 +92,7 @@ router.get('/confirm', (req, res) => {
   res.redirect(303, destino.toString())
 })
 
-router.post('/confirm', subscribeLimiter, validateBody(confirmSchema), async (req, res) => {
+router.post('/confirm', confirmLimiter, validateBody(confirmSchema), async (req, res) => {
   const { token, email } = req.body as { token: string; email: string }
   try {
     await subscribeService.confirmSubscription(token, email)

@@ -136,6 +136,30 @@ describe('POST /api/subscribe/confirm: confirmar es apretar el boton', () => {
     expect(mockSubscribe.confirmSubscription).not.toHaveBeenCalled()
   })
 
+  it('un sitio ajeno no puede confirmar: el Origin se rechaza antes de llegar al servicio', async () => {
+    const res = await request(app)
+      .post('/api/subscribe/confirm')
+      .set('Origin', 'https://sitio-ajeno.example')
+      .send({ token: TOKEN, email: CORREO })
+
+    expect(res.status).toBe(403)
+    expect(mockSubscribe.confirmSubscription).not.toHaveBeenCalled()
+  })
+
+  it.each(['application/x-www-form-urlencoded', 'text/plain'])(
+    'un formulario simple (%s) no llega al servicio: solo se lee application/json',
+    async (tipo) => {
+      // Un <form> de otro sitio solo puede mandar estos tipos sin pedir permiso.
+      const res = await request(app)
+        .post('/api/subscribe/confirm')
+        .set('Content-Type', tipo)
+        .send(`token=${TOKEN}&email=${encodeURIComponent(CORREO)}`)
+
+      expect(res.status).toBe(400)
+      expect(mockSubscribe.confirmSubscription).not.toHaveBeenCalled()
+    },
+  )
+
   it('el token y el correo no se aceptan por la URL: solo por el cuerpo', async () => {
     const res = await request(app).post(`/api/subscribe/confirm?token=${TOKEN}&email=${encodeURIComponent(CORREO)}`)
 

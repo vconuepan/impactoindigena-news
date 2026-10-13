@@ -118,8 +118,8 @@ export async function subscribe({ email, firstName, language = 'es' }: Subscribe
     : (safeFirstName ? `Hola ${safeFirstName},` : 'Hola,')
   const headingText = isEn ? 'Confirm your subscription' : 'Confirma tu suscripción'
   const bodyText = isEn
-    ? `${greeting} Click the button below to confirm your subscription.`
-    : `${greeting} Haz clic en el botón para confirmar tu suscripción.`
+    ? `${greeting} Click the button below and, on the page that opens, confirm your subscription.`
+    : `${greeting} Haz clic en el botón y, en la página que se abre, confirma tu suscripción.`
   const tagline = isEn
     ? 'News that matters to indigenous peoples. Weekly to your inbox. Curated with care by AI.'
     : 'Noticias que importan a los pueblos indígenas. Semanal en tu correo. Curado con cuidado por IA.'

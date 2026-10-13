@@ -99,6 +99,27 @@ describe('logs: el correo y el token no se escriben crudos', () => {
     expect(log).toContain('/api/alerts/confirm?token=[REDACTED]&email=[REDACTED]')
   })
 
+  // Si el GET de confirmacion falla POR DENTRO (aca: CLIENT_URL sin esquema, que
+  // hace lanzar a `new URL`), lo recoge el manejador global de errores, que
+  // escribia `req.originalUrl` CRUDO: token y correo enteros en el log.
+  it('un GET de confirmacion que revienta tampoco deja el correo ni el token en el log de errores', async () => {
+    const clientUrl = process.env.CLIENT_URL
+    process.env.CLIENT_URL = 'sitio-sin-esquema.example'
+    try {
+      const res = await request(app).get(`/api/subscribe/confirm?token=${TOKEN}&email=${encodeURIComponent(CORREO)}`)
+      expect(res.status).toBe(500)
+    } finally {
+      process.env.CLIENT_URL = clientUrl
+    }
+
+    const log = todoLoEscrito()
+    expect(log).toContain('unhandled error') // el log se escribio...
+    expect(log).toContain('/api/subscribe/confirm?token=[REDACTED]&email=[REDACTED]')
+    expect(log).not.toContain(CORREO)
+    expect(log).not.toContain(encodeURIComponent(CORREO))
+    expect(log).not.toContain(TOKEN)
+  })
+
   // La confirmacion de verdad es un POST desde el sitio: el correo y el token
   // viajan en el cuerpo, que no se escribe, y el fallo se anota con maskEmail.
   it('confirmar una suscripcion por POST tampoco deja el correo ni el token en el log', async () => {
