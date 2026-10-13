@@ -78,6 +78,23 @@ describe('el sitemap y el prerender declaran las mismas rutas', () => {
 })
 
 /**
+ * PAGINAS CUYO CONTENIDO DEPENDE DE LA URL no se prerenderizan: el HTML horneado
+ * se ve hasta que carga el JS (main.tsx usa createRoot, no hydrateRoot) y no
+ * puede saber en que caso esta quien llega.
+ *
+ * /subscribed lo mostro el 13-oct-2026. El enlace del correo del boletin ya no
+ * confirma, solo lleva a esa pagina con un token, y el HTML prerenderizado decia
+ * «Tu suscripcion quedo confirmada» a quien todavia no habia confirmado nada y
+ * cerraba la pestaña sin llegar al boton.
+ */
+describe('las paginas que dependen de la URL no se prerenderizan ni se declaran', () => {
+  it.each(['/subscribed'])('%s no esta en ninguna de las dos listas', (ruta) => {
+    expect(cliente.has(ruta), `${ruta} esta en client/src/routes.ts: se prerenderiza y su HTML horneado miente`).toBe(false)
+    expect(servidor.has(ruta), `${ruta} esta en el sitemap: se declara a Google una pagina de un solo uso`).toBe(false)
+  })
+})
+
+/**
  * LAS RUTAS DINAMICAS —secciones y comunidades— son la otra mitad, y los tests
  * de arriba NO las ven: solo comparan las dos listas estaticas.
  *

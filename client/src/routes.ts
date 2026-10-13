@@ -32,7 +32,11 @@ export const routes: RouteConfig[] = [
   { path: '/cookies', priority: 0.5, changefreq: 'yearly' },
   { path: '/search', priority: 0.3, changefreq: 'daily' },
   { path: '/saved', priority: 0.3, changefreq: 'daily' },
-  { path: '/subscribed', priority: 0.2, changefreq: 'yearly' },
+  // /subscribed NO se prerenderiza: lo que muestra depende del token de la URL
+  // (pide confirmar, o celebra, o avisa de un enlace invalido), y el HTML horneado
+  // diria «Tu suscripcion quedo confirmada» a quien aun no confirmo nada. Se ve
+  // hasta que carga el JS: main.tsx usa createRoot, no hydrateRoot. Tampoco va en
+  // el sitemap: es una pagina de un solo uso, sin nada que indexar.
   { path: '/thank-you', priority: 0.2, changefreq: 'yearly' },
   // Distribucion, datos abiertos y paginas editoriales. Estaban en el sitemap
   // del servidor y NO aqui, asi que Google recibia diez URLs que devolvian la

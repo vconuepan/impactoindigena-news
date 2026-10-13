@@ -43,7 +43,7 @@ const STATIC_ROUTES: { path: string; priority: number; changefreq: ChangeFreq }[
   { path: '/voces-indigenas', priority: 0.9, changefreq: 'weekly' },
   { path: '/search', priority: 0.3, changefreq: 'daily' },
   { path: '/saved', priority: 0.3, changefreq: 'daily' },
-  { path: '/subscribed', priority: 0.2, changefreq: 'yearly' },
+  // /subscribed no se declara: no se prerenderiza (ver client/src/routes.ts).
   { path: '/thank-you', priority: 0.2, changefreq: 'yearly' },
   // Guide pages — high-quality long-form content
   { path: '/guia', priority: 0.8, changefreq: 'monthly' },
