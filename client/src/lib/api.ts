@@ -265,6 +265,15 @@ export const publicApi = {
       body: JSON.stringify(data),
     }),
 
+  // La confirmacion es un POST desde el boton de /subscribed: abrir el enlace del
+  // correo no confirma nada (los filtros de correo abren los enlaces solos).
+  confirmSubscription: (params: { token: string; email: string }) =>
+    request<{ success: boolean }>('/subscribe/confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params),
+    }),
+
   submitFeedback: (data: { category: string; message: string; email?: string; website?: string }) =>
     request<{ success: boolean }>('/feedback', {
       method: 'POST',

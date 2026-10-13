@@ -173,7 +173,13 @@
     "expiredBody": "Your confirmation link has expired. Please subscribe again to receive a new link.",
     "invalidTitle": "Invalid link",
     "invalidBody": "This confirmation link is invalid or has already been used.",
-    "backHome": "Back to home"
+    "backHome": "Back to home",
+    "confirmTitle": "Confirm your subscription",
+    "confirmIntro": "To receive the newsletter, confirm this address:",
+    "confirmIgnore": "If you didn't ask for this, close this page. Nothing changes.",
+    "confirmButton": "Confirm subscription",
+    "confirming": "Confirming…",
+    "confirmError": "We couldn't confirm. Please try again in a few minutes."
   },
   "articleCta": {
     "eyebrow": "Weekly newsletter",

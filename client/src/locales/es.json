@@ -173,7 +173,13 @@
     "expiredBody": "Tu enlace de confirmación expiró. Vuelve a suscribirte para recibir uno nuevo.",
     "invalidTitle": "Enlace no válido",
     "invalidBody": "Este enlace de confirmación no es válido o ya se usó.",
-    "backHome": "Volver al inicio"
+    "backHome": "Volver al inicio",
+    "confirmTitle": "Confirma tu suscripción",
+    "confirmIntro": "Para recibir el boletín, confirma esta dirección:",
+    "confirmIgnore": "Si no lo pediste, cierra esta página y no cambia nada.",
+    "confirmButton": "Confirmar suscripción",
+    "confirming": "Confirmando…",
+    "confirmError": "No se pudo confirmar. Inténtalo de nuevo en unos minutos."
   },
   "articleCta": {
     "eyebrow": "Boletín semanal",
