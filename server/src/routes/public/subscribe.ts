@@ -52,25 +52,51 @@ router.post('/', subscribeLimiter, validateBody(subscribeSchema), async (req, re
   }
 })
 
-router.get('/confirm', async (req, res) => {
-  const { token, email } = req.query as { token?: string; email?: string }
+// El token es el que genera `subscribe()` (randomUUID) y el correo tiene que
+// coincidir con el de la fila: es lo mismo que exigia el GET.
+const confirmSchema = z.object({
+  token: z.string().uuid(),
+  email: z.string().email().max(255),
+})
+
+// El enlace del correo NO confirma: solo lleva a /subscribed con el token, y la
+// confirmacion es el POST de abajo, que hace un boton de esa pagina. Los filtros
+// de correo corporativos (Safe Links y similares) abren los enlaces para
+// revisarlos antes que la persona, asi que un GET que cambia estado dejaba
+// confirmada la suscripcion de cualquiera a quien un tercero le hubiera escrito
+// el correo. Es el mismo patron que /api/alerts/confirm.
+router.get('/confirm', (req, res) => {
+  const { token, email } = req.query as { token?: unknown; email?: unknown }
   const clientUrl = process.env.CLIENT_URL || 'https://vocesindigenas.org'
 
-  if (!token || !email) {
-    res.redirect(`${clientUrl}/subscribed?error=invalid`)
+  if (typeof token !== 'string' || !token || typeof email !== 'string' || !email) {
+    res.redirect(303, `${clientUrl}/subscribed?error=invalid`)
     return
   }
 
+  // URLSearchParams codifica los valores: un correo con `&` o `#` no puede
+  // agregar parametros ni cambiar el destino, que siempre es nuestro sitio.
+  const destino = new URL('/subscribed', clientUrl)
+  destino.searchParams.set('confirm_token', token)
+  destino.searchParams.set('email', email)
+  res.redirect(303, destino.toString())
+})
+
+router.post('/confirm', subscribeLimiter, validateBody(confirmSchema), async (req, res) => {
+  const { token, email } = req.body as { token: string; email: string }
   try {
     await subscribeService.confirmSubscription(token, email)
-    res.redirect(`${clientUrl}/subscribed`)
-  } catch (err: any) {
-    log.warn({ err, email: maskEmail(email) }, 'confirmation failed')
-    if (err.message === 'Confirmation link has expired') {
-      res.redirect(`${clientUrl}/subscribed?error=expired`)
-    } else {
-      res.redirect(`${clientUrl}/subscribed?error=invalid`)
+    res.json({ success: true })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (msg === 'Confirmation link has expired' || msg === 'Invalid confirmation link') {
+      // Sin distinguir si fallo el token o el correo: no es un oraculo de quien esta suscrito.
+      log.warn({ err: msg, email: maskEmail(email) }, 'confirmation failed')
+      res.status(400).json({ error: msg === 'Confirmation link has expired' ? 'expired' : 'invalid' })
+      return
     }
+    log.error({ err: msg, email: maskEmail(email) }, 'confirmation error')
+    res.status(500).json({ error: 'Failed to confirm' })
   }
 })
 

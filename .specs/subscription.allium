@@ -221,7 +221,15 @@ surface ConfirmationPage {
             when not pending.is_confirmed and not pending.is_expired
 
     guidance:
-        "Confirmation link is GET /api/subscribe/confirm?token=...&email=...
-        On success, redirect to the homepage with a success message.
-        On expired link, show error with suggestion to re-subscribe."
+        "The link in the email is GET /api/subscribe/confirm?token=...&email=...
+        and it does NOT confirm: it redirects (303) to /subscribed with the
+        token, and that page shows a button that sends
+        POST /api/subscribe/confirm { token, email }. Opening the link changes
+        nothing. Mail scanners open links before the recipient does, so a GET
+        that changed state would confirm a subscription that a third party
+        requested with someone else's address.
+        On success, show the welcome message.
+        On expired or invalid link, show an error with suggestion to
+        re-subscribe. A network or server error keeps the link alive and lets
+        the visitor retry."
 }

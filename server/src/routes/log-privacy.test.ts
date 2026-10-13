@@ -85,16 +85,30 @@ describe('logs: el correo y el token no se escriben crudos', () => {
     expect(todoLoEscrito()).not.toContain(CORREO)
   })
 
-  it('confirmar una suscripcion o una alerta: ni el correo ni el token, ni en la linea HTTP', async () => {
+  // Abrir el enlace del correo ya no confirma nada (solo redirige), pero la URL
+  // con el token y el correo sigue llegando al servidor y a la linea HTTP del log.
+  it('abrir el enlace de confirmacion de una suscripcion o una alerta: ni el correo ni el token, ni en la linea HTTP', async () => {
     await request(app).get(`/api/subscribe/confirm?token=${TOKEN}&email=${encodeURIComponent(CORREO)}`)
     await request(app).get(`/api/alerts/confirm?token=${TOKEN}&email=${encodeURIComponent(CORREO)}`)
 
     const log = todoLoEscrito()
-    expect(log).toContain('confirmation failed') // el log se escribio...
     expect(log).not.toContain(CORREO)
     expect(log).not.toContain(encodeURIComponent(CORREO))
     expect(log).not.toContain(TOKEN)
+    expect(log).toContain('/api/subscribe/confirm?token=[REDACTED]&email=[REDACTED]')
     expect(log).toContain('/api/alerts/confirm?token=[REDACTED]&email=[REDACTED]')
+  })
+
+  // La confirmacion de verdad es un POST desde el sitio: el correo y el token
+  // viajan en el cuerpo, que no se escribe, y el fallo se anota con maskEmail.
+  it('confirmar una suscripcion por POST tampoco deja el correo ni el token en el log', async () => {
+    const res = await request(app).post('/api/subscribe/confirm').send({ token: TOKEN, email: CORREO })
+    expect(res.status).toBe(400)
+
+    const log = todoLoEscrito()
+    expect(log).toContain('confirmation failed') // el log se escribio...
+    expect(log).not.toContain(CORREO)
+    expect(log).not.toContain(TOKEN)
   })
 
   // La confirmacion de verdad es ahora un POST desde el sitio: el correo y el token
