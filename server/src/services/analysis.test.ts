@@ -21,8 +21,10 @@ const mockRateLimitDelay = vi.hoisted(() => vi.fn().mockResolvedValue(undefined)
 const mockGenerateEmbeddingForContent = vi.hoisted(() => vi.fn())
 const mockSaveEmbeddingTx = vi.hoisted(() => vi.fn())
 const mockDetectAndCluster = vi.hoisted(() => vi.fn())
+const logSpy = vi.hoisted(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }))
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
+vi.mock('../lib/logger.js', () => ({ createLogger: () => logSpy }))
 vi.mock('./llm.js', () => ({
   getSmallLLM: mockGetSmallLLM,
   getMediumLLM: mockGetMediumLLM,
@@ -189,6 +191,77 @@ describe('preAssessStories', () => {
     expect(results.map(r => r.storyId).sort()).toEqual([...ids].sort())
     expect(onProgress).toHaveBeenCalledWith({ type: 'completed', count: 10 })
     expect(onProgress).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'failed' }))
+  })
+})
+
+describe('preAssessStories — lote que la API rechaza con 400', () => {
+  // El 12 y 13-oct-2026 una sola historia hundia su lote de 10 en cada pase:
+  // Azure rechazaba el cuerpo entero con «400 Invalid body» y el log no decia
+  // cual era. Un 400 es del contenido, no pasajero: se reintenta historia por
+  // historia para que pasen las demas, y el log nombra a la que falla.
+  const issue = sampleIssue()
+  const ids = ['story-a', 'story-veneno', 'story-c']
+  const badRequest = () => Object.assign(new Error('400 Invalid body: failed to parse JSON value'), { status: 400 })
+  const sum = (fn: ReturnType<typeof vi.fn>, type: string) =>
+    fn.mock.calls.filter(([e]) => e.type === type).reduce((n, [e]) => n + e.count, 0)
+
+  // Modelo simulado: responde por los articulos que vio, salvo que el prompt
+  // traiga al veneno; ahi lanza el error que se le pase.
+  function modeloQueFallaCon(error: () => Error) {
+    const structured = {
+      invoke: vi.fn().mockImplementation(async (messages: any[]) => {
+        const prompt = String(messages[0].content)
+        if (prompt.includes('Article ID: story-veneno')) throw error()
+        const seen = [...prompt.matchAll(/Article ID: (\S+)/g)].map(m => m[1])
+        return { articles: seen.map(articleId => ({ articleId, issueSlug: issue.slug, rating: 3, emotionTag: 'calm', narrativeFrame: null })) }
+      }),
+    }
+    mockGetMediumLLM.mockReturnValue({ withStructuredOutput: () => structured })
+    return structured
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma.issue.findMany.mockResolvedValue([issue])
+    mockPrisma.story.findMany.mockImplementation(async ({ where }: any) =>
+      where.id.in.map((id: string) => storyWithRelations({ id })))
+    mockPrisma.story.update.mockResolvedValue({})
+  })
+
+  it('parte el lote: pasan las demas y el log nombra a la historia que falla', async () => {
+    const llm = modeloQueFallaCon(badRequest)
+    const onProgress = vi.fn()
+
+    const results = await preAssessStories(ids, onProgress)
+
+    expect(results.map(r => r.storyId).sort()).toEqual(['story-a', 'story-c'])
+    expect(llm.invoke).toHaveBeenCalledTimes(1 + ids.length)
+    expect(sum(onProgress, 'completed')).toBe(2)
+    expect(sum(onProgress, 'failed')).toBe(1)
+    expect(logSpy.warn).toHaveBeenCalledWith(expect.objectContaining({ storyIds: ids }), expect.any(String))
+    expect(logSpy.error).toHaveBeenCalledWith(expect.objectContaining({ storyId: 'story-veneno' }), expect.any(String))
+  })
+
+  it('un error que no es 400 no parte el lote, y el log trae los ids del lote', async () => {
+    // 401: otro 4xx, que withRetry tampoco reintenta. Partir el lote ante
+    // cualquier 4xx multiplicaria llamadas que van a fallar igual.
+    const llm = modeloQueFallaCon(() => Object.assign(new Error('401 Unauthorized'), { status: 401 }))
+
+    const results = await preAssessStories(ids)
+
+    expect(results).toEqual([])
+    expect(llm.invoke).toHaveBeenCalledTimes(1)
+    expect(logSpy.error).toHaveBeenCalledWith(expect.objectContaining({ storyIds: ids }), 'batch failed')
+  })
+
+  it('un 400 en un lote de una sola historia no se vuelve a intentar', async () => {
+    const llm = modeloQueFallaCon(badRequest)
+
+    const results = await preAssessStories(['story-veneno'])
+
+    expect(results).toEqual([])
+    expect(llm.invoke).toHaveBeenCalledTimes(1)
+    expect(logSpy.error).toHaveBeenCalledWith(expect.objectContaining({ storyIds: ['story-veneno'] }), 'batch failed')
   })
 })
 

@@ -29,6 +29,11 @@ export type ProgressCallback = (
   event: { type: 'completed'; count: number } | { type: 'failed'; count: number; error: string }
 ) => void
 
+/** La API rechazo el pedido por su contenido (BadRequestError del SDK de OpenAI). */
+function isRequestRejected(err: unknown): boolean {
+  return (err as { status?: unknown } | null)?.status === 400
+}
+
 function getGuidelines(issue: { promptFactors: string; promptAntifactors: string; promptRatings: string }): Guidelines {
   return {
     factors: issue.promptFactors,
@@ -107,110 +112,138 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
   // for non-gpt-4o models, causing "fetch failed" / connection errors at the network level.
   const structuredLlm = llm.withStructuredOutput(schema, { method: 'functionCalling' })
   const semaphore = new Semaphore(concurrency)
-  const totalBatches = idBatches.length
+  // `let`: un lote que se parte (ver abajo) suma sus historias como lotes.
+  let totalBatches = idBatches.length
   let batchesDone = 0
+
+  // Un lote: carga sus historias, llama al modelo y escribe lo que volvio.
+  async function classifyBatch(batchIds: string[], batchLabel: string): Promise<{ storyId: string; item: T }[]> {
+    // Load stories for this batch only — avoids holding all sourceContent in memory
+    const batch = await prisma.story.findMany({
+      where: { id: { in: batchIds } },
+      select: {
+        id: true,
+        sourceTitle: true,
+        sourceContent: true,
+        feed: { select: { issueId: true } },
+      },
+    })
+
+    log.info({ batch: batchLabel, storyCount: batch.length }, 'processing batch')
+
+    const prompt = buildPrompt(
+      batch.map(s => ({ id: s.id, title: s.sourceTitle, content: s.sourceContent })),
+      topicIssues,
+    )
+
+    await rateLimitDelay()
+    const response = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
+    batchesDone++
+    // `noFrameCount`: articulos que llegaron sin encuadre valido y el esquema
+    // dejo en null (ver el candado en schemas/llm.ts). Se cuenta por lote y
+    // no se avisa por articulo: en una cola de miles seria ruido.
+    const noFrameCount = (response.articles as T[]).filter(a => a.narrativeFrame === null).length
+    log.info({ progress: `${batchesDone}/${totalBatches}`, resultCount: response.articles.length, noFrameCount, batch: batchLabel }, 'batch complete')
+
+    const storyMap = new Map(batch.map(s => [s.id, s]))
+    const batchResults: { storyId: string; item: T }[] = []
+    const updates: ReturnType<typeof prisma.story.update>[] = []
+    for (const item of response.articles) {
+      const story = storyMap.get(item.articleId)
+      if (!story) {
+        log.warn({ articleId: item.articleId }, 'LLM returned unknown articleId')
+        continue
+      }
+
+      let issueId = slugToId.get(item.issueSlug)
+      if (!issueId) {
+        log.warn({ articleId: item.articleId, issueSlug: item.issueSlug }, 'invalid issue slug, falling back to feed issue')
+        issueId = story.feed.issueId
+      }
+
+      // Guardarrail: el prompt es una restriccion blanda, asi que aqui, en
+      // el punto donde se escribe, se comprueban las contradicciones que SI
+      // son verificables con codigo. No corrige -elegir el tema es un
+      // juicio- pero deja constancia de la que ya se sabe que falla.
+      for (const sospecha of detectarClasificacionSospechosa(
+        story.sourceTitle ?? '',
+        item.issueSlug,
+      )) {
+        log.warn(
+          {
+            storyId: story.id,
+            asignado: item.issueSlug,
+            sugerido: sospecha.sugerido,
+            regla: sospecha.regla,
+            termino: sospecha.termino,
+            title: story.sourceTitle?.slice(0, 80),
+          },
+          `clasificacion sospechosa: ${sospecha.motivo}`,
+        )
+      }
+
+      updates.push(prisma.story.update({
+        where: { id: story.id },
+        data: buildUpdate(item, issueId),
+      }))
+
+      batchResults.push({
+        storyId: story.id,
+        item,
+      })
+    }
+
+    // Fallback: assign feed issue to stories not returned by LLM (opt-in)
+    if (fallbackToFeedIssue) {
+      for (const story of batch) {
+        if (!batchResults.some(r => r.storyId === story.id)) {
+          updates.push(prisma.story.update({
+            where: { id: story.id },
+            data: { issueId: story.feed.issueId },
+          }))
+        }
+      }
+    }
+
+    if (updates.length > 0) {
+      await prisma.$transaction(updates)
+    }
+    onProgress?.({ type: 'completed', count: batchResults.length })
+    const missing = batch.length - batchResults.length
+    if (missing > 0) {
+      onProgress?.({ type: 'failed', count: missing, error: `Story not returned in ${label} results` })
+    }
+    return batchResults
+  }
 
   const settled = await Promise.allSettled(
     idBatches.map((batchIds, batchIdx) =>
       semaphore.run(async () => {
-        const batchLabel = `batch ${batchIdx + 1}/${totalBatches}`
-
-        // Load stories for this batch only — avoids holding all sourceContent in memory
-        const batch = await prisma.story.findMany({
-          where: { id: { in: batchIds } },
-          select: {
-            id: true,
-            sourceTitle: true,
-            sourceContent: true,
-            feed: { select: { issueId: true } },
-          },
-        })
-
-        log.info({ batch: batchLabel, storyCount: batch.length }, 'processing batch')
-
-        const prompt = buildPrompt(
-          batch.map(s => ({ id: s.id, title: s.sourceTitle, content: s.sourceContent })),
-          topicIssues,
-        )
-
-        await rateLimitDelay()
-        const response = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
-        batchesDone++
-        // `noFrameCount`: articulos que llegaron sin encuadre valido y el esquema
-        // dejo en null (ver el candado en schemas/llm.ts). Se cuenta por lote y
-        // no se avisa por articulo: en una cola de miles seria ruido.
-        const noFrameCount = (response.articles as T[]).filter(a => a.narrativeFrame === null).length
-        log.info({ progress: `${batchesDone}/${totalBatches}`, resultCount: response.articles.length, noFrameCount, batch: batchLabel }, 'batch complete')
-
-        const storyMap = new Map(batch.map(s => [s.id, s]))
-        const batchResults: { storyId: string; item: T }[] = []
-        const updates: ReturnType<typeof prisma.story.update>[] = []
-        for (const item of response.articles) {
-          const story = storyMap.get(item.articleId)
-          if (!story) {
-            log.warn({ articleId: item.articleId }, 'LLM returned unknown articleId')
-            continue
-          }
-
-          let issueId = slugToId.get(item.issueSlug)
-          if (!issueId) {
-            log.warn({ articleId: item.articleId, issueSlug: item.issueSlug }, 'invalid issue slug, falling back to feed issue')
-            issueId = story.feed.issueId
-          }
-
-          // Guardarrail: el prompt es una restriccion blanda, asi que aqui, en
-          // el punto donde se escribe, se comprueban las contradicciones que SI
-          // son verificables con codigo. No corrige -elegir el tema es un
-          // juicio- pero deja constancia de la que ya se sabe que falla.
-          for (const sospecha of detectarClasificacionSospechosa(
-            story.sourceTitle ?? '',
-            item.issueSlug,
-          )) {
-            log.warn(
-              {
-                storyId: story.id,
-                asignado: item.issueSlug,
-                sugerido: sospecha.sugerido,
-                regla: sospecha.regla,
-                termino: sospecha.termino,
-                title: story.sourceTitle?.slice(0, 80),
-              },
-              `clasificacion sospechosa: ${sospecha.motivo}`,
-            )
-          }
-
-          updates.push(prisma.story.update({
-            where: { id: story.id },
-            data: buildUpdate(item, issueId),
-          }))
-
-          batchResults.push({
-            storyId: story.id,
-            item,
-          })
-        }
-
-        // Fallback: assign feed issue to stories not returned by LLM (opt-in)
-        if (fallbackToFeedIssue) {
-          for (const story of batch) {
-            if (!batchResults.some(r => r.storyId === story.id)) {
-              updates.push(prisma.story.update({
-                where: { id: story.id },
-                data: { issueId: story.feed.issueId },
-              }))
+        const batchLabel = `batch ${batchIdx + 1}/${idBatches.length}`
+        try {
+          return await classifyBatch(batchIds, batchLabel)
+        } catch (err) {
+          // Un 400 es del contenido y no pasa solo (withRetry no lo reintenta):
+          // una sola historia que la API no acepta hundia su lote entero en
+          // cada pase, y el log no decia cual era. Se reintenta historia por
+          // historia para que pasen las demas, y la que falla queda nombrada.
+          if (batchIds.length > 1 && isRequestRejected(err)) {
+            log.warn({ err, batch: batchLabel, storyIds: batchIds }, 'API rejected the batch (400), retrying its stories one by one')
+            totalBatches += batchIds.length
+            const results: { storyId: string; item: T }[] = []
+            for (const storyId of batchIds) {
+              try {
+                results.push(...await classifyBatch([storyId], `${batchLabel} · ${storyId}`))
+              } catch (storyErr) {
+                log.error({ err: storyErr, batch: batchLabel, storyId }, 'story failed on its own')
+                onProgress?.({ type: 'failed', count: 1, error: storyErr instanceof Error ? storyErr.message : 'Story failed' })
+              }
             }
+            return results
           }
+          log.error({ err, batch: batchLabel, storyIds: batchIds }, 'batch failed')
+          throw err
         }
-
-        if (updates.length > 0) {
-          await prisma.$transaction(updates)
-        }
-        onProgress?.({ type: 'completed', count: batchResults.length })
-        const missing = batch.length - batchResults.length
-        if (missing > 0) {
-          onProgress?.({ type: 'failed', count: missing, error: `Story not returned in ${label} results` })
-        }
-        return batchResults
       }),
     ),
   )
@@ -222,7 +255,6 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
       results.push(...result.value)
     } else {
       errors++
-      log.error({ err: result.reason }, 'batch failed')
       onProgress?.({ type: 'failed', count: 1, error: result.reason instanceof Error ? result.reason.message : 'Batch failed' })
     }
   }

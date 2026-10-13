@@ -7,6 +7,8 @@ import {
   type StoryForPrompt,
 } from './shared.js'
 import { buildPreassessPrompt } from './preassess.js'
+import { buildAssessPrompt } from './assess.js'
+import { bloqueArticulos, LARGO_CUERPO } from './brandLane.js'
 
 const occurrences = (s: string, sub: string) => s.split(sub).length - 1
 
@@ -24,6 +26,38 @@ describe('sanitizeUntrustedContent', () => {
 
   it('is a no-op for content without angle brackets', () => {
     expect(sanitizeUntrustedContent('texto normal sin etiquetas')).toBe('texto normal sin etiquetas')
+  })
+
+  it('cambia por U+FFFD las mitades sueltas de un par sustituto y deja intactos los pares', () => {
+    expect(sanitizeUntrustedContent('fin \ud83d')).toBe('fin \ufffd')
+    expect(sanitizeUntrustedContent('x\ude00y')).toBe('x\ufffdy')
+    expect(sanitizeUntrustedContent('comunidad 😀 mapuche')).toBe('comunidad 😀 mapuche')
+  })
+})
+
+describe('prompts que truncan contenido rastreado', () => {
+  // Truncar con substring corta en unidades UTF-16: si un emoji cae justo en el
+  // borde, queda la mitad alta suelta, JSON.stringify la escribe como \ud83d y
+  // Azure rechaza el cuerpo entero con «400 Invalid body: failed to parse JSON
+  // value» (reproducido el 13-oct-2026). En el preassess eso hundia el lote de
+  // 10 en cada pase. El ida y vuelta por UTF-8 cambia toda mitad suelta por
+  // U+FFFD, asi que solo devuelve el mismo texto si estaba bien formado.
+  const wellFormed = (s: string) => Buffer.from(s, 'utf8').toString('utf8') === s
+  const emojiAt = (cut: number) => `${'a'.repeat(cut - 1)}😀 resto del articulo`
+
+  it('formatArticlesBlock con un emoji en el borde del corte', () => {
+    const block = formatArticlesBlock([{ id: 'clx1', title: 'T', content: emojiAt(1200) }], 10, 1200)
+    expect(wellFormed(block)).toBe(true)
+  })
+
+  it('buildAssessPrompt con un emoji en el borde del corte', () => {
+    const prompt = buildAssessPrompt('T', emojiAt(4000), 'Medio', 'https://x.cl', { factors: '', antifactors: '', ratings: '' })
+    expect(wellFormed(prompt)).toBe(true)
+  })
+
+  it('bloqueArticulos del carril de marca con un emoji en el borde del corte', () => {
+    const block = bloqueArticulos([{ id: 'clx1', title: 'T', content: emojiAt(LARGO_CUERPO) }])
+    expect(wellFormed(block)).toBe(true)
   })
 })
 
