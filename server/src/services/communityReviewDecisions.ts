@@ -12,7 +12,7 @@ import {
   type ReviewState,
 } from '../lib/communityVisibility.js'
 import { writeAuditLog, writeAuditLogs, type AuditActor } from './audit.js'
-import { communityReviewStats, reconcileCommunityReviews, type CommunityReviewStats, type ReconcileReport } from './communityReview.js'
+import { communityReviewStats, reconcileCommunityReviews, tablaDelCarrilExiste, type CommunityReviewStats, type ReconcileReport } from './communityReview.js'
 
 const log = createLogger('community-review-decisions')
 
@@ -124,6 +124,12 @@ export interface ReviewQueueItem {
   }
   /** La misma nota en OTRAS verticales en revision: «tambien en: Araucania (pendiente)». */
   alsoIn: Array<{ slug: string; name: string; reviewState: ReviewState }>
+  /**
+   * Si la nota entró a esta vertical por la marca (D5): por criterio territorial
+   * o rescatada por la escala Mapuche, con el título y el resumen que se
+   * mostrarían (diseño D5, 7.7). null si entró por palabras clave.
+   */
+  marca: { origen: 'territorial' | 'rescate'; title: string | null; summary: string | null } | null
 }
 
 /**
@@ -168,6 +174,7 @@ export async function listReviews(args: {
     alsoIn.set(o.storyId, lista)
   }
 
+  const marcas = await marcaDe(storyIds, community.id)
   const data: ReviewQueueItem[] = rows.map((r) => ({
     id: r.id,
     storyId: r.storyId,
@@ -186,8 +193,24 @@ export async function listReviews(args: {
     publishedAt: r.publishedAt,
     story: r.story,
     alsoIn: alsoIn.get(r.storyId) ?? [],
+    marca: marcas.get(r.storyId) ?? null,
   }))
   return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) }
+}
+
+/** El origen de marca de las notas de la cola. Sin la tabla del carril, ninguno. */
+async function marcaDe(storyIds: string[], communityId: string): Promise<Map<string, NonNullable<ReviewQueueItem['marca']>>> {
+  if (storyIds.length === 0 || !(await tablaDelCarrilExiste())) return new Map()
+  const rows = await prisma.$queryRaw<Array<{ story_id: string; source_signal: string; brand_title: string | null; brand_summary: string | null }>>`
+    SELECT story_id, source_signal, brand_title, brand_summary
+      FROM story_brand_assessments
+     WHERE community_id = ${communityId}
+       AND story_id = ANY(${storyIds}::text[])
+       AND state = 'published'
+  `
+  return new Map(
+    rows.map((r) => [r.story_id, { origen: r.source_signal === 'rescue' ? 'rescate' : 'territorial', title: r.brand_title, summary: r.brand_summary }]),
+  )
 }
 
 interface DecisionInput {

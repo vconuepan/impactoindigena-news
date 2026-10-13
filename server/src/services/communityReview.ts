@@ -180,6 +180,66 @@ export async function senalesDelCarril(storyIds: string[], communityId: string):
   )
 }
 
+/**
+ * Las notas que la marca publicó en esta vertical (D5, modo aplicar). Entran a la
+ * cola de D4 aunque no sean miembros por palabras clave, y se ven en la vertical
+ * solo con su fila en auto o released (diseño D5, 7.2). Solo la usan el
+ * conciliador y el registro del carril: membershipWhere queda intacta, porque la
+ * reutilizan el autopost y las estadísticas, que nunca deben ver estas notas.
+ */
+export function publicadasPorMarcaWhere(communityId: string): Prisma.StoryWhereInput {
+  return { brandAssessments: { some: { communityId, state: 'published' } } }
+}
+
+/** La pertenencia del conciliador: la de siempre, más lo publicado por la marca si la tabla existe. */
+export function pertenenciaConMarca(membership: Prisma.StoryWhereInput, communityId: string, carril: boolean): Prisma.StoryWhereInput {
+  return carril ? { OR: [membership, publicadasPorMarcaWhere(communityId)] } : membership
+}
+
+/**
+ * La vitrina de marca de las notas publicadas por el carril: el gate tiene que
+ * juzgar el título y el resumen que se van a mostrar, no el titular crudo de la
+ * fuente (una nota muerta en el pre-filtro no tiene título ni resumen propios).
+ */
+export async function vitrinaDeMarca(storyIds: string[], communityId: string): Promise<Map<string, { title: string | null; summary: string | null }>> {
+  if (storyIds.length === 0) return new Map()
+  const rows = await prisma.$queryRaw<Array<{ story_id: string; brand_title: string | null; brand_summary: string | null }>>`
+    SELECT story_id, brand_title, brand_summary
+      FROM story_brand_assessments
+     WHERE community_id = ${communityId}
+       AND story_id = ANY(${storyIds}::text[])
+       AND state = 'published'
+  `
+  return new Map(rows.map((r) => [r.story_id, { title: r.brand_title, summary: r.brand_summary }]))
+}
+
+/** La nota con su vitrina de marca, si la tiene: título y resumen de marca, sin etiqueta. */
+export function conVitrina<T extends StoryForGate>(story: T, vitrina?: { title: string | null; summary: string | null }): T {
+  if (!vitrina || !vitrina.title) return story
+  return { ...story, title: vitrina.title, summary: vitrina.summary, titleLabel: null }
+}
+
+/**
+ * El carril registra en D4 lo que acaba de publicar, sin esperar al conciliador
+ * horario (que queda de respaldo). Solo para verticales en revisión. NUNCA lanza.
+ */
+export async function registrarPublicadasPorMarca(communityId: string, storyIds: string[]): Promise<void> {
+  if (storyIds.length === 0) return
+  try {
+    const community = (await communitiesUnderReview()).find((c) => c.id === communityId)
+    if (!community) return
+    const stories = await prisma.story.findMany({ where: { id: { in: storyIds } }, select: STORY_GATE_SELECT })
+    const [senales, vitrinas] = await Promise.all([senalesDelCarril(storyIds, communityId), vitrinaDeMarca(storyIds, communityId)])
+    const gate = gateOptions()
+    const now = new Date()
+    for (const story of stories) {
+      await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(conVitrina(story, vitrinas.get(story.id)), community, gate, senales.get(story.id)), now))
+    }
+  } catch (err) {
+    log.warn({ err, communityId, count: storyIds.length }, 'brand lane: could not register published notes in D4; the reconciler will')
+  }
+}
+
 /** Evalua una nota para una vertical. Funcion pura: no lee ni escribe la base. */
 export function evaluateForCommunity(
   story: StoryForGate,
@@ -399,7 +459,9 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
   const reports: ReconcileReport[] = []
 
   for (const community of communities) {
-    const membership = membershipWhere(community, temas)
+    // Con la tabla del carril, también lo que la marca publicó (D5): sin esto, sus
+    // filas no se crearían y el paso 3 las borraría como huérfanas.
+    const membership = pertenenciaConMarca(membershipWhere(community, temas), community.id, carril)
     let created = 0
     let reevaluated = 0
 
@@ -413,10 +475,13 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
         take: RECONCILE_BATCH,
       })
       if (missing.length === 0) break
-      const senales = carril ? await senalesDelCarril(missing.map((st) => st.id), community.id) : new Map<string, string[]>()
+      const ids = missing.map((st) => st.id)
+      const [senales, vitrinas] = carril
+        ? await Promise.all([senalesDelCarril(ids, community.id), vitrinaDeMarca(ids, community.id)])
+        : [new Map<string, string[]>(), new Map<string, { title: string | null; summary: string | null }>()]
       const now = new Date()
       for (const story of missing) {
-        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(story, community, gate, senales.get(story.id)), now))
+        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(conVitrina(story, vitrinas.get(story.id)), community, gate, senales.get(story.id)), now))
         created++
       }
       if (missing.length < RECONCILE_BATCH) break
@@ -479,10 +544,13 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
     for (let i = 0; i < toReevaluate.length; i += RECONCILE_BATCH) {
       const chunk = toReevaluate.slice(i, i + RECONCILE_BATCH)
       const stories = await prisma.story.findMany({ where: { id: { in: chunk } }, select: STORY_GATE_SELECT })
-      const senales = carril ? await senalesDelCarril(stories.map((st) => st.id), community.id) : new Map<string, string[]>()
+      const ids = stories.map((st) => st.id)
+      const [senales, vitrinas] = carril
+        ? await Promise.all([senalesDelCarril(ids, community.id), vitrinaDeMarca(ids, community.id)])
+        : [new Map<string, string[]>(), new Map<string, { title: string | null; summary: string | null }>()]
       const now = new Date()
       for (const story of stories) {
-        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(story, community, gate, senales.get(story.id)), now))
+        await prisma.$executeRaw(machineUpsertSql(evaluateForCommunity(conVitrina(story, vitrinas.get(story.id)), community, gate, senales.get(story.id)), now))
         reevaluated++
       }
     }

@@ -3,7 +3,7 @@ import { Badge } from '../ui/Badge'
 import { Button } from '../ui/Button'
 import type { ReviewQueueItem } from '../../lib/admin-api'
 import { formatDateWithTime } from '../../lib/constants'
-import { CODE_LABEL, STATE_BADGE, STATE_LABEL, marcaLabel, marcarTerminos, puntajeLabel, razonLabel, terminosDe, textoCorto, terminoVisible } from '../../lib/review-labels'
+import { ORIGEN_LABEL, storyVisible, CODE_LABEL, STATE_BADGE, STATE_LABEL, marcaLabel, marcarTerminos, puntajeLabel, razonLabel, terminosDe, textoCorto, terminoVisible } from '../../lib/review-labels'
 
 interface ReviewDetailPanelProps {
   item: ReviewQueueItem | null
@@ -31,8 +31,9 @@ export function Resaltado({ texto, terminos }: { texto: string; terminos: string
 
 export function ReviewDetailPanel({ item, onClose, onRelease, onHold, onReopen, pending }: ReviewDetailPanelProps) {
   const terminos = item ? terminosDe(item.gateReasons, item.gateSignals) : []
-  const texto = item ? textoCorto(item.story) : ''
-  const titulo = item?.story.title || item?.story.sourceTitle || ''
+  const st = item ? storyVisible(item) : null
+  const texto = st ? textoCorto(st) : ''
+  const titulo = st?.title || st?.sourceTitle || ''
   const humano = item ? item.reviewState === 'released' || item.reviewState === 'held' : false
   const puntaje = item ? puntajeLabel(item.gateScore, item.gateReasons) : null
 
@@ -45,6 +46,7 @@ export function ReviewDetailPanel({ item, onClose, onRelease, onHold, onReopen, 
               <Badge variant={STATE_BADGE[item.reviewState]}>{STATE_LABEL[item.reviewState]}</Badge>
               {puntaje && <Badge variant={puntaje.variant}>Puntaje {puntaje.texto}</Badge>}
               {item.story.narrativeFrame && <Badge variant="gray">Encuadre: {item.story.narrativeFrame}</Badge>}
+              {item.marca && <Badge variant="blue">{ORIGEN_LABEL[item.marca.origen]}</Badge>}
             </div>
 
             <dl className="grid grid-cols-3 gap-x-3 gap-y-1 text-xs">
@@ -56,9 +58,9 @@ export function ReviewDetailPanel({ item, onClose, onRelease, onHold, onReopen, 
               <dd className="col-span-2 text-neutral-700">{item.story.relevance ?? '—'}</dd>
             </dl>
 
-            {item.story.summary && (
+            {st?.summary && (
               <p className="font-serif text-[15px] leading-relaxed text-neutral-800">
-                <Resaltado texto={item.story.summary} terminos={terminos} />
+                <Resaltado texto={st.summary} terminos={terminos} />
               </p>
             )}
 

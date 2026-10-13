@@ -962,6 +962,8 @@ export interface ReviewQueueItem {
     relevance: number | null
   }
   alsoIn: Array<{ slug: string; name: string; reviewState: ReviewState }>
+  /** Si entró a la vertical por la marca (D5): su origen y la vitrina que se mostraría. */
+  marca: { origen: 'territorial' | 'rescate'; title: string | null; summary: string | null } | null
 }
 
 export interface ReviewQueuePage {

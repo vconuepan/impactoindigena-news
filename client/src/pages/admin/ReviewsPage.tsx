@@ -18,7 +18,7 @@ import { useAuth } from '../../lib/auth'
 import { ApiError, type ReviewCode, type ReviewQueueItem, type ReviewState } from '../../lib/admin-api'
 import { formatDate } from '../../lib/constants'
 import { useBulkDecideReview, useDecideReview, useReviewQueue, useReviewVerticals } from '../../hooks/useReviews'
-import { STATE_BADGE, STATE_LABEL, marcaLabel, puntajeLabel, razonLabel, textoCorto } from '../../lib/review-labels'
+import { ORIGEN_LABEL, storyVisible, STATE_BADGE, STATE_LABEL, marcaLabel, puntajeLabel, razonLabel, textoCorto } from '../../lib/review-labels'
 
 const ESTADO_LABEL: Record<ReviewState | 'all', string> = { ...STATE_LABEL, all: 'Todas' }
 const PAGE_SIZE = 25
@@ -230,13 +230,14 @@ export default function ReviewsPage() {
                       {filas.map((f) => {
                         const p = puntajeLabel(f.gateScore, f.gateReasons)
                         const razones = f.gateReasons.filter((r) => r !== 'learning_mode')
-                        const texto = textoCorto(f.story)
+                        const st = storyVisible(f)
+                        const texto = textoCorto(st)
                         return (
                           <tr key={f.id} className="border-b border-neutral-100 hover:bg-neutral-50">
                             <td className="px-3 py-3">
                               <input
                                 type="checkbox"
-                                aria-label={`Seleccionar ${f.story.title || f.story.sourceTitle}`}
+                                aria-label={`Seleccionar ${st.title || st.sourceTitle}`}
                                 checked={seleccion.has(f.storyId)}
                                 onChange={() => {
                                   const n = new Set(seleccion)
@@ -248,8 +249,13 @@ export default function ReviewsPage() {
                             </td>
                             <td className="max-w-md px-3 py-3">
                               <button onClick={() => setParam({ open: f.storyId })} className="text-left font-medium text-neutral-900 hover:text-brand-800">
-                                {f.story.title || f.story.sourceTitle}
+                                {st.title || st.sourceTitle}
                               </button>
+                              {f.marca && (
+                                <div className="mt-1">
+                                  <Badge variant="blue">{ORIGEN_LABEL[f.marca.origen]}</Badge>
+                                </div>
+                              )}
                               <div className="mt-0.5 text-xs text-neutral-400">
                                 {formatDate(f.story.datePublished)}
                                 {f.alsoIn.length > 0 &&

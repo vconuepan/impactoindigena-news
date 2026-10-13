@@ -72,6 +72,25 @@ describe('GET /api/admin/reviews/:slug', () => {
     expect(call.orderBy[1]).toEqual({ story: { datePublished: 'desc' } })
   })
 
+  it('una nota que entró por la marca trae su origen y la vitrina que se mostraría (D5, 7.7)', async () => {
+    const fila = (storyId: string) => ({
+      id: `r-${storyId}`, storyId, reviewState: 'pending', reviewCode: null, reviewNote: null, reviewedBy: null, reviewedAt: null,
+      gateDecision: 'held_for_review', gateReasons: ['carril-juez:violencia'], gateSignals: [], gateScore: 2, gateLearningMode: true,
+      gateVersion: 'v', gateEvaluatedAt: new Date(), publishedAt: null,
+      story: { id: storyId, slug: null, title: null, titleLabel: null, sourceTitle: 'Titular crudo', summary: null, narrativeFrame: null, datePublished: null, relevance: null },
+    })
+    mockPrisma.storyCommunityReview.count.mockResolvedValue(2)
+    mockPrisma.storyCommunityReview.findMany.mockResolvedValueOnce([fila('s1'), fila('s2')]).mockResolvedValueOnce([])
+    mockPrisma.$queryRaw
+      .mockResolvedValueOnce([VERTICAL]) // la vertical
+      .mockResolvedValueOnce([{ existe: true }]) // la tabla del carril
+      .mockResolvedValueOnce([{ story_id: 's1', source_signal: 'term', brand_title: 'Angol inaugura su CESFAM', brand_summary: 'Resumen.' }])
+    const res = await request(app).get('/api/admin/reviews/mapuche').set(authHeader())
+    expect(res.status).toBe(200)
+    expect(res.body.data[0].marca).toEqual({ origen: 'territorial', title: 'Angol inaugura su CESFAM', summary: 'Resumen.' })
+    expect(res.body.data[1].marca).toBeNull()
+  })
+
   it('400 con un estado que no existe', async () => {
     expect((await request(app).get('/api/admin/reviews/mapuche?state=lo-que-sea').set(authHeader())).status).toBe(400)
   })

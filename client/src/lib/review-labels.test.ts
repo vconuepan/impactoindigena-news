@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { razonLabel, terminosDe, puntajeLabel, terminoVisible, marcarTerminos, textoCorto } from './review-labels'
+import { razonLabel, terminosDe, puntajeLabel, terminoVisible, marcarTerminos, textoCorto, storyVisible, ORIGEN_LABEL } from './review-labels'
 
 describe('etiquetas de la revisión por marca', () => {
   it('traduce las razones del gate', () => {
@@ -68,5 +68,13 @@ describe('etiquetas de la revisión por marca', () => {
 
   it('el texto corto es título, etiqueta y resumen, como el gate', () => {
     expect(textoCorto({ title: null, titleLabel: 'Etiqueta', sourceTitle: 'Fuente', summary: ' ' })).toBe('Fuente\nEtiqueta')
+  })
+
+  it('la nota que entró por la marca se lee con su vitrina; la demás, como siempre (D5)', () => {
+    const story = { title: null, summary: null, titleLabel: 'Etiqueta', sourceTitle: 'Crudo' }
+    expect(storyVisible({ story, marca: { title: 'De marca', summary: 'Resumen' } })).toEqual({ title: 'De marca', summary: 'Resumen', titleLabel: null, sourceTitle: 'Crudo' })
+    expect(storyVisible({ story, marca: null })).toBe(story)
+    expect(storyVisible({ story })).toBe(story)
+    expect(ORIGEN_LABEL.rescate).toBe('Rescatada por escala Mapuche')
   })
 })

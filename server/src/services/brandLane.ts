@@ -24,7 +24,7 @@ import {
   type BrandMapucheItem,
 } from '../schemas/brandLane.js'
 import { communityMembershipCondition, temasVivos } from '../lib/communityVisibility.js'
-import { membershipWhere } from './communityReview.js'
+import { membershipWhere, registrarPublicadasPorMarca } from './communityReview.js'
 
 /**
  * EL CARRIL DE MARCA (D5 del programa Las Otras Voces). Diseño completo en el
@@ -658,7 +658,7 @@ export async function publicarElegidas(c: BrandCriteria, ahora: Date): Promise<n
     orderBy: { selectedAt: 'asc' },
     select: { id: true, storyId: true, story: { select: { title: true, summary: true, sourceTitle: true, sourceContent: true } } },
   })
-  let publicadas = 0
+  const publicadasIds: string[] = []
   for (const e of elegidas) {
     let redaccion: BrandRedaccion | null = null
     if (e.story.title && e.story.summary) {
@@ -722,9 +722,12 @@ export async function publicarElegidas(c: BrandCriteria, ahora: Date): Promise<n
         lastError: null,
       },
     })
-    publicadas++
+    publicadasIds.push(e.storyId)
   }
-  return publicadas
+  // A la cola de D4 enseguida: se ven en la vertical solo con su fila en auto o
+  // released (diseño, 7.2). El conciliador horario queda de respaldo.
+  await registrarPublicadasPorMarca(c.communityId, publicadasIds)
+  return publicadasIds.length
 }
 
 // --- Corrida -----------------------------------------------------------------

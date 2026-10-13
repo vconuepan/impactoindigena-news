@@ -10,6 +10,11 @@ const mockPrisma = vi.hoisted(() => ({
   $queryRaw: vi.fn(),
 }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
+const mockRegistrar = vi.hoisted(() => vi.fn())
+vi.mock('./communityReview.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./communityReview.js')>()),
+  registrarPublicadasPorMarca: mockRegistrar,
+}))
 
 const mockInvoke = vi.hoisted(() => vi.fn())
 const mockStructured = vi.hoisted(() => vi.fn())
@@ -494,6 +499,8 @@ describe('entrega 2: publicación en modo aplicar', () => {
       brandTitle: 'Angol inaugura su nuevo CESFAM',
       brandSlug: 'angol-inaugura-su-nuevo-cesfam-s1',
     })
+    // y lo registra en D4 enseguida
+    expect(mockRegistrar).toHaveBeenCalledWith('c-arauc', ['s1'])
   })
 
   it('el rescate usa el título y el resumen que ya trae, sin llamar al modelo', async () => {

@@ -237,5 +237,19 @@ describe('ReviewsPage', () => {
     expect(await screen.findByText('Puntaje 1 · solo encuadre')).toBeInTheDocument()
     expect(screen.queryByText(/B\+B/)).not.toBeInTheDocument()
   })
-})
 
+  it('una nota que entró por la marca muestra su vitrina y su origen, en la cola y en el panel (D5)', async () => {
+    const f = fila(6, 2, ['carril-juez:violencia'])
+    const marca = {
+      ...f,
+      story: { ...f.story, slug: null, title: null, summary: null, sourceTitle: 'Titular crudo de la fuente', datePublished: null, relevance: null },
+      marca: { origen: 'territorial', title: 'Angol inaugura su nuevo CESFAM', summary: 'Atenderá a tres sectores rurales.' },
+    }
+    api.queue.mockResolvedValue({ slug: 'mapuche', mode: 'shadow', data: [marca], total: 1, page: 1, pageSize: 25, totalPages: 1 })
+    renderPage('/admin/revision?open=s6')
+    expect(await screen.findAllByText('Angol inaugura su nuevo CESFAM')).not.toHaveLength(0)
+    expect(screen.queryByText('Titular crudo de la fuente')).not.toBeInTheDocument()
+    expect(await screen.findAllByText('Entró por criterio territorial')).toHaveLength(2)
+    expect(await screen.findByText('Atenderá a tres sectores rurales.')).toBeInTheDocument()
+  })
+})

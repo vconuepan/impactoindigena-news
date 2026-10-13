@@ -183,3 +183,21 @@ export function marcarTerminos(texto: string, terminos: string[]): Fragmento[] {
   })
   return out
 }
+
+/** Origen de una nota que entró a la vertical por la marca (D5, diseño 7.7). */
+export const ORIGEN_LABEL: Record<'territorial' | 'rescate', string> = {
+  territorial: 'Entró por criterio territorial',
+  rescate: 'Rescatada por escala Mapuche',
+}
+
+/**
+ * La nota como se mostraría en la vertical: si entró por la marca, con su título
+ * y su resumen de marca (la nota cruda del pre-filtro no tiene propios).
+ */
+export function storyVisible<S extends { title: string | null; summary: string | null; titleLabel: string | null }>(item: {
+  story: S
+  marca?: { title: string | null; summary: string | null } | null
+}): S {
+  if (!item.marca) return item.story
+  return { ...item.story, title: item.marca.title ?? item.story.title, summary: item.marca.summary ?? item.story.summary, titleLabel: null }
+}
