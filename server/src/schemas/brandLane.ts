@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { toJsonSchema } from '@langchain/core/utils/json_schema'
 
 /**
  * Salida estructurada del juez del carril de marca (D5).
@@ -65,3 +66,42 @@ export const brandMapucheResultSchema = z.object({
 
 export type BrandTerritorialItem = z.infer<typeof brandTerritorialItemSchema>
 export type BrandMapucheItem = z.infer<typeof brandMapucheItemSchema>
+
+/**
+ * EL ESQUEMA QUE VE EL MODELO, estricto: todos los campos obligatorios.
+ *
+ * Lección del 13-oct-2026, primera corrida en producción: los `.catch()` que
+ * dan tolerancia por campo vuelven OPCIONALES esos campos en el JSON Schema que
+ * LangChain le manda al modelo (required quedaba en ["articleId","reason"]), y el
+ * modelo los omitía: Araucanía devolvió solo los ids y Mapuche, solo el motivo.
+ * Por eso se separan las dos cosas: el modelo recibe este esquema, con todo
+ * obligatorio, y la respuesta se valida después con los esquemas tolerantes de
+ * arriba, nota por nota (services/brandLane.ts).
+ */
+export function esquemaEstricto(schema: z.ZodTypeAny, nombre: string, descripcion: string): Record<string, unknown> {
+  const js = toJsonSchema(schema) as Record<string, unknown>
+  exigirTodo(js)
+  return { ...js, title: nombre, description: descripcion }
+}
+
+function exigirTodo(nodo: unknown): void {
+  if (!nodo || typeof nodo !== 'object') return
+  if (Array.isArray(nodo)) {
+    nodo.forEach(exigirTodo)
+    return
+  }
+  const o = nodo as Record<string, unknown>
+  if (o.properties && typeof o.properties === 'object') o.required = Object.keys(o.properties as object)
+  for (const v of Object.values(o)) exigirTodo(v)
+}
+
+export const ESQUEMA_MODELO_TERRITORIAL = esquemaEstricto(
+  brandTerritorialResultSchema,
+  'juicio_territorial',
+  'Un juicio por cada artículo recibido, con todos sus campos.',
+)
+export const ESQUEMA_MODELO_MAPUCHE = esquemaEstricto(
+  brandMapucheResultSchema,
+  'juicio_escala_mapuche',
+  'Un juicio por cada artículo recibido, con todos sus campos.',
+)

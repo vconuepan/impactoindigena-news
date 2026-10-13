@@ -14,6 +14,8 @@ import { buildTerritorialPrompt, buildMapuchePrompt, type ArticuloJuez } from '.
 import {
   brandTerritorialResultSchema,
   brandMapucheResultSchema,
+  ESQUEMA_MODELO_TERRITORIAL,
+  ESQUEMA_MODELO_MAPUCHE,
   type BrandTerritorialItem,
   type BrandMapucheItem,
 } from '../schemas/brandLane.js'
@@ -334,12 +336,19 @@ export async function juzgarPendientes(c: BrandCriteria, ahora: Date): Promise<n
     let error: string | null = null
     try {
       await rateLimitDelay()
+      // El modelo recibe el esquema ESTRICTO (todo obligatorio); la respuesta se
+      // valida aquí con el tolerante, que aplica los .catch nota por nota. Ver
+      // schemas/brandLane.ts, esquemaEstricto: con el tolerante, el modelo omitía
+      // los campos (primera corrida en producción, 13-oct-2026).
       if (territorial) {
-        const res = await llm.withStructuredOutput(brandTerritorialResultSchema, { method: 'functionCalling' }).invoke([new HumanMessage(prompt)])
-        // LangChain tipa con la entrada del esquema; el parse es idempotente y aplica los .catch por campo.
+        const res = await llm
+          .withStructuredOutput(ESQUEMA_MODELO_TERRITORIAL, { name: 'juicio_territorial', method: 'functionCalling' })
+          .invoke([new HumanMessage(prompt)])
         respuestas = brandTerritorialResultSchema.parse(res).articles
       } else {
-        const res = await llm.withStructuredOutput(brandMapucheResultSchema, { method: 'functionCalling' }).invoke([new HumanMessage(prompt)])
+        const res = await llm
+          .withStructuredOutput(ESQUEMA_MODELO_MAPUCHE, { name: 'juicio_escala_mapuche', method: 'functionCalling' })
+          .invoke([new HumanMessage(prompt)])
         respuestas = brandMapucheResultSchema.parse(res).articles
       }
     } catch (err) {

@@ -12,8 +12,9 @@ const mockPrisma = vi.hoisted(() => ({
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
 const mockInvoke = vi.hoisted(() => vi.fn())
+const mockStructured = vi.hoisted(() => vi.fn())
 vi.mock('./llm.js', () => ({
-  getMediumLLM: () => ({ withStructuredOutput: () => ({ invoke: mockInvoke }) }),
+  getMediumLLM: () => ({ withStructuredOutput: (...args: unknown[]) => (mockStructured(...args), { invoke: mockInvoke }) }),
   rateLimitDelay: async () => {},
 }))
 
@@ -437,5 +438,28 @@ describe('decisión del 13-oct-2026: la crónica policial tiene eje propio', () 
     expect(horaEn(new Date('2026-10-13T22:30:00Z'), 'America/Santiago')).toBe(19) // UTC-3
     expect(horaEn(new Date('2026-06-13T23:30:00Z'), 'America/Santiago')).toBe(19) // UTC-4
     expect(horaEn(new Date('2026-10-13T00:30:00Z'), 'America/Santiago')).toBe(21)
+  })
+})
+
+describe('primera corrida en producción, 13-oct-2026: el modelo recibe el esquema estricto', () => {
+  const requeridos = (js: any) => js.properties.articles.items.required
+
+  it('todos los campos de cada artículo son obligatorios para el modelo, en las dos marcas', async () => {
+    const { ESQUEMA_MODELO_TERRITORIAL, ESQUEMA_MODELO_MAPUCHE } = await import('../schemas/brandLane.js')
+    expect(requeridos(ESQUEMA_MODELO_TERRITORIAL).sort()).toEqual(['aboutRegion', 'articleId', 'axis', 'isNews', 'reason', 'score', 'sensitive'])
+    expect(requeridos(ESQUEMA_MODELO_MAPUCHE).sort()).toEqual(['articleId', 'axis', 'place', 'reason', 'score', 'sensitive'])
+    expect((ESQUEMA_MODELO_TERRITORIAL as any).required).toEqual(['articles'])
+  })
+
+  it('el juez llama con el esquema estricto y valida después con el tolerante', async () => {
+    const { ESQUEMA_MODELO_TERRITORIAL } = await import('../schemas/brandLane.js')
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValue([pendiente(1), pendiente(2)])
+    mockInvoke.mockResolvedValue({ articles: [respuesta(1, { axis: 'eje_inventado' }), respuesta(2)] })
+    await juzgarPendientes(ARAUCANIA, AHORA)
+    expect(mockStructured.mock.calls[0][0]).toBe(ESQUEMA_MODELO_TERRITORIAL)
+    expect(mockStructured.mock.calls[0][1]).toMatchObject({ name: 'juicio_territorial', method: 'functionCalling' })
+    const porId = Object.fromEntries(mockPrisma.storyBrandAssessment.update.mock.calls.map((c) => [c[0].where.id, c[0].data]))
+    expect(porId.a1).toMatchObject({ state: 'discarded', axis: null })
+    expect(porId.a2).toMatchObject({ state: 'evaluated' })
   })
 })
