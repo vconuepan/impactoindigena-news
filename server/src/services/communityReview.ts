@@ -5,6 +5,7 @@ import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
 import { utc } from '../lib/sqlTime.js'
 import { evaluateGate, GATE_VERSION, type GateResult, type MarcaKey } from '../lib/gate.js'
+import { origenesDeVitrina } from './brandShowcase.js'
 import {
   MACHINE_STATES,
   effectiveMode,
@@ -186,14 +187,19 @@ export async function senalesDelCarril(storyIds: string[], communityId: string):
  * solo con su fila en auto o released (diseño D5, 7.2). Solo la usan el
  * conciliador y el registro del carril: membershipWhere queda intacta, porque la
  * reutilizan el autopost y las estadísticas, que nunca deben ver estas notas.
+ *
+ * Solo las de un origen en modo aplicar, la misma regla de la vitrina: con la
+ * marca apagada o en sombra sus notas no se ven, y sus filas de máquina tienen
+ * que salir de la cola del editor como huérfanas. Sin esto quedaban pendientes,
+ * invisibles, contando en la alerta de atraso (integración del 13-oct).
  */
-export function publicadasPorMarcaWhere(communityId: string): Prisma.StoryWhereInput {
-  return { brandAssessments: { some: { communityId, state: 'published' } } }
+export function publicadasPorMarcaWhere(communityId: string, origenes: readonly string[]): Prisma.StoryWhereInput {
+  return { brandAssessments: { some: { communityId, state: 'published', sourceSignal: { in: [...origenes] } } } }
 }
 
-/** La pertenencia del conciliador: la de siempre, más lo publicado por la marca si la tabla existe. */
-export function pertenenciaConMarca(membership: Prisma.StoryWhereInput, communityId: string, carril: boolean): Prisma.StoryWhereInput {
-  return carril ? { OR: [membership, publicadasPorMarcaWhere(communityId)] } : membership
+/** La pertenencia del conciliador: la de siempre, más lo que publican los carriles de la marca en modo aplicar. */
+export function pertenenciaConMarca(membership: Prisma.StoryWhereInput, communityId: string, origenes: readonly string[]): Prisma.StoryWhereInput {
+  return origenes.length > 0 ? { OR: [membership, publicadasPorMarcaWhere(communityId, origenes)] } : membership
 }
 
 /**
@@ -484,7 +490,7 @@ export async function reconcileCommunityReviews(opts: { slugs?: string[]; force?
     // Con la tabla del carril, también lo que la marca publicó (D5): sin esto, sus
     // filas no se crearían y el paso 3 las borraría como huérfanas.
     const propia = membershipWhere(community, temas)
-    const membership = pertenenciaConMarca(propia, community.id, carril)
+    const membership = pertenenciaConMarca(propia, community.id, carril ? await origenesDeVitrina(community.id) : [])
     let created = 0
     let reevaluated = 0
 

@@ -343,18 +343,19 @@ describe('la señal del carril de marca (D5, sección 7.3)', () => {
     mockPrisma.storyCommunityReview.findMany.mockResolvedValue([])
     mockPrisma.storyCommunityReview.groupBy.mockResolvedValue([])
     await reconcileCommunityReviews()
-    const args = mockPrisma.$queryRaw.mock.calls[2]
-    expect(String(args[0])).toContain('r.gate_evaluated_at')
+    const args = mockPrisma.$queryRaw.mock.calls.find((c) => String(c[0]).includes('r.gate_evaluated_at'))!
     expect(JSON.stringify(args.slice(1))).toContain('story_brand_assessments')
     expect(JSON.stringify(args.slice(1))).toContain("b.state = 'published'")
   })
 })
 
 describe('entrega 2: lo que la marca publica entra a D4', () => {
-  it('la pertenencia del conciliador suma lo publicado por la marca solo si la tabla existe', () => {
+  it('la pertenencia del conciliador suma solo lo que publican los carriles en modo aplicar', () => {
     const base = { status: 'published' as const }
-    expect(pertenenciaConMarca(base, 'c1', false)).toBe(base)
-    expect(pertenenciaConMarca(base, 'c1', true)).toEqual({ OR: [base, { brandAssessments: { some: { communityId: 'c1', state: 'published' } } }] })
+    expect(pertenenciaConMarca(base, 'c1', [])).toBe(base)
+    expect(pertenenciaConMarca(base, 'c1', ['term', 'feed'])).toEqual({
+      OR: [base, { brandAssessments: { some: { communityId: 'c1', state: 'published', sourceSignal: { in: ['term', 'feed'] } } } }],
+    })
   })
 
   it('el gate juzga la vitrina de marca, no el titular crudo', () => {
@@ -409,19 +410,32 @@ describe('entrega 2: lo que la marca publica entra a D4', () => {
 
   it('el conciliador busca faltantes y huérfanas con la pertenencia que suma lo publicado por la marca', async () => {
     vi.clearAllMocks()
-    mockPrisma.$queryRaw
-      .mockResolvedValueOnce([{ id: 'c-arauc', slug: 'wallmapu-araucania', keywords: ['temuco'], issue_ids: [], mode: 'shadow' }])
-      .mockResolvedValueOnce([{ existe: true }])
-      .mockResolvedValue([])
+    const marca = { criterion: 'territorial', mode: 'enforce', rescue_mode: 'off' }
+    mockPrisma.$queryRaw.mockImplementation(async (strings: TemplateStringsArray) => {
+      const sql = strings.join('?')
+      if (sql.includes('FROM community_review_modes')) return [{ id: 'c-arauc', slug: 'wallmapu-araucania', keywords: ['temuco'], issue_ids: [], mode: 'shadow' }]
+      if (sql.includes('to_regclass')) return [{ existe: true }]
+      if (sql.includes('community_brand_criteria')) return [{ ...marca }]
+      return []
+    })
     mockPrisma.issue.findMany.mockResolvedValue([])
     mockPrisma.story.findMany.mockResolvedValue([])
     mockPrisma.storyCommunityReview.findMany.mockResolvedValue([{ storyId: 'marca-1' }])
     mockPrisma.storyCommunityReview.groupBy.mockResolvedValue([])
+    mockPrisma.storyCommunityReview.deleteMany.mockResolvedValue({ count: 1 })
     await reconcileCommunityReviews()
     const faltantes = mockPrisma.story.findMany.mock.calls[0][0].where.AND[0]
     expect(JSON.stringify(faltantes)).toContain('brandAssessments')
     const huerfanas = mockPrisma.story.findMany.mock.calls[1][0].where.AND[1]
     expect(JSON.stringify(huerfanas)).toContain('brandAssessments')
+
+    // Con la marca en sombra, lo que publicó no se ve: sus filas de máquina salen como huérfanas
+    vi.clearAllMocks()
+    marca.mode = 'shadow'
+    await reconcileCommunityReviews()
+    expect(JSON.stringify(mockPrisma.story.findMany.mock.calls[0][0].where)).not.toContain('brandAssessments')
+    expect(mockPrisma.storyCommunityReview.deleteMany.mock.calls[0][0].where.storyId).toEqual({ in: ['marca-1'] })
+    mockPrisma.$queryRaw.mockReset()
   })
 
   it('el conciliador juzga con la vitrina solo lo que no es miembro por la vía de siempre', async () => {
