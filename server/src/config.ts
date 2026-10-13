@@ -373,6 +373,18 @@ export const config = {
       score0MinDecisions: parseInt(process.env.GATE_LEARNING_EXIT_SCORE0_MIN || '10', 10),
     },
   },
+  // Carril de marca (D5 del programa Las Otras Voces, services/brandLane.ts).
+  // Solo suma: nunca escribe en stories. Tres candados de costo, todos necesarios
+  // para que llame al modelo: D5_ENABLED=true en Azure, una vertical en sombra o
+  // aplicar en community_brand_criteria, y pautas cargadas. El tope de llamadas
+  // por marca y día vive en la tabla (daily_call_cap) y se cuenta en la base.
+  brandLane: {
+    enabled: process.env.D5_ENABLED === 'true',
+    // Candidatas nuevas por marca y corrida: lo que se lee del pre-filtro.
+    maxCandidatesPerRun: parseInt(process.env.D5_MAX_CANDIDATES || '40', 10),
+    // Cada nota se juzga como máximo dos veces (lo fija también un CHECK).
+    maxAttempts: 2,
+  },
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),
     pickModelTier: 'medium' as const,

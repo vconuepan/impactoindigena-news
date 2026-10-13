@@ -143,6 +143,20 @@ export function reviewExclusion(communityId: string, mode: ReviewMode): Prisma.S
 }
 
 /**
+ * La pertenencia a la vertical SIN el estado global de la nota: la misma
+ * condición que usa publicCommunityWhere, para que la regla siga viviendo en un
+ * solo lugar.
+ *
+ * Existe para el carril de marca (D5, services/brandLane.ts), que rescata notas
+ * de la vertical que el selector global descartó: siguen 'rejected' en el sitio
+ * global y solo se ven en la vertical por las tablas del carril. Ninguna
+ * superficie pública la usa; lo vigila community-visibility-contract.test.ts.
+ */
+export function communityMembershipCondition(community: CommunityForVisibility, temas: Set<string>): Prisma.StoryWhereInput {
+  return buildCommunityCondition(community.keywords, community.issueIds, temas).where as Prisma.StoryWhereInput
+}
+
+/**
  * El `where` COMPLETO de lo que muestra una vertical: publicada, relevancia 3 o
  * mas, pertenencia por palabras clave y la exclusion del modo. Los tres datos
  * son obligatorios a proposito: el fork tenia un `publishedStoryWhere(property?)`
@@ -160,7 +174,7 @@ export function publicCommunityWhere(args: {
   learningMode: boolean
 }): Prisma.StoryWhereInput {
   const { community, temas, mode, learningMode } = args
-  const cond = buildCommunityCondition(community.keywords, community.issueIds, temas).where as Prisma.StoryWhereInput
+  const cond = communityMembershipCondition(community, temas)
   const base: Prisma.StoryWhereInput = { status: 'published', relevance: { gte: 3 } }
   const exclusion = reviewExclusion(community.id, effectiveMode(mode, learningMode))
   if (!exclusion) return { ...base, ...cond }

@@ -73,6 +73,12 @@ describe('una sola regla para lo que muestra una vertical', () => {
     expect(ruta, 'alias de importacion: evade este test').not.toMatch(/buildCommunityCondition\s+as\b/)
   })
 
+  it('la pertenencia sin estado global solo la usa el carril de marca (D5), nunca una superficie publica', () => {
+    // El rescate de Voces Mapuche lee notas 'rejected' de la vertical; publicCommunityWhere fija 'published'.
+    const usan = archivos().filter((f) => /\bcommunityMembershipCondition\b/.test(readFileSync(path.join(SRC, f), 'utf8')))
+    expect(usan).toEqual(['services/brandLane.ts'])
+  })
+
   it('la pagina y el panel de señales de la vertical usan el filtro unico', () => {
     const ruta = readFileSync(path.join(SRC, 'routes/public/communities.ts'), 'utf8')
     expect((ruta.match(/publicCommunityWhere\(/g) ?? []).length).toBeGreaterThanOrEqual(2)

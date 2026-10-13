@@ -214,7 +214,17 @@ SELECT f."id", c."id"
    )
 ON CONFLICT ("feed_id", "community_id") DO NOTHING;
 
--- Verificación DESPUÉS (esperado: 2 criterios, ambos en 'off'; 46 feeds marcados).
+-- El job del carril nace DESHABILITADO. Hace falta aquí y no basta seed-jobs.ts
+-- porque el seed no corre en el despliegue. Encenderlo no basta para gastar: el
+-- servicio no llama al modelo sin D5_ENABLED=true en Azure, sin una vertical en
+-- 'shadow' o 'enforce' y sin pautas cargadas.
+INSERT INTO "job_runs" ("id", "job_name", "cron_expression", "enabled", "created_at", "updated_at")
+VALUES
+  (gen_random_uuid()::text, 'brand_lane', '30 7,19 * * *', false, NOW(), NOW())
+ON CONFLICT ("job_name") DO NOTHING;
+
+-- Verificación DESPUÉS (esperado: 2 criterios, ambos en 'off'; 46 feeds marcados; el job deshabilitado).
 SELECT c."slug", b."criterion", b."mode", b."rescue_mode", b."relevance_min", b."daily_target"
   FROM "community_brand_criteria" b JOIN "communities" c ON c."id" = b."community_id" ORDER BY 1;
 SELECT count(*) AS feeds_marcados FROM "feed_brands";
+SELECT "job_name", "cron_expression", "enabled" FROM "job_runs" WHERE "job_name" = 'brand_lane';

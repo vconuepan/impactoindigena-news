@@ -114,6 +114,10 @@ const JOB_SEEDS: Array<{ jobName: string; cronExpression: string; enabled?: bool
   // vertical (D4). Nace DESHABILITADO: lo enciende el director tras la carga inicial
   // en sombra. En produccion lo siembra la migracion 20261004000000.
   { jobName: 'reconcile_community_reviews', cronExpression: '17 * * * *', enabled: false },
+  // brand_lane: carril de marca (D5). 7:30 y 19:30, después de select_stories y antes
+  // de publish_stories. Nace DESHABILITADO; en producción lo siembra la migración
+  // 20261013000000. Además no llama al modelo sin D5_ENABLED=true.
+  { jobName: 'brand_lane', cronExpression: '30 7,19 * * *', enabled: false },
 ]
 
 async function main() {
