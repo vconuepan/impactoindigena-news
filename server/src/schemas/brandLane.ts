@@ -10,7 +10,12 @@ import { z } from 'zod'
  * por nota, no por lote.
  */
 
-export const EJES_ARAUCANIA = ['mapuche_chileno', 'regionalismo_centralismo', 'pobreza_desarrollo', 'region_completa'] as const
+/**
+ * Ejes de Voces Araucanía: las tres tensiones del marco, la región completa del
+ * protocolo 1.1 y la crónica policial con eje propio (decisión del director del
+ * 13-oct-2026: máximo 1 por día y fuera de la mitad reservada a región completa).
+ */
+export const EJES_ARAUCANIA = ['mapuche_chileno', 'regionalismo_centralismo', 'pobreza_desarrollo', 'region_completa', 'seguridad'] as const
 export const EJES_MAPUCHE = [
   'lengua', 'saber', 'economia_propia', 'propuestas', 'protagonismo',
   'territorio_derechos', 'conflicto', 'vida_urbana', 'otro',
@@ -36,7 +41,7 @@ export const brandTerritorialItemSchema = z.object({
   isNews: z.boolean().catch(false).describe('true si es una noticia: un hecho, una decisión o una declaración con fecha. false si es un aviso, un trámite o una página institucional sin hecho.'),
   aboutRegion: z.boolean().catch(false).describe('true solo si la nota trata sobre La Araucanía según la regla de entrada de las pautas. Una mención de paso no basta.'),
   score: puntaje.describe('Nota territorial de 1 a 10 según la escala de las pautas de la marca.'),
-  axis: z.enum(EJES_ARAUCANIA).nullable().catch(null).describe('El eje de la nota según las pautas: una de las tres tensiones o region_completa.'),
+  axis: z.enum(EJES_ARAUCANIA).nullable().catch(null).describe('El eje de la nota según las pautas: una de las tres tensiones, region_completa o seguridad.'),
   sensitive: z.array(z.enum(BANDERAS_SENSIBLES)).catch([]).describe('Banderas sensibles presentes en la nota. Ante la duda, se marca.'),
   reason: motivo,
 })

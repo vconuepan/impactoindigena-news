@@ -422,13 +422,19 @@ export async function seleccionarTerritorial(c: BrandCriteria, ahora: Date): Pro
     }))
   // Mientras el día siga abierto, los lugares de región completa se guardan aunque
   // hoy todavía no haya: una corrida temprana no llena el cupo con tensiones
-  // (revisión del 13-oct-2026). La última corrida del día los suelta.
-  const diaAbierto = ahora.getUTCHours() < config.brandLane.selectionCloseHourUtc
+  // (revisión del 13-oct-2026). La última corrida del día los suelta. La hora es
+  // la del scheduler (Santiago): Chile cambia entre UTC-3 y UTC-4.
+  const diaAbierto = horaEn(ahora, config.scheduler.timezone) < config.brandLane.selectionCloseHour
   const ids = seleccionarAraucania(candidatas, reglasDesdeBalance(c), yaHoy.map(aSel), { diaAbierto })
   if (ids.length > 0) {
     await prisma.storyBrandAssessment.updateMany({ where: { id: { in: ids } }, data: { state: 'selected', selectedAt: ahora } })
   }
   return ids
+}
+
+/** La hora (0-23) de un instante en una zona horaria. */
+export function horaEn(ahora: Date, zona: string): number {
+  return Number(new Intl.DateTimeFormat('en-US', { hour: 'numeric', hourCycle: 'h23', timeZone: zona }).format(ahora))
 }
 
 /**

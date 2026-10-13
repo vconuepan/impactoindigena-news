@@ -8,7 +8,8 @@ const log = createLogger('job:brand_lane')
  * global ya cerró y elige lo de cada día. Solo suma; ver services/brandLane.ts.
  *
  * Corre cada seis horas, como fija el diseño (sección 4): 1:30, 7:30, 13:30 y
- * 19:30 UTC. Cada corrida sigue a un pre-filtro (4, 10, 16, 22), y las de 7:30
+ * 19:30, en la zona del scheduler (SCHEDULER_TIMEZONE, Santiago), igual que el
+ * resto del pipeline. Cada corrida sigue a un pre-filtro (4, 10, 16, 22), y las de 7:30
  * y 19:30 siguen además a select_stories (7 y 19), para que el rescate de Voces
  * Mapuche vea lo que el selector descartó antes de publish_stories (8 y 20).
  *

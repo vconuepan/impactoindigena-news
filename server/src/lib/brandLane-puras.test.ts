@@ -167,3 +167,29 @@ describe('revisión del 13-oct-2026: selección y comuna', () => {
     expect(comunaPrincipal(['Lican Ray', 'Pucón'])).toBe('Villarrica')
   })
 })
+
+describe('decisión del 13-oct-2026: seguridad, como máximo una por día y fuera de la región completa', () => {
+  const reglas = reglasDesdeBalance({ dailyTarget: 3, relevanceMin: 5, balance: { regionCompletaMin: 0.5, mapucheChilenoMaxDia: 1, seguridadMaxDia: 1, porComunaMaxDia: 1 } })
+  const d = new Date('2026-10-12T12:00:00Z')
+  const a = (id: string, brandScore: number, axis: string, comuna: string | null = null): Admitida => ({ id, brandScore, axis, comuna, brandDate: d })
+
+  it('una sola nota de seguridad por día, aunque puntúe más', () => {
+    const r = seleccionarAraucania([a('p1', 6, 'seguridad', 'Angol'), a('p2', 6, 'seguridad', 'Renaico'), a('r1', 5, 'region_completa', 'Pucón'), a('r2', 5, 'region_completa', 'Cunco')], reglas, [], { diaAbierto: false })
+    expect(r.filter((id) => id.startsWith('p'))).toEqual(['p1'])
+    expect(r).toHaveLength(3)
+  })
+
+  it('no ocupa los lugares reservados a la región completa', () => {
+    const r = seleccionarAraucania([a('p1', 6, 'seguridad', 'Angol'), a('t1', 8, 'pobreza_desarrollo', 'Temuco'), a('r1', 5, 'region_completa', 'Pucón'), a('r2', 5, 'region_completa', 'Cunco')], reglas, [], { diaAbierto: false })
+    expect(r.filter((id) => id.startsWith('r'))).toHaveLength(2)
+    expect(r).toHaveLength(3)
+  })
+
+  it('sin el parámetro en la base, el máximo es uno', () => {
+    expect(reglasDesdeBalance({ dailyTarget: 3, relevanceMin: 5, balance: {} }).seguridadMaxDia).toBe(1)
+  })
+
+  it('si ya hubo una hoy, no entra otra', () => {
+    expect(seleccionarAraucania([a('p2', 9, 'seguridad', 'Renaico')], reglas, [{ axis: 'seguridad', comuna: 'Angol' }], { diaAbierto: false })).toEqual([])
+  })
+})

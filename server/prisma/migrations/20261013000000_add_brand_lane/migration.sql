@@ -124,7 +124,8 @@ CREATE TABLE IF NOT EXISTS "story_brand_assessments" (
   CONSTRAINT "story_brand_assessments_brand_score_check" CHECK ("brand_score" IS NULL OR "brand_score" BETWEEN 1 AND 10),
   CONSTRAINT "story_brand_assessments_axis_check" CHECK ("axis" IS NULL OR "axis" IN (
     -- Voces Araucanía: las tres tensiones del marco y la región completa del protocolo 1.1
-    'mapuche_chileno', 'regionalismo_centralismo', 'pobreza_desarrollo', 'region_completa',
+    -- y la crónica policial con eje propio (decisión del director del 13-oct-2026)
+    'mapuche_chileno', 'regionalismo_centralismo', 'pobreza_desarrollo', 'region_completa', 'seguridad',
     -- Voces Mapuche: los cinco ejes del director a 7-8, y el resto de la escala
     'lengua', 'saber', 'economia_propia', 'propuestas', 'protagonismo',
     'territorio_derechos', 'conflicto', 'vida_urbana', 'otro'
@@ -206,7 +207,7 @@ END $$;
 -- cuando las haya, no más de 3 de un mismo feed.
 INSERT INTO "community_brand_criteria" ("community_id", "criterion", "relevance_min", "daily_target", "balance")
 SELECT c."id", 'territorial', 5, 3,
-       '{"regionCompletaMin": 0.5, "mapucheChilenoMaxDia": 1, "porComunaMaxDia": 1}'::jsonb
+       '{"regionCompletaMin": 0.5, "mapucheChilenoMaxDia": 1, "seguridadMaxDia": 1, "porComunaMaxDia": 1}'::jsonb
   FROM "communities" c WHERE c."slug" = 'wallmapu-araucania'
 ON CONFLICT ("community_id") DO NOTHING;
 

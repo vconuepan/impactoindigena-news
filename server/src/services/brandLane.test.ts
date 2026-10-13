@@ -17,13 +17,13 @@ vi.mock('./llm.js', () => ({
   rateLimitDelay: async () => {},
 }))
 
-const brandLaneConfig = vi.hoisted(() => ({ enabled: true, maxCandidatesPerRun: 40, maxAttempts: 2, selectionCloseHourUtc: 19 }))
+const brandLaneConfig = vi.hoisted(() => ({ enabled: true, maxCandidatesPerRun: 40, maxAttempts: 2, selectionCloseHour: 19 }))
 vi.mock('../config.js', async (importOriginal) => {
   const orig = await importOriginal<typeof import('../config.js')>()
   return { config: { ...orig.config, brandLane: brandLaneConfig } }
 })
 
-const { aplicarJuicio, motivoSeguro, juzgarPendientes, runBrandLaneOnce, seleccionarTerritorial, seleccionarRescate, ordenarRescate, sinCandidatasRecientes, origenesActivos, siguenVigentes, tomarCandidatasTerritoriales, TAMANO_LOTE } =
+const { aplicarJuicio, motivoSeguro, juzgarPendientes, runBrandLaneOnce, seleccionarTerritorial, seleccionarRescate, ordenarRescate, sinCandidatasRecientes, origenesActivos, siguenVigentes, tomarCandidatasTerritoriales, horaEn, TAMANO_LOTE } =
   await import('./brandLane.js')
 const { buildTerritorialPrompt, buildMapuchePrompt } = await import('../prompts/brandLane.js')
 const { MOTIVO_GENERICO } = await import('../lib/brandLanguage.js')
@@ -414,8 +414,28 @@ describe('revisión del 13-oct-2026: ventana completa y selección', () => {
     const tensiones = [fila('t1', 'pobreza_desarrollo', 'Temuco'), fila('t2', 'regionalismo_centralismo', 'Angol'), fila('t3', 'pobreza_desarrollo', 'Lumaco')]
     mockPrisma.story.findMany.mockImplementation(async ({ where }: { where: { id: { in: string[] } } }) => where.id.in.map((id) => ({ id, status: 'rejected' })))
     mockPrisma.storyBrandAssessment.findMany.mockResolvedValueOnce(tensiones).mockResolvedValueOnce([])
-    expect(await seleccionarTerritorial(ARAUCANIA, new Date('2026-10-13T07:30:00Z'))).toHaveLength(1)
+    // 10:30 UTC = 07:30 en Santiago (UTC-3 en octubre): día abierto
+    expect(await seleccionarTerritorial(ARAUCANIA, new Date('2026-10-13T10:30:00Z'))).toHaveLength(1)
     mockPrisma.storyBrandAssessment.findMany.mockResolvedValueOnce(tensiones).mockResolvedValueOnce([])
-    expect(await seleccionarTerritorial(ARAUCANIA, new Date('2026-10-13T19:30:00Z'))).toHaveLength(3)
+    // 20:30 UTC = 17:30 en Santiago: en UTC ya serían las 20, pero el día sigue abierto
+    expect(await seleccionarTerritorial(ARAUCANIA, new Date('2026-10-13T20:30:00Z'))).toHaveLength(1)
+    mockPrisma.storyBrandAssessment.findMany.mockResolvedValueOnce(tensiones).mockResolvedValueOnce([])
+    // 22:30 UTC = 19:30 en Santiago: la última corrida cierra el día
+    expect(await seleccionarTerritorial(ARAUCANIA, new Date('2026-10-13T22:30:00Z'))).toHaveLength(3)
+  })
+})
+
+describe('decisión del 13-oct-2026: la crónica policial tiene eje propio', () => {
+  it('el juez puede devolver seguridad y la nota se admite con ese eje', async () => {
+    const { brandTerritorialItemSchema } = await import('../schemas/brandLane.js')
+    const r = brandTerritorialItemSchema.parse({ articleId: 's1', isNews: true, aboutRegion: true, score: 5, axis: 'seguridad', sensitive: ['violencia'], reason: 'x' })
+    expect(r.axis).toBe('seguridad')
+    expect(aplicarJuicio(ARAUCANIA, { tipo: 'territorial', item: r })).toMatchObject({ admitted: true, state: 'evaluated', axis: 'seguridad' })
+  })
+
+  it('la hora de cierre se lee en la zona del scheduler, con el cambio de hora de Chile', () => {
+    expect(horaEn(new Date('2026-10-13T22:30:00Z'), 'America/Santiago')).toBe(19) // UTC-3
+    expect(horaEn(new Date('2026-06-13T23:30:00Z'), 'America/Santiago')).toBe(19) // UTC-4
+    expect(horaEn(new Date('2026-10-13T00:30:00Z'), 'America/Santiago')).toBe(21)
   })
 })

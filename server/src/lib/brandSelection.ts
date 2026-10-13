@@ -7,6 +7,8 @@
  *     lugares se guardan aunque todavía no haya; al cierre se sueltan;
  *   - como máximo una por día del eje «mapuche y chileno», que ya llega a la
  *     vertical por sus palabras clave;
+ *   - como máximo una por día de crónica policial (eje «seguridad»), que no
+ *     cuenta para la mitad de región completa (decisión del 13-oct-2026);
  *   - no dos de la misma comuna si hay alternativa.
  * La escala ordena dentro de cada eje y decide quién pasa el umbral; la cuota
  * decide la mezcla. Sin cuota, las tensiones (7-8) desplazarían siempre a la
@@ -28,6 +30,7 @@ export interface ReglasSeleccion {
   relevanceMin: number
   regionCompletaMin: number
   mapucheChilenoMaxDia: number
+  seguridadMaxDia: number
   porComunaMaxDia: number
 }
 
@@ -39,6 +42,7 @@ export function reglasDesdeBalance(c: { dailyTarget: number; relevanceMin: numbe
     relevanceMin: c.relevanceMin,
     regionCompletaMin: num('regionCompletaMin', 0.5),
     mapucheChilenoMaxDia: num('mapucheChilenoMaxDia', 1),
+    seguridadMaxDia: num('seguridadMaxDia', 1),
     porComunaMaxDia: num('porComunaMaxDia', 1),
   }
 }
@@ -66,6 +70,8 @@ export function seleccionarAraucania(
 
   const puede = (a: Admitida, relajarComuna: boolean): boolean => {
     if (a.axis === 'mapuche_chileno' && cuenta((x) => x.axis === 'mapuche_chileno') >= reglas.mapucheChilenoMaxDia) return false
+    // La crónica policial, como máximo una por día, y nunca en los lugares de región completa (13-oct-2026).
+    if (a.axis === 'seguridad' && cuenta((x) => x.axis === 'seguridad') >= reglas.seguridadMaxDia) return false
     if (!relajarComuna && a.comuna && cuenta((x) => x.comuna === a.comuna) >= reglas.porComunaMaxDia) return false
     // Reservar los lugares de región completa mientras falten: si quedan en esta
     // corrida, o si el día sigue abierto y pueden llegar en una corrida posterior.
