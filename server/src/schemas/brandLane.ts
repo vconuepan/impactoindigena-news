@@ -17,11 +17,12 @@ export const EJES_MAPUCHE = [
 ] as const
 /**
  * Dónde ocurre lo que cuenta la nota. Sirve a la tensión «el sur williche y la
- * Araucanía» y a la regla del Puelmapu (diseño D5, sección 5). Lo urbano NO es
- * un lugar: es el eje vida_urbana (la tensión «lo tradicional y lo urbano» va
- * por eje, no por lugar).
+ * Araucanía» del marco (por eso las dos tienen valor propio) y a la regla del
+ * Puelmapu (diseño D5, sección 5). gulumapu es el resto del lado chileno. Lo
+ * urbano NO es un lugar: es el eje vida_urbana (la tensión «lo tradicional y lo
+ * urbano» va por eje, no por lugar).
  */
-export const LUGARES_MAPUCHE = ['gulumapu', 'puelmapu', 'williche', 'otro'] as const
+export const LUGARES_MAPUCHE = ['araucania', 'williche', 'gulumapu', 'puelmapu', 'otro'] as const
 export const BANDERAS_SENSIBLES = ['menores', 'victimas', 'violencia', 'proceso_penal', 'operativo'] as const
 
 const motivo = z

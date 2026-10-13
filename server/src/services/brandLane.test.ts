@@ -298,6 +298,8 @@ describe('vocabulario de lugar de Voces Mapuche', () => {
   it('lo urbano es un eje y no un lugar (diseño, sección 5): un «urbano» del modelo cae a null', async () => {
     const { brandMapucheItemSchema, LUGARES_MAPUCHE, EJES_MAPUCHE } = await import('../schemas/brandLane.js')
     expect(LUGARES_MAPUCHE).not.toContain('urbano')
+    // la tensión del marco «el sur williche y la Araucanía» se mide con lugar: las dos tienen valor propio
+    expect(LUGARES_MAPUCHE).toEqual(expect.arrayContaining(['araucania', 'williche', 'puelmapu']))
     expect(EJES_MAPUCHE).toContain('vida_urbana')
     const r = brandMapucheItemSchema.parse({ articleId: 's1', score: 7, axis: 'vida_urbana', place: 'urbano', sensitive: [], reason: 'x' })
     expect(r).toMatchObject({ axis: 'vida_urbana', place: null })
