@@ -184,7 +184,17 @@ export async function runSendCommunityDigest(): Promise<void> {
     }
   >()
 
+  // Quien pertenece a una comunidad PUEBLO revela su origen etnico (dato sensible,
+  // Ley 21.719 art. 16): sin consentimiento expreso no se le escribe. Hay filas
+  // anteriores a esa compuerta —POST /join las «rellena» cuando la persona vuelve
+  // a entrar— y a esas no se les manda el digest hasta que consientan.
+  let sinConsentimiento = 0
+
   for (const m of memberships) {
+    if (m.community.type === 'PUEBLO' && !m.consentedAt) {
+      sinConsentimiento++
+      continue
+    }
     if (!byUser.has(m.user.id)) {
       byUser.set(m.user.id, { user: m.user, communities: [] })
     }
@@ -198,7 +208,7 @@ export async function runSendCommunityDigest(): Promise<void> {
     })
   }
 
-  log.info({ userCount: byUser.size }, 'building digests')
+  log.info({ userCount: byUser.size, sinConsentimiento }, 'building digests')
   const temas = await temasVivos()
 
   let sent = 0

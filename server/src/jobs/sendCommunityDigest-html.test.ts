@@ -29,6 +29,7 @@ beforeEach(() => {
   mockPrisma.$queryRaw.mockResolvedValue([])
   mockPrisma.communityMember.findMany.mockResolvedValue([
     {
+      consentedAt: new Date('2026-09-01'),
       user: { id: 'u1', email: 'u1@example.com', name: `Ana<script>alert(1)</script>` },
       community: { id: 'c1', slug: 'mapuche', name: `Pueblo ${ATAQUE}`, type: 'PUEBLO', issueIds: [], keywords: ['mapuche'] },
     },
@@ -60,6 +61,7 @@ describe('digest semanal: lo que viene de afuera no entra como marcado', () => {
   it('no rompe el texto normal ni los enlaces propios', async () => {
     mockPrisma.communityMember.findMany.mockResolvedValue([
       {
+        consentedAt: new Date('2026-09-01'),
         user: { id: 'u1', email: 'u1@example.com', name: 'Ana María' },
         community: { id: 'c1', slug: 'mapuche', name: 'Pueblo Mapuche', type: 'PUEBLO', issueIds: [], keywords: ['mapuche'] },
       },

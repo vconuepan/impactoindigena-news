@@ -27,6 +27,7 @@ beforeEach(() => {
   mockPrisma.story.findMany.mockResolvedValue([])
   mockPrisma.communityMember.findMany.mockResolvedValue([
     {
+      consentedAt: new Date('2026-09-01'),
       user: { id: 'u1', email: 'u1@example.com', name: 'U' },
       community: { id: 'c-mapuche', slug: 'mapuche', name: 'Pueblo Mapuche', type: 'PUEBLO', issueIds: ['tema-fantasma'], keywords: ['mapuche'] },
     },
