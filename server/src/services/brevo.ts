@@ -303,7 +303,9 @@ export async function getContactEngagement(email: string): Promise<ContactEngage
 export async function deleteContact(id: string): Promise<void> {
   return withRetry(
     async () => {
-      await client.delete(`/contacts/${id}`)
+      // Como en updateContact: el identificador admite id o correo, y un correo
+      // con `+` o `@` va codificado. No altera un id numerico.
+      await client.delete(`/contacts/${encodeURIComponent(id)}`)
     },
     { retries: 3, retryOn: isRetryableError },
   )

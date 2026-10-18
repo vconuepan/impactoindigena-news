@@ -22,13 +22,18 @@ const mockPrisma = vi.hoisted(() => ({
   communityMember: { findMany: vi.fn() },
   digestExclusion: { findMany: vi.fn() },
   communityPost: { findMany: vi.fn() },
-  pendingSubscription: { findFirst: vi.fn(), deleteMany: vi.fn() },
+  pendingSubscription: { findFirst: vi.fn(), findMany: vi.fn(), deleteMany: vi.fn() },
   alertSubscription: { findMany: vi.fn(), deleteMany: vi.fn() },
   feedback: { findMany: vi.fn(), deleteMany: vi.fn() },
   magicLink: { deleteMany: vi.fn() },
   auditLog: { create: vi.fn() },
   $disconnect: vi.fn(),
 }))
+
+// Brevo se mockea: el borrado de cuenta ahora lo llama siempre (por id o por
+// correo), y sin esto los tests irian a la red real.
+const mockBrevo = vi.hoisted(() => ({ deleteContact: vi.fn(), updateContact: vi.fn() }))
+vi.mock('../services/brevo.js', () => mockBrevo)
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('../services/crawler.js', () => ({
@@ -317,7 +322,7 @@ describe('Auth Routes', () => {
       mockPrisma.communityMember.findMany.mockResolvedValue([])
       mockPrisma.digestExclusion.findMany.mockResolvedValue([])
       mockPrisma.communityPost.findMany.mockResolvedValue([])
-      mockPrisma.pendingSubscription.findFirst.mockResolvedValue(null)
+      mockPrisma.pendingSubscription.findMany.mockResolvedValue([])
       mockPrisma.alertSubscription.findMany.mockResolvedValue([])
       mockPrisma.feedback.findMany.mockResolvedValue([])
 
@@ -329,7 +334,7 @@ describe('Auth Routes', () => {
       expect(res.headers['content-disposition']).toContain('attachment')
       expect(res.body.profile.email).toBe('member@example.com')
       expect(res.body).toHaveProperty('communityMemberships')
-      expect(res.body).toHaveProperty('newsletterSubscription')
+      expect(res.body).toHaveProperty('newsletterSubscriptions')
       expect(mockPrisma.auditLog.create).toHaveBeenCalled()
     })
 
@@ -363,6 +368,106 @@ describe('Auth Routes', () => {
       expect(mockPrisma.magicLink.deleteMany).toHaveBeenCalledWith({ where: { email: 'member@example.com' } })
       expect(mockPrisma.alertSubscription.deleteMany).toHaveBeenCalledWith({ where: { email: 'member@example.com' } })
       expect(mockPrisma.auditLog.create).toHaveBeenCalled()
+    })
+
+    it('el export incluye TODAS las suscripciones al boletin, no solo la primera', async () => {
+      // Quien se suscribio dos veces (o dejo una pendiente sin confirmar) tiene
+      // varias filas; `findFirst` exportaba una y callaba el resto.
+      mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-1', email: 'member@example.com', name: 'Miembro' })
+      mockPrisma.communityMember.findMany.mockResolvedValue([])
+      mockPrisma.digestExclusion.findMany.mockResolvedValue([])
+      mockPrisma.communityPost.findMany.mockResolvedValue([])
+      mockPrisma.pendingSubscription.findMany.mockResolvedValue([
+        { confirmedAt: new Date('2026-08-01'), createdAt: new Date('2026-07-30') },
+        { confirmedAt: null, createdAt: new Date('2026-09-15') },
+      ])
+      mockPrisma.alertSubscription.findMany.mockResolvedValue([])
+      mockPrisma.feedback.findMany.mockResolvedValue([])
+
+      const res = await request(app)
+        .get('/api/auth/export')
+        .set('Authorization', `Bearer ${memberToken()}`)
+
+      expect(res.status).toBe(200)
+      expect(res.body.newsletterSubscriptions, 'el export volvio a callar suscripciones').toHaveLength(2)
+      expect(res.body).not.toHaveProperty('newsletterSubscription')
+      expect(mockPrisma.pendingSubscription.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { email: 'member@example.com' } }),
+      )
+    })
+
+    describe('borrado de cuenta y el contacto en Brevo', () => {
+      const borrar = () =>
+        request(app).delete('/api/auth/account').set('Authorization', `Bearer ${memberToken()}`).send({ confirm: 'ELIMINAR' })
+
+      beforeEach(() => {
+        mockPrisma.user.delete.mockResolvedValue({ id: 'user-1' })
+        mockPrisma.magicLink.deleteMany.mockResolvedValue({ count: 0 })
+        mockPrisma.pendingSubscription.deleteMany.mockResolvedValue({ count: 0 })
+        mockPrisma.alertSubscription.deleteMany.mockResolvedValue({ count: 0 })
+        mockPrisma.feedback.deleteMany.mockResolvedValue({ count: 0 })
+        mockBrevo.deleteContact.mockResolvedValue(undefined)
+      })
+
+      it('BORRA el contacto por su id, no solo lo da de baja', async () => {
+        mockPrisma.pendingSubscription.findFirst.mockResolvedValue({ plunkContactId: '4242' })
+
+        const res = await borrar()
+
+        expect(res.status).toBe(200)
+        expect(mockBrevo.deleteContact).toHaveBeenCalledWith('4242')
+        expect(
+          mockBrevo.updateContact,
+          'el borrado de cuenta volvio a «dar de baja» al contacto: su correo sigue guardado en Brevo',
+        ).not.toHaveBeenCalled()
+      })
+
+      it('sin fila de suscripcion, lo borra por el correo (quien vuelve tras una baja no tiene id)', async () => {
+        mockPrisma.pendingSubscription.findFirst.mockResolvedValue(null)
+
+        await borrar()
+
+        expect(mockBrevo.deleteContact).toHaveBeenCalledWith('member@example.com')
+      })
+
+      it('una fila sin id de contacto tambien cae al correo', async () => {
+        mockPrisma.pendingSubscription.findFirst.mockResolvedValue({ plunkContactId: null })
+
+        await borrar()
+
+        expect(mockBrevo.deleteContact).toHaveBeenCalledWith('member@example.com')
+      })
+
+      it('lo borra ANTES de eliminar el registro local', async () => {
+        mockPrisma.pendingSubscription.findFirst.mockResolvedValue({ plunkContactId: '4242' })
+
+        await borrar()
+
+        const brevo = mockBrevo.deleteContact.mock.invocationCallOrder[0]
+        const local = mockPrisma.user.delete.mock.invocationCallOrder[0]
+        expect(brevo).toBeLessThan(local)
+      })
+
+      it('un 404 de Brevo (no habia contacto) no impide el borrado', async () => {
+        mockPrisma.pendingSubscription.findFirst.mockResolvedValue(null)
+        mockBrevo.deleteContact.mockRejectedValue(Object.assign(new Error('Not Found'), { response: { status: 404 } }))
+
+        const res = await borrar()
+
+        expect(res.status).toBe(200)
+        expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: 'user-1' } })
+      })
+
+      it('una caida de Brevo tampoco impide el borrado local', async () => {
+        mockPrisma.pendingSubscription.findFirst.mockResolvedValue({ plunkContactId: '4242' })
+        mockBrevo.deleteContact.mockRejectedValue(Object.assign(new Error('boom'), { response: { status: 503 } }))
+
+        const res = await borrar()
+
+        expect(res.status).toBe(200)
+        expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: 'user-1' } })
+        expect(mockPrisma.pendingSubscription.deleteMany).toHaveBeenCalled()
+      })
     })
   })
 })

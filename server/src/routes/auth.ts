@@ -304,7 +304,7 @@ router.get('/export', requireMember, async (req, res) => {
     const userId = req.user!.userId
     const email = req.user!.email
 
-    const [user, memberships, digestExclusions, posts, subscription, alerts, feedback] = await Promise.all([
+    const [user, memberships, digestExclusions, posts, subscriptions, alerts, feedback] = await Promise.all([
       getUserById(userId),
       prisma.communityMember.findMany({
         where: { userId },
@@ -315,9 +315,13 @@ router.get('/export', requireMember, async (req, res) => {
         select: { createdAt: true, community: { select: { name: true, slug: true } } },
       }),
       prisma.communityPost.findMany({ where: { userId } }),
-      prisma.pendingSubscription.findFirst({
+      // TODAS las filas, no la primera: quien se suscribio mas de una vez (o dejo
+      // una pendiente sin confirmar) tiene varias, y el derecho de acceso alcanza
+      // a todas. `findFirst` exportaba una sola y callaba el resto.
+      prisma.pendingSubscription.findMany({
         where: { email },
         select: { confirmedAt: true, createdAt: true },
+        orderBy: { createdAt: 'asc' },
       }),
       prisma.alertSubscription.findMany({
         where: { email },
@@ -336,7 +340,7 @@ router.get('/export', requireMember, async (req, res) => {
       communityMemberships: memberships,
       digestExclusions,
       communityPosts: posts,
-      newsletterSubscription: subscription,
+      newsletterSubscriptions: subscriptions,
       topicAlerts: alerts,
       feedback,
     }
@@ -368,13 +372,18 @@ router.delete('/account', requireMember, async (req, res) => {
     const userId = req.user!.userId
     const email = req.user!.email
 
-    // Best-effort: remove from Brevo before deleting the local record
+    // Borrar al titular del proveedor de correo, no solo darlo de baja: el derecho
+    // de supresion alcanza al encargado, y un contacto «dado de baja» sigue siendo
+    // su correo guardado en Brevo. El identificador es el id del contacto o, si no
+    // hay fila (quien solo se unio a comunidades quiza nunca llego a Brevo), el
+    // correo: un 404 solo dice que no habia nada que borrar. Mejor esfuerzo: un
+    // fallo del proveedor no puede impedir el borrado local.
     const sub = await prisma.pendingSubscription.findFirst({ where: { email } })
-    if (sub?.plunkContactId) {
-      try {
-        await brevo.updateContact(sub.plunkContactId, { subscribed: false })
-      } catch (err) {
-        log.warn({ err, email: maskEmail(email) }, 'failed to update Brevo on account deletion, continuing')
+    try {
+      await brevo.deleteContact(sub?.plunkContactId || email)
+    } catch (err) {
+      if ((err as { response?: { status?: number } })?.response?.status !== 404) {
+        log.warn({ err, email: maskEmail(email) }, 'failed to delete Brevo contact on account deletion, continuing')
       }
     }
 

@@ -31,6 +31,7 @@ const {
   getCampaignStats,
   createContact,
   updateContact,
+  deleteContact,
   sendTransactional,
   verifyEmail,
 } = await import('./brevo.js')
@@ -165,6 +166,26 @@ describe('Brevo API client', () => {
         '/contacts/vuelve%2Betiqueta%40example.com',
         expect.objectContaining({ emailBlacklisted: false }),
       )
+    })
+  })
+
+  describe('deleteContact', () => {
+    it('borra por id con DELETE', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({ data: {} })
+
+      await deleteContact('12345')
+
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith('/contacts/12345')
+    })
+
+    it('acepta el correo como identificador y lo encodea, como updateContact', async () => {
+      // Es el camino del borrado de cuenta de quien nunca tuvo fila de
+      // suscripcion: no hay id que usar y el correo puede traer `+`.
+      mockAxiosInstance.delete.mockResolvedValue({ data: {} })
+
+      await deleteContact('titular+etiqueta@example.com')
+
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith('/contacts/titular%2Betiqueta%40example.com')
     })
   })
 

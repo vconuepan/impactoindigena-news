@@ -592,6 +592,12 @@ router.delete('/:slug/leave', requireMember, async (req, res) => {
     await prisma.communityMember.deleteMany({
       where: { userId: req.user!.userId, communityId: community.id },
     })
+    // La exclusion del digest era de una MEMBRESIA que ya no existe. Si quedaba, la
+    // persona que volvia a unirse seguia sin recibir el digest de esa comunidad sin
+    // que nada se lo dijera, y la fila sobrevivia a su salida sin servir a nada.
+    await prisma.digestExclusion.deleteMany({
+      where: { userId: req.user!.userId, communityId: community.id },
+    })
 
     log.info({ userId: req.user!.userId, slug: req.params.slug }, 'user left community')
     res.json({ isMember: false })

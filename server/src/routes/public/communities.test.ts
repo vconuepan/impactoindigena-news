@@ -17,6 +17,9 @@ const mockPrisma = vi.hoisted(() => ({
     upsert: vi.fn(),
     deleteMany: vi.fn(),
   },
+  digestExclusion: {
+    deleteMany: vi.fn(),
+  },
   story: {
     count: vi.fn(),
     findMany: vi.fn(),
@@ -309,6 +312,36 @@ describe('Communities API', () => {
       expect(res.status).toBe(200)
       expect(res.body.isMember).toBe(false)
       expect(mockPrisma.communityMember.deleteMany).toHaveBeenCalledOnce()
+    })
+
+    it('borra tambien la exclusion del digest de ESA comunidad, y solo la de esa persona', async () => {
+      mockPrisma.community.findUnique.mockResolvedValue(sampleCommunity({ id: 'comm-1' }))
+      mockPrisma.communityMember.deleteMany.mockResolvedValue({ count: 1 })
+      mockPrisma.digestExclusion.deleteMany.mockResolvedValue({ count: 1 })
+
+      const res = await request(app)
+        .delete('/api/communities/pueblo-mapuche/leave')
+        .set(memberAuthHeader('veedor-1'))
+
+      expect(res.status).toBe(200)
+      // Ni todas las exclusiones de la persona ni las de otras: la de esta comunidad.
+      expect(mockPrisma.digestExclusion.deleteMany).toHaveBeenCalledOnce()
+      expect(mockPrisma.digestExclusion.deleteMany).toHaveBeenCalledWith({
+        where: { userId: 'veedor-1', communityId: 'comm-1' },
+      })
+    })
+
+    it('si no tenia exclusion, salir funciona igual (el borrado es idempotente)', async () => {
+      mockPrisma.community.findUnique.mockResolvedValue(sampleCommunity())
+      mockPrisma.communityMember.deleteMany.mockResolvedValue({ count: 1 })
+      mockPrisma.digestExclusion.deleteMany.mockResolvedValue({ count: 0 })
+
+      const res = await request(app)
+        .delete('/api/communities/pueblo-mapuche/leave')
+        .set(memberAuthHeader())
+
+      expect(res.status).toBe(200)
+      expect(res.body.isMember).toBe(false)
     })
 
     it('returns 404 for unknown community', async () => {
