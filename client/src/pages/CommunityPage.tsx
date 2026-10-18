@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useCommunity, useCommunityStories, useMembership, useJoinCommunity, useLeaveCommunity, useCommunitySignals } from '../hooks/useCommunities'
@@ -45,7 +45,7 @@ function ShareBar({ communityName }: { communityName: string }) {
   )
 }
 
-function JoinBlock({ slug, communityName, communityType }: { slug: string; communityName: string; communityType: string }) {
+export function JoinBlock({ slug, communityName, communityType }: { slug: string; communityName: string; communityType: string }) {
   const navigate = useNavigate()
   // isAuthenticated() reads a non-httpOnly cookie — safe in private mode (returns false on error)
   const isAuthed = memberAuth.isAuthenticated()
@@ -61,9 +61,19 @@ function JoinBlock({ slug, communityName, communityType }: { slug: string; commu
 
   // Auto-join only for non-PUEBLO communities. PUEBLO requires explicit consent
   // (membership reveals ethnic origin, a sensitive datum — Ley 21.719 Art. 16).
+  //
+  // UNA sola vez por visita y NUNCA despues de salir. Sin el cerrojo, «Abandonar
+  // comunidad» dejaba `isMember` en false, este efecto lo veia y volvia a unir a
+  // la persona al instante; y como la fila ya no existia, el servidor mandaba
+  // otra bienvenida en cada vuelta. Quien sale se queda fuera hasta que apriete
+  // «Volver a unirme».
   const joinMutate = joinMutation.mutate
+  const autoUnionIntentada = useRef(false)
+  const [salio, setSalio] = useState(false)
   useEffect(() => {
+    if (autoUnionIntentada.current) return
     if (isAuthed && !isPueblo && membership !== undefined && !membership.isMember) {
+      autoUnionIntentada.current = true
       joinMutate(undefined)
     }
   }, [isAuthed, isPueblo, membership, joinMutate])
@@ -84,7 +94,9 @@ function JoinBlock({ slug, communityName, communityType }: { slug: string; commu
   }
 
   async function handleLeave() {
+    autoUnionIntentada.current = true
     await leaveMutation.mutateAsync()
+    setSalio(true)
   }
 
   const consentNotice = (
@@ -144,6 +156,25 @@ function JoinBlock({ slug, communityName, communityType }: { slug: string; commu
           className="text-xs text-neutral-400 hover:text-red-500 transition-colors"
         >
           {leaveMutation.isPending ? 'Saliendo...' : 'Abandonar comunidad'}
+        </button>
+      </div>
+    )
+  }
+
+  // Salio de una comunidad que no es PUEBLO: se queda fuera, y volver es un acto
+  // explicito. (Las PUEBLO ya tienen su compuerta de consentimiento, mas abajo.)
+  if (isAuthed && !isPueblo && salio) {
+    return (
+      <div className="mt-10 border-t border-neutral-100 pt-8 flex flex-col items-center text-center gap-3">
+        <p className="text-sm font-medium text-neutral-700">Saliste de esta comunidad</p>
+        <button
+          onClick={() => {
+            setSalio(false)
+            joinMutate(undefined)
+          }}
+          className="text-xs text-neutral-500 underline hover:text-brand-700 transition-colors"
+        >
+          Volver a unirme
         </button>
       </div>
     )
