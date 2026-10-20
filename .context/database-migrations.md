@@ -131,10 +131,34 @@ Then delete the migration folder from `server/prisma/migrations/` and start over
 
 ### Schema Drift
 
-To see what SQL would bring the database in sync with the current schema (useful for debugging), ask the user to run:
+To compare production with the model, the director runs (read-only introspection; the URL comes from `.env`):
 
 ```bash
-npx prisma migrate diff --from-url DATABASE_URL --to-schema-datamodel server/prisma/schema.prisma --script
+npm run db:migrate:diff --prefix server -- --from-schema-datasource prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script
 ```
 
-This requires the actual database URL, so the user must run it themselves or substitute the value.
+**Expected output since `20261019000000_fix_schema_drift`: exactly two blocks.**
+
+```sql
+-- AlterEnum
+BEGIN;
+CREATE TYPE "UserType_new" AS ENUM ('ADMIN', 'EMPRESA', 'COMUNIDAD_LIDER', 'VEEDOR');
+...
+COMMIT;
+
+-- DropIndex
+DROP INDEX "stories_embedding_idx";
+```
+
+- **The index** is the HNSW index of semantic search (`20260206120000_add_embedding_fields`). Prisma 6 cannot model HNSW indexes, so it always shows up. **Never apply it.**
+- **The enum.** Production's `UserType` is `VEEDOR, COMUNIDAD, EMPRESA, ADMIN, COMUNIDAD_LIDER`. `COMUNIDAD_LIDER` was added by hand: no migration creates it, and accounts use it. `COMUNIDAD`, which `20260503000002_fix_users_schema` created, is unused. Prisma wants to recreate the type to drop it. Nothing breaks, so it is left alone. Do not apply that block as-is either. A database built only from the migrations lacks `COMUNIDAD_LIDER`, so assigning «Comunidad Líder» fails there with 22P02, though not in production.
+
+Anything else is drift. Classify each line before acting: if the database is right, fix `schema.prisma`; if the database is wrong, write guarded, idempotent SQL as a new migration. **Never apply the diff output as-is:** besides dropping the vector index, it converts `timestamptz` columns using the session time zone (an `America/Santiago` session shifts 12:00 UTC to 09:00).
+
+Run it from a checkout whose `main` matches `origin/main`. On 18-oct-2026 a local `main` 27 commits behind made the four D5 tables look like drift.
+
+Lessons from the 18-oct cleanup (22 differences: 21 from hand-written SQL that did not match the model, one from a manual change to production):
+
+- **`DROP CONSTRAINT` does not drop an index created with `CREATE UNIQUE INDEX`.** `IF EXISTS` turns the mistake into a silent no-op. Use `DROP INDEX`. This left the old `page_views (path, date)` index alive from May to October and silently lost visits.
+- **Check hand-written SQL against the model.** Build a scratch database from every `migration.sql` (local PostgreSQL 17 + pgvector, never `.env`) and diff it against `schema.prisma` with `--from-url`. The only lines should be the two blocks above, once the scratch database also has `COMUNIDAD_LIDER`.
+- **An identical diff does not prove an identical catalog.** The scratch database and production gave the same 55-line diff on 18-oct, yet production already had `COMUNIDAD_LIDER` and the scratch database did not: Prisma recreates the enum in both cases, so the diff hides which values exist. Before writing a fix from a replica, read the objects it touches in production (read-only catalog queries).

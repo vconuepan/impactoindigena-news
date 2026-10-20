@@ -144,7 +144,7 @@ model StoryCluster {
 model Feed {
   id                 String    @id @default(uuid())
   title              String
-  rssUrl             String    @unique @map("rss_url")
+  rssUrl             String    @unique(map: "feeds_url_key") @map("rss_url")
   url                String?
   displayTitle       String?   @map("display_title")
   language           String    @default("en")
@@ -226,7 +226,7 @@ model NewsletterSend {
   plunkCampaignId String?              @map("plunk_campaign_id")
   isTest          Boolean              @default(false) @map("is_test")
   status          NewsletterSendStatus @default(draft)
-  htmlContent     String               @map("html_content")
+  htmlContent     String               @default("") @map("html_content")
   stats           Json                 @default("{}")
   errorMessage    String?              @map("error_message")
   sentAt          DateTime?            @map("sent_at")
@@ -234,7 +234,6 @@ model NewsletterSend {
   updatedAt       DateTime             @updatedAt @map("updated_at")
 
   @@index([newsletterId])
-  @@index([plunkCampaignId])
   @@map("newsletter_sends")
 }
 
@@ -358,7 +357,7 @@ model InstagramPost {
   publishedAt      DateTime? @map("published_at")
   likeCount        Int       @default(0) @map("like_count")
   commentCount     Int       @default(0) @map("comment_count")
-  metricsUpdatedAt DateTime? @map("metrics_updated_at")
+  metricsUpdatedAt DateTime? @map("metrics_updated_at") @db.Timestamptz(6)
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
@@ -382,7 +381,7 @@ model LinkedInPost {
   likeCount        Int       @default(0) @map("like_count")
   commentCount     Int       @default(0) @map("comment_count")
   impressionCount  Int       @default(0) @map("impression_count")
-  metricsUpdatedAt DateTime? @map("metrics_updated_at")
+  metricsUpdatedAt DateTime? @map("metrics_updated_at") @db.Timestamptz(6)
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
@@ -410,7 +409,7 @@ model FacebookPost {
   shareCount       Int       @default(0) @map("share_count")
   metricsUpdatedAt DateTime? @map("metrics_updated_at")
   createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime  @updatedAt @map("updated_at")
+  updatedAt        DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@index([status])
   @@index([publishedAt])
@@ -508,7 +507,7 @@ enum UserType {
 model User {
   id            String             @id @default(uuid())
   email         String             @unique
-  name          String
+  name          String             @default("")
   passwordHash  String
   userType      UserType           @default(VEEDOR)
   verified      Boolean            @default(false)
@@ -519,7 +518,7 @@ model User {
   posts             CommunityPost[]
   refreshTokens     RefreshToken[]
   createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  updatedAt     DateTime           @default(now()) @updatedAt
 
   @@map("users")
 }
@@ -540,7 +539,7 @@ model Community {
   type        CommunityType
   region      String?
   imageUrl    String?           @map("image_url")
-  issueIds    String[]          @map("issue_ids")
+  issueIds    String[]          @default([]) @map("issue_ids")
   keywords    String[]          @default([]) @map("keywords")
   active      Boolean           @default(true)
   lat         Float?
@@ -624,7 +623,7 @@ model RefreshToken {
 }
 
 model MagicLink {
-  id         String    @id @default(uuid())
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   email      String
   token      String    @unique
   expiresAt  DateTime  @map("expires_at")
@@ -646,10 +645,10 @@ model Spotlight {
   label     String                         // Display name: "Foro Permanente ONU 2025"
   keywords  String[]  @default([])         // Keywords for ILIKE story matching
   isActive  Boolean   @default(true) @map("is_active")
-  startsAt  DateTime? @map("starts_at")    // Optional window (null = always)
-  endsAt    DateTime? @map("ends_at")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  startsAt  DateTime? @map("starts_at") @db.Timestamptz(6)    // Optional window (null = always)
+  endsAt    DateTime? @map("ends_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([isActive])
   @@map("spotlights")
@@ -668,8 +667,8 @@ model OngoingCase {
   keywords    String[] @default([])            // Keywords for ILIKE story matching
   status      String   @default("active")      // active | archived
   imageUrl    String?  @map("image_url")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([status])
   @@map("ongoing_cases")
@@ -712,15 +711,15 @@ model AlertSubscription {
   email       String
   topics      String[]  @default([])           // e.g. ["mapuche", "litio", "consulta previa"]
   token       String    @unique                // for email verification
-  confirmedAt DateTime? @map("confirmed_at")
-  expiresAt   DateTime  @map("expires_at")     // token expiry
+  confirmedAt DateTime? @map("confirmed_at") @db.Timestamptz(6)
+  expiresAt   DateTime  @map("expires_at") @db.Timestamptz(6)     // token expiry
   active      Boolean   @default(true)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@index([email])
   @@index([token])
-  @@index([active, confirmedAt])
+  @@index([active, confirmedAt], map: "alert_subscriptions_active_confirmed_idx")
   @@map("alert_subscriptions")
 }
 
@@ -808,7 +807,7 @@ model SocialToken {
   refreshedAt DateTime? @map("refreshed_at")
   lastError   String?   @map("last_error")
   createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
 
   @@map("social_tokens")
 }
