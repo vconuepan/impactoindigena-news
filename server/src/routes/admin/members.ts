@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { createLogger } from '../../lib/logger.js'
 import prisma from '../../lib/prisma.js'
+import { writeAuditLog } from '../../services/audit.js'
 
 const router = Router()
 const log = createLogger('admin:members')
@@ -148,8 +149,23 @@ router.delete('/:userId/community/:communityId', async (req, res) => {
     await prisma.communityMember.delete({
       where: { userId_communityId: { userId, communityId } },
     })
+    // Misma limpieza que /leave (routes/public/communities.ts): la exclusión
+    // del digest pertenece a una membresía que ya no existe. Si quedaba, la
+    // persona que volvía a unirse seguía sin recibir el digest de esa comunidad
+    // sin que nada se lo dijera. Hasta el 20-oct-2026 este camino no la borraba.
+    await prisma.digestExclusion.deleteMany({ where: { userId, communityId } })
 
     log.info({ userId, communityId }, 'admin removed user from community')
+    // Un administrador borrando datos ajenos: su correo es trazabilidad del
+    // operador y se conserva (al revés que en los caminos de autoservicio).
+    // En metadata va solo el id de la comunidad, no su nombre ni su slug.
+    await writeAuditLog({
+      actor: req.user,
+      action: 'membership.delete',
+      targetType: 'community_member',
+      targetId: userId,
+      metadata: { communityId },
+    })
     res.json({ success: true })
   } catch (err: unknown) {
     const code = (err as { code?: string }).code
