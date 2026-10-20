@@ -15,20 +15,41 @@
  *   npm run translations:backfill                 # simulacion: cuenta y lista, no llama al modelo, no escribe
  *   npm run translations:backfill:apply           # traduce y escribe, de la mas reciente a la mas antigua
  *   npm run translations:backfill:apply -- --limit 20   # solo las 20 mas recientes, para probar
+ *   npm run translations:backfill:apply -- --limit=20   # lo mismo
+ *
+ * Un --limit sin valor o con algo que no sea un entero >= 0 aborta antes de
+ * tocar nada: hasta el 20-oct-2026 se parseaba con parseInt y «--limit veinte»
+ * o «--limit=20» dejaban el limite en NaN, que con --apply era traducir todo.
  *
  * La simulacion es el modo por defecto a proposito: escribe sobre la base de
  * produccion y cada noticia es una llamada al modelo.
  */
 import 'dotenv/config'
 import prisma from '../lib/prisma.js'
+import { parseLimitArg, CliArgError } from '../lib/cli-args.js'
 import { translateStory, isUntranslated, TranslationUnchangedError } from '../services/translation.js'
 
 const APPLY = process.argv.includes('--apply')
-const limitIdx = process.argv.indexOf('--limit')
-const LIMIT = limitIdx > -1 ? parseInt(process.argv[limitIdx + 1], 10) : Infinity
+
+function leerLimite(): number | null {
+  try {
+    return parseLimitArg(process.argv.slice(2))
+  } catch (err) {
+    if (err instanceof CliArgError) {
+      console.error(err.message)
+      process.exit(1)
+    }
+    throw err
+  }
+}
+
+// Se valida antes de main(), que es donde se abre la base: un --limit mal
+// escrito no puede convertirse en «sin limite».
+const LIMIT = leerLimite()
 
 async function main() {
   console.log(APPLY ? '== APLICANDO (llama al modelo y escribe) ==' : '== SIMULACION (no llama al modelo, no escribe) ==')
+  console.log(LIMIT === null ? 'Sin limite.' : `Limite: ${LIMIT}.`)
 
   const stories = await prisma.story.findMany({
     where: { status: 'published', OR: [{ title: { not: null } }, { summary: { not: null } }] },
@@ -42,7 +63,7 @@ async function main() {
   )
   const pendientes = stories
     .filter(s => sinIngles.includes(s) || copiadas.includes(s))
-    .slice(0, Number.isFinite(LIMIT) ? LIMIT : undefined)
+    .slice(0, LIMIT ?? undefined)
 
   console.log(`Publicadas: ${stories.length} · sin ingles: ${sinIngles.length} · copiadas: ${copiadas.length} · a traducir ahora: ${pendientes.length}`)
 
