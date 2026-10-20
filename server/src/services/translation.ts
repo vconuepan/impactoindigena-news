@@ -106,12 +106,18 @@ export async function translateStory(storyId: string): Promise<void> {
 
   // Guardarrail determinista en el punto de escritura: una instruccion al LLM
   // es blanda, y el test unitario simula el modelo, asi que ninguno de los dos
-  // puede atrapar esto. Se miran titulo y resumen; el rotulo queda fuera a
-  // proposito porque un kicker corto de nombres propios ("COP30") es
-  // legitimamente identico en los dos idiomas. Falla cerrado: no se escribe
-  // nada y la noticia sigue cayendo al español, que es lo mismo que pasaba.
+  // puede atrapar esto.
+  //
+  // Decide el RESUMEN. Dos o tres oraciones nunca son legitimamente identicas
+  // en los dos idiomas: si vuelven iguales es el modelo copiando, venga o no
+  // traducido el titulo. El titulo solo NO rechaza: uno hecho de nombres
+  // propios («Tapati Rapa Nui 2026») es identico de verdad, y hasta el
+  // 20-oct-2026 hundia la nota entera, resumen incluido. El rotulo queda fuera
+  // por la misma razon («COP30»). Una noticia sin resumen no tiene con que
+  // discriminar y pasa. Falla cerrado: no se escribe nada y la noticia sigue
+  // cayendo al español, que es lo mismo que pasaba.
   const copied = (['title', 'summary'] as const).filter(f => isUntranslated(story[f], result[`${f}En`]))
-  if (copied.length > 0) {
+  if (copied.includes('summary')) {
     throw new TranslationUnchangedError(storyId, copied)
   }
 

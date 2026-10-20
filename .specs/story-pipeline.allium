@@ -239,8 +239,11 @@ invariant TranslationIsNotACopy {
     -- translation, not a translation. From 2026-05-10 to 2026-10-12 the
     -- translator schema let the model copy the input: 3131 of 3958 published
     -- stories. Enforced in code at the write point (TranslationUnchangedError).
+    -- The summary decides (2026-10-20): two or three sentences are never
+    -- legitimately identical in both languages, while a title made of proper
+    -- nouns ("Tapati Rapa Nui 2026") is. So the title alone never rejects,
+    -- and title_en may legitimately equal title.
     forall story: Story
-        story.title_en != null implies normalize(story.title_en) != normalize(story.title)
         story.summary_en != null implies normalize(story.summary_en) != normalize(story.summary)
 }
 

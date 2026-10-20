@@ -58,9 +58,11 @@ async function main() {
   })
 
   const sinIngles = stories.filter(s => !s.titleEn)
-  const copiadas = stories.filter(
-    s => s.titleEn && (isUntranslated(s.title, s.titleEn) || isUntranslated(s.summary, s.summaryEn)),
-  )
+  // Mismo criterio que el guardarrail de translateStory(): decide el resumen.
+  // Un titulo identico con el resumen traducido es legitimo (nombres propios,
+  // «Tapati Rapa Nui 2026») y no se cuenta como copia ni se vuelve a traducir
+  // en cada corrida.
+  const copiadas = stories.filter(s => s.titleEn && isUntranslated(s.summary, s.summaryEn))
   const pendientes = stories
     .filter(s => sinIngles.includes(s) || copiadas.includes(s))
     .slice(0, LIMIT ?? undefined)
