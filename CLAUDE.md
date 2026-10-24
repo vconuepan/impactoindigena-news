@@ -152,6 +152,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | `twitter.md` | OAuth 1.0a static creds, text reused from Bluesky, admin panel, draft-only retry |
 | `facebook.md` | Page token vs Instagram token, link-card posting, groups impossible, token check |
 | `linkedin.md` | Member token (60d, sin refresh automático), reautorización OAuth, job de chequeo |
+| `story-carousel.md` | Carrusel de una noticia desde el artículo original (panel → ficha): candados, formato, costo |
 | `security-audit-2026-05-04.md` | Point-in-time security audit. Historical record, not current state |
 | `client/.context/skeletons.md` | Skeleton components for loading states (prevents CLS) |
 

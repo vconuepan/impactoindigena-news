@@ -352,3 +352,23 @@ export const editorialSchema = z.object({
 })
 
 export type EditorialResult = z.infer<typeof editorialSchema>;
+
+// Carrusel de una noticia. Los `.describe()` van al mínimo a propósito: el texto
+// del `.describe()` viaja en la definición de la función y le gana al prompt
+// (medido el 3-sep-2026 con el país), así que las reglas viven en
+// `prompts/story-carousel.ts`.
+const storyCarouselSlideSchema = z.object({
+  titulo: z.string(),
+  texto: z.string(),
+});
+
+export const storyCarouselSchema = z.object({
+  laminas: z.array(storyCarouselSlideSchema).describe("En orden: portada, desarrollo y cierre"),
+});
+
+export const storyCarouselWithReadingSchema = z.object({
+  laminas: z.array(storyCarouselSlideSchema).describe("En orden: portada, desarrollo y cierre"),
+  lectura: storyCarouselSlideSchema,
+});
+
+export type StoryCarouselResult = z.infer<typeof storyCarouselWithReadingSchema>;

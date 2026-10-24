@@ -455,6 +455,16 @@ export const config = {
       lifetimeDays: parseInt(process.env.INSTAGRAM_TOKEN_LIFETIME_DAYS || '60', 10),
     },
   },
+  // Carrusel de una noticia, armado desde el artículo original (panel → ficha).
+  storyCarousel: {
+    modelTier: 'medium' as const,
+    // Bajo este largo, el texto guardado del original es una bajada de RSS y no
+    // alcanza para cinco láminas sin inventar: se rechaza y se dice por qué.
+    minSourceChars: parseInt(process.env.STORY_CAROUSEL_MIN_SOURCE_CHARS || '1200', 10),
+    // Tope de lo que se le manda al modelo: acota el costo de un artículo largo
+    // o de un crawl que trajo la página entera.
+    maxSourceChars: parseInt(process.env.STORY_CAROUSEL_MAX_SOURCE_CHARS || '15000', 10),
+  },
   facebook: {
     // Token de PÁGINA, no de usuario ni el de Instagram: ese usa
     // graph.instagram.com y este graph.facebook.com. Es el valor de arranque; una

@@ -13,7 +13,7 @@ const log = createLogger('carousel-gen')
 // @napi-rs/canvas renders no text at all (shapes draw, text is blank). The
 // font file lives at <wwwroot>/assets/fonts and is deployed alongside dist/.
 // 'DM Sans' is a variable font and covers both regular and bold weights.
-const FONT = 'DM Sans'
+export const FONT = 'DM Sans'
 try {
   const here = path.dirname(fileURLToPath(import.meta.url)) // dist/lib
   const fontPath = path.resolve(here, '../../assets/fonts/DMSans.ttf')
@@ -25,7 +25,7 @@ try {
 
 // Brand palette (DESIGN.md). Editorial, photography-forward: dark surfaces,
 // white text, one warm accent. No rainbow bars, no side-stripe borders.
-const C = {
+export const C = {
   green: '#0D5F3C',
   accent: '#E0712F',          // warm terracotta — reads on dark photos
   white: '#FFFFFF',
@@ -44,9 +44,9 @@ const C = {
 const LOGO_WHITE = `${config.siteUrl}/images/logo-horizontal-blanco.png`
 
 // 4:5 vertical (1080×1350), rendered 2× for crispness
-const W = 1080, H = 1350, SCALE = 2
-const RW = W * SCALE, RH = H * SCALE
-const M = 70 * SCALE
+export const W = 1080, H = 1350, SCALE = 2
+export const RW = W * SCALE, RH = H * SCALE
+export const M = 70 * SCALE
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -60,7 +60,7 @@ function cleanText(text: string): string {
     .replace(/\n+/g, ' ').trim()
 }
 
-function roundRect(ctx: any, x: number, y: number, w: number, h: number, r: number): void {
+export function roundRect(ctx: any, x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
   ctx.arcTo(x + w, y, x + w, y + h, r)
@@ -71,7 +71,7 @@ function roundRect(ctx: any, x: number, y: number, w: number, h: number, r: numb
 }
 
 /** Pill (rounded chip) with text. Returns its total width. */
-function drawPill(ctx: any, text: string, x: number, y: number, fontPx: number, bg: string, fg: string): number {
+export function drawPill(ctx: any, text: string, x: number, y: number, fontPx: number, bg: string, fg: string): number {
   ctx.font = `700 ${fontPx}px '${FONT}'`
   const padX = 22 * SCALE
   const tw = ctx.measureText(text).width
@@ -135,7 +135,7 @@ async function getLogo(): Promise<any> {
   return _logoWhite || null
 }
 
-async function drawLogo(ctx: any, x: number, y: number, h: number, align: 'left' | 'center' = 'left'): Promise<void> {
+export async function drawLogo(ctx: any, x: number, y: number, h: number, align: 'left' | 'center' = 'left'): Promise<void> {
   const logo = await getLogo()
   if (!logo) return
   const w = (logo.width / logo.height) * h
@@ -172,7 +172,7 @@ async function drawBgPhoto(ctx: any, aiImageUrl: string, darken: number): Promis
 /** Clean branded dark background: warm ink + a soft green glow. Used on the
  *  text slides so the AI photo doesn't repeat on every slide (it appears only
  *  on the cover, full-bleed, and the resumen, framed). */
-function drawCleanBg(ctx: any): void {
+export function drawCleanBg(ctx: any): void {
   ctx.fillStyle = C.ink
   ctx.fillRect(0, 0, RW, RH)
   const rg = ctx.createRadialGradient(RW * 0.5, RH * 0.30, 0, RW * 0.5, RH * 0.30, RW * 0.85)
@@ -191,7 +191,7 @@ function bottomGradient(ctx: any): void {
   ctx.fillRect(0, 0, RW, RH)
 }
 
-function footerUrl(ctx: any, slideNum: number, total: number): void {
+export function footerUrl(ctx: any, slideNum: number, total: number): void {
   ctx.textAlign = 'left'
   ctx.fillStyle = C.mute
   ctx.font = `500 ${26 * SCALE}px '${FONT}'`
@@ -208,7 +208,7 @@ function footerUrl(ctx: any, slideNum: number, total: number): void {
 // 2× image made Instagram re-compress it on its own downscale, softening both
 // text and photos. Exporting at native size keeps it sharp and the AI photo
 // (≤1536px source) is downscaled — not upscaled — into the final frame.
-function exportCanvas(canvas: any): Buffer {
+export function exportCanvas(canvas: any): Buffer {
   const out: any = createCanvas(W, H)
   const octx = out.getContext('2d')
   octx.drawImage(canvas, 0, 0, W, H)

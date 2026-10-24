@@ -12,6 +12,7 @@ import { formatStatus, formatDate } from '../../lib/constants'
 import { PANEL_BODY } from './EditPanel'
 import { PanelFooter } from './PanelFooter'
 import { buildIssueOptions } from './StoryFiltersBar'
+import { StoryCarouselSection } from './StoryCarouselSection'
 
 interface StoryEditFormProps {
   story: Story
@@ -429,6 +430,9 @@ export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMast
           )}
         </div>
       )}
+
+      {/* Carrusel desde el artículo original: no publica, descarga. */}
+      {story.status === 'published' && <StoryCarouselSection story={story} />}
     </>
   )
 

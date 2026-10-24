@@ -53,6 +53,7 @@ spec wins and the context file is what gets corrected.
 | `linkedin.md` | Member token (60d, no automatic refresh), OAuth reauthorization, check job | `social-posting.allium` |
 | `twitter.md` | OAuth 1.0a static credentials, text reused from Bluesky, admin panel | `social-posting.allium` |
 | `facebook.md` | Page token vs Instagram token, link-card posting, groups impossible | `social-posting.allium` |
+| `story-carousel.md` | Carrusel de una noticia desde el artículo original: rutas, candados, formato, costo medido | — |
 
 ### Interface
 

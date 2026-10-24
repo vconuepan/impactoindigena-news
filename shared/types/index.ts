@@ -454,6 +454,43 @@ export interface MastodonFeedResponse {
   dbOnlyPosts: MastodonDbOnlyPost[]
 }
 
+// --- Carrusel de una noticia (panel → ficha) ---
+// Gemelos de los tipos del servidor en `services/storyCarousel.ts` y
+// `lib/storyCarouselGuards.ts`: el servidor no importa fuera de su `src`.
+
+export interface StoryCarouselSlide {
+  titulo: string
+  texto: string
+}
+
+export interface StoryCarouselAviso {
+  /** Índice en `laminas` (desde 0), o 'lectura'. */
+  lamina: number | 'lectura'
+  tipo: 'cita' | 'cifra' | 'identidad' | 'pueblo' | 'espacio'
+  mensaje: string
+}
+
+export interface StoryCarouselAttribution {
+  medio: string
+  autor: string | null
+  fecha: string | null
+  tituloOriginal: string
+  dominio: string
+}
+
+export interface StoryCarouselDraft {
+  laminas: StoryCarouselSlide[]
+  lectura: StoryCarouselSlide | null
+  atribucion: StoryCarouselAttribution
+  avisos: StoryCarouselAviso[]
+}
+
+export interface StoryCarouselPreview {
+  /** Data URLs JPEG, en el orden de publicación. */
+  imagenes: string[]
+  avisos: StoryCarouselAviso[]
+}
+
 // --- Instagram Types ---
 
 export type InstagramPostStatus = 'generating' | 'draft' | 'publishing' | 'published' | 'failed'

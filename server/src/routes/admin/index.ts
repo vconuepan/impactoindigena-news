@@ -3,6 +3,7 @@ import { requireAuth, requireRole } from '../../middleware/auth.js'
 import issueRouter from './issues.js'
 import feedRouter from './feeds.js'
 import storyRouter from './stories.js'
+import storyCarouselRouter from './story-carousel.js'
 import jobRouter from './jobs.js'
 import newsletterRouter from './newsletters.js'
 import { podcastRouter } from './podcasts.js'
@@ -36,6 +37,7 @@ router.use(requireAuth, requireRole('admin', 'editor'))
 router.use('/issues', issueRouter)
 router.use('/feeds', feedRouter)
 router.use('/stories', storyRouter)
+router.use('/stories', storyCarouselRouter)
 router.use('/jobs', jobRouter)
 router.use('/newsletters', newsletterRouter)
 router.use('/podcasts', podcastRouter)

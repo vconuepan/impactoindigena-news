@@ -1,5 +1,8 @@
 import type {
   Story,
+  StoryCarouselDraft,
+  StoryCarouselPreview,
+  StoryCarouselSlide,
   StoryCluster,
   ClusterStorySearchResult,
   Feed,
@@ -418,6 +421,19 @@ export const adminApi = {
     delete: (id: string) => request<void>(`/stories/${id}`, { method: 'DELETE' }),
     crawlUrl: (url: string, feedId: string) =>
       request<Story>('/stories/crawl-url', { method: 'POST', body: JSON.stringify({ url, feedId }) }),
+    // Carrusel de la noticia: el texto (llama al modelo), la vista previa y el ZIP.
+    carousel: (id: string, conLectura: boolean) =>
+      request<StoryCarouselDraft>(`/stories/${id}/carousel`, { method: 'POST', body: JSON.stringify({ conLectura }) }),
+    carouselPreview: (id: string, body: { laminas: StoryCarouselSlide[]; lectura: StoryCarouselSlide | null }) =>
+      request<StoryCarouselPreview>(`/stories/${id}/carousel/preview`, { method: 'POST', body: JSON.stringify(body) }),
+    carouselDownload: (id: string, body: { laminas: StoryCarouselSlide[]; lectura: StoryCarouselSlide | null }) =>
+      // El Content-Type va explícito: el reintento de `requestBlob` tras renovar
+      // la sesión solo lleva Authorization, y sin él el cuerpo no se lee.
+      requestBlob(`/stories/${id}/carousel/download`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+      }),
     batch: (ids: string[]) =>
       request<Story[]>(`/stories/batch?ids=${ids.join(',')}`),
     bulkPreassess: (storyIds: string[]) =>
