@@ -1,12 +1,17 @@
-import { createCanvas, GlobalFonts } from '@napi-rs/canvas'
+import { createCanvas } from '@napi-rs/canvas'
 import PDFDocument from 'pdfkit'
 import archiver from 'archiver'
-import { createWriteStream, mkdirSync, unlinkSync, existsSync } from 'fs'
-import { join, dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const ASSETS_DIR = join(__dirname, '..', '..', 'assets')
+import { createWriteStream, mkdirSync, unlinkSync } from 'fs'
+import { join } from 'path'
+// Importar FONT carga carouselGen.ts, que registra DM Sans al cargarse. Hasta el
+// 25-oct-2026 este archivo pedía Inter-Bold.ttf e Inter-Regular.ttf, que nunca
+// estuvieron en assets/fonts (ni en el paquete desplegado), con respaldo en
+// Arial y sans-serif. El contenedor del App Service no trae ninguna fuente del
+// sistema (imagen appsvc/node:22-lts_20261022.3: 0 archivos de fuente), y
+// @napi-rs/canvas no usa una fuente registrada como respaldo de una familia
+// que no encuentra: el texto de estas láminas salía en blanco, igual que el
+// del carrusel de Instagram antes de 97cb6ac.
+import { FONT } from '../lib/carouselGen.js'
 
 // Image dimensions (matching PHP version)
 const WIDTH = 1200
@@ -20,17 +25,6 @@ export interface CarouselStory {
   summary: string
   publisher: string
   date: string | null
-}
-
-function registerFonts() {
-  const boldPath = join(ASSETS_DIR, 'fonts', 'Inter-Bold.ttf')
-  const regularPath = join(ASSETS_DIR, 'fonts', 'Inter-Regular.ttf')
-  if (existsSync(boldPath)) {
-    GlobalFonts.registerFromPath(boldPath, 'InterBold')
-  }
-  if (existsSync(regularPath)) {
-    GlobalFonts.registerFromPath(regularPath, 'InterRegular')
-  }
 }
 
 function wrapText(ctx: any, text: string, maxWidth: number): string[] {
@@ -53,8 +47,6 @@ function wrapText(ctx: any, text: string, maxWidth: number): string[] {
 }
 
 export function createStoryImage(story: CarouselStory): Buffer {
-  registerFonts()
-
   const canvas = createCanvas(WIDTH, HEIGHT)
   const ctx = canvas.getContext('2d')
 
@@ -68,7 +60,7 @@ export function createStoryImage(story: CarouselStory): Buffer {
 
   // Header text (category name on the header)
   ctx.fillStyle = '#ffffff'
-  ctx.font = '24px InterBold, Arial, sans-serif'
+  ctx.font = `700 24px '${FONT}'`
   ctx.fillText(story.category.toUpperCase(), PADDING, HEADER_HEIGHT / 2 + 8)
 
   // Content area starts below header
@@ -76,13 +68,13 @@ export function createStoryImage(story: CarouselStory): Buffer {
 
   // Category text
   ctx.fillStyle = '#6b7280'
-  ctx.font = '15px InterRegular, Arial, sans-serif'
+  ctx.font = `400 15px '${FONT}'`
   ctx.fillText(story.category, PADDING, currentY)
   currentY += 25
 
   // Title (bold, word-wrapped)
   ctx.fillStyle = '#000000'
-  ctx.font = '30px InterBold, Arial, sans-serif'
+  ctx.font = `700 30px '${FONT}'`
   const titleLines = wrapText(ctx, story.title, WIDTH - PADDING * 2)
   for (const line of titleLines) {
     ctx.fillText(line, PADDING, currentY)
@@ -92,7 +84,7 @@ export function createStoryImage(story: CarouselStory): Buffer {
 
   // Publisher + date
   ctx.fillStyle = '#374151'
-  ctx.font = '20px InterRegular, Arial, sans-serif'
+  ctx.font = `400 20px '${FONT}'`
   let publisherText = story.publisher
   if (story.date) {
     try {
@@ -110,7 +102,7 @@ export function createStoryImage(story: CarouselStory): Buffer {
 
   // Summary (word-wrapped)
   ctx.fillStyle = '#374151'
-  ctx.font = '20px InterRegular, Arial, sans-serif'
+  ctx.font = `400 20px '${FONT}'`
   const summaryLines = wrapText(ctx, story.summary, WIDTH - PADDING * 2)
   for (const line of summaryLines) {
     if (currentY > HEIGHT - PADDING - 80) break // Leave room for logo area
@@ -120,7 +112,7 @@ export function createStoryImage(story: CarouselStory): Buffer {
 
   // Logo placeholder (bottom-right)
   ctx.fillStyle = '#9ca3af'
-  ctx.font = '14px InterRegular, Arial, sans-serif'
+  ctx.font = `400 14px '${FONT}'`
   ctx.fillText('vocesindigenas.org', WIDTH - PADDING / 2 - 160, HEIGHT - PADDING / 2 - 10)
 
   return canvas.toBuffer('image/png')
