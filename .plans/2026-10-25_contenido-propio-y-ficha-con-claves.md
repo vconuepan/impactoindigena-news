@@ -1,6 +1,6 @@
 # Contenido propio firmado y ficha con claves
 
-Plan · 2026-10-25 · repo `vocesindigenas` · estado: **aprobado por el director, sin ejecutar**
+Plan · 2026-10-25 · repo `vocesindigenas` · estado: **Tanda A ejecutada y commiteada el 25-oct (`6a5db20`, `2aa6174`, `2672095`, sin empujar); B y C pendientes.** Resultados en la sección 8 bis.
 
 ---
 
