@@ -12,6 +12,35 @@ On server startup, `initScheduler()`:
 3. Checks for overdue jobs (last run + interval < now) and runs them immediately
 4. Logs which jobs were registered, skipped, or triggered
 
+## Candado: un servidor local no programa jobs contra producción
+
+El `server/.env` local apunta a la base de producción en Azure. Sin este
+candado, un `npm run dev --prefix server` en el Mac programaba todos los jobs
+habilitados y corría en el acto los atrasados (rastreo, análisis, publicación,
+autopost en redes) contra producción, en paralelo al App Service. Lo impedía
+solo el firewall de Azure (medido el 23-oct-2026).
+
+`jobs/schedulerGuard.ts` decide, y lo consultan los dos puntos que programan
+crons: `initScheduler()` al arrancar y `reloadJob()` cuando el panel activa o
+edita un job. Se programan jobs si se cumple cualquiera de estas condiciones:
+
+| Condición | Para qué |
+|---|---|
+| `NODE_ENV=production` | Producción. Está en la configuración del App Service (verificado con `az` el 25-oct-2026) |
+| `WEBSITE_SITE_NAME` presente | Producción, por la variable que inyecta la plataforma. No aparece en los registros, así que no está verificada: solo suma |
+| La base es local (`localhost`, `127.0.0.1`, `::1` o un host sin punto, como `db` de docker-compose) | Desarrollo con base propia |
+| `SCHEDULER_ALLOW_REMOTE_DB=true` | Pedirlo a propósito contra una base remota |
+
+Las condiciones solo **habilitan**: en producción alcanza la primera, así que
+un error en las otras nunca apaga los jobs de producción. Cuando el candado
+frena, el registro dice `scheduler NOT started` con el motivo, y el servidor
+sigue sirviendo la API y el panel.
+
+**Lo que el candado no frena:** correr un job a mano desde el panel
+(`POST /api/admin/jobs/:jobName/run`), que es un acto explícito como cualquier
+otra escritura del panel; y la limpieza horaria de tokens vencidos de
+`index.ts`, que borra lo mismo que borra producción.
+
 ## Reliability Features
 
 **Overlap prevention**: Each job checks a running flag before executing. If a previous run is still in progress, the new invocation is skipped.
@@ -102,6 +131,7 @@ The Semaphore utility is at `server/src/lib/semaphore.ts`.
 | File | Role |
 |------|------|
 | `server/src/jobs/scheduler.ts` | Core scheduler: init, cron registration, overlap prevention, hot reload |
+| `server/src/jobs/schedulerGuard.ts` | El candado: si este proceso puede programar jobs (producción, base local u opt-in) |
 | `server/src/jobs/handlers.ts` | Shared `JOB_HANDLERS` map (job name → handler function) |
 | `server/src/jobs/jobService.ts` | Service layer for job CRUD and manual triggering |
 | `server/src/lib/notify.ts` | Webhook notification for job failures |

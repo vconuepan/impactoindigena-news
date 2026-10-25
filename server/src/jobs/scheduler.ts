@@ -4,6 +4,7 @@ import { createLogger } from '../lib/logger.js'
 import { notifyJobFailure } from '../lib/notify.js'
 import { JOB_HANDLERS } from './handlers.js'
 import { config } from '../config.js'
+import { schedulerStartDecision } from './schedulerGuard.js'
 
 const log = createLogger('scheduler')
 
@@ -23,7 +24,14 @@ const tasksByName = new Map<string, ScheduledTask>()
 const runningJobs = new Set<string>()
 
 export async function initScheduler(): Promise<void> {
-  log.info({ timezone: TIMEZONE }, 'initializing')
+  // Antes de leer `job_runs`: un servidor local con el .env de producción no
+  // programa nada. Ver `schedulerGuard.ts`.
+  const decision = schedulerStartDecision(process.env)
+  if (!decision.start) {
+    log.error({ reason: decision.reason }, 'scheduler NOT started: no automatic jobs in this process')
+    return
+  }
+  log.info({ timezone: TIMEZONE, reason: decision.reason }, 'initializing')
 
   const jobs = await prisma.jobRun.findMany()
 
@@ -201,6 +209,15 @@ export async function reloadJob(jobName: string): Promise<void> {
   const existing = tasksByName.get(jobName)
   if (existing) existing.stop()
   tasksByName.delete(jobName)
+
+  // El panel llama a esta función al activar o editar un job. Sin este
+  // candado, activar un job en el panel local lo programaba contra la base de
+  // producción aunque el arranque no hubiera programado nada.
+  const decision = schedulerStartDecision(process.env)
+  if (!decision.start) {
+    log.warn({ jobName, reason: decision.reason }, 'scheduler disabled in this process, job not registered')
+    return
+  }
 
   // Read fresh config from DB
   const job = await prisma.jobRun.findUnique({ where: { jobName } })

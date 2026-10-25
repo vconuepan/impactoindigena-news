@@ -25,7 +25,15 @@ vi.mock('./preassessStories.js', () => ({ runPreassessStories: vi.fn() }))
 vi.mock('./assessStories.js', () => ({ runAssessStories: vi.fn() }))
 vi.mock('./selectStories.js', () => ({ runSelectStories: vi.fn() }))
 
-const { initScheduler, stopScheduler, estimateCronIntervalMs } = await import('./scheduler.js')
+// El candado de `schedulerGuard.ts` decide por el entorno. Se fija una base
+// local para que estos tests no dependan del .env de quien los corre: el local
+// apunta a producción y `app.ts` lo carga con dotenv.
+const ENTORNO_LOCAL = { DATABASE_URL: 'postgresql://user:password@localhost:5432/db', NODE_ENV: 'test' }
+Object.assign(process.env, ENTORNO_LOCAL)
+delete process.env.WEBSITE_SITE_NAME
+delete process.env.SCHEDULER_ALLOW_REMOTE_DB
+
+const { initScheduler, stopScheduler, estimateCronIntervalMs, reloadJob } = await import('./scheduler.js')
 
 describe('scheduler', () => {
   beforeEach(() => {
@@ -33,6 +41,43 @@ describe('scheduler', () => {
     mockValidate.mockReturnValue(true)
     mockSchedule.mockReturnValue({ stop: vi.fn() })
     stopScheduler()
+    Object.assign(process.env, ENTORNO_LOCAL)
+  })
+
+  // El .env local apunta a la base de producción en Azure. Un `npm run dev` no
+  // puede programar jobs contra ella: ni al arrancar ni al activar uno en el panel.
+  describe('candado: servidor local con base remota', () => {
+    const BASE_REMOTA = 'postgresql://u:p@impactoindigena-db.postgres.database.azure.com/impactoindigena_news?sslmode=require'
+    const JOB = { jobName: 'crawl_feeds', enabled: true, cronExpression: '0 */6 * * *', lastCompletedAt: null, lastStartedAt: null }
+
+    it('initScheduler no lee job_runs ni programa nada', async () => {
+      process.env.DATABASE_URL = BASE_REMOTA
+      mockPrisma.jobRun.findMany.mockResolvedValue([JOB])
+
+      await initScheduler()
+
+      expect(mockPrisma.jobRun.findMany).not.toHaveBeenCalled()
+      expect(mockSchedule).not.toHaveBeenCalled()
+    })
+
+    it('reloadJob, que llama el panel, tampoco programa', async () => {
+      process.env.DATABASE_URL = BASE_REMOTA
+      mockPrisma.jobRun.findUnique.mockResolvedValue(JOB)
+
+      await reloadJob('crawl_feeds')
+
+      expect(mockSchedule).not.toHaveBeenCalled()
+    })
+
+    it('en producción (NODE_ENV=production) programa aunque la base sea remota', async () => {
+      process.env.DATABASE_URL = BASE_REMOTA
+      process.env.NODE_ENV = 'production'
+      mockPrisma.jobRun.findMany.mockResolvedValue([{ ...JOB, lastCompletedAt: new Date() }])
+
+      await initScheduler()
+
+      expect(mockSchedule).toHaveBeenCalledTimes(1)
+    })
   })
 
   describe('initScheduler', () => {

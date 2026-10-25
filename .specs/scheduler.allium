@@ -70,8 +70,13 @@ external entity RunningJobSet {
 -- On startup, all enabled jobs are registered with node-cron.
 -- Overdue jobs (haven't run in 2x their expected interval) are
 -- triggered immediately.
+--
+-- Guard (25-oct-2026): a process outside production whose database is
+-- remote schedules nothing, at startup or on hot reload. The local .env
+-- points at the production database. See server/src/jobs/schedulerGuard.ts.
 rule InitScheduler {
     when: ServerStarts()
+    requires: SchedulerMayStart()
 
     for job in JobRuns where enabled:
         ensures: RegisterCronJob(job)
@@ -86,6 +91,19 @@ rule CronTriggersJob {
     requires: not RunningJobSet.has(job.job_name)
 
     ensures: ExecuteJob(job)
+}
+
+-- A process may schedule jobs when it is production (NODE_ENV=production
+-- or the App Service), when its database host is local (localhost,
+-- 127.0.0.1, ::1 or a dotless docker host), or when explicitly allowed
+-- (SCHEDULER_ALLOW_REMOTE_DB=true). The conditions only enable: none of
+-- them can turn production off. Hot reload (ReloadJob) checks the same.
+-- Manual triggers are not guarded: they are explicit admin actions.
+invariant SchedulerMayStart {
+    NodeEnv = "production"
+    or RunningOnAppService
+    or IsLocalHost(DatabaseHost)
+    or AllowRemoteDbFlag
 }
 
 -- Admin manual trigger respects the same overlap prevention.
@@ -148,7 +166,7 @@ rule ReloadJob {
     when: ReloadJob(job)
 
     ensures: UnregisterCronJob(job)
-    if job.enabled:
+    if job.enabled and SchedulerMayStart():
         ensures: RegisterCronJob(job)
 }
 
