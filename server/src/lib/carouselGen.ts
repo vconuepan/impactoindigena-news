@@ -335,6 +335,24 @@ async function generateRelevanceSlide(
 // ---------------------------------------------------------------------------
 // Slide 4 — CTA
 // ---------------------------------------------------------------------------
+
+/*
+ * El texto de la lámina de cierre es el del colofón del sitio
+ * (`client/src/locales/es.json`, `colophon`), que el director aprobó el
+ * 4-oct-2026 (`dc14657`) en reemplazo de dos afirmaciones que no se sostenían:
+ * un superlativo sin verificar (ser «el primero» de los medios indígenas) y una
+ * curaduría hecha «por pueblos indígenas», cuando la publicación es
+ * automática. Esta lámina las siguió diciendo hasta el 25-oct-2026.
+ * `respaldo-marca.test.ts` compara las dos copias y prohíbe las frases viejas.
+ *
+ * «AI-native» va con guion común: el sitio usa U+2011 para que el navegador no
+ * parta la palabra, y en el lienzo cada línea se dibuja entera.
+ */
+export const CIERRE_MARCA = {
+  titular: ['Un medio indígena', 'AI-native.'],
+  principios: ['Criterio editorial indígena.', 'Curaduría con inteligencia artificial.', 'Sin publicidad.'],
+}
+
 async function generateSlide4(): Promise<Buffer> {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
@@ -350,28 +368,19 @@ async function generateSlide4(): Promise<Buffer> {
 
   ctx.textAlign = 'center'
 
-  // Headline: "El primer medio indígena AI-native." with AI-native in accent
+  // Titular en dos líneas centradas; la segunda, en el acento.
   ctx.font = `700 ${52 * SCALE}px '${FONT}'`
-  const pre = 'El primer medio indígena '
-  const hi = 'AI-native.'
-  const preW = ctx.measureText(pre).width
-  const hiW = ctx.measureText(hi).width
-  // wrap to two centered lines for balance
   ctx.fillStyle = C.white
-  ctx.fillText('El primer medio indígena', RW / 2, 720 * SCALE)
-  const x2 = RW / 2 - hiW / 2
-  ctx.textAlign = 'left'
+  ctx.fillText(CIERRE_MARCA.titular[0], RW / 2, 720 * SCALE)
   ctx.fillStyle = C.accent
-  ctx.fillText('AI-native.', x2, 800 * SCALE)
-  ctx.textAlign = 'center'
-  void preW
+  ctx.fillText(CIERRE_MARCA.titular[1], RW / 2, 800 * SCALE)
 
-  // Three value lines
+  // Los tres principios, uno por línea
   ctx.fillStyle = C.mute
   ctx.font = `500 ${30 * SCALE}px '${FONT}'`
-  ctx.fillText('Curado por pueblos indígenas.', RW / 2, 940 * SCALE)
-  ctx.fillText('Operado con inteligencia artificial.', RW / 2, 1000 * SCALE)
-  ctx.fillText('Sin publicidad.', RW / 2, 1060 * SCALE)
+  CIERRE_MARCA.principios.forEach((linea, i) => {
+    ctx.fillText(linea, RW / 2, (940 + i * 60) * SCALE)
+  })
 
   // url pill centered
   const t = 'vocesindigenas.org'
