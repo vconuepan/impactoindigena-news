@@ -36,6 +36,9 @@ entity Story {
     source_content: String
     feed: Feed
     date_crawled: Timestamp
+    -- From the feed when it carries one. Rule Assess may fill it from the
+    -- article body only when the feed had none, and never with a future date.
+    source_date_published: Timestamp?
 
     status: fetched
           | pre_analyzed
@@ -153,12 +156,23 @@ rule Assess {
     -- output (e.g. an injection-induced parse failure) fails closed — the
     -- story is skipped and no partial data is written.
 
+    -- The model always receives today's date and, when known, the feed's
+    -- publication date, which is told to win over anything the body says.
+    -- Until 2026-10-25 a fresh story reached the model with no date at all.
+
     -- LLM generates editorial content + detailed rating
     ensures: story.title = LLM.generate_title(story)
     ensures: story.title_label = LLM.generate_label(story)
     ensures: story.summary = LLM.generate_summary(story)
     ensures: story.relevance = LLM.rate(story)
     ensures: story.marketing_blurb = LLM.generate_blurb(story)
+
+    -- The date the model reads from the body fills source_date_published
+    -- only when it is plausible: after 1970 and not after today. A future
+    -- publication date is impossible; until 2026-10-25 a dateline typo
+    -- ("23 de octubre de 2027" in a 2026 article) overwrote the feed's date.
+    ensures: story.source_date_published =
+        plausible(LLM.find_publication_date(story)) ?? story.source_date_published
 
     -- Embedding generated atomically before state change.
     -- If generation fails, entire transition rolls back.
@@ -245,6 +259,26 @@ invariant TranslationIsNotACopy {
     -- and title_en may legitimately equal title.
     forall story: Story
         story.summary_en != null implies normalize(story.summary_en) != normalize(story.summary)
+}
+
+invariant NoPreteriteInAFutureYear {
+    -- A sentence that narrates in the preterite cannot be placed in a year
+    -- after the story's publication year. The prompt teaches old stories the
+    -- template "En 2023, líderes mapuches firmaron…"; given a wrong year the
+    -- model wrote "En 2027, la Cámara aprobó…" in a 2026 story (measured
+    -- 2026-10-25: 1 of 4686 published, from a dateline typo in the source).
+    -- Enforced in code at the write point (lib/future-year.ts): the leading
+    -- marker "En AAAA, " is removed from such a sentence. The trailing form
+    -- "… en AAAA" is deliberately left alone: there the year dates the
+    -- object, not the verb ("Se planeó un panel en 2027"), and every live
+    -- case of it was legitimate. Years that name an edition, a budget or a
+    -- plan ("presupuesto 2027", "Plan 2024-2038") are never touched.
+    forall story: Story
+        story.source_date_published != null implies story.source_date_published <= now
+        forall field in [story.title, story.summary]
+            not opens_with_preterite_in_year_after(field, reference_year(story))
+    -- reference_year: the feed's publication year, else the accepted LLM
+    -- date's, else the year of assessment.
 }
 
 -- ─── Retention per vertical (D4, Las Otras Voces) ──────────────────

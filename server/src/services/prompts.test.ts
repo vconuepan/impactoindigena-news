@@ -150,6 +150,48 @@ describe('buildAssessPrompt', () => {
     expect(prompt).toContain('<GUIDELINES>')
   })
 
+  describe('contexto temporal', () => {
+    // Hasta el 25-oct-2026 el bloque solo iba para noticias de 3 meses o mas:
+    // una fresca llegaba sin ninguna fecha y el modelo tomaba el año de donde
+    // pudiera (una bajada con errata «2027» en una nota de 2026).
+    const now = new Date('2026-10-25T12:00:00Z')
+    // Solo el bloque: «tiempo PASADO» tambien aparece, condicionado, en los
+    // requisitos estaticos del prompt.
+    const bloque = (prompt: string) => prompt.match(/<TEMPORAL_CONTEXT>([\s\S]*?)<\/TEMPORAL_CONTEXT>/)?.[1] ?? ''
+
+    it('siempre dice la fecha de hoy, aunque no se conozca la de publicación', () => {
+      const b = bloque(buildAssessPrompt('Title', 'Content', 'Pub', 'https://example.com', guidelines, undefined, now))
+      expect(b).toContain('Hoy es 2026-10-25.')
+      expect(b).toContain('La fecha de publicación no se conoce')
+      expect(b).not.toContain('tiempo PASADO')
+    })
+
+    it('con fecha reciente la nombra, manda sobre el cuerpo y no pide tiempo pasado', () => {
+      const b = bloque(buildAssessPrompt('Title', 'Content', 'Pub', 'https://example.com', guidelines, '2026-10-23T00:00:00.000Z', now))
+      expect(b).toContain('Hoy es 2026-10-25.')
+      expect(b).toContain('Esta noticia fue publicada el 2026-10-23.')
+      expect(b).toContain('aunque el cuerpo del artículo diga otra')
+      expect(b).toContain('no los feches en un año posterior')
+      expect(b).not.toContain('hace aproximadamente')
+      expect(b).not.toContain('tiempo PASADO')
+    })
+
+    it('con 3 meses o más pide tiempo pasado, y con 12 o más, el año', () => {
+      const tresMeses = bloque(buildAssessPrompt('Title', 'Content', 'Pub', 'https://example.com', guidelines, '2026-05-01T00:00:00.000Z', now))
+      expect(tresMeses).toContain('hace aproximadamente 5 meses')
+      expect(tresMeses).toContain('tiempo PASADO')
+      expect(tresMeses).not.toContain('Incluye el año')
+
+      const unAnio = bloque(buildAssessPrompt('Title', 'Content', 'Pub', 'https://example.com', guidelines, '2025-03-01T00:00:00.000Z', now))
+      expect(unAnio).toContain('tiempo PASADO')
+      expect(unAnio).toContain('Incluye el año 2025')
+    })
+
+    it('una fecha inválida no rompe el prompt: se trata como desconocida', () => {
+      const prompt = buildAssessPrompt('Title', 'Content', 'Pub', 'https://example.com', guidelines, 'no es fecha', now)
+      expect(prompt).toContain('La fecha de publicación no se conoce')
+    })
+  })
 })
 
 describe('buildSelectPrompt', () => {

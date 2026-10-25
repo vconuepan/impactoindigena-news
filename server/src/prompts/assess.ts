@@ -12,7 +12,8 @@ export function buildAssessPrompt(
   publisher: string,
   url: string,
   guidelines: Guidelines,
-  datePublished?: string
+  datePublished?: string,
+  now: Date = new Date(),
 ): string {
   const guidelinesXml = buildGuidelinesXml(guidelines);
   const truncatedContent = content.substring(
@@ -20,18 +21,30 @@ export function buildAssessPrompt(
     config.assess.contentMaxLength
   );
 
-  const pubDate = datePublished ? new Date(datePublished) : null
+  const pubDate = datePublished && !isNaN(new Date(datePublished).getTime()) ? new Date(datePublished) : null
   const pubYear = pubDate ? pubDate.getFullYear() : null
   const isFrom2020OrLater = pubYear !== null && pubYear >= 2020
   const ageMonths = pubDate
-    ? Math.floor((Date.now() - pubDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
+    ? Math.floor((now.getTime() - pubDate.getTime()) / (1000 * 60 * 60 * 24 * 30))
     : 0;
   const yearNote = isFrom2020OrLater && ageMonths >= 12 && pubYear
     ? ` Incluye el año ${pubYear} en el título o en la primera oración del resumen para que el lector sepa que es una noticia histórica (ej. "En ${pubYear}, jóvenes quechuas..." o "Jóvenes quechuas estrenaron documental en ${pubYear}").`
     : ''
-  const temporalNote = isFrom2020OrLater && ageMonths >= 3
-    ? `\n<TEMPORAL_CONTEXT>\nEsta noticia fue publicada el ${datePublished?.slice(0, 10)} (hace aproximadamente ${ageMonths} meses). Escribe el título, la etiqueta del título y el resumen en tiempo PASADO (ej. "logró", "aprobó", "firmó", "mostró", "lanzó"). No uses tiempo presente ni futuro para describir hechos que ya ocurrieron.${yearNote}\n</TEMPORAL_CONTEXT>`
-    : '';
+  const tenseNote = isFrom2020OrLater && ageMonths >= 3
+    ? ` Escribe el título, la etiqueta del título y el resumen en tiempo PASADO (ej. "logró", "aprobó", "firmó", "mostró", "lanzó"). No uses tiempo presente ni futuro para describir hechos que ya ocurrieron.${yearNote}`
+    : ''
+  // El bloque va SIEMPRE, no solo para noticias de 3 meses o mas. Hasta el
+  // 25-oct-2026 una noticia fresca llegaba sin ninguna fecha —ni la suya ni la
+  // de hoy— y el modelo tomaba el año de donde pudiera: una bajada con errata
+  // («23 de octubre de 2027» en una nota de 2026) le bastaba para fechar el
+  // hecho en 2027 y devolver esa fecha como fecha de publicacion. La fecha
+  // conocida manda sobre el cuerpo del articulo; el guardarrail determinista
+  // sobre años imposibles esta en lib/future-year.ts, en el punto de escritura.
+  const hoy = now.toISOString().slice(0, 10)
+  const publicationNote = pubDate
+    ? ` Esta noticia fue publicada el ${pubDate.toISOString().slice(0, 10)}${ageMonths >= 3 ? ` (hace aproximadamente ${ageMonths} meses)` : ''}. Esa es su fecha de publicación aunque el cuerpo del artículo diga otra: devuélvela tal cual en el campo de fecha de publicación. Los hechos que el artículo relata como ya ocurridos no pueden ser posteriores a esa fecha; no los feches en un año posterior.`
+    : ' La fecha de publicación no se conoce: búscala en el cuerpo del artículo o en la URL, y si no está, usa 1970-01-01.'
+  const temporalNote = `\n<TEMPORAL_CONTEXT>\nHoy es ${hoy}.${publicationNote}${tenseNote}\n</TEMPORAL_CONTEXT>`
 
   return `<ROLE>
 Eres un analista de relevancia que evalúa artículos de noticias por su importancia para los pueblos indígenas del mundo y su futuro a largo plazo. Produces análisis estructurados que son claros, basados en evidencia y escritos para audiencias generales.
@@ -93,7 +106,7 @@ El esquema de salida define todos los campos requeridos y sus formatos. Los sigu
 
 Fecha de publicación
 - Formato: YYYY-MM-DD 00:00:00. Usa 1970-01-01 00:00:00 si es desconocida.
-- Busca la fecha en el cuerpo del artículo o en la URL.
+- Si <TEMPORAL_CONTEXT> la indica, devuelve esa misma fecha. Solo si no la indica, búscala en el cuerpo del artículo o en la URL.
 - Si el artículo fue publicado entre el 1 de enero de 2020 y hace menos de 3 meses: usa tiempo presente o pasado reciente según corresponda.
 - Si el artículo fue publicado entre el 1 de enero de 2020 y hace más de 3 meses: escribe el título, la etiqueta del título y el resumen en tiempo PASADO (ej. "logró", "aprobó", "firmó", "mostró", "lanzó"). No uses tiempo presente ni futuro para describir hechos que ya ocurrieron.
 - Si el artículo fue publicado entre el 1 de enero de 2020 y hace más de 12 meses: además del tiempo pasado, incluye el año de publicación en el título o en la primera oración del resumen para que el lector sepa que es una noticia histórica (ej. "En 2023, líderes mapuches firmaron..." o "Líderes mapuches firmaron acuerdo en 2023").

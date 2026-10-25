@@ -432,6 +432,80 @@ describe('assessStory', () => {
     })
   })
 
+  it('quita el año imposible del resumen y no acepta una fecha de publicacion futura', async () => {
+    // Caso real del 25-oct-2026: la bajada de la fuente decia «23 de octubre
+    // de 2027» en una nota del 23-oct-2026. El modelo fecho el hecho en 2027
+    // y devolvio esa fecha como fecha de publicacion, que pisaba la del feed.
+    const story = storyWithRelations({ id: 'story-1', sourceDatePublished: new Date('2026-10-23T00:00:00Z') })
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.story.update.mockResolvedValue({})
+    mockGenerateEmbeddingForContent.mockResolvedValue({ embedding: [0.1], hash: 'h' })
+    mockSaveEmbeddingTx.mockResolvedValue(undefined)
+
+    mockGetMediumLLM.mockReturnValue({
+      withStructuredOutput: () => ({
+        invoke: vi.fn().mockResolvedValue({
+          publicationDate: '2027-10-23 00:00:00',
+          quote: 'Q',
+          quoteAttribution: 'X',
+          summary: 'En 2027, la Cámara de Diputados aprobó un proyecto de ley que facilita desalojos exprés.',
+          factors: ['f'],
+          limitingFactors: ['l'],
+          relevanceCalculation: ['c'],
+          relevanceRating: 7,
+          relevanceSummary: 'En 2027, Argentina aprobó una ley que facilita desalojos exprés a indígenas.',
+          titleLabel: 'desalojos',
+          relevanceTitle: 'Argentina aprobó ley que facilita desalojos exprés a indígenas',
+          marketingBlurb: 'b',
+        }),
+      }),
+    })
+
+    await assessStory('story-1')
+
+    const { data } = mockPrisma.story.update.mock.calls[0][0]
+    expect(data.summary).toBe('La Cámara de Diputados aprobó un proyecto de ley que facilita desalojos exprés.')
+    expect(data.relevanceSummary).toBe('Argentina aprobó una ley que facilita desalojos exprés a indígenas.')
+    expect(data.title).toBe('Argentina aprobó ley que facilita desalojos exprés a indígenas')
+    expect(data).not.toHaveProperty('sourceDatePublished')
+  })
+
+  it('deja un año futuro legitimo y acepta una fecha de publicacion plausible', async () => {
+    const story = storyWithRelations({ id: 'story-1', sourceDatePublished: null })
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.story.update.mockResolvedValue({})
+    mockGenerateEmbeddingForContent.mockResolvedValue({ embedding: [0.1], hash: 'h' })
+    mockSaveEmbeddingTx.mockResolvedValue(undefined)
+
+    mockGetMediumLLM.mockReturnValue({
+      withStructuredOutput: () => ({
+        invoke: vi.fn().mockResolvedValue({
+          publicationDate: '2026-10-23 00:00:00',
+          quote: 'Q',
+          quoteAttribution: 'X',
+          summary: 'Chile participará en el Foro Mundial de Negocios Indígenas y será sede de su versión 2027 en Santiago.',
+          factors: ['f'],
+          limitingFactors: ['l'],
+          relevanceCalculation: ['c'],
+          relevanceRating: 6,
+          relevanceSummary: 'En 2027, se realizará el Foro Mundial de Negocios Indígenas en Santiago.',
+          titleLabel: 'economía indígena',
+          relevanceTitle: 'Chile será sede del Foro Mundial de Negocios Indígenas 2027',
+          marketingBlurb: 'b',
+        }),
+      }),
+    })
+
+    await assessStory('story-1')
+
+    const { data } = mockPrisma.story.update.mock.calls[0][0]
+    expect(data.summary).toBe('Chile participará en el Foro Mundial de Negocios Indígenas y será sede de su versión 2027 en Santiago.')
+    expect(data.relevanceSummary).toBe('En 2027, se realizará el Foro Mundial de Negocios Indígenas en Santiago.')
+    expect(data.title).toBe('Chile será sede del Foro Mundial de Negocios Indígenas 2027')
+    expect(data.sourceDatePublished).toBeInstanceOf(Date)
+    expect(data.sourceDatePublished.getFullYear()).toBe(2026)
+  })
+
   it('throws when story not found', async () => {
     mockPrisma.story.findUnique.mockResolvedValue(null)
     await expect(assessStory('nonexistent')).rejects.toThrow('Story not found')

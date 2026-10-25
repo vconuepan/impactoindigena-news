@@ -21,6 +21,7 @@ import { detectAndCluster } from './dedup.js'
 import { generateEmbeddingForContent } from './embedding.js'
 import { saveEmbeddingTx } from '../lib/vectors.js'
 import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/title-capitalization.js'
+import { parseLlmPublicationDate, stripImpossibleHistoricalYearOrNull, yearsAfter } from '../lib/future-year.js'
 import { detectarClasificacionSospechosa } from '../lib/clasificacion-guardarrail.js'
 
 const log = createLogger('analysis')
@@ -404,11 +405,22 @@ export async function assessStory(storyId: string): Promise<void> {
 
   // Parse publication date returned by the LLM. The sentinel "1970-01-01" means
   // the LLM couldn't find it — treat as unknown and leave the field untouched.
-  const parsedPubDate = parsed.publicationDate ? new Date(parsed.publicationDate) : null
-  const sourceDatePublished =
-    parsedPubDate && !isNaN(parsedPubDate.getTime()) && parsedPubDate.getFullYear() > 1970
-      ? parsedPubDate
-      : undefined
+  // Una fecha futura tampoco se acepta: es imposible, y hasta el 25-oct-2026
+  // una errata en la bajada del articulo («2027» en una nota de 2026) pisaba
+  // la fecha que traia el feed. Ver lib/future-year.ts.
+  const sourceDatePublished = parseLlmPublicationDate(parsed.publicationDate)
+
+  // Año de referencia para los textos: el del feed si lo trae, si no el que
+  // se le acepto al modelo, si no el de hoy. Un hecho relatado en preterito no
+  // puede ser de un año posterior.
+  const referenceYear = (story.sourceDatePublished ?? sourceDatePublished ?? new Date()).getFullYear()
+  const sinAnioImposible = (campo: string, texto: string | null | undefined): string | null => {
+    const limpio = stripImpossibleHistoricalYearOrNull(texto, referenceYear)
+    if (texto && limpio !== texto) {
+      log.warn({ storyId, campo, referenceYear, antes: texto.slice(0, 120) }, 'stripped an impossible historical year')
+    }
+    return limpio
+  }
 
   // Guardarrail determinista sobre las siglas y toponimos. La regla equivalente
   // en `schemas/llm.ts` es una restriccion blanda: se midio despues de
@@ -416,18 +428,29 @@ export async function assessStory(storyId: string): Promise<void> {
   // "universidad de chile". Ver lib/title-capitalization.ts.
   const analysisData = {
     titleLabel: fixCapitalizationOrNull(parsed.titleLabel),
-    title: fixTitleCapitalizationOrNull(parsed.relevanceTitle),
-    summary: parsed.summary || null,
+    title: fixTitleCapitalizationOrNull(sinAnioImposible('title', parsed.relevanceTitle)),
+    summary: sinAnioImposible('summary', parsed.summary),
     quote: truncateQuote(parsed.quote),
     quoteAttribution: parsed.quoteAttribution || null,
-    marketingBlurb: parsed.marketingBlurb || null,
-    relevanceSummary: parsed.relevanceSummary || null,
+    marketingBlurb: sinAnioImposible('marketingBlurb', parsed.marketingBlurb),
+    relevanceSummary: sinAnioImposible('relevanceSummary', parsed.relevanceSummary),
     relevanceReasons: parsed.factors.join('\n'),
     antifactors: parsed.limitingFactors.join('\n'),
     relevanceCalculation: parsed.relevanceCalculation.join('\n'),
     relevance: parsed.relevanceRating,
     status: 'analyzed' as const,
     ...(sourceDatePublished !== undefined && { sourceDatePublished }),
+  }
+
+  // Lo que el guardarrail no toca —un año futuro con verbo en futuro, o una
+  // oracion ambigua— se registra para poder medirlo en el log, porque la
+  // regla solo quita lo que es imposible por construccion.
+  const aniosPosteriores = yearsAfter(
+    [analysisData.title, analysisData.summary, analysisData.relevanceSummary].filter(Boolean).join(' '),
+    referenceYear,
+  )
+  if (aniosPosteriores.length > 0) {
+    log.warn({ storyId, referenceYear, years: aniosPosteriores, title: analysisData.title }, 'analysis names a year after the publication year')
   }
 
   // Generate embedding from analysis results BEFORE saving — throws on failure
@@ -502,6 +525,9 @@ export async function rescoreStory(
   const oldRelevance = story.relevance
 
   if (!opts.dryRun) {
+    // Mismo guardarrail de años imposibles que assessStory: este camino
+    // reescribe relevanceSummary.
+    const referenceYear = (story.sourceDatePublished ?? new Date()).getFullYear()
     await prisma.story.update({
       where: { id: storyId },
       data: {
@@ -509,7 +535,7 @@ export async function rescoreStory(
         relevanceCalculation: parsed.relevanceCalculation.join('\n'),
         relevanceReasons: parsed.factors.join('\n'),
         antifactors: parsed.limitingFactors.join('\n'),
-        relevanceSummary: parsed.relevanceSummary || null,
+        relevanceSummary: stripImpossibleHistoricalYearOrNull(parsed.relevanceSummary, referenceYear),
       },
     })
   }
