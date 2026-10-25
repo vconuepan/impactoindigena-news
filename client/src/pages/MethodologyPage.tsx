@@ -6,7 +6,9 @@ import { buildBreadcrumbSchema } from '../lib/structured-data'
 import StructuredData from '../components/StructuredData'
 import LandingCta from '../components/LandingCta'
 import { useSources } from '../hooks/useSources'
+import { usePublicIssues } from '../hooks/usePublicIssues'
 import { getCategoryColor } from '../lib/category-colors'
+import { GEOGRAPHIC_SLUGS, ISSUE_ORDER } from '../lib/issue-order'
 
 const META = {
   title: 'Metodolog\u00eda \u2014 C\u00f3mo la IA cura las noticias | Voces Ind\u00edgenas',
@@ -49,6 +51,14 @@ function ChevronIcon({ className }: { className?: string }) {
 
 export default function MethodologyPage() {
   const { data: sources, isLoading: sourcesLoading } = useSources()
+  // Los temas salen de la API y no de una lista escrita acá: la lista decía
+  // «cinco temas» desde que eran cinco, y el sitio tiene ocho desde el
+  // 5-sep-2026. Medido en vivo el 25-oct-2026 (indicador «Métodos» del Trust
+  // Project: el método declarado tiene que ser el que corre).
+  const { data: issues } = usePublicIssues()
+  const porSlug = new Map((issues ?? []).map((i) => [i.slug, i]))
+  const temas = ISSUE_ORDER.map((slug) => porSlug.get(slug)).filter((i): i is NonNullable<typeof i> => Boolean(i))
+  const geografias = GEOGRAPHIC_SLUGS.map((slug) => porSlug.get(slug)).filter((i): i is NonNullable<typeof i> => Boolean(i))
   return (
     <>
       <Helmet>
@@ -109,8 +119,8 @@ export default function MethodologyPage() {
                 {
                   label: 'Recolección',
                   desc: sources
-                    ? `Monitoreamos ${sources.totalCount} fuentes de noticias especializadas en pueblos indígenas de todo el mundo, en múltiples idiomas y cuatro áreas temáticas. El contenido se extrae automáticamente desde feeds RSS y sitios web especializados.`
-                    : 'Monitoreamos fuentes especializadas en pueblos indígenas de todo el mundo, en múltiples idiomas y cuatro áreas temáticas. El contenido se extrae automáticamente desde feeds RSS y sitios web especializados.',
+                    ? `Monitoreamos ${sources.totalCount} fuentes de noticias especializadas en pueblos indígenas de todo el mundo, en múltiples idiomas, y las archivamos en ocho temas y por geografía. El contenido se extrae automáticamente desde feeds RSS y sitios web especializados.`
+                    : 'Monitoreamos fuentes especializadas en pueblos indígenas de todo el mundo, en múltiples idiomas, y las archivamos en ocho temas y por geografía. El contenido se extrae automáticamente desde feeds RSS y sitios web especializados.',
                   dots: 20,
                 },
                 {
@@ -158,20 +168,15 @@ export default function MethodologyPage() {
             </div>
           </div>
 
-          <h2 className="section-heading mt-8">Cinco Temas Principales</h2>
+          <h2 className="section-heading mt-8">Ocho temas, y la geografía aparte</h2>
           <p>
-            Cubrimos cinco áreas temáticas, cada una con criterios de evaluación adaptados al
-            contexto indígena específico.
+            Cada noticia se archiva por su asunto, en uno de ocho temas con criterios de
+            evaluación propios, y además por su geografía. Una nota chilena sobre tierras está
+            en Territorio y Tierras y también en Chile Intercultural: son dos ejes, no uno.
           </p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-          {[
-            { slug: 'cambio-climatico', title: 'Cambio Climático', description: 'Territorios indígenas, medio ambiente, biodiversidad, acción climática' },
-            { slug: 'derechos-indigenas', title: 'Derechos Indígenas', description: 'Derechos territoriales, autodeterminación, reconocimiento legal, derechos humanos' },
-            { slug: 'economias-indigenas', title: 'Economías Indígenas', description: 'Empresas y cooperativas indígenas, emprendimiento, empleo, comercio, financiamiento y compras públicas' },
-            { slug: 'cultura-y-conocimientos-ancestrales', title: 'Cultura y Conocimientos Ancestrales', description: 'Lenguas, arte, literatura, música, cine, patrimonio, memoria, educación intercultural y medicina ancestral' },
-            { slug: 'chile-indigena', title: 'Chile Intercultural', description: 'Pueblos originarios de Chile, política pública indígena, consultas indígenas, instituciones y liderazgo indígena chileno' },
-          ].map((card) => {
+          {temas.map((card) => {
             const colors = getCategoryColor(card.slug)
             return (
               <Link
@@ -180,12 +185,25 @@ export default function MethodologyPage() {
                 className="block bg-white border border-neutral-200 border-t-4 rounded-lg p-5 hover:shadow-md transition-shadow focus-visible:ring-2 focus-visible:ring-brand-500 no-underline"
                 style={{ borderTopColor: colors.hex }}
               >
-                <h3 className="font-bold text-neutral-800 mb-1">{card.title}</h3>
+                <h3 className="font-bold text-neutral-800 mb-1">{card.name}</h3>
                 <p className="text-sm text-neutral-600">{card.description}</p>
               </Link>
             )
           })}
         </div>
+        {geografias.length > 0 && (
+          <p className="mt-6 text-sm text-neutral-600">
+            <strong>Geografías:</strong>{' '}
+            {geografias.map((g, i) => (
+              <span key={g.slug}>
+                {i > 0 && ' · '}
+                <Link to={`/issues/${g.slug}`} className="text-brand-800 hover:text-brand-600 underline">
+                  {g.name}
+                </Link>
+              </span>
+            ))}
+          </p>
+        )}
         <div className="prose max-w-none">
 
           <h2 className="section-heading mt-10">Nuestras Fuentes</h2>
