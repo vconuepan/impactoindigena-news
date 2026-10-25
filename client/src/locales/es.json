@@ -113,6 +113,7 @@
     "apiErrorDesc": "El servicio está temporalmente no disponible. Por favor recarga la página o intenta más tarde.",
     "backToHome": "← Volver al inicio",
     "originalArticle": "Artículo original",
+    "fromArticle": "Frase del artículo original",
     "generatedByAI": "Generado por IA",
     "aiImage": "Ilustración generada con IA",
     "sourceImage": "Imagen: {{publisher}}",

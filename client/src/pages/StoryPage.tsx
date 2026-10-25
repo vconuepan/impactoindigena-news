@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
 import Markdown from 'react-markdown'
 import ArticleInlineCta from '../components/ArticleInlineCta'
+import { esFraseDelArticulo } from '../lib/quote-attribution'
 import { usePublicStory } from '../hooks/usePublicStories'
 import { getCategoryColor, shiftHex } from '../lib/category-colors'
 import { parsePoints } from '../lib/parse-points'
@@ -28,14 +29,45 @@ import { ApiError } from '../lib/api'
 // ---------------------------------------------------------------------------
 // Guide links shown below related stories for specific issue areas
 // ---------------------------------------------------------------------------
+// Guías propias por tema. Hasta el 25-oct-2026 solo dos de los ocho temas
+// enlazaban a una guía; ahora los ocho y sus subsecciones (una noticia puede
+// traer el slug de la subsección). Puente hasta que las guías vivan en la base
+// con su tema (plan del 25-oct-2026, ítem B8).
+const GUIAS = {
+  clpi: { label: 'Consulta Previa y CLPI', href: '/guia/consulta-previa-fpic' },
+  c169: { label: 'C169 OIT: estado por país', href: '/guia/c169-pais-por-pais' },
+  cidh: { label: 'Jurisprudencia de la Corte IDH', href: '/guia/jurisprudencia-interamericana' },
+  undrip: { label: 'Declaración ONU (UNDRIP)', href: '/guia/declaracion-onu-undrip' },
+  chile: { label: 'Pueblos de Chile', href: '/guia/pueblos-indigenas-chile' },
+  mapuche: { label: 'Pueblo Mapuche', href: '/guia/pueblo-mapuche' },
+  glosario: { label: 'Glosario', href: '/glosario' },
+} as const
+
+const GUIAS_POR_TEMA: Record<string, { label: string; href: string }[]> = {
+  'territorio-y-tierras': [GUIAS.cidh, GUIAS.clpi],
+  'cambio-climatico': [GUIAS.clpi, GUIAS.undrip],
+  'consulta-y-consentimiento': [GUIAS.clpi, GUIAS.c169],
+  'derechos-indigenas': [GUIAS.clpi, GUIAS.undrip],
+  'defensores-y-proteccion': [GUIAS.cidh, GUIAS.undrip],
+  'mujeres-indigenas': [GUIAS.undrip, GUIAS.cidh],
+  'economias-indigenas': [GUIAS.clpi, GUIAS.c169],
+  'cultura-y-conocimientos-ancestrales': [GUIAS.undrip, GUIAS.glosario],
+  'chile-indigena': [GUIAS.chile, GUIAS.mapuche],
+}
+
+// Subsecciones vivas el 25-oct-2026 (GET /api/issues): heredan las guías del tema.
+const SUBSECCIONES: Record<string, string> = {
+  'clima-bosques': 'cambio-climatico', 'clima-crisis': 'cambio-climatico', 'clima-saberes': 'cambio-climatico',
+  'consulta-fallos': 'consulta-y-consentimiento', 'consulta-procesos': 'consulta-y-consentimiento', 'consulta-protocolos': 'consulta-y-consentimiento',
+  'cultura-arte': 'cultura-y-conocimientos-ancestrales', 'cultura-lenguas': 'cultura-y-conocimientos-ancestrales', 'cultura-saberes': 'cultura-y-conocimientos-ancestrales',
+  'defensores-criminalizacion': 'defensores-y-proteccion', 'defensores-proteccion': 'defensores-y-proteccion', 'defensores-violencia': 'defensores-y-proteccion',
+  'derechos-justicia': 'derechos-indigenas', 'derechos-reconocimiento': 'derechos-indigenas', 'derechos-salud': 'derechos-indigenas',
+  'territorio-despojo': 'territorio-y-tierras', 'territorio-gobierno': 'territorio-y-tierras', 'territorio-titulacion': 'territorio-y-tierras',
+}
+
 const STORY_GUIDES: Record<string, { label: string; href: string }[]> = {
-  'chile-indigena': [
-    { label: 'Pueblos de Chile', href: '/guia/pueblos-indigenas-chile' },
-    { label: 'Pueblo Mapuche', href: '/guia/pueblo-mapuche' },
-  ],
-  'derechos-indigenas': [
-    { label: 'Consulta Previa y CLPI', href: '/guia/consulta-previa-fpic' },
-  ],
+  ...GUIAS_POR_TEMA,
+  ...Object.fromEntries(Object.entries(SUBSECCIONES).map(([sub, tema]) => [sub, GUIAS_POR_TEMA[tema]])),
 }
 
 // Issues where corporate territorial impact is high — show IRI widget
@@ -366,8 +398,16 @@ export default function StoryPage() {
             </section>
           )}
 
+          {/* Una frase del articulo no es una cita: sin comilla gigante ni raya
+              de atribucion, y con su rotulo. Ver lib/quote-attribution.ts. */}
+          {loc.quote && esFraseDelArticulo(story.quoteAttribution) && (
+            <div className="max-w-2xl mx-auto mb-10 px-4 border-l-2 border-neutral-200 pl-4">
+              <p className="text-[11px] uppercase tracking-wider text-neutral-400 mb-2">{t('storyPage.fromArticle')}</p>
+              <p className="text-lg text-neutral-700 leading-relaxed">{loc.quote}</p>
+            </div>
+          )}
           {/* Key quote — editorial pull-quote style */}
-          {loc.quote && (
+          {loc.quote && !esFraseDelArticulo(story.quoteAttribution) && (
             <div className="py-6 md:py-8 text-center max-w-2xl mx-auto mb-10">
               <div className="relative">
                 <span

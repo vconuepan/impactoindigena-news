@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import type { PublicStory } from '@shared/types'
+import { esFraseDelArticulo } from '../lib/quote-attribution'
 
 interface PullQuoteProps {
   story: PublicStory
@@ -24,14 +25,17 @@ interface PullQuoteProps {
  * registro dentro del flujo editorial en vez de como un cartel.
  */
 export default function PullQuote({ story }: PullQuoteProps) {
-  const { i18n } = useTranslation()
+  const { t, i18n } = useTranslation()
   const isEn = i18n.language === 'en'
   const displayQuote = (isEn && story.quoteEn) ? story.quoteEn : story.quote
   const displayTitle = (isEn && story.titleEn) ? story.titleEn : story.title
 
   if (!displayQuote) return null
 
-  const hasPersonAttribution = story.quoteAttribution && story.quoteAttribution !== 'Original article'
+  // Hasta el 25-oct-2026 solo se comparaba con el marcador en ingles, y el
+  // prompt escribe «Artículo original»: toda frase del redactor salia firmada
+  // «Artículo original, via …» como si alguien la hubiera dicho.
+  const hasPersonAttribution = !esFraseDelArticulo(story.quoteAttribution)
 
   return (
     <figure className="py-10 md:py-12 max-w-2xl mx-auto px-4 border-t-2 border-brand-800">
@@ -56,12 +60,15 @@ export default function PullQuote({ story }: PullQuoteProps) {
             </Link>
           </>
         ) : (
-          <Link
-            to={`/stories/${story.slug}`}
-            className="text-brand-800 hover:text-brand-600 underline decoration-brand-200 hover:decoration-brand-400 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
-          >
-            {displayTitle || story.sourceTitle}
-          </Link>
+          <>
+            {t('storyPage.fromArticle')}:{' '}
+            <Link
+              to={`/stories/${story.slug}`}
+              className="text-brand-800 hover:text-brand-600 underline decoration-brand-200 hover:decoration-brand-400 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-0.5"
+            >
+              {displayTitle || story.sourceTitle}
+            </Link>
+          </>
         )}
       </figcaption>
     </figure>
