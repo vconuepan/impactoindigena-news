@@ -1,6 +1,6 @@
 # Contenido propio firmado y ficha con claves
 
-Plan · 2026-10-25 · repo `vocesindigenas` · estado: **Tanda A ejecutada y commiteada el 25-oct (`6a5db20`, `2aa6174`, `2672095`, sin empujar); B y C pendientes.** Resultados en la sección 8 bis.
+Plan · 2026-10-25 · repo `vocesindigenas` · estado: **Tanda A en producción desde el 25-oct 23:54Z (`10626e1`, `18eb34b`, `6c5088a`, `ab18c77`), verificada en vivo; B y C pendientes.** Resultados en la sección 8 bis.
 
 ---
 
