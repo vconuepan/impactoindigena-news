@@ -7,6 +7,7 @@ import {
   cifrasSinRespaldo,
   temaRespaldado,
   revisarCarrusel,
+  revisarPie,
 } from './storyCarouselGuards.js'
 
 const ORIGINAL_ES = `La comunidad mapuche Txokin Pehuen presentó su plan de manejo del bosque nativo.
@@ -152,5 +153,32 @@ describe('revisarCarrusel', () => {
       ORIGINAL_ES,
     )
     expect(avisos).toEqual([])
+  })
+})
+
+describe('revisarPie (el pie de Instagram, en la voz de Venancio)', () => {
+  it('no avisa sobre un pie fiel al original, aunque nombre una ley', () => {
+    const pie = 'La comunidad Txokin Pehuen cuida su bosque.\nLa Ley 19.253 reconoce sus tierras.\n\n#PueblosIndígenas #Mapuche'
+    expect(revisarPie(pie, ORIGINAL_ES)).toEqual([])
+  })
+
+  it('avisa si dice «indígena» sobre una nota que no lo dice (el caso Intag)', () => {
+    const avisos = revisarPie('Las familias indígenas de Intag frenan la represa.', ORIGINAL_INTAG)
+    expect(avisos.map((a) => a.tipo)).toEqual(['identidad'])
+  })
+
+  it('lee los hashtags: #PueblosIndígenas también atribuye identidad', () => {
+    const avisos = revisarPie('Las familias de Intag frenan la represa.\n\n#PueblosIndígenas #Ecuador', ORIGINAL_INTAG)
+    expect(avisos.map((a) => a.tipo)).toEqual(['identidad'])
+  })
+
+  it('un hashtag de un pueblo que la nota no nombra avisa', () => {
+    const avisos = revisarPie('Las familias de Intag frenan la represa.\n\n#Mapuche', ORIGINAL_INTAG)
+    expect(avisos.map((a) => a.tipo)).toEqual(['pueblo'])
+  })
+
+  it('una cita que no está tal cual en el original avisa', () => {
+    const avisos = revisarPie('La lonko dijo: «El bosque es todo para nosotros».', ORIGINAL_ES)
+    expect(avisos.map((a) => a.tipo)).toEqual(['cita'])
   })
 })

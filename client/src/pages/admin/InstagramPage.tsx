@@ -20,6 +20,7 @@ const STATUS_COLORS: Record<InstagramPostStatus, string> = {
   publishing: 'bg-blue-100 text-blue-800',
   published: 'bg-green-100 text-green-800',
   failed: 'bg-red-100 text-red-800',
+  rejected: 'bg-neutral-100 text-neutral-700',
 }
 
 const STATUS_LABELS: Record<InstagramPostStatus, string> = {
@@ -28,6 +29,7 @@ const STATUS_LABELS: Record<InstagramPostStatus, string> = {
   publishing: 'Publicando…',
   published: 'Publicado',
   failed: 'Fallido',
+  rejected: 'Rechazado',
 }
 
 type Filter = 'all' | InstagramPostStatus
@@ -60,7 +62,7 @@ export default function InstagramPage() {
           if (igPollId.current !== post.id) return
           setSelectedDraft(updated)
           if (updated.status === 'generating') return poll(attempt + 1)
-          if (updated.status === 'failed') toast('error', updated.error || 'Falló la generación del carrusel')
+          if (updated.status === 'failed' || updated.status === 'rejected') toast('error', updated.error || 'Falló la generación del carrusel')
         } catch { return poll(attempt + 1) }
       }
       void poll()
@@ -122,6 +124,7 @@ export default function InstagramPage() {
     { value: 'published', label: 'Publicados' },
     { value: 'draft', label: 'Borradores' },
     { value: 'failed', label: 'Fallidos' },
+    { value: 'rejected', label: 'Rechazados' },
   ]
 
   return (
@@ -401,7 +404,7 @@ function PostRow({
       {/* Actions */}
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
-          {(post.status === 'draft' || post.status === 'generating' || post.status === 'failed') && (
+          {(post.status === 'draft' || post.status === 'generating' || post.status === 'failed' || post.status === 'rejected') && (
             <ActionIconButton
               icon={PencilIcon}
               label="Editar/Publicar"

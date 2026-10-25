@@ -14,9 +14,18 @@ const story = {
   sourceCountry: 'Chile',
 }
 
+// Instagram escribe desde el artículo original, no desde el resumen de Voces.
+const original = {
+  sourceTitle: 'Comunidades mapuche lanzan cooperativa de energía',
+  sourceContent: 'Texto del artículo original.',
+  publisher: 'Radio Kurruf',
+  issueName: 'Economías Indígenas',
+  sourceCountry: 'Chile',
+}
+
 const superficies: [string, string][] = [
   ['LinkedIn', buildLinkedInPostPrompt(story)],
-  ['Instagram', buildInstagramCaptionPrompt(story)],
+  ['Instagram', buildInstagramCaptionPrompt(original)],
 ]
 
 describe('los prompts en primera persona llevan la voz de Venancio', () => {

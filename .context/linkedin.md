@@ -5,8 +5,11 @@ Spec counterpart: `.specs/social-posting.allium` (authoritative for posting beha
 ## Overview
 
 Full channel: LLM-generated draft → admin review → publish → metrics. Posts go
-out as a multi-image gallery (the Instagram carousel, reused verbatim when it
-exists), falling back to a single image and then to an ARTICLE link card.
+out as a multi-image gallery — the carousel built from the original article
+(`story-carousel.md`), reused from Instagram when it exists, built otherwise —
+falling back to a single image and then to an ARTICLE link card. If the carousel
+does not pass the guards, or a draft holds slides from the previous generator
+(AI summary, before 25-oct-2026), the post goes out without the gallery.
 
 Key files: `server/src/lib/linkedin.ts` (API + auth), `server/src/services/linkedin.ts`
 (drafts, publishing, metrics), `server/src/routes/admin/linkedin.ts`,

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { CIERRE_MARCA } from './carouselGen.js'
 
 /**
  * Lo que Voces Indígenas dice de sí misma tiene que poder sostenerse.
@@ -13,16 +12,16 @@ import { CIERRE_MARCA } from './carouselGen.js'
  * siguió publicando hasta el 25-oct-2026: 22 publicaciones en los 30 días
  * previos. La corrección del sitio no la alcanzó porque era otra copia.
  *
- * Este test amarra la lámina al colofón del sitio y prohíbe las dos frases en
- * todo el servidor.
+ * Este test prohíbe las dos frases en todo el servidor. Desde el carrusel
+ * armado desde el artículo original (25-oct-2026) esa lámina ya no existe: el
+ * cierre nombra al medio que reporteó y declara el uso de IA.
  */
 
 const SRC = path.resolve(__dirname, '..')
-const ES = path.resolve(SRC, '../../client/src/locales/es.json')
 
 /** Minúsculas y sin tildes, para que «Curado» y «curado» caigan igual. */
 function normalizar(texto: string): string {
-  return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
 const RETIRADAS: Array<{ frase: RegExp; motivo: string }> = [
@@ -39,15 +38,6 @@ function archivosTs(dir: string): string[] {
     return e.name.endsWith('.ts') && !e.name.endsWith('.test.ts') ? [ruta] : []
   })
 }
-
-describe('la lámina de cierre del carrusel', () => {
-  it('dice lo mismo que el colofón del sitio', () => {
-    const { colophon } = JSON.parse(readFileSync(ES, 'utf8'))
-    // El sitio usa U+2011 (guion que no corta la línea); el lienzo, el guion común.
-    expect(CIERRE_MARCA.titular.join(' ')).toBe(colophon.tagline.replace(/‑/g, '-'))
-    expect(CIERRE_MARCA.principios.join(' ')).toBe(colophon.principles)
-  })
-})
 
 describe('afirmaciones retiradas el 4-oct-2026', () => {
   const archivos = archivosTs(SRC)

@@ -34,11 +34,13 @@ config {
 -- ─── Channel as Sum Type ───────────────────────────────────────────
 -- Each platform has distinct formatting rules but shares the
 -- draft → published → failed lifecycle. Instagram adds two
--- transient states because its slow work runs in the background.
+-- transient states because its slow work runs in the background,
+-- and a terminal `rejected` state: its carousel and caption come
+-- from the original article and did not pass the guards.
 
 entity SocialPost {
     story: Story
-    status: draft | generating | publishing | published | failed
+    status: draft | generating | publishing | published | failed | rejected
     post_text: String                                    -- Instagram names this `caption`
     published_at: Timestamp?
     error: String?
@@ -78,7 +80,7 @@ variant Instagram : SocialPost {
     instagram_post_id: String?
     permalink: String?
     image_url: String                                    -- cover slide, required
-    slide_urls: List<String> = []                        -- 1 = single image, 4 = carousel
+    slide_urls: List<String> = []                        -- carousel from the original article
     like_count: Integer = 0
     comment_count: Integer = 0
 }
@@ -165,8 +167,11 @@ rule FindCandidates {
         and not withheld_in_enforced_vertical(this)
         and enabled_channels.any(ch =>
             not exists SocialPost where story = this
-                and channel = ch.name and status = published
+                and channel = ch.name and status in done_statuses(ch)
         )
+    -- done_statuses(Instagram) = [published, rejected]: a story whose
+    -- carousel or caption failed the guards is not picked again on
+    -- every run. Every other channel: [published].
     -- withheld_in_enforced_vertical (director's decision, 2026-10-11): the
     -- story belongs to a vertical whose EFFECTIVE review mode is enforce and
     -- that vertical does not show it (row pending or held, or no row yet).
@@ -189,7 +194,7 @@ rule PickBestStory {
     for channel in channels:
         if not exists SocialPost
             where story = pick and channel = channel.name
-                and status = published:
+                and status in done_statuses(channel):
             ensures: GenerateDraft(pick, channel)
     -- Per-channel failure is logged and never aborts the others.
 }
@@ -233,19 +238,24 @@ rule RegenerateDraft {
     let existing = SocialPost where story = story and channel = channel.name
     requires: exists existing
 
-    if existing.status in [draft, generating]:
+    if existing.status = generating
+        or (existing.status = draft and not built_by_previous_generator(existing)):
         ensures: return existing                          -- idempotent reopen
-    else if existing.status = failed and channel.is_retriable:
+    else if existing.status in [failed, rejected, draft] and channel.is_retriable:
+        -- `draft` here is an Instagram draft from the previous generator
+        -- (AI summary, before 2026-10-25): it is never published.
         ensures: not exists existing
         ensures: GenerateDraft(story, channel)
     else:
         ensures: reject("Story already has a post on this channel")
 }
 
--- Instagram builds its cover image, carousel slides and asset uploads
--- before a draft is reviewable, which takes minutes. The record is
--- created in `generating` and flipped to `draft` when the work lands,
--- so the caller returns immediately and the row reserves the story.
+-- Instagram builds its carousel from the original article (text,
+-- guards, render), its caption and the uploads before a draft is
+-- reviewable. The record is created in `generating` and flipped to
+-- `draft` or `rejected` when the work lands, so the panel returns
+-- immediately and the row reserves the story. The auto-post job waits
+-- for the work and publishes in the same run.
 rule InstagramDraftGeneratesInBackground {
     when: GenerateDraft(story, channel) and channel = Instagram
 
@@ -260,6 +270,16 @@ rule InstagramDraftGeneratesInBackground {
 rule InstagramAssetsReady {
     when: BuildInstagramAssets(post) completes
     ensures: post.status = draft
+}
+
+-- Director's decision, 2026-10-25: there is no editor to fix a
+-- warning, so any guard warning on the carousel (cita, identidad,
+-- pueblo, cifra, espacio) or on the caption (cita, identidad, pueblo,
+-- hashtags included) rejects the post. Nothing is uploaded.
+rule InstagramAssetsRejected {
+    when: BuildInstagramAssets(post) completes with guard_warnings
+    ensures: post.status = rejected
+    ensures: post.error = guard_warnings
 }
 
 rule InstagramAssetsFail {
@@ -282,7 +302,12 @@ rule InstagramAssetsFail {
 -- `draft`. Recovery there is delete-and-regenerate.
 --
 -- Transient states (`generating`, `publishing`) accept neither, and
--- occur on Instagram only.
+-- occur on Instagram only. Neither does `rejected` (Instagram only):
+-- recovery is regenerate, which asks the model for a new text.
+--
+-- Instagram's publish re-checks what goes out: a carousel from the
+-- previous generator is refused, and the caption (edited in the panel
+-- or not) goes through the caption guards again.
 --
 --   editable(post)    = post.status = draft
 --                       or (post.status = failed and post.channel.is_retriable)

@@ -10,7 +10,7 @@ Pedido del director el 23-oct-2026. Sus decisiones:
 | Decisión | Qué quedó |
 |---|---|
 | Voz | Informativo por defecto. Una casilla agrega **la lectura de Venancio Coñuepán Mesías**: una lámina en su voz, marcada con su nombre, que no se le atribuye al medio |
-| Marca | Sale como Voces Indígenas: el mismo lienzo, paleta, logo y pie del carrusel de Instagram (`lib/carouselGen.ts`) |
+| Marca | Sale como Voces Indígenas: el lienzo, la paleta, el logo y el pie de `lib/carouselGen.ts` |
 
 ## La regla de fondo: el original, no el resumen
 
@@ -116,5 +116,10 @@ candado no lo ve. Lo revisa el editor.
   palabra corriente («Cree», «Nasa»): harían saltar el candado por un verbo.
 - **Diagramación** → `storyCarouselRender.ts`; cada bloque declara su máximo de líneas,
   y el exceso vuelve como aviso `espacio`.
-- **Publicar directo en Instagram** no está hecho: el flujo de `services/instagram.ts`
-  sube láminas a R2 y publica; conectarlo exige decidir quién aprueba.
+- **Instagram y LinkedIn** usan este mismo carrusel desde el 25-oct-2026 (decisión del
+  director): `buildStoryCarouselForSocial` arma el texto informativo, sin la lectura, lo
+  revisa y lo dibuja. Sin editor, **cualquier aviso rechaza**: el post de Instagram queda
+  `rejected` con el motivo, y LinkedIn sale sin galería. Las láminas se suben a R2 con
+  `-original-` en el nombre; un borrador sin esa marca es del carrusel anterior (resumen
+  de IA) y no se publica. El pie de Instagram, en la voz de Venancio, se escribe desde el
+  mismo original y pasa por `revisarPie`. Ver `instagram.md`.

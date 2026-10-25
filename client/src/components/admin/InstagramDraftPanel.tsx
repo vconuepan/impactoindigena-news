@@ -53,6 +53,8 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
   }
 
   const isGenerating = draft?.status === 'generating'
+  // El carrusel o el pie no pasó los candados: no hay nada que publicar.
+  const isRejected = draft?.status === 'rejected'
 
   return (
     <>
@@ -63,8 +65,8 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
             <LoadingSpinner />
             <p className="text-sm font-medium text-neutral-800">Generando carrusel…</p>
             <p className="text-xs text-neutral-500 max-w-xs">
-              La portada se crea con IA (gpt-image-2) y puede tardar ~3 minutos.
-              Puedes dejar este panel abierto; se actualizará solo al terminar.
+              El texto sale del artículo original y pasa por los candados antes de
+              dibujarse. Puedes dejar este panel abierto; se actualizará solo al terminar.
             </p>
           </div>
           <div className={PANEL_FOOTER}>
@@ -89,6 +91,14 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
                 {draft.story?.relevance != null && <> · Relevance: {draft.story.relevance}/10</>}
               </p>
             </div>
+
+            {isRejected && (
+              <div role="alert" className="rounded-md border border-red-200 bg-red-50 p-3 space-y-1">
+                <p className="text-sm font-medium text-red-800">No se publica: no pasó los candados</p>
+                {draft.error && <p className="text-xs text-red-700">{draft.error}</p>}
+                <p className="text-xs text-red-700">Cancelar lo borra; generarlo de nuevo pide otro texto al modelo.</p>
+              </div>
+            )}
 
             {/* Slide previews */}
             {draft.slideUrls && draft.slideUrls.length > 0 && (
@@ -136,7 +146,7 @@ export function InstagramDraftPanel({ open, onClose, draft, onPublish, onUpdate,
           <div className={PANEL_FOOTER}>
             <Button
               onClick={handlePublish}
-              disabled={isOverLimit || publishing || saving || !currentCaption.trim()}
+              disabled={isRejected || isOverLimit || publishing || saving || !currentCaption.trim()}
               loading={publishing || saving}
             >
               {publishing ? 'Publishing...' : saving ? 'Saving...' : 'Post to Instagram'}

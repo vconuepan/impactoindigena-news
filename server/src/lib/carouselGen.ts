@@ -1,10 +1,20 @@
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { uploadImageToR2 } from './imageStorage.js'
-import { loadRemoteImage } from './loadRemoteImage.js'
 import { createLogger } from './logger.js'
 import { config } from '../config.js'
+
+/*
+ * El lienzo de los carruseles de Voces Indígenas: fuente, paleta, logo, fondo,
+ * pie y exportación. Las láminas las dibuja `storyCarouselRender.ts`, con el
+ * texto que sale del artículo original.
+ *
+ * Hasta el 25-oct-2026 este archivo armaba además el carrusel de Instagram y
+ * LinkedIn desde el resumen y las razones que escribe la IA de Voces, con una
+ * portada de IA y una lámina de cierre con afirmaciones que el director había
+ * retirado del sitio el 4-oct. Se reemplazó por el carrusel desde el original
+ * (decisión del director, 25-oct-2026); ver services/storyCarousel.ts.
+ */
 
 const log = createLogger('carousel-gen')
 
@@ -52,14 +62,6 @@ export const M = 70 * SCALE
 // Helpers
 // ---------------------------------------------------------------------------
 
-function cleanText(text: string): string {
-  return text
-    .replace(/\*\*/g, '').replace(/\*/g, '')
-    .replace(/#{1,6}\s/g, '').replace(/`/g, '')
-    .replace(/^[-•]\s*/gm, '')
-    .replace(/\n+/g, ' ').trim()
-}
-
 export function roundRect(ctx: any, x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
@@ -87,46 +89,6 @@ export function drawPill(ctx: any, text: string, x: number, y: number, fontPx: n
   return tw + padX * 2
 }
 
-/** Word-wrap. Draws and returns Y of the next line. Truncates with … at maxLines. */
-function wrapText(ctx: any, text: string, x: number, y: number, maxW: number, lh: number, maxLines = 12): number {
-  const words = cleanText(text).split(' ')
-  let line = '', cy = y, n = 0
-  for (let i = 0; i < words.length; i++) {
-    const test = line + words[i] + ' '
-    if (ctx.measureText(test).width > maxW && line) {
-      if (n >= maxLines - 1 && i < words.length - 1) {
-        let t = line.trim()
-        while (ctx.measureText(t + '…').width > maxW && t.length) t = t.slice(0, -1)
-        ctx.fillText(t + '…', x, cy)
-        return cy + lh
-      }
-      ctx.fillText(line.trim(), x, cy)
-      line = words[i] + ' '
-      cy += lh; n++
-    } else line = test
-  }
-  if (line.trim()) { ctx.fillText(line.trim(), x, cy); cy += lh }
-  return cy
-}
-
-/** Title that colors the LAST wrapped line in the accent (austerra-style). */
-function drawTitle(ctx: any, text: string, x: number, y: number, maxW: number, lh: number, maxLines: number): void {
-  const words = cleanText(text).split(' ')
-  const lines: string[] = []
-  let line = ''
-  for (const w of words) {
-    const test = line + w + ' '
-    if (ctx.measureText(test).width > maxW && line) { lines.push(line.trim()); line = w + ' ' }
-    else line = test
-  }
-  if (line.trim()) lines.push(line.trim())
-  const shown = lines.slice(0, maxLines)
-  shown.forEach((l, i) => {
-    ctx.fillStyle = i === shown.length - 1 ? C.accent : C.white
-    ctx.fillText(i === shown.length - 1 && lines.length > maxLines ? l + '…' : l, x, y + i * lh)
-  })
-}
-
 let _logoWhite: any = null
 async function getLogo(): Promise<any> {
   if (_logoWhite === null) {
@@ -142,36 +104,8 @@ export async function drawLogo(ctx: any, x: number, y: number, h: number, align:
   ctx.drawImage(logo, align === 'center' ? (RW - w) / 2 : x, y, w, h)
 }
 
-function isLogoFallback(url: string): boolean {
-  return url.includes('cropped-logo-impacto-indigena') || url.includes('1-2.png')
-}
-
-/** Cover-fit a photo across the full canvas, then darken. Falls back to a dark
- *  warm gradient + soft green glow when there is no real AI image. */
-async function drawBgPhoto(ctx: any, aiImageUrl: string, darken: number): Promise<void> {
-  ctx.fillStyle = C.ink
-  ctx.fillRect(0, 0, RW, RH)
-  if (!isLogoFallback(aiImageUrl)) {
-    try {
-      const p = await loadRemoteImage(aiImageUrl)
-      const tr = RW / RH
-      const sw = Math.min(p.width, p.height * tr)
-      const sh = sw / tr
-      ctx.drawImage(p, (p.width - sw) / 2, (p.height - sh) / 2, sw, sh, 0, 0, RW, RH)
-      if (darken > 0) { ctx.fillStyle = `rgba(20,17,15,${darken})`; ctx.fillRect(0, 0, RW, RH) }
-      return
-    } catch { /* fall through to gradient */ }
-  }
-  const rg = ctx.createRadialGradient(RW / 2, RH * 0.42, 0, RW / 2, RH * 0.42, RW * 0.8)
-  rg.addColorStop(0, 'rgba(13,95,60,0.40)')
-  rg.addColorStop(1, 'rgba(20,17,15,0)')
-  ctx.fillStyle = rg
-  ctx.fillRect(0, 0, RW, RH)
-}
-
-/** Clean branded dark background: warm ink + a soft green glow. Used on the
- *  text slides so the AI photo doesn't repeat on every slide (it appears only
- *  on the cover, full-bleed, and the resumen, framed). */
+/** Clean branded dark background: warm ink + a soft green glow. Every slide
+ *  of the carousel uses it: there are no photos (see storyCarouselRender.ts). */
 export function drawCleanBg(ctx: any): void {
   ctx.fillStyle = C.ink
   ctx.fillRect(0, 0, RW, RH)
@@ -179,15 +113,6 @@ export function drawCleanBg(ctx: any): void {
   rg.addColorStop(0, 'rgba(13,95,60,0.42)')
   rg.addColorStop(1, 'rgba(20,17,15,0)')
   ctx.fillStyle = rg
-  ctx.fillRect(0, 0, RW, RH)
-}
-
-function bottomGradient(ctx: any): void {
-  const g = ctx.createLinearGradient(0, RH * 0.32, 0, RH)
-  g.addColorStop(0, 'rgba(20,17,15,0)')
-  g.addColorStop(0.55, 'rgba(20,17,15,0.55)')
-  g.addColorStop(1, 'rgba(20,17,15,0.96)')
-  ctx.fillStyle = g
   ctx.fillRect(0, 0, RW, RH)
 }
 
@@ -205,254 +130,11 @@ export function footerUrl(ctx: any, slideNum: number, total: number): void {
 
 // Supersample: every slide renders at 2× (2160×2700) for crisp text, then we
 // downscale to Instagram's native 1080×1350 before export. Uploading the full
-// 2× image made Instagram re-compress it on its own downscale, softening both
-// text and photos. Exporting at native size keeps it sharp and the AI photo
-// (≤1536px source) is downscaled — not upscaled — into the final frame.
+// 2× image made Instagram re-compress it on its own downscale, softening the
+// text. Exporting at native size keeps it sharp.
 export function exportCanvas(canvas: any): Buffer {
   const out: any = createCanvas(W, H)
   const octx = out.getContext('2d')
   octx.drawImage(canvas, 0, 0, W, H)
   return out.toBuffer('image/jpeg', 92)
-}
-
-// ---------------------------------------------------------------------------
-// Slide 1 — Cover: full-bleed photo + headline (accent last line)
-// ---------------------------------------------------------------------------
-async function generateSlide1(title: string, category: string, aiImageUrl: string, slideNum: number, total: number): Promise<Buffer> {
-  const canvas = createCanvas(RW, RH)
-  const ctx = canvas.getContext('2d')
-  await drawBgPhoto(ctx, aiImageUrl, 0)
-  bottomGradient(ctx)
-  await drawLogo(ctx, M, M, 100 * SCALE)
-
-  const cat = (category || 'VOCES INDÍGENAS').toUpperCase()
-  drawPill(ctx, cat, M, RH - 560 * SCALE, 24 * SCALE, C.accent, C.white)
-
-  ctx.font = `700 ${70 * SCALE}px '${FONT}'`
-  drawTitle(ctx, title, M, RH - 420 * SCALE, RW - M * 2, 84 * SCALE, 4)
-
-  footerUrl(ctx, slideNum, total)
-  return exportCanvas(canvas)
-}
-
-// ---------------------------------------------------------------------------
-// Slide 2 — Resumen: framed photo + editorial body
-// ---------------------------------------------------------------------------
-async function generateSlide2(summary: string, category: string, aiImageUrl: string, slideNum: number, total: number): Promise<Buffer> {
-  const canvas = createCanvas(RW, RH)
-  const ctx = canvas.getContext('2d')
-  ctx.fillStyle = C.ink
-  ctx.fillRect(0, 0, RW, RH)
-
-  await drawLogo(ctx, 0, M, 80 * SCALE, 'center')
-
-  // Framed photo (rounded corners). Height kept moderate so the body text
-  // below always fits above the footer (no overflow on long summaries).
-  const fx = M, fy = 160 * SCALE, fw = RW - M * 2, fh = 520 * SCALE
-  if (!isLogoFallback(aiImageUrl)) {
-    try {
-      const p = await loadRemoteImage(aiImageUrl)
-      ctx.save()
-      roundRect(ctx, fx, fy, fw, fh, 32 * SCALE)
-      ctx.clip()
-      const tr = fw / fh
-      const sw = Math.min(p.width, p.height * tr)
-      const sh = sw / tr
-      ctx.drawImage(p, (p.width - sw) / 2, (p.height - sh) / 2, sw, sh, fx, fy, fw, fh)
-      ctx.restore()
-    } catch { /* skip frame */ }
-    if (category) drawPill(ctx, category, fx + 22 * SCALE, fy + 22 * SCALE, 20 * SCALE, 'rgba(20,17,15,0.72)', C.white)
-  }
-
-  // Label + body — budgeted to end above the footer
-  ctx.fillStyle = C.accent
-  ctx.font = `700 ${24 * SCALE}px '${FONT}'`
-  ctx.fillText('RESUMEN', M, fy + fh + 56 * SCALE)
-
-  ctx.fillStyle = C.white
-  ctx.font = `500 ${38 * SCALE}px '${FONT}'`
-  wrapText(ctx, summary, M, fy + fh + 128 * SCALE, RW - M * 2, 52 * SCALE, 7)
-
-  footerUrl(ctx, slideNum, total)
-  return exportCanvas(canvas)
-}
-
-// ---------------------------------------------------------------------------
-// Slide 3 — ¿Por qué importa?: bullets over a darkened photo
-// ---------------------------------------------------------------------------
-function extractBullets(text: string): string[] {
-  const lines = text.split(/\n+/).map((s: string) =>
-    s.replace(/^[-*•]\s*/, '').replace(/\*\*(.+?)\*\*/g, '$1').replace(/\*\*/g, '').trim(),
-  ).filter(Boolean)
-  return lines.length ? lines : [cleanText(text)]
-}
-
-// Renders a "¿Por qué importa?" slide with a pre-chunked set of bullets
-// (≤2 per slide so nothing truncates). `isFirst` shows the quote mark + label;
-// continuation slides show "(cont.)".
-async function generateRelevanceSlide(
-  bullets: string[],
-  _aiImageUrl: string,
-  isFirst: boolean,
-  slideNum: number,
-  total: number,
-): Promise<Buffer> {
-  const canvas = createCanvas(RW, RH)
-  const ctx = canvas.getContext('2d')
-  drawCleanBg(ctx)
-
-  await drawLogo(ctx, M, M, 72 * SCALE)
-
-  if (isFirst) {
-    ctx.fillStyle = C.accent
-    ctx.font = `700 ${190 * SCALE}px '${FONT}'`
-    ctx.fillText('“', M - 8 * SCALE, 360 * SCALE)
-  }
-
-  ctx.fillStyle = C.accent
-  ctx.font = `700 ${24 * SCALE}px '${FONT}'`
-  ctx.fillText(isFirst ? 'POR QUÉ IMPORTA' : 'POR QUÉ IMPORTA (CONT.)', M, 440 * SCALE)
-
-  let y = 540 * SCALE
-  for (const b of bullets) {
-    ctx.fillStyle = C.accent
-    ctx.beginPath()
-    ctx.arc(M + 9 * SCALE, y - 14 * SCALE, 8 * SCALE, 0, Math.PI * 2)
-    ctx.fill()
-    ctx.fillStyle = C.white
-    ctx.font = `500 ${36 * SCALE}px '${FONT}'`
-    // Up to 6 lines per bullet at a slightly smaller size. With ≤2 bullets per
-    // slide this fits the full reason without truncating, and the worst case
-    // (2×6 lines) still ends well above the footer (~2352 < 2560 render px).
-    y = wrapText(ctx, b, M + 34 * SCALE, y, RW - M * 2 - 34 * SCALE, 50 * SCALE, 6)
-    y += 40 * SCALE
-  }
-
-  footerUrl(ctx, slideNum, total)
-  return exportCanvas(canvas)
-}
-
-// ---------------------------------------------------------------------------
-// Slide 4 — CTA
-// ---------------------------------------------------------------------------
-
-/*
- * El texto de la lámina de cierre es el del colofón del sitio
- * (`client/src/locales/es.json`, `colophon`), que el director aprobó el
- * 4-oct-2026 (`dc14657`) en reemplazo de dos afirmaciones que no se sostenían:
- * un superlativo sin verificar (ser «el primero» de los medios indígenas) y una
- * curaduría hecha «por pueblos indígenas», cuando la publicación es
- * automática. Esta lámina las siguió diciendo hasta el 25-oct-2026.
- * `respaldo-marca.test.ts` compara las dos copias y prohíbe las frases viejas.
- *
- * «AI-native» va con guion común: el sitio usa U+2011 para que el navegador no
- * parta la palabra, y en el lienzo cada línea se dibuja entera.
- */
-export const CIERRE_MARCA = {
-  titular: ['Un medio indígena', 'AI-native.'],
-  principios: ['Criterio editorial indígena.', 'Curaduría con inteligencia artificial.', 'Sin publicidad.'],
-}
-
-async function generateSlide4(): Promise<Buffer> {
-  const canvas = createCanvas(RW, RH)
-  const ctx = canvas.getContext('2d')
-  ctx.fillStyle = C.ink
-  ctx.fillRect(0, 0, RW, RH)
-  const rg = ctx.createRadialGradient(RW / 2, RH * 0.42, 0, RW / 2, RH * 0.42, RW * 0.7)
-  rg.addColorStop(0, 'rgba(13,95,60,0.35)')
-  rg.addColorStop(1, 'rgba(20,17,15,0)')
-  ctx.fillStyle = rg
-  ctx.fillRect(0, 0, RW, RH)
-
-  await drawLogo(ctx, 0, 300 * SCALE, 120 * SCALE, 'center')
-
-  ctx.textAlign = 'center'
-
-  // Titular en dos líneas centradas; la segunda, en el acento.
-  ctx.font = `700 ${52 * SCALE}px '${FONT}'`
-  ctx.fillStyle = C.white
-  ctx.fillText(CIERRE_MARCA.titular[0], RW / 2, 720 * SCALE)
-  ctx.fillStyle = C.accent
-  ctx.fillText(CIERRE_MARCA.titular[1], RW / 2, 800 * SCALE)
-
-  // Los tres principios, uno por línea
-  ctx.fillStyle = C.mute
-  ctx.font = `500 ${30 * SCALE}px '${FONT}'`
-  CIERRE_MARCA.principios.forEach((linea, i) => {
-    ctx.fillText(linea, RW / 2, (940 + i * 60) * SCALE)
-  })
-
-  // url pill centered
-  const t = 'vocesindigenas.org'
-  ctx.font = `700 ${30 * SCALE}px '${FONT}'`
-  const tw = ctx.measureText(t).width
-  const padX = 36 * SCALE, h = 84 * SCALE
-  const px = (RW - (tw + padX * 2)) / 2, py = 1170 * SCALE
-  ctx.fillStyle = C.accent
-  roundRect(ctx, px, py, tw + padX * 2, h, h / 2)
-  ctx.fill()
-  ctx.fillStyle = C.white
-  ctx.textBaseline = 'middle'
-  ctx.fillText(t, RW / 2, py + h / 2 + 2)
-  ctx.textBaseline = 'alphabetic'
-  ctx.textAlign = 'left'
-  return exportCanvas(canvas)
-}
-
-// ---------------------------------------------------------------------------
-// Main
-// ---------------------------------------------------------------------------
-export interface CarouselSlide {
-  imageUrl: string
-  order: number
-}
-
-export async function generateCarousel(
-  storyId: string,
-  title: string,
-  summary: string,
-  relevanceReasons: string,
-  storyUrl: string,
-  aiImageUrl: string,
-  category: string = '',
-): Promise<CarouselSlide[]> {
-  log.info({ storyId }, 'generating Instagram carousel')
-
-  const timestamp = Date.now()
-
-  // Paginate the relevance bullets at most 2 per slide so long reasons never
-  // get truncated — the carousel grows to 5 slides instead of cutting text.
-  const allBullets = extractBullets(relevanceReasons).slice(0, 6)
-  const BULLETS_PER_SLIDE = 2
-  const bulletGroups: string[][] = []
-  for (let i = 0; i < allBullets.length; i += BULLETS_PER_SLIDE) {
-    bulletGroups.push(allBullets.slice(i, i + BULLETS_PER_SLIDE))
-  }
-  if (bulletGroups.length === 0) bulletGroups.push([cleanText(relevanceReasons)])
-
-  // cover + resumen + N relevance slides + CTA
-  const total = 2 + bulletGroups.length + 1
-
-  const builders: Array<Promise<Buffer>> = [
-    generateSlide1(title, category, aiImageUrl, 1, total),
-    generateSlide2(summary, category, aiImageUrl, 2, total),
-    ...bulletGroups.map((group, i) =>
-      generateRelevanceSlide(group, aiImageUrl, i === 0, 3 + i, total),
-    ),
-    generateSlide4(),
-  ]
-
-  const buffers = await Promise.all(builders)
-
-  const uploaded: CarouselSlide[] = []
-  for (let i = 0; i < buffers.length; i++) {
-    const order = i + 1
-    const filename = `${storyId}-slide${order}-${timestamp}.jpg`
-    const url = await uploadImageToR2(buffers[i], filename, 'image/jpeg')
-    uploaded.push({ imageUrl: url, order })
-    log.info({ storyId, order, url }, 'slide uploaded')
-  }
-
-  log.info({ storyId, slideCount: uploaded.length }, 'carousel generated')
-  return uploaded
 }

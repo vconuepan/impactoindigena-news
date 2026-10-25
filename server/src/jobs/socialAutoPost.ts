@@ -38,7 +38,8 @@ import { isFacebookConfigured } from '../lib/facebook.js'
 const log = createLogger('social_auto_post')
 
 interface ChannelConfig extends AutoPostChannel {
-  generateDraft: (storyId: string) => Promise<{ id: string }>
+  /** Un borrador `rejected` no pasó los candados y no se publica. */
+  generateDraft: (storyId: string) => Promise<{ id: string; status?: string }>
   publishPost: (postId: string) => Promise<unknown>
 }
 
@@ -49,15 +50,20 @@ interface ChannelConfig extends AutoPostChannel {
  * per-channel skip in the loop below.
  */
 type FindManyPublished = (args: {
-  where: { storyId: { in: string[] }; status: string }
+  where: { storyId: { in: string[] }; status: { in: string[] } }
   select: { storyId: true }
 }) => Promise<Array<{ storyId: string }>>
 
-function publishedLookup(findMany: FindManyPublished) {
+/**
+ * `statuses`: los estados que cuentan como «ya resuelto en este canal». En
+ * Instagram también `rejected`: una noticia cuyo carrusel o pie no pasó los
+ * candados no se vuelve a elegir en cada corrida.
+ */
+function publishedLookup(findMany: FindManyPublished, statuses: string[] = ['published']) {
   return async (storyIds: string[]): Promise<Set<string>> => {
     if (storyIds.length === 0) return new Set()
     const rows = await findMany({
-      where: { storyId: { in: storyIds }, status: 'published' },
+      where: { storyId: { in: storyIds }, status: { in: statuses } },
       select: { storyId: true },
     })
     return new Set(rows.map((row) => row.storyId))
@@ -97,8 +103,10 @@ function getEnabledChannels(): ChannelConfig[] {
   if (config.instagram.autoPost.enabled && isInstagramConfigured()) {
     channels.push({
       name: 'instagram',
-      publishedStoryIds: publishedLookup((args) => prisma.instagramPost.findMany(args)),
-      generateDraft: (storyId) => generateInstagramDraft(storyId),
+      publishedStoryIds: publishedLookup((args) => prisma.instagramPost.findMany(args), ['published', 'rejected']),
+      // Espera el borrador para publicarlo en esta misma corrida (ver
+      // GenerateDraftOptions en services/instagram.ts).
+      generateDraft: (storyId) => generateInstagramDraft(storyId, { esperar: true }),
       publishPost: (postId) => publishInstagramPost(postId),
     })
   }
@@ -155,12 +163,19 @@ export async function runSocialAutoPost(): Promise<void> {
     try {
       const alreadyPosted = await channel.publishedStoryIds([storyId])
       if (alreadyPosted.has(storyId)) {
-        log.info({ channel: channel.name, storyId }, 'story already posted to channel, skipping')
+        log.info({ channel: channel.name, storyId }, 'story already posted (or rejected) on channel, skipping')
         continue
       }
 
       log.info({ channel: channel.name, storyId }, 'generating draft')
       const draft = await channel.generateDraft(storyId)
+
+      // El carrusel o el pie no pasó los candados: no se publica, y el motivo
+      // queda en el post para verlo en el panel.
+      if (draft.status === 'rejected') {
+        log.warn({ channel: channel.name, storyId, postId: draft.id }, 'draft rejected by the carousel guards; not published')
+        continue
+      }
 
       // Candidates were filtered minutes ago (LLM pick, drafts, 2 s between
       // channels): a vertical in enforce may have withheld the story since.

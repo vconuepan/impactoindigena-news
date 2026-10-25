@@ -49,7 +49,7 @@ spec wins and the context file is what gets corrected.
 | `newsletter-podcast.md` | Create-assign-generate workflow, templates, carousel | `newsletter-and-podcast.allium` |
 | `bluesky.md` | AT Protocol auth, post format, auto-post, metrics | `social-posting.allium` |
 | `mastodon.md` | Static token auth, shared social logic, post format | `social-posting.allium` |
-| `instagram.md` | Graph API auth, carousel vs single-image, R2 dependency, token rotation | `social-posting.allium` |
+| `instagram.md` | Graph API auth, carrusel desde el artículo original, rechazados por los candados, R2, token rotation | `social-posting.allium` |
 | `linkedin.md` | Member token (60d, no automatic refresh), OAuth reauthorization, check job | `social-posting.allium` |
 | `twitter.md` | OAuth 1.0a static credentials, text reused from Bluesky, admin panel | `social-posting.allium` |
 | `facebook.md` | Page token vs Instagram token, link-card posting, groups impossible | `social-posting.allium` |

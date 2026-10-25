@@ -6,7 +6,7 @@ import { createUgcPost, getOrgPostMetrics, isLinkedInConfigured, LinkedInAuthErr
 import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildLinkedInPostPrompt } from '../prompts/linkedin.js'
 import { withAiLabel } from '../lib/ai-label.js'
-import { generateCarousel } from '../lib/carouselGen.js'
+import { buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError } from './storyCarousel.js'
 import { config } from '../config.js'
 
 const log = createLogger('linkedin-service')
@@ -58,17 +58,16 @@ export async function generateDraft(storyId: string) {
     sourceCountry: story.feed?.url ?? null,
   })
 
-  const result = await structuredLlm.invoke([new HumanMessage(prompt)])
+  // The text and the carousel slides go in parallel: the carousel makes its own
+  // model call, and this request is synchronous (the panel waits on it).
+  const [result, slideUrls] = await Promise.all([
+    structuredLlm.invoke([new HumanMessage(prompt)]),
+    buildCarouselSlides(story),
+  ])
 
   const rawPostText = result.postText.length > 2900
     ? result.postText.slice(0, 2897) + '…'
     : result.postText
-
-  // Carousel slides for a multi-image post. Reuse the polished Instagram
-  // carousel if one already exists for this story (identical, instant, no
-  // extra cost). Otherwise render fresh from the story's best image — we
-  // never generate a new AI image here, so this stays fast (no 3-min wait).
-  const slideUrls = await buildCarouselSlides(story)
 
   const post = await prisma.linkedInPost.create({
     data: {
@@ -85,48 +84,27 @@ export async function generateDraft(storyId: string) {
 }
 
 /**
- * Resolve the carousel slide URLs for a LinkedIn multi-image post.
- * Prefers reusing the existing Instagram carousel; falls back to rendering
- * the same editorial slides from the story's best available image. Never
- * triggers AI image generation, so it never blocks for minutes.
+ * Las láminas de la galería de LinkedIn: el carrusel armado desde el artículo
+ * original, el mismo de Instagram (decisión del director, 25-oct-2026). Se
+ * reutiliza el de Instagram si ya existe; si no, se arma con los mismos
+ * candados. Si no los pasa, LinkedIn sale sin galería (imagen única o tarjeta
+ * del artículo), nunca con el carrusel anterior, que se armaba con el resumen
+ * y las razones de la IA de Voces.
  */
-async function buildCarouselSlides(story: {
-  id: string
-  title: string | null
-  summary: string | null
-  relevanceReasons: string | null
-  slug: string | null
-  imageUrl: string | null
-  titleLabel: string | null
-  issue?: { name: string } | null
-}): Promise<string[]> {
+async function buildCarouselSlides(story: { id: string }): Promise<string[]> {
   try {
-    // 1. Reuse the Instagram carousel verbatim when it exists.
     const igPost = await prisma.instagramPost.findUnique({ where: { storyId: story.id } })
-    if (igPost && igPost.slideUrls.length > 0) {
+    if (igPost && armadoDesdeElOriginal(igPost.slideUrls)) {
       log.info({ storyId: story.id, slideCount: igPost.slideUrls.length }, 'reusing Instagram carousel slides for LinkedIn')
       return igPost.slideUrls
     }
-
-    // 2. Render fresh from the best available image (IG cover or story image).
-    const aiImageUrl = igPost?.imageUrl || story.imageUrl
-    if (!aiImageUrl) {
-      log.info({ storyId: story.id }, 'no image available — LinkedIn post will fall back to single image / article')
+    const carrusel = await buildStoryCarouselForSocial(story.id)
+    return await subirCarrusel(story.id, carrusel.imagenes)
+  } catch (err) {
+    if (err instanceof StoryCarouselError) {
+      log.info({ storyId: story.id, motivo: err.message, avisos: err.avisos.length }, 'carousel did not pass the guards — LinkedIn post goes without gallery')
       return []
     }
-    const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
-    const category = story.titleLabel || story.issue?.name || ''
-    const slides = await generateCarousel(
-      story.id,
-      story.title || '',
-      story.summary || '',
-      story.relevanceReasons || '',
-      storyUrl,
-      aiImageUrl,
-      category,
-    )
-    return slides.sort((a, b) => a.order - b.order).map((s) => s.imageUrl)
-  } catch (err) {
     log.warn({ err, storyId: story.id }, 'failed to build LinkedIn carousel slides — will fall back at publish time')
     return []
   }
@@ -208,8 +186,10 @@ export async function publishPost(postId: string) {
   const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
 
   // Prefer the carousel slides (multi-image gallery). Fall back to the
-  // story's single image, then to an article link card.
-  const imageUrls = post.slideUrls.length > 0
+  // story's single image, then to an article link card. A gallery from the
+  // previous generator (AI summary) is never published: a draft saved before
+  // 25-oct-2026 goes out without it.
+  const imageUrls = armadoDesdeElOriginal(post.slideUrls)
     ? post.slideUrls
     : (story.imageUrl ? [story.imageUrl] : [])
 

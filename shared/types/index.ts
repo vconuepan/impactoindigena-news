@@ -493,7 +493,9 @@ export interface StoryCarouselPreview {
 
 // --- Instagram Types ---
 
-export type InstagramPostStatus = 'generating' | 'draft' | 'publishing' | 'published' | 'failed'
+// `rejected`: el carrusel o el pie no pasó los candados (cita, identidad,
+// pueblo, cifra, espacio) y no se publica. El motivo queda en `error`.
+export type InstagramPostStatus = 'generating' | 'draft' | 'publishing' | 'published' | 'failed' | 'rejected'
 
 export interface InstagramPost {
   id: string

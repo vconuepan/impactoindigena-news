@@ -3,11 +3,14 @@ import { HumanMessage } from '@langchain/core/messages'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { createCarouselPost, createSingleImagePost, getPostMetrics, isInstagramConfigured, InstagramAuthError } from '../lib/instagram.js'
-import { generateCarousel } from '../lib/carouselGen.js'
-import { generateStoryImage } from '../lib/imageGen.js'
+import { revisarPie } from '../lib/storyCarouselGuards.js'
+import {
+  buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, avisosEnTexto,
+  StoryCarouselError, type SocialCarousel,
+} from './storyCarousel.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildInstagramCaptionPrompt } from '../prompts/instagram.js'
-import { withAiLabel } from '../lib/ai-label.js'
+import { withAiLabel, AI_LABEL } from '../lib/ai-label.js'
 import { config } from '../config.js'
 const log = createLogger('instagram-service')
 
@@ -15,11 +18,40 @@ const instagramCaptionSchema = z.object({
   caption: z.string().describe('The complete Instagram caption, including body and hashtags.'),
 })
 
+/** Tope de caracteres del pie en Instagram. */
+const TOPE_PIE = 2200
+
 // ---------------------------------------------------------------------------
 // Draft generation
 // ---------------------------------------------------------------------------
 
-export async function generateDraft(storyId: string) {
+/*
+ * DESDE EL 25-OCT-2026 EL CARRUSEL SALE DEL ARTICULO ORIGINAL (decisión del
+ * director). Mismo texto, candados y dibujo que el carrusel del panel
+ * (`services/storyCarousel.ts`), y el pie, en la voz de Venancio, escrito desde
+ * el mismo original y revisado con los mismos candados. No hay editor que
+ * resuelva un aviso: si el carrusel o el pie no pasan, el post queda
+ * `rejected`, con el motivo en `error`, y no se publica.
+ *
+ * Antes se armaba con el resumen y las razones de la IA de Voces y una portada
+ * de IA, sin nombrar al medio. El 24-oct salió así una lámina que decía solo
+ * «limitingFactors» y una portada con uniformados y una retroexcavadora que el
+ * artículo no reporta.
+ */
+
+export interface GenerateDraftOptions {
+  /**
+   * Esperar a que el borrador quede listo (o rechazado) antes de devolverlo. Lo
+   * usa el job automático, que publica en la misma corrida. Hasta el
+   * 25-oct-2026 no esperaba: publicaba un registro todavía en `generating`,
+   * fallaba con «Can only publish draft posts», y el borrador salía en una
+   * corrida posterior solo si el modelo volvía a elegir esa noticia. El panel
+   * no espera: recibe el registro en `generating` y consulta hasta que cambie.
+   */
+  esperar?: boolean
+}
+
+export async function generateDraft(storyId: string, opciones: GenerateDraftOptions = {}) {
   const story = await prisma.story.findUnique({
     where: { id: storyId },
     include: { feed: true, issue: true },
@@ -28,132 +60,137 @@ export async function generateDraft(storyId: string) {
   if (!story) throw new Error('Story not found')
   if (!story.title) throw new Error('Story must be fully analyzed')
 
-  // If a draft (or still-generating) post exists, return it so the panel
-  // reopens seamlessly. If it failed, delete and regenerate. Published blocks.
+  // A draft (or still-generating) post built from the original is returned so
+  // the panel reopens seamlessly. A failed or rejected one is deleted and
+  // regenerated, and so is a draft from the previous generator (AI summary):
+  // that one must never be published. Published blocks.
   const existingPost = await prisma.instagramPost.findFirst({
     where: { storyId },
     include: { story: { include: { feed: true, issue: true } } },
   })
   if (existingPost) {
-    if (existingPost.status === 'draft' || existingPost.status === 'generating') return existingPost
-    if (existingPost.status === 'failed') {
+    if (existingPost.status === 'generating') return existingPost
+    if (existingPost.status === 'draft' && armadoDesdeElOriginal(existingPost.slideUrls)) return existingPost
+    if (existingPost.status === 'draft' || existingPost.status === 'failed' || existingPost.status === 'rejected') {
       await prisma.instagramPost.delete({ where: { id: existingPost.id } })
+      log.info({ storyId, postId: existingPost.id, status: existingPost.status }, 'discarded Instagram post, regenerating from the original')
     } else {
       throw new Error('Story already has an Instagram post')
     }
   }
 
-  // Create the record immediately in a 'generating' state and return it right
-  // away. The heavy work (LLM caption, AI cover ~3 min, carousel render, R2
-  // upload) runs in the background and flips the record to 'draft' when done.
-  // This keeps the HTTP request fast so the admin panel never hits a
-  // proxy/browser timeout — it polls the post until status becomes 'draft'.
-  // Creating the row now also reserves the unique storyId, so a double-click
-  // fails fast on the constraint instead of after a 3-minute generation.
+  // Create the record immediately in a 'generating' state. The work (carousel
+  // text from the original, render, caption, R2 upload) runs after this and
+  // flips the record to 'draft' or 'rejected'. The panel gets the record right
+  // away and polls, so it never hits a proxy/browser timeout. Creating the row
+  // now also reserves the unique storyId, so a double-click fails fast.
   const post = await prisma.instagramPost.create({
     data: { storyId, caption: '', imageUrl: '', slideUrls: [], status: 'generating' },
     include: { story: { include: { feed: true, issue: true } } },
   })
 
-  void runGeneration(post.id, story).catch(async (err) => {
-    log.error({ err, storyId, postId: post.id }, 'background Instagram generation failed')
+  const trabajo = runGeneration(post.id, story).catch(async (err) => {
+    log.error({ err, storyId, postId: post.id }, 'Instagram generation failed')
     await prisma.instagramPost
       .update({ where: { id: post.id }, data: { status: 'failed', error: err instanceof Error ? err.message : 'Generation failed' } })
       .catch(() => {})
   })
 
-  return post
+  if (!opciones.esperar) {
+    void trabajo
+    return post
+  }
+  await trabajo
+  return (await prisma.instagramPost.findUnique({
+    where: { id: post.id },
+    include: { story: { include: { feed: true, issue: true } } },
+  })) ?? post
 }
 
-// Heavy generation work — runs in the background after generateDraft returns
-// the 'generating' record. Builds the caption, AI cover, carousel + R2 uploads,
-// then updates the record to 'draft'.
+/** El post no se publica: queda `rejected` con el motivo, para verlo en el panel. */
+async function rechazar(postId: string, storyId: string, motivo: string): Promise<void> {
+  await prisma.instagramPost.update({ where: { id: postId }, data: { status: 'rejected', error: motivo } })
+  log.warn({ postId, storyId, motivo }, 'Instagram post rejected by the carousel guards')
+}
+
+/**
+ * El pie que se publica: el texto del modelo, la línea «Reporteó» y el enlace a
+ * la ficha. Si no cabe junto a la línea de IA que se agrega al publicar, se
+ * acorta el texto del modelo, nunca la atribución ni el enlace.
+ */
+export function pieConAtribucion(texto: string, medio: string, storyUrl: string): string {
+  const cola = `\n\nReporteó: ${medio}\n${storyUrl}`
+  const espacio = TOPE_PIE - cola.length - AI_LABEL.length - 2
+  const cuerpo = texto.trim()
+  if (cuerpo.length <= espacio) return cuerpo + cola
+  let corte = espacio - 1
+  const codigo = cuerpo.charCodeAt(corte - 1)
+  if (codigo >= 0xd800 && codigo <= 0xdbff) corte -= 1 // no partir un emoji
+  return cuerpo.slice(0, corte).trimEnd() + '…' + cola
+}
+
+/**
+ * El pie sin la atribución ni los enlaces que agrega el código. La dirección de
+ * la ficha lleva el titular de Voces, que escribe la IA: revisarla con los
+ * candados sería revisar el resumen que justamente se dejó de usar.
+ */
+export function cuerpoDelPie(caption: string): string {
+  return caption
+    .split('\n')
+    .filter((linea) => !/^\s*(Reporte[oó]\s*:|https?:\/\/)/i.test(linea))
+    .join('\n')
+}
+
+// Builds the carousel and the caption from the original article, then uploads
+// the slides and flips the record to 'draft'. Any guard warning → 'rejected'.
 async function runGeneration(postId: string, story: any): Promise<void> {
   const storyId: string = story.id
   const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
 
-  // Caption para Instagram generada con LLM
-  await rateLimitDelay()
-  const llm = getMediumLLM()
-  const structuredLlm = llm.withStructuredOutput(instagramCaptionSchema, { method: 'functionCalling' })
-
-  const prompt = buildInstagramCaptionPrompt({
-    title: story.title,
-    titleLabel: story.titleLabel,
-    summary: story.summary,
-    relevanceSummary: story.relevanceSummary,
-    relevanceReasons: story.relevanceReasons,
-    marketingBlurb: story.marketingBlurb,
-    issueName: story.issue?.name ?? null,
-    sourceCountry: story.feed?.url ?? null,
-  })
-
-  const captionResult = await structuredLlm.invoke([new HumanMessage(prompt)])
-  const captionWithUrl = `${captionResult.caption}\n\n${storyUrl}`
-  const trimmedCaption = captionWithUrl.length > 2200 ? captionWithUrl.slice(0, 2197) + '…' : captionWithUrl
-
-  // Reusar imagen de Twitter si existe y no es el logo de fallback
-  /*
-   * Marcadores de imagen generica: si Twitter ya cayo en un logo de respaldo,
-   * esa imagen no representa a la historia y el carrusel no debe reusarla.
-   *
-   * Los dos primeros son del WordPress de Impacto Indigena y siguen aqui
-   * porque las filas antiguas de `twitterPost` los tienen guardados; el
-   * tercero es el respaldo actual, servido desde el propio sitio.
-   */
-  const LOGO_FALLBACK_MARKERS = ['cropped-logo-impacto-indigena', '1-2.png', '/images/og-image.png']
-  const twitterPost = await prisma.twitterPost.findFirst({
-    where: { storyId, imageUrl: { not: null } },
-  })
-  const twitterImageUrl = twitterPost?.imageUrl ?? null
-  const isLogoFallback = twitterImageUrl
-    ? LOGO_FALLBACK_MARKERS.some((m) => twitterImageUrl.includes(m))
-    : false
-
-  let aiImageUrl = isLogoFallback ? null : twitterImageUrl
-
-  if (!aiImageUrl) {
-    try {
-      aiImageUrl = await generateStoryImage(
-        storyId,
-        story.title,
-        story.summary || story.marketingBlurb || '',
-      )
-      log.info({ storyId, aiImageUrl }, 'AI image generated for Instagram')
-    } catch (err) {
-      log.error({ err, storyId }, 'failed to generate AI image, using fallback')
-      aiImageUrl = `${config.siteUrl}/images/og-image.png`
-    }
-  }
-
+  // Instagram toma las láminas de una dirección pública: sin R2 no hay carrusel.
   const r2Configured = Boolean(
     config.r2.endpoint && config.r2.accessKeyId && config.r2.secretAccessKey && config.r2.publicUrl,
   )
+  if (!r2Configured) throw new Error('R2 no está configurado: Instagram necesita las láminas en una dirección pública')
 
-  let imageUrls: string[]
-  if (r2Configured) {
-    const category = story.titleLabel || story.issue?.name || ''
-    const slides = await generateCarousel(
-      storyId,
-      story.title,
-      story.summary || '',
-      story.relevanceReasons || '',
-      storyUrl,
-      aiImageUrl,
-      category,
-    )
-    imageUrls = slides.sort((a, b) => a.order - b.order).map((s) => s.imageUrl)
-    log.info({ storyId, slideCount: imageUrls.length }, 'carousel generated via R2')
-  } else {
-    log.info({ storyId }, 'R2 not configured — using single-image post')
-    imageUrls = [aiImageUrl]
+  // 1. El carrusel, desde el artículo original y con los candados.
+  let carrusel: SocialCarousel
+  try {
+    carrusel = await buildStoryCarouselForSocial(storyId)
+  } catch (err) {
+    if (err instanceof StoryCarouselError) {
+      const avisos = err.avisos.length > 0 ? ` ${avisosEnTexto(err.avisos)}` : ''
+      return rechazar(postId, storyId, `Carrusel: ${err.message}${avisos}`)
+    }
+    throw err
   }
+
+  // 2. El pie, desde el mismo original, revisado con los mismos candados.
+  await rateLimitDelay()
+  const llm = getMediumLLM()
+  const structuredLlm = llm.withStructuredOutput(instagramCaptionSchema, { method: 'functionCalling' })
+  const prompt = buildInstagramCaptionPrompt({
+    sourceTitle: story.sourceTitle,
+    sourceContent: carrusel.originalParaElModelo,
+    publisher: carrusel.atribucion.medio,
+    issueName: story.issue?.name ?? null,
+    sourceCountry: story.feed?.url ?? null,
+  })
+  const captionResult = await structuredLlm.invoke([new HumanMessage(prompt)])
+  const avisosDelPie = revisarPie(captionResult.caption, carrusel.original)
+  if (avisosDelPie.length > 0) {
+    return rechazar(postId, storyId, `Pie: ${avisosEnTexto(avisosDelPie)}`)
+  }
+  const caption = pieConAtribucion(captionResult.caption, carrusel.atribucion.medio, storyUrl)
+
+  // 3. Recién ahora se sube: un rechazo no deja láminas sueltas en R2.
+  const imageUrls = await subirCarrusel(storyId, carrusel.imagenes)
 
   await prisma.instagramPost.update({
     where: { id: postId },
-    data: { caption: trimmedCaption, imageUrl: imageUrls[0], slideUrls: imageUrls, status: 'draft' },
+    data: { caption, imageUrl: imageUrls[0], slideUrls: imageUrls, status: 'draft' },
   })
-  log.info({ postId, storyId, slideCount: imageUrls.length }, 'Instagram draft generated')
+  log.info({ postId, storyId, slideCount: imageUrls.length }, 'Instagram draft generated from the original')
 }
 
 // ---------------------------------------------------------------------------
@@ -232,6 +269,17 @@ export async function publishPost(postId: string) {
 
   const slideUrls: string[] = post.slideUrls?.length ? post.slideUrls : (post.imageUrl ? [post.imageUrl] : [])
   if (slideUrls.length === 0) throw new Error('No images available for this post')
+
+  // El único punto de salida, así que los candados corren otra vez acá: un
+  // borrador del generador anterior (resumen de IA) no sale nunca, y el pie que
+  // se haya editado en el panel pasa por la misma revisión que el generado.
+  if (!armadoDesdeElOriginal(slideUrls)) {
+    throw new Error('Este borrador se armó con el carrusel anterior, desde el resumen de IA. Bórralo y genera uno nuevo desde el artículo original.')
+  }
+  const avisosDelPie = revisarPie(cuerpoDelPie(post.caption), post.story.sourceContent ?? '')
+  if (avisosDelPie.length > 0) {
+    throw new Error(`El pie no pasó los candados: ${avisosEnTexto(avisosDelPie)}`)
+  }
 
   // Publishing a carousel uploads each slide to Instagram one by one (~50s for
   // 5 slides), which exceeds the Azure Static Web Apps proxy timeout (~45s) and

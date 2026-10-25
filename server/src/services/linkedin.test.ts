@@ -21,21 +21,38 @@ const mockLib = vi.hoisted(() => ({
 }))
 
 const mockPrisma = vi.hoisted(() => ({
-  linkedInPost: { findMany: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
+  story: { findUnique: vi.fn() },
+  instagramPost: { findUnique: vi.fn() },
+  linkedInPost: { findMany: vi.fn(), update: vi.fn(), findUnique: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
 }))
+
+// El carrusel desde el original se prueba en storyCarousel.test.ts; acá se
+// simula, y se conservan los ayudantes reales (nombre de las láminas, error).
+const mockCarrusel = vi.hoisted(() => ({
+  buildStoryCarouselForSocial: vi.fn(),
+  subirCarrusel: vi.fn(),
+}))
+const mockLLM = vi.hoisted(() => ({ invoke: vi.fn() }))
 
 vi.mock('../lib/linkedin.js', () => ({ ...mockLib, LinkedInAuthError }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('../lib/logger.js', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
-vi.mock('../lib/carouselGen.js', () => ({ generateCarousel: vi.fn() }))
-vi.mock('./llm.js', () => ({ getMediumLLM: vi.fn(), rateLimitDelay: vi.fn() }))
+vi.mock('./storyCarousel.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./storyCarousel.js')>()),
+  ...mockCarrusel,
+}))
+vi.mock('./llm.js', () => ({
+  getMediumLLM: () => ({ withStructuredOutput: () => ({ invoke: mockLLM.invoke }) }),
+  rateLimitDelay: vi.fn(),
+}))
 vi.mock('../config.js', () => ({
   config: { linkedin: { authorUrn: 'urn:li:organization:99', metrics: { maxAgeDays: 30 } } },
 }))
 
-const { updateMetrics } = await import('./linkedin.js')
+const { updateMetrics, generateDraft, publishPost } = await import('./linkedin.js')
+const { StoryCarouselError } = await import('./storyCarousel.js')
 
 function publishedPosts(count: number) {
   return Array.from({ length: count }, (_, i) => ({
@@ -133,5 +150,74 @@ describe('updateMetrics', () => {
     await updateMetrics()
 
     expect(mockPrisma.linkedInPost.findMany).not.toHaveBeenCalled()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Desde el 25-oct-2026: la galería es el carrusel armado desde el original
+// ---------------------------------------------------------------------------
+
+const NUEVAS = ['https://pub.r2.test/social/s1-original-01-1.jpg', 'https://pub.r2.test/social/s1-original-02-1.jpg']
+const VIEJAS = ['https://pub.r2.test/social/s1-slide1-1792832458341.jpg']
+
+function noticia() {
+  return {
+    id: 's1', title: 'Titular de Voces', sourceTitle: 'Titular original', slug: 'titular',
+    summary: 'Resumen', imageUrl: 'https://medio.test/foto.jpg',
+    feed: { url: 'https://medio.test/feed' }, issue: { name: 'Territorio' },
+  }
+}
+
+describe('la galería de LinkedIn', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma.story.findUnique.mockResolvedValue(noticia())
+    mockPrisma.linkedInPost.findFirst.mockResolvedValue(null)
+    mockPrisma.linkedInPost.create.mockImplementation(async ({ data }: any) => ({ id: 'li-1', ...data }))
+    mockLLM.invoke.mockResolvedValue({ postText: 'Texto del post' })
+  })
+
+  it('reutiliza el carrusel de Instagram si se armó desde el original', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue({ slideUrls: NUEVAS })
+
+    const post = await generateDraft('s1')
+
+    expect(post.slideUrls).toEqual(NUEVAS)
+    expect(mockCarrusel.buildStoryCarouselForSocial).not.toHaveBeenCalled()
+  })
+
+  it('no reutiliza el carrusel anterior de Instagram: arma uno desde el original', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue({ slideUrls: VIEJAS })
+    mockCarrusel.buildStoryCarouselForSocial.mockResolvedValue({ imagenes: [Buffer.from('a')] })
+    mockCarrusel.subirCarrusel.mockResolvedValue(NUEVAS)
+
+    const post = await generateDraft('s1')
+
+    expect(mockCarrusel.buildStoryCarouselForSocial).toHaveBeenCalledWith('s1')
+    expect(post.slideUrls).toEqual(NUEVAS)
+  })
+
+  it('si el carrusel no pasa los candados, sale sin galería', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue(null)
+    mockCarrusel.buildStoryCarouselForSocial.mockRejectedValue(new StoryCarouselError('no pasó', []))
+
+    const post = await generateDraft('s1')
+
+    expect(post.slideUrls).toEqual([])
+    expect(mockCarrusel.subirCarrusel).not.toHaveBeenCalled()
+  })
+
+  it('al publicar un borrador guardado con la galería anterior, la deja fuera', async () => {
+    mockLib.isLinkedInConfigured.mockReturnValue(true)
+    mockPrisma.linkedInPost.findUnique.mockResolvedValue({
+      id: 'li-1', status: 'draft', postText: 'Texto', slideUrls: VIEJAS, story: noticia(),
+    })
+    mockPrisma.linkedInPost.update.mockResolvedValue({})
+    mockLib.createUgcPost.mockResolvedValue({ id: 'urn:li:share:1', permalink: 'https://linkedin.com/x' })
+
+    await publishPost('li-1')
+
+    const imagenes = mockLib.createUgcPost.mock.calls[0][4]
+    expect(imagenes).toEqual(['https://medio.test/foto.jpg'])
   })
 })

@@ -28,6 +28,7 @@ const mockSocial = vi.hoisted(() => ({
 }))
 
 const mockChannels = vi.hoisted(() => ({
+  instagram: { generateDraft: vi.fn(), publishPost: vi.fn() },
   linkedin: { generateDraft: vi.fn(), publishPost: vi.fn() },
   bluesky: { generateDraft: vi.fn(), publishPost: vi.fn() },
   facebook: { generateDraft: vi.fn(), publishPost: vi.fn() },
@@ -47,7 +48,7 @@ vi.mock('../lib/facebook.js', () => ({ isFacebookConfigured: () => true }))
 vi.mock('../services/bluesky.js', () => mockChannels.bluesky)
 vi.mock('../services/mastodon.js', () => ({ generateDraft: vi.fn(), publishPost: vi.fn() }))
 vi.mock('../services/twitter.js', () => ({ generateDraft: vi.fn(), publishPost: vi.fn() }))
-vi.mock('../services/instagram.js', () => ({ generateDraft: vi.fn(), publishPost: vi.fn() }))
+vi.mock('../services/instagram.js', () => mockChannels.instagram)
 vi.mock('../services/linkedin.js', () => mockChannels.linkedin)
 vi.mock('../services/facebook.js', () => mockChannels.facebook)
 
@@ -185,5 +186,59 @@ describe('runSocialAutoPost', () => {
 
     expect(mockWithheld).toHaveBeenCalledTimes(1)
     expect(mockChannels.linkedin.publishPost).toHaveBeenCalledWith('post-1')
+  })
+
+  // Decisión del director, 25-oct-2026: Instagram arma el carrusel desde el
+  // artículo original y, sin editor, un aviso de los candados lo rechaza.
+  describe('Instagram', () => {
+    beforeEach(() => {
+      mockConfig.config.instagram.autoPost.enabled = true
+      mockSocial.findAutoPostCandidates.mockResolvedValue(['story-1'])
+      mockSocial.pickBestStoryForSocial.mockResolvedValue({ storyId: 'story-1', reasoning: 'best' })
+      mockChannels.instagram.publishPost.mockResolvedValue(undefined)
+    })
+
+    // Antes publicaba un registro todavía en `generating` y fallaba con «Can only
+    // publish draft posts»; el borrador salía en otra corrida, si se reelegía.
+    it('espera el borrador y lo publica en la misma corrida', async () => {
+      mockChannels.instagram.generateDraft.mockResolvedValue({ id: 'ig-1', status: 'draft' })
+
+      await runSocialAutoPost()
+
+      expect(mockChannels.instagram.generateDraft).toHaveBeenCalledWith('story-1', { esperar: true })
+      expect(mockChannels.instagram.publishPost).toHaveBeenCalledWith('ig-1')
+    })
+
+    it('no publica un borrador rechazado por los candados', async () => {
+      mockChannels.instagram.generateDraft.mockResolvedValue({ id: 'ig-1', status: 'rejected' })
+
+      await runSocialAutoPost()
+
+      expect(mockChannels.instagram.publishPost).not.toHaveBeenCalled()
+    })
+
+    // Si no, el job volvería a elegir la misma noticia en cada corrida.
+    it('cuenta una noticia rechazada como resuelta en Instagram', async () => {
+      mockPrisma.instagramPost.findMany.mockResolvedValue([{ storyId: 'story-1' }])
+
+      await runSocialAutoPost()
+
+      expect(mockPrisma.instagramPost.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { storyId: { in: ['story-1'] }, status: { in: ['published', 'rejected'] } },
+      }))
+      expect(mockChannels.instagram.generateDraft).not.toHaveBeenCalled()
+    })
+
+    it('los otros canales siguen contando solo lo publicado', async () => {
+      mockConfig.config.instagram.autoPost.enabled = false
+      mockConfig.config.linkedin.autoPost.enabled = true
+      mockChannels.linkedin.generateDraft.mockResolvedValue({ id: 'li-1' })
+
+      await runSocialAutoPost()
+
+      expect(mockPrisma.linkedInPost.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: { storyId: { in: ['story-1'] }, status: { in: ['published'] } },
+      }))
+    })
   })
 })

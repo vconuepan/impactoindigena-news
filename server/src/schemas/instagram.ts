@@ -9,7 +9,7 @@ export const updateInstagramDraftBodySchema = z.object({
 })
 
 export const listInstagramPostsQuerySchema = z.object({
-  status: z.enum(['draft', 'published', 'failed']).optional(),
+  status: z.enum(['draft', 'published', 'failed', 'rejected']).optional(),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 })

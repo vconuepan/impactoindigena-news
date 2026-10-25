@@ -311,3 +311,22 @@ export function revisarCarrusel(
   if (lectura) avisos.push(...revisarLamina(lectura, 'lectura', original))
   return avisos
 }
+
+/**
+ * El pie que acompaña al carrusel en Instagram. Va en la voz de Venancio
+ * Coñuepán Mesías (decisión del 12-abr-2026), así que se revisa como la
+ * lectura: cita, identidad y pueblo, sin el candado de cifras, porque puede
+ * nombrar una ley o un convenio que el medio no cita. Los hashtags cuentan:
+ * «#Mapuche» sobre una nota que no nombra al pueblo mapuche es atribuírselo, y
+ * «#PueblosIndígenas» se lee como «Pueblos Indígenas».
+ */
+export function revisarPie(texto: string, original: string): CarouselAviso[] {
+  return revisarLamina({ titulo: '', texto: hashtagsEnPalabras(texto) }, 'lectura', original)
+}
+
+/** «#PueblosIndígenas» → «Pueblos Indígenas», para que el candado lo lea. */
+function hashtagsEnPalabras(texto: string): string {
+  return texto.replace(/#([\p{L}\p{N}_]+)/gu, (_, etiqueta: string) =>
+    etiqueta.replace(/(\p{Ll})(\p{Lu})/gu, '$1 $2').replace(/_/g, ' '),
+  )
+}

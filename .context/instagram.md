@@ -4,7 +4,9 @@
 
 ## Overview
 
-Automated and manual posting of stories to Instagram via the Graph API v21.0. Posts are either **carousel posts** (4 slides — cover image + summary + relevance + URL slide, generated and stored in Cloudflare R2) or **single-image posts** (fallback when R2 is not configured). The post pipeline follows the unified draft-review-publish pattern shared with Bluesky, Mastodon, and Twitter.
+Automated and manual posting of stories to Instagram via the Graph API v21.0. Every post is a **carousel built from the original article** — the same text, guards and slides as the panel's story carousel ([`story-carousel.md`](story-carousel.md)) — with a caption written from that same article. Slides are stored in Cloudflare R2. The post pipeline follows the unified draft-review-publish pattern shared with Bluesky, Mastodon, and Twitter.
+
+> **Desde el 25-oct-2026 (decisión del director).** Hasta ese día el carrusel se armaba con el resumen y las razones que escribe la IA de Voces, con una portada de IA (`gpt-image-2`), sin nombrar al medio y con una lámina de cierre que decía dos afirmaciones que el director retiró del sitio el 4-oct. El 24-oct se publicó así una lámina que decía solo «limitingFactors» (una clave del esquema que el modelo coló en las razones) y una portada con uniformados y una retroexcavadora que el artículo de Radio Kurruf no reporta. Ver «Rejected» abajo.
 
 ## Authentication
 
@@ -36,36 +38,23 @@ The env var is the **bootstrap**: set by hand once. After the first automatic re
 
 ### Carousel Post (R2 required)
 
-When `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_PUBLIC_URL` are all set, `generateDraft()` produces a 4-slide carousel:
+`generateDraft()` builds the carousel with `buildStoryCarouselForSocial()` (`server/src/services/storyCarousel.ts`): the model writes the slide text from `story.sourceContent` (informative, without the director's reading), the guards in `lib/storyCarouselGuards.ts` check it, and `lib/storyCarouselRender.ts` draws it — cover, one idea per slide, and a closing slide with «Lee la nota completa» (outlet, author, original title, domain) and the AI line. Every slide carries «Reporteó: <medio>». **No photos and no AI image.**
 
-1. **Slide 1** — AI-generated cover image (`generateStoryImage()`)
-2. **Slide 2** — Summary text overlay
-3. **Slide 3** — Relevance reasons text overlay
-4. **Slide 4** — URL/CTA slide pointing to the story page
+Slides are uploaded to R2 by `subirCarrusel()` as `<storyId>-original-NN-<timestamp>.jpg`. The `-original-` marker is how `armadoDesdeElOriginal()` tells a carousel from the original apart from one built by the previous generator: those are never published (see below).
 
-Slides are generated via `generateCarousel()` (`server/src/lib/carouselGen.ts`), uploaded to Cloudflare R2, and stored as public URLs in `InstagramPost.slideUrls` (string array).
+The Instagram Graph API **requires publicly accessible image URLs** — R2 public bucket URLs satisfy this requirement. Without R2 the draft fails: there is no single-image fallback anymore.
 
-The Instagram Graph API **requires publicly accessible image URLs** — R2 public bucket URLs satisfy this requirement.
+### Rejected (`status = 'rejected'`)
 
-### Single-Image Post (R2 not configured)
+There is no editor to fix a warning, so any warning rejects the post: the carousel text (cita, identidad, pueblo, cifra), a slide whose text does not fit (espacio), a Google News URL or an original under `STORY_CAROUSEL_MIN_SOURCE_CHARS`, and the caption (cita, identidad, pueblo — hashtags included, «#PueblosIndígenas» reads as «Pueblos Indígenas»). The reason is saved in `error` and shown in the panel. Nothing is uploaded for a rejected post.
 
-When R2 is absent, `generateDraft()` falls back to a single-image post using only the AI-generated cover image or a reused Twitter post image. `slideUrls` contains exactly one URL.
-
-## AI Image Generation
-
-`generateStoryImage()` (`server/src/lib/imageGen.ts`) is called during draft generation. Behavior:
-
-1. Checks if a Twitter post already exists for this story with a non-fallback image — reuses it to avoid double generation
-2. If no usable image, generates a new one via Azure OpenAI image generation (`AZURE_IMAGE_ENDPOINT` + `AZURE_IMAGE_DEPLOYMENT`, defaults to `gpt-image-2`)
-3. If image generation fails, falls back to the Impacto Indígena logo URL
-
-**Logo fallback detection:** `LOGO_FALLBACK_MARKERS = ['cropped-logo-impacto-indigena', '1-2.png']` — any image URL containing these strings is treated as a failed fallback and not reused.
+The auto-post job counts `rejected` as done for Instagram, so it does not pick the same story on every run. From the panel, generating again deletes the rejected record and asks the model for a new text.
 
 ## Caption Generation
 
-Captions are LLM-generated via `buildInstagramCaptionPrompt()` (`server/src/prompts/instagram.ts`) using the **medium** model tier. The prompt receives: `title`, `titleLabel`, `summary`, `relevanceSummary`, `relevanceReasons`, `marketingBlurb`, `issueName`, and `sourceCountry`.
+Captions are LLM-generated via `buildInstagramCaptionPrompt()` (`server/src/prompts/instagram.ts`) using the **medium** model tier, in Venancio Coñuepán Mesías's first-person voice (decision of 12-apr-2026). Since 25-oct-2026 the prompt receives the **original article** (`sourceTitle`, `sourceContent` capped at `STORY_CAROUSEL_MAX_SOURCE_CHARS`, the outlet, `issueName`, `sourceCountry`) — never `summary`, `relevanceSummary`, `relevanceReasons` or `marketingBlurb`.
 
-The story's canonical URL (`https://vocesindigenas.org/stories/:slug`) is appended to every caption with a blank line separator. Total caption is capped at **2,200 characters** (truncated with `…` if exceeded).
+`revisarPie()` checks the caption with the same guards as the director's reading (no `cifra` guard: the caption may name a law). Then `pieConAtribucion()` appends «Reporteó: <medio>» and the story URL; if the total would not fit in **2,200 characters** together with the AI line added at publish time, the model's text is shortened, never the attribution or the link.
 
 ## Flows
 
@@ -73,9 +62,9 @@ The story's canonical URL (`https://vocesindigenas.org/stories/:slug`) is append
 
 1. Admin navigates to `/admin/instagram`
 2. Selects a published story and clicks "Generar borrador"
-3. `POST /api/admin/instagram/posts/generate` → `generateDraft()` generates caption + images
-4. Admin reviews caption and slides in the draft panel
-5. Admin clicks "Publicar" → `POST /api/admin/instagram/posts/:id/publish`
+3. `POST /api/admin/instagram/posts/generate` → `generateDraft()` returns the record in `generating` and builds the carousel and caption in the background; the panel polls until it is `draft` or `rejected`
+4. Admin reviews caption and slides in the draft panel (a rejected post shows the reason and cannot be published)
+5. Admin clicks "Publicar" → `POST /api/admin/instagram/posts/:id/publish`. `publishPost()` checks again: a carousel from the previous generator is refused, and an edited caption goes through `revisarPie()` again
 
 ### Automated: Cron Job (`social_auto_post`)
 
@@ -84,7 +73,7 @@ The unified `socialAutoPost` job runs on a schedule and posts to all enabled cha
 1. Checks `INSTAGRAM_AUTO_POST_ENABLED=true` and `isInstagramConfigured()` — skips if either is false
 2. `findAutoPostCandidates()` finds recently published stories not yet posted to Instagram
 3. `pickBestStoryForSocial()` uses LLM to select the best story
-4. `generateDraft(storyId)` → `publishPost(postId)` run sequentially
+4. `generateDraft(storyId, { esperar: true })` waits for the draft, then `publishPost(postId)` runs in the same run. A `rejected` draft is not published. (Until 25-oct-2026 the job did not wait: it tried to publish a record still in `generating`, failed with «Can only publish draft posts», and the draft went out on a later run only if the model picked the same story again.)
 5. A 2-second delay separates channel posts to avoid rate limit spikes
 
 ### Metrics Polling (`instagram_update_metrics`)
@@ -179,7 +168,7 @@ All routes require admin or editor role (`requireAuth, requireRole('admin', 'edi
 | `AZURE_IMAGE_API_KEY` | No | `''` | API key for the image gen resource |
 | `AZURE_IMAGE_DEPLOYMENT` | No | `gpt-image-2` | Deployment name for image generation |
 | `AZURE_IMAGE_QUALITY` | No | `high` | Quality for landscape images (website hero, not recompressed): low/medium/high |
-| `AZURE_IMAGE_QUALITY_PORTRAIT` | No | `medium` | Quality for portrait images (Instagram/Twitter recompress on upload, so high is wasted): low/medium/high |
+| `AZURE_IMAGE_QUALITY_PORTRAIT` | No | `medium` | Quality for portrait images (Twitter recompresses on upload, so high is wasted). Instagram no longer uses an AI image: low/medium/high |
 
 ## Common Issues
 
@@ -197,7 +186,7 @@ This happened once, in July 2026: the token expired on 18-Jul and posting stayed
 
 **Carousel processing delay:** The Graph API sometimes needs extra time to process carousel items. If publishing fails immediately after container creation, the `withRetry` wrapper will retry with 3-second delays.
 
-**Duplicate post prevention:** `generateDraft()` checks for an existing `InstagramPost` record with the same `storyId`. A `draft` or `generating` record is returned as-is, so the panel reopens seamlessly. A `failed` record is deleted and regenerated. Any other status (`published`, `publishing`) throws "Story already has an Instagram post" — delete the record from `/admin/instagram` to regenerate.
+**Duplicate post prevention:** `generateDraft()` checks for an existing `InstagramPost` record with the same `storyId`. A `generating` record, or a `draft` built from the original, is returned as-is, so the panel reopens seamlessly. A `failed` or `rejected` record, or a `draft` from the previous generator (AI summary, saved before 25-oct-2026), is deleted and regenerated. Any other status (`published`, `publishing`) throws "Story already has an Instagram post" — delete the record from `/admin/instagram` to regenerate.
 
 ## Key Files
 
@@ -210,6 +199,8 @@ This happened once, in July 2026: the token expired on 18-Jul and posting stayed
 | `server/src/routes/admin/instagram.ts` | Admin API route handlers |
 | `server/src/jobs/socialAutoPost.ts` | Unified auto-post job (all social channels) |
 | `server/src/jobs/instagramUpdateMetrics.ts` | Metrics polling cron job |
-| `server/src/lib/carouselGen.ts` | Slide image generation + R2 upload |
-| `server/src/lib/imageGen.ts` | AI cover image generation via Azure OpenAI |
-| `server/src/prompts/instagram.ts` | Caption prompt builder |
+| `server/src/services/storyCarousel.ts` | `buildStoryCarouselForSocial`, `subirCarrusel`, `armadoDesdeElOriginal` |
+| `server/src/lib/storyCarouselGuards.ts` | The guards, including `revisarPie` for the caption |
+| `server/src/lib/storyCarouselRender.ts` | The slides |
+| `server/src/lib/carouselGen.ts` | Shared canvas: font, palette, logo, background, footer, export |
+| `server/src/prompts/instagram.ts` | Caption prompt builder (from the original article) |

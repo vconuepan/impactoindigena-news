@@ -405,9 +405,10 @@ export default function StoriesPage() {
     setInstagramPanelOpen(true)
     setInstagramDraft(null)
     try {
-      // Backend returns a 'generating' record immediately; the AI cover + carousel
-      // take ~3 min in the background. Poll until the status flips to draft/failed
-      // so the request never times out.
+      // Backend returns a 'generating' record immediately; the carousel (text from
+      // the original article, guards, render) and the caption are built in the
+      // background. Poll until the status flips to draft/failed/rejected so the
+      // request never times out.
       const draft = await adminApi.instagram.generateDraft(storyId) as InstagramPost
       igPollId.current = draft.id
       setInstagramDraft(draft)
@@ -422,7 +423,7 @@ export default function StoriesPage() {
             if (igPollId.current !== draft.id) return
             setInstagramDraft(updated)
             if (updated.status === 'generating') return poll(attempt + 1)
-            if (updated.status === 'failed') toast('error', updated.error || 'Falló la generación del carrusel')
+            if (updated.status === 'failed' || updated.status === 'rejected') toast('error', updated.error || 'Falló la generación del carrusel')
           } catch { return poll(attempt + 1) }
         }
         void poll()

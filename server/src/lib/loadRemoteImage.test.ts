@@ -41,10 +41,16 @@ describe('loadRemoteImage', () => {
 describe('el carrusel no pide la imagen de la nota con loadImage(url)', () => {
   // Guardia de regresion: es una lectura del archivo, no de comportamiento. Si
   // alguien vuelve a pasar la URL directo a loadImage, este test lo dice.
-  it('carouselGen.ts solo decodifica imagenes remotas por loadRemoteImage', () => {
+  //
+  // Desde el 25-oct-2026 el carrusel no lleva fotos (se arma desde el articulo
+  // original, ver storyCarouselRender.ts): carouselGen.ts ya no baja ninguna
+  // imagen de la nota. Lo unico que decodifica por URL es el logo del propio
+  // sitio. Si vuelve una imagen de terceros, tiene que pasar por loadRemoteImage.
+  it('carouselGen.ts no decodifica con loadImage(url) nada que no sea el logo del sitio', () => {
     const ruta = fileURLToPath(new URL('./carouselGen.ts', import.meta.url))
     const fuente = readFileSync(ruta, 'utf8')
-    expect(fuente).not.toMatch(/loadImage\(\s*aiImageUrl/)
-    expect(fuente).toMatch(/loadRemoteImage\(\s*aiImageUrl/)
+    const llamadas = [...fuente.matchAll(/loadImage\(\s*([^)]*)\)/g)].map((m) => m[1].trim())
+    expect(llamadas).toEqual(['LOGO_WHITE'])
+    expect(fuente).toMatch(/const LOGO_WHITE = `\$\{config\.siteUrl\}\//)
   })
 })
