@@ -372,3 +372,17 @@ export const storyCarouselWithReadingSchema = z.object({
 });
 
 export type StoryCarouselResult = z.infer<typeof storyCarouselWithReadingSchema>;
+
+// La nota con claves (borrador de medición, A1 del plan del 25-oct-2026). Los
+// largos y las reglas van en el prompt; el esquema solo nombra los campos para
+// que el modelo no gaste razonamiento en reconciliar dos versiones. Ver
+// `prompts/story-body.ts`.
+export const storyBodySchema = z.object({
+  bajada: z.string(),
+  quePaso: z.string(),
+  porQueImporta: z.string(),
+  contexto: z.string(),
+  queSigue: z.string().describe("Vacío si el artículo no dice qué viene"),
+});
+
+export type StoryBodyResult = z.infer<typeof storyBodySchema>;
