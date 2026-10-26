@@ -431,6 +431,16 @@ página pública con rótulo «Editorial», firma, fecha, recuadro «¿Cómo se 
 editorial?» por método y «Fuentes consultadas». Spec `.specs/own-content.allium`, context
 `.context/own-content.md`. Tests: 42 nuevos en el servidor, 9 en el cliente.
 
+**Incidente del 26-oct-2026, 01:39Z.** B5/B6 se empujaron tras decir el director que había
+aplicado el SQL; el log de Azure mostró P2022 («`editorials.notes` does not exist»): el SQL
+no entró en la base de producción y `/api/editorials` respondió 500 unos minutos. El
+comentario del SQL prometía un respaldo en el código que no existía. Arreglo: la lectura
+repite con las columnas anteriores y rellena las nuevas vacías (`conRespaldoSinColumnas`);
+la escritura de notas, firma, método y fuentes sigue necesitando el SQL. Desde esta máquina
+la base no es alcanzable (P1001 con la regla de firewall `verificar-deploy` vigente para la
+IP), así que ni `db:migrate:resolve` ni una verificación directa son posibles: **la columna
+la confirma el director con `psql`**.
+
 **Lo que falta para que exista la primera editorial, en orden:**
 1. **C5 · El director aplica el SQL** `server/prisma/migrations/20261026000000_editorial_firma_metodo/migration.sql`
    con psql (firewall abierto), **antes** de empujar el código: una columna nueva en
