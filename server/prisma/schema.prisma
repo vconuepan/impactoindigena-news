@@ -679,14 +679,26 @@ model OngoingCase {
 // Weekly editorial column in Venancio Coñuepan's voice. Generated from published
 // stories of the week; admin reviews, edits, and publishes manually.
 
+// La editorial firmada (plan del 25-oct-2026, B5/B6). Hasta esa fecha el
+// borrador se generaba solo desde las ocho noticias de la semana y nunca se
+// publicó una: cero en cinco meses. Ahora nace de las NOTAS del director, lleva
+// firma, método y fuentes, y no se publica sin firma ni método.
+//
+// `notes` es privado: la API pública nunca lo devuelve (ver `toPublicEditorial`).
+// `method` es TEXT + CHECK en la base ('humana' | 'ia_revisada'; '' = sin fijar),
+// no un enum de Prisma: un ALTER TYPE ... ADD VALUE no se deshace.
 model Editorial {
   id          String        @id @default(uuid())
   title       String
-  content     String        @default("")      // markdown ~444 words
+  content     String        @default("")      // texto plano, ~450 palabras, SIN firma: la firma es authorName
   status      ContentStatus @default(draft)
   publishedAt DateTime?     @map("published_at")
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
+  notes       String        @default("")      // las notas del director: la única fuente del borrador
+  authorName  String        @default("")      @map("author_name")
+  method      String        @default("")      // '' | 'humana' | 'ia_revisada'
+  sources     String        @default("")      // fuentes consultadas, una por línea o markdown
 
   @@map("editorials")
 }

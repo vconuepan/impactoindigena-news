@@ -119,7 +119,7 @@ Key dirs: `pm/state/` (business context), `pm/backlog/` (priorities), `pm/plans/
 
 Behavioral specifications defining domain rules, entities, and invariants in Allium. **Authoritative source for what the system guarantees.** See `.specs/README.md` for conventions.
 
-Covers: story-pipeline, crawl-and-extraction, authentication, scheduler (includes task queue), feed-management, newsletter-and-podcast, social-posting, search, dedup, subscription.
+Covers: story-pipeline, crawl-and-extraction, authentication, scheduler (includes task queue), feed-management, newsletter-and-podcast, social-posting, search, dedup, subscription, own-content.
 
 ## Context Files (`.context/`)
 
@@ -153,6 +153,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | `facebook.md` | Page token vs Instagram token, link-card posting, groups impossible, token check |
 | `linkedin.md` | Member token (60d, sin refresh automático), reautorización OAuth, job de chequeo |
 | `story-carousel.md` | Carrusel de una noticia desde el artículo original (panel → ficha): candados, formato, costo |
+| `own-content.md` | Contenido propio firmado: editorial desde las notas del director, firma, método, fuentes, candados |
 | `security-audit-2026-05-04.md` | Point-in-time security audit. Historical record, not current state |
 | `client/.context/skeletons.md` | Skeleton components for loading states (prevents CLS) |
 

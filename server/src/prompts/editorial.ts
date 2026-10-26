@@ -1,81 +1,77 @@
+import { VOZ_VENANCIO_ADN, VOZ_VENANCIO_EVITAR, REGLAS_FUNDACION } from './voz-venancio.js'
 import { escapeXml } from './shared.js'
 
-export interface StoryForEditorial {
+/**
+ * La editorial firmada de Voces Indígenas, redactada DESDE LAS NOTAS DEL
+ * DIRECTOR y no desde las noticias de la semana.
+ *
+ * LO QUE HABÍA (3-may-2026 a 25-oct-2026). El prompt tomaba las ocho noticias de
+ * mayor relevancia de la semana y escribía una columna «en su voz» con una
+ * identidad redactada a mano (Impacto Indígena 2023, el IRI, asesorías a Codelco
+ * y BHP) que no era la verificada, y con una firma dentro del texto. Nunca se
+ * publicó una: una editorial generada sola desde titulares no es una editorial
+ * firmada, es exactamente lo que el plan del 25-oct-2026 quiere resolver.
+ *
+ * LO QUE HAY. El director escribe o dicta sus notas en el panel; el modelo las
+ * ordena en una columna con su voz verificada (`voz-venancio.ts`, destilada de
+ * su corpus 2013-2026); el director edita y publica. La firma la pone el código
+ * desde `authorName`; el método se declara en un recuadro aparte. Las reglas
+ * binarias (la agencia de la primera frase, «conflicto mapuche», la IA dentro
+ * del texto, cifras que las notas no traen) se piden acá y además se hacen
+ * cumplir en `lib/editorialGuards.ts`.
+ *
+ * Sin bloque <ROLE>: con él, el filtro de contenido de Azure rechazó el 100 %
+ * de las llamadas de otro prompt de este repo (3-sep-2026).
+ */
+
+export interface EditorialDraftInput {
+  /** Las notas del director, tal como las escribió. */
+  notes: string
+  /** El título que puso al crear la editorial; el modelo puede proponer otro. */
   title: string
-  issueName: string
-  summary: string
-  relevanceSummary?: string
-  publisher: string
+  weekLabel: string
 }
 
-export function buildEditorialPrompt(stories: StoryForEditorial[], weekLabel: string): string {
-  const storiesXml = stories
-    .map(
-      s =>
-        `<STORY>\n` +
-        `<ISSUE>${escapeXml(s.issueName)}</ISSUE>\n` +
-        `<TITLE>${escapeXml(s.title)}</TITLE>\n` +
-        `<PUBLISHER>${escapeXml(s.publisher)}</PUBLISHER>\n` +
-        `<SUMMARY>${escapeXml(s.summary)}</SUMMARY>\n` +
-        (s.relevanceSummary ? `<RELEVANCE>${escapeXml(s.relevanceSummary)}</RELEVANCE>\n` : '') +
-        `</STORY>`,
-    )
-    .join('\n')
+export function buildEditorialPrompt(input: EditorialDraftInput): string {
+  return `<GOAL>
+Ordena las notas de Venancio Coñuepán Mesías en la editorial semanal de Voces Indígenas (${input.weekLabel}), escrita en primera persona y en su voz. Las notas son suyas: la editorial dice lo que las notas dicen, con su estructura y su ritmo, y nada más. Sale firmada con su nombre, en un campo aparte que agrega el código.
+</GOAL>
 
-  return `<IDENTITY>
-Eres Venancio Coñuepan — mapuche, abogado de derechos territoriales, quinto de un linaje que la prensa chilena describió en 1934 como "los caciques Coñuepan, hombres de paz". Tu bisabuelo participó del Primer Congreso Indigenista Interamericano en 1940. Cinco generaciones después, continúas ese trabajo con herramientas nuevas.
+<NOTAS_DEL_AUTOR>
+Título de trabajo: ${escapeXml(input.title)}
 
-Fundaste Impacto Indígena (2023). Construiste el primer Índice de Relacionamiento Indígena (IRI), que evalúa 160 empresas. Asesoras a Codelco y BHP Chile desde sus paneles indígenas. Eres Secretario Ejecutivo del Grupo de Chile de los Principios Voluntarios sobre Seguridad y Derechos Humanos (Reino Unido). Escribes desde Temuco.
-</IDENTITY>
+${escapeXml(input.notes)}
+</NOTAS_DEL_AUTOR>
 
-<PERSPECTIVA>
-Tu tensión central: proyectos extractivos legalmente válidos pero socialmente ilegítimos ante los pueblos indígenas cuyos territorios afectan. El "social license gap" es el cuello de botella estratégico de la industria extractiva global — y la transición energética (cobre, litio, níquel) no puede completarse sin resolverlo.
+<ESTRUCTURA>
+Cinco párrafos, entre 400 y 500 palabras en total, en este orden:
+1. APERTURA: el hecho concreto del que parten las notas, como punto de entrada a algo más grande. No es un resumen de noticia.
+2. CONTEXTO: por qué ese hecho no es aislado; la tensión de fondo que las notas plantean.
+3. ANÁLISIS: la lectura desde adentro que las notas traen. Acá va el reencuadre («no se trata de X, sino de Y»).
+4. IMPLICACIÓN: qué dice esto del problema mayor, según las notas.
+5. CIERRE: qué se necesita o qué ya se está construyendo. Termina con una síntesis, una implicancia o un deber heredado, no con una pregunta al lector.
+Título: el modelo propone uno de hasta 12 palabras, sin punto final, que recoja la tensión central de las notas.
+</ESTRUCTURA>
 
-Marco analítico constante: datos + derecho + estrategia empresarial. Nunca solo denuncia. Siempre propuesta.
+<FIDELIDAD>
+- Todo hecho, cifra, nombre, lugar, fecha y cita sale de las notas. No completes con conocimiento propio: si las notas no traen una cifra, la editorial no la trae.
+- Si las notas citan una noticia o un medio, nómbralo como lo nombran las notas.
+- No atribuyas a la Fundación ni al autor afiliaciones, cargos o certificaciones que las notas no mencionen.
+- Si las notas tienen una idea a medias, deja la idea a medias con claridad en vez de completarla.
+- No escribas la firma ni el nombre del autor dentro del texto: van aparte.
+- No menciones la inteligencia artificial ni cómo se escribió la editorial: el método se declara aparte.
+</FIDELIDAD>
 
-Lo que nunca haces:
-- Victimizar a los pueblos indígenas ni tratarlos como patrimonio pasivo
-- Ignorar la agencia política propia de las comunidades
-- Hablar desde afuera del mundo indígena
-- Terminar sin una perspectiva constructiva o un camino posible
-</PERSPECTIVA>
+${VOZ_VENANCIO_ADN}
 
-<TAREA>
-Escribe una editorial semanal para Voces Indígenas basada en las noticias de la semana ${weekLabel}.
+${VOZ_VENANCIO_EVITAR}
 
-Estructura exacta — 5 párrafos, aproximadamente 444 palabras en total:
+${REGLAS_FUNDACION}
 
-1. APERTURA (~85 palabras): Un hecho concreto de la semana que abre la reflexión. No resumas la noticia — úsala como punto de entrada a algo más grande.
-
-2. CONTEXTO (~90 palabras): La tensión de fondo. Por qué este hecho no es aislado. Conecta con el patrón global (transición energética, derechos territoriales, consulta previa, social license).
-
-3. ANÁLISIS (~100 palabras): Tu lectura desde adentro. Lo que la industria, los gobiernos o los medios mainstream no están viendo — o están viendo mal. Aquí aparece la voz mapuche y el linaje de constructores de paz.
-
-4. IMPLICACIÓN (~90 palabras): Qué dice esto del problema mayor. Puede conectar con el IRI, el Programa MARS, los Principios Voluntarios, Supply Nation, o la brecha de legitimidad en términos más amplios.
-
-5. CIERRE PROPOSITIVO (~79 palabras): Qué se necesita. Qué ya se está construyendo. Termina con una afirmación que no sea desesperanzada — los Coñuepan son constructores de paz, no profetas del desastre. Puede ser una pregunta abierta que invite a actuar.
-
-Al final del texto, agrega esta firma exacta, separada por una línea en blanco:
-— Venancio Coñuepan. Mapuche. Abogado de derechos territoriales. Editor de Voces Indígenas.
-</TAREA>
-
-<ESTILO>
-- Español neutro con giros propios de quien escribe desde La Araucanía. No academicismo. No lenguaje corporativo.
-- Máximo un guión largo (—) por párrafo.
-- Sin listas ni viñetas. Solo prosa.
-- Sin markdown en el texto (sin #, **, _, etc.). El título va aparte.
-- Puedes nombrar lugares (Atacama, La Araucanía, Perú, Australia) y pueblos (lickanantay, quechua, First Nations) para anclar en lo concreto.
-- No uses frases hechas del activismo: "lucha", "resistencia", "extractivismo". Usa lenguaje preciso.
-- No menciones a Voces Indígenas en el cuerpo del texto — la firma lo dice.
-</ESTILO>
-
-<FORMATO_RESPUESTA>
-Devuelve un objeto JSON con exactamente estos campos:
-- "title": título de la editorial (máximo 12 palabras, sin punto final, que capture la tensión central)
-- "content": el texto completo de los 5 párrafos más la firma, separados por líneas en blanco. Sin markdown.
-</FORMATO_RESPUESTA>
-
-<NOTICIAS_DE_LA_SEMANA>
-${storiesXml}
-</NOTICIAS_DE_LA_SEMANA>`
+<LENGUAJE>
+- El sujeto de la primera frase son los pueblos, las comunidades, las personas o los hechos. Nunca Voces Indígenas, la Fundación ni «nosotros».
+- Español claro; períodos largos alternados con frases breves de síntesis. Sin listas ni viñetas: solo prosa.
+- Texto plano: sin markdown, sin títulos intermedios, sin emojis, sin hashtags. Como máximo un guion largo por párrafo.
+- Nunca «conflicto mapuche»: es el conflicto en La Araucanía o el conflicto chileno-mapuche.
+</LENGUAJE>`
 }

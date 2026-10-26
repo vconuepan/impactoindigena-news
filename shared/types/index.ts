@@ -247,6 +247,14 @@ export interface PendingSubscription {
 }
 
 
+/** Cómo se hizo una pieza propia. '' = sin fijar; sin método no se publica. */
+export type EditorialMethod = '' | 'humana' | 'ia_revisada'
+
+export interface EditorialAviso {
+  tipo: 'agencia' | 'conflicto' | 'ia' | 'firma' | 'cifra'
+  mensaje: string
+}
+
 export interface Editorial {
   id: string
   title: string
@@ -255,6 +263,13 @@ export interface Editorial {
   publishedAt: string | null
   createdAt: string
   updatedAt: string
+  /** Las notas del director: la fuente del borrador. Solo en el panel, nunca en la API pública. */
+  notes: string
+  authorName: string
+  method: EditorialMethod
+  sources: string
+  /** Solo en la respuesta de generar: lo que los candados vieron en el borrador. */
+  avisos?: EditorialAviso[]
 }
 
 export interface Podcast {

@@ -75,6 +75,8 @@ router.delete('/:id', async (req, res) => {
   }
 })
 
+// B5 (25-oct-2026): el borrador sale de las notas del director. Sin notas
+// suficientes el servicio se niega y dice por qué (422, mensaje para el panel).
 router.post('/:id/generate', expensiveOpLimiter, async (req, res) => {
   try {
     const editorial = await editorialService.generateEditorialContent(req.params.id)
@@ -84,8 +86,8 @@ router.post('/:id/generate', expensiveOpLimiter, async (req, res) => {
       res.status(404).json({ error: err.message })
       return
     }
-    if (err.message === 'No recent stories to generate editorial from') {
-      res.status(400).json({ error: err.message })
+    if (err instanceof editorialService.EditorialError) {
+      res.status(422).json({ error: err.message, avisos: err.avisos })
       return
     }
     log.error({ err }, 'failed to generate editorial content')
@@ -93,13 +95,18 @@ router.post('/:id/generate', expensiveOpLimiter, async (req, res) => {
   }
 })
 
+// Sin firma ni método no se publica, y un candado bloqueante tampoco deja.
 router.post('/:id/publish', async (req, res) => {
   try {
     const editorial = await editorialService.publishEditorial(req.params.id)
     res.json(editorial)
   } catch (err: any) {
-    if (err.code === 'P2025') {
+    if (err.code === 'P2025' || err.message === 'Editorial not found') {
       res.status(404).json({ error: 'Editorial not found' })
+      return
+    }
+    if (err instanceof editorialService.EditorialError) {
+      res.status(422).json({ error: err.message })
       return
     }
     log.error({ err }, 'failed to publish editorial')

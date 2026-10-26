@@ -1,20 +1,62 @@
 import { HumanMessage } from '@langchain/core/messages'
 import prisma from '../lib/prisma.js'
 import { config } from '../config.js'
-import { ContentStatus, StoryStatus } from '@prisma/client'
+import { ContentStatus } from '@prisma/client'
 import { paginate } from '../lib/paginate.js'
 import { createLogger } from '../lib/logger.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { withRetry } from '../lib/retry.js'
 import { buildEditorialPrompt } from '../prompts/index.js'
 import { editorialSchema } from '../schemas/llm.js'
+import { EDITORIAL_METHODS } from '../schemas/editorial.js'
+import { avisosQueBloquean, revisarEditorial, type EditorialAviso } from '../lib/editorialGuards.js'
 
 const log = createLogger('editorial')
+
+/**
+ * La editorial firmada (plan del 25-oct-2026, B5/B6).
+ *
+ * El flujo: el director escribe sus notas en el panel → el modelo las ordena
+ * en su voz → el director edita, fija firma y método → publica. Tres reglas
+ * que no se negocian y viven acá, no en el panel:
+ * - sin notas suficientes no hay borrador (una editorial generada desde
+ *   titulares no es una editorial firmada);
+ * - sin firma ni método no se publica;
+ * - las notas nunca salen por la API pública.
+ */
+
+/** Un error que el panel puede mostrar tal cual; la ruta responde 422. */
+export class EditorialError extends Error {
+  constructor(message: string, public avisos: EditorialAviso[] = []) {
+    super(message)
+    this.name = 'EditorialError'
+  }
+}
 
 interface EditorialFilters {
   status?: string
   page?: number
   pageSize?: number
+}
+
+/**
+ * Los campos que la API pública devuelve. `notes` queda fuera a propósito: son
+ * las notas privadas del director, la materia prima y no la pieza.
+ */
+export const PUBLIC_EDITORIAL_FIELDS = [
+  'id', 'title', 'content', 'status', 'publishedAt', 'createdAt', 'updatedAt',
+  'authorName', 'method', 'sources',
+] as const
+
+export type PublicEditorial = Pick<
+  { id: string; title: string; content: string; status: ContentStatus; publishedAt: Date | null; createdAt: Date; updatedAt: Date; authorName: string; method: string; sources: string },
+  (typeof PUBLIC_EDITORIAL_FIELDS)[number]
+>
+
+export function toPublicEditorial(editorial: Record<string, unknown>): PublicEditorial {
+  const salida: Record<string, unknown> = {}
+  for (const campo of PUBLIC_EDITORIAL_FIELDS) salida[campo] = editorial[campo] ?? (campo === 'publishedAt' ? null : '')
+  return salida as PublicEditorial
 }
 
 export async function getEditorials(filters: EditorialFilters) {
@@ -47,7 +89,7 @@ export async function getLatestPublishedEditorials(limit = 10) {
     where: { status: ContentStatus.published },
     orderBy: { publishedAt: 'desc' },
     take: limit,
-    select: { id: true, title: true, publishedAt: true, createdAt: true },
+    select: { id: true, title: true, publishedAt: true, createdAt: true, authorName: true },
   })
 }
 
@@ -63,7 +105,36 @@ export async function deleteEditorial(id: string) {
   await prisma.editorial.delete({ where: { id } })
 }
 
+/**
+ * Lo que impide publicar, en el orden en que el editor lo arregla. Vacío si
+ * se puede publicar. Es la misma lista para el botón del panel y para la ruta.
+ */
+export function razonesParaNoPublicar(editorial: {
+  content: string
+  authorName: string
+  method: string
+  notes: string
+}): string[] {
+  const razones: string[] = []
+  if (!editorial.content.trim()) razones.push('La editorial no tiene texto.')
+  if (!editorial.authorName.trim()) razones.push('Falta la firma: quién escribe esta editorial.')
+  if (!(EDITORIAL_METHODS as readonly string[]).includes(editorial.method)) {
+    razones.push('Falta el método: si la escribió el autor o si la redactó el modelo desde sus notas y el autor la revisó.')
+  }
+  const bloqueantes = avisosQueBloquean(
+    revisarEditorial(editorial.content, { notes: editorial.notes, authorName: editorial.authorName }),
+  )
+  for (const a of bloqueantes) razones.push(a.mensaje)
+  return razones
+}
+
 export async function publishEditorial(id: string) {
+  const editorial = await prisma.editorial.findUnique({ where: { id } })
+  if (!editorial) throw new EditorialError('Editorial not found')
+  const razones = razonesParaNoPublicar(editorial)
+  if (razones.length > 0) {
+    throw new EditorialError(`No se puede publicar: ${razones.join(' ')}`)
+  }
   return prisma.editorial.update({
     where: { id },
     data: { status: ContentStatus.published, publishedAt: new Date() },
@@ -77,56 +148,65 @@ export async function unpublishEditorial(id: string) {
   })
 }
 
-/** Generate editorial content from the week's published stories. */
+/**
+ * El borrador, desde las notas del director y nada más. Devuelve la editorial
+ * guardada y los avisos de los candados sobre el texto que el modelo propuso:
+ * el editor los ve en el panel y corrige; los bloqueantes vuelven a revisarse
+ * al publicar.
+ */
 export async function generateEditorialContent(id: string) {
   const editorial = await prisma.editorial.findUnique({ where: { id } })
-  if (!editorial) throw new Error('Editorial not found')
+  if (!editorial) throw new EditorialError('Editorial not found')
 
-  const stories = await prisma.story.findMany({
-    where: {
-      status: StoryStatus.published,
-      dateCrawled: { gte: new Date(Date.now() - config.content.storyAssignmentDays * 24 * 60 * 60 * 1000) },
-    },
-    orderBy: [{ relevance: 'desc' }, { dateCrawled: 'desc' }],
-    take: 8,
-    include: {
-      issue: { select: { name: true } },
-      feed: { select: { title: true } },
-    },
+  const notes = editorial.notes.trim()
+  if (notes.length < config.editorial.minNotesChars) {
+    throw new EditorialError(
+      `Las notas tienen ${notes.length} caracteres y hacen falta al menos ${config.editorial.minNotesChars} para redactar sin inventar. Escribe primero qué quieres decir: el hecho, la lectura y la propuesta.`,
+    )
+  }
+
+  const prompt = buildEditorialPrompt({
+    notes,
+    title: editorial.title,
+    weekLabel: getWeekLabel(new Date()),
   })
-
-  if (stories.length === 0) throw new Error('No recent stories to generate editorial from')
-
-  const weekLabel = getWeekLabel(new Date())
-  const prompt = buildEditorialPrompt(
-    stories.map(s => ({
-      title: s.title ?? '',
-      issueName: s.issue?.name ?? '',
-      summary: s.summary ?? '',
-      relevanceSummary: s.relevanceSummary ?? undefined,
-      publisher: s.feed?.title ?? '',
-    })),
-    weekLabel,
-  )
 
   await rateLimitDelay()
-  const llm = getLLMByTier(config.newsletter.contentModelTier)
+  const llm = getLLMByTier(config.editorial.modelTier)
   const structuredLlm = llm.withStructuredOutput(editorialSchema, { method: 'functionCalling' })
 
-  log.info({ editorialId: id }, 'generating editorial content')
+  log.info({ editorialId: id, notesChars: notes.length }, 'generating editorial draft from notes')
 
-  const result = await withRetry(
-    () => structuredLlm.invoke([new HumanMessage(prompt)]),
-  )
+  const result = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
+  const content = limpiarContenido(result.content)
+  const avisos = revisarEditorial(content, { notes, authorName: editorial.authorName })
 
-  return prisma.editorial.update({
+  const guardada = await prisma.editorial.update({
     where: { id },
-    data: { title: result.title, content: result.content },
+    data: {
+      title: result.title?.trim() || editorial.title,
+      content,
+      // El borrador lo escribió el modelo desde las notas; si el autor lo
+      // publica es porque lo revisó. Si lo escribió él, lo cambia a 'humana'.
+      method: editorial.method || 'ia_revisada',
+    },
   })
+  return { ...guardada, avisos }
+}
+
+/** Texto plano, párrafos separados por una línea en blanco, sin firma pegada por el modelo. */
+export function limpiarContenido(texto: string): string {
+  return texto
+    .replace(/\r\n/g, '\n')
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .filter((p) => !/^[—–-]\s*Venancio\b/i.test(p))
+    .join('\n\n')
 }
 
 /** Format editorial content for LinkedIn: plain text, double line breaks, hashtags. */
-export function formatForLinkedIn(editorial: { title: string; content: string }): string {
+export function formatForLinkedIn(editorial: { title: string; content: string; authorName?: string }): string {
   const hashtags = '#PueblosIndígenas #DerechosTerritoriales #TransiciónEnergética #ImpactoIndígena #SocialLicense'
 
   // Content is already plain text — just ensure double newlines between paragraphs
@@ -136,7 +216,8 @@ export function formatForLinkedIn(editorial: { title: string; content: string })
     .filter(Boolean)
     .join('\n\n')
 
-  return `${editorial.title}\n\n${body}\n\n${hashtags}`
+  const firma = editorial.authorName?.trim() ? `\n\n— ${editorial.authorName.trim()}` : ''
+  return `${editorial.title}\n\n${body}${firma}\n\n${hashtags}`
 }
 
 export function getWeekLabel(date: Date): string {

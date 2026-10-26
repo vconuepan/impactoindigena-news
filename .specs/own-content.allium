@@ -1,0 +1,127 @@
+-- own-content.allium
+-- Distilled from: server/src/services/editorial.ts, server/src/lib/editorialGuards.ts,
+--                 server/src/prompts/editorial.ts, server/src/routes/{admin,public}/editorials.ts
+--
+-- Content Voces Indígenas writes itself and signs, as opposed to the curated
+-- stories of story-pipeline.allium. Decision of the director, 2026-10-25:
+-- «abrimos la capa de contenido propio firmado». Today one kind exists, the
+-- editorial; guides and explainers (plan B8) will join this spec.
+--
+-- The Trust Project indicators are adopted here as design, not as membership:
+-- a signed piece names who wrote it (2), how it was made (5) and what it
+-- consulted (4). Nothing in this spec claims an affiliation.
+
+config {
+    -- Below this many characters the "notes" are a headline, and a draft
+    -- would have to be invented. Measured 2026-10-25: a note generated from
+    -- headlines alone is exactly what a signed editorial must not be.
+    editorial_min_notes_chars: Integer = 200
+}
+
+-- How a piece was made. The public page renders a fixed text per value and
+-- says nothing when it is unset; an unset method cannot be published.
+value Method = humana          -- the author wrote it; a model may have tidied the draft
+             | ia_revisada     -- a model drafted it from the author's notes; the author reviewed and edited
+
+entity Editorial {
+    title: String
+    content: String                     -- plain text paragraphs, never carries the signature
+    status: draft | published
+    published_at: Timestamp?
+
+    -- Provenance (since 2026-10-26)
+    notes: String                       -- the author's notes: the ONLY source of a model draft. Private.
+    author_name: String                 -- the signature; rendered by the page, never inside content
+    method: Method?                     -- null while unset
+    sources: String                     -- what was consulted, one per line; rendered as a list
+}
+
+-- ─── Drafting ──────────────────────────────────────────────────────────
+
+rule Draft {
+    when: AuthorRequestsDraft(editorial)
+    requires: length(trim(editorial.notes)) >= config.editorial_min_notes_chars
+    -- Otherwise the request is refused with the reason (422). The former
+    -- behavior (2026-05-03 to 2026-10-25), drafting from the week's eight
+    -- most relevant stories with no input from the author, no longer exists.
+
+    -- The model receives the notes, the working title and the verified voice
+    -- (voz-venancio), and nothing else: no stories, no hand-written identity.
+    ensures: editorial.content = LLM.draft(editorial.notes, voice) with signature lines stripped
+    ensures: editorial.title = LLM.title ?? editorial.title
+    ensures: editorial.method = editorial.method ?? ia_revisada
+    -- The guards run on the draft and their notices are returned to the
+    -- author; they do not block drafting, they block publishing.
+}
+
+-- ─── Publishing ────────────────────────────────────────────────────────
+
+rule Publish {
+    when: AuthorPublishes(editorial)
+    requires: trim(editorial.content) != ""
+    requires: trim(editorial.author_name) != ""
+    requires: editorial.method != null
+    requires: Guards.blocking(editorial) = []
+    -- Any unmet requirement refuses the publish and names it (422). The panel
+    -- disables the button for the same reasons, but the service is the lock.
+    ensures: editorial.status = published
+    ensures: editorial.published_at = now
+}
+
+rule Unpublish {
+    when: AuthorUnpublishes(editorial)
+    ensures: editorial.status = draft
+    ensures: editorial.published_at = null
+}
+
+-- ─── Guards (binary rules, enforced in code, not only in the prompt) ───
+
+-- Blocking: the piece cannot be published while any holds.
+invariant EditorialNeverOpensWithTheOutlet {
+    -- House language rule 1: agency belongs to the peoples. The first sentence
+    -- never has Voces Indígenas, the Foundation or «nosotros» as subject.
+    forall e: Editorial where e.status = published
+        not opens_with_outlet(first_sentence(e.content))
+}
+
+invariant NoConflictoMapuche {
+    forall e: Editorial where e.status = published
+        not contains(e.content, "conflicto mapuche")
+}
+
+invariant MethodIsDeclaredApart {
+    -- The text never talks about AI or how it was written; the method box does.
+    forall e: Editorial where e.status = published
+        not mentions_ai(e.content)
+}
+
+invariant SignatureIsAField {
+    -- The author's name is author_name, never a line inside content.
+    forall e: Editorial where e.status = published
+        not contains(e.content, e.author_name)
+}
+
+-- Informative only: a figure in the text that the notes do not contain is
+-- reported to the author (they may have added it by hand) and never blocks.
+
+-- ─── Surfaces ──────────────────────────────────────────────────────────
+
+invariant NotesAreNeverPublic {
+    -- The public API returns id, title, content, status, published_at,
+    -- created_at, updated_at, author_name, method and sources. Never notes.
+    forall response of PublicEditorialSurface
+        "notes" not in response.fields
+}
+
+invariant PublishedEditorialIsSigned {
+    forall e: Editorial where e.status = published
+        e.author_name != "" and e.method != null
+}
+
+surface PublicEditorialSurface {
+    lists: Editorial where status = published, newest published_at first
+    shows: title, author_name, published_at, content, method text, sources
+    guidance: the page renders a fixed «¿Cómo se hizo esta editorial?» text
+              per method and omits the box when method is unset (pieces
+              published before 2026-10-26)
+}

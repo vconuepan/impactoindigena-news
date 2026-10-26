@@ -346,9 +346,11 @@ export type NewsletterSelectResult = z.infer<
 export type NewsletterIntro = z.infer<typeof newsletterIntroSchema>;
 export type PodcastScript = z.infer<typeof podcastScriptSchema>;
 
+// La editorial firmada (B5, 25-oct-2026). Sin firma dentro del texto: la pone
+// el código desde `authorName`. Las reglas viven en `prompts/editorial.ts`.
 export const editorialSchema = z.object({
   title: z.string().describe('Título de la editorial, máximo 12 palabras, sin punto final'),
-  content: z.string().describe('Cuerpo de la editorial: 5 párrafos (~444 palabras) separados por líneas en blanco, más la firma al final. Sin markdown.'),
+  content: z.string().describe('Cuerpo de la editorial: 5 párrafos separados por líneas en blanco, texto plano, sin firma'),
 })
 
 export type EditorialResult = z.infer<typeof editorialSchema>;

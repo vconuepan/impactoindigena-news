@@ -418,6 +418,30 @@ Mongabay (6,43): **el problema de la búsqueda no es el puntaje, es la voz**. Es
 palanca de B12: no basta subir el umbral; hay que ponderar la fuente. Datos crudos en el
 scratchpad de la sesión (`ultimas-500.json`).
 
+### 8 ter · Resultados de B5 y B6 (26-oct-2026)
+
+**Hecho.** La editorial nace de las notas del director y no de las noticias de la semana:
+`prompts/editorial.ts` reescrito con `voz-venancio.ts` (la identidad vieja, Impacto
+Indígena 2023, IRI, Codelco y BHP, salió del prompt), `services/editorial.ts` con las tres
+reglas en el servicio (sin notas de 200 caracteres no hay borrador · sin firma ni método no
+se publica · las notas nunca salen por la API pública), `lib/editorialGuards.ts` con cinco
+candados (agencia, «conflicto mapuche», IA en el texto y firma dentro del texto bloquean;
+cifra fuera de las notas avisa), panel con notas, firma, método, fuentes y avisos, y la
+página pública con rótulo «Editorial», firma, fecha, recuadro «¿Cómo se hizo esta
+editorial?» por método y «Fuentes consultadas». Spec `.specs/own-content.allium`, context
+`.context/own-content.md`. Tests: 42 nuevos en el servidor, 9 en el cliente.
+
+**Lo que falta para que exista la primera editorial, en orden:**
+1. **C5 · El director aplica el SQL** `server/prisma/migrations/20261026000000_editorial_firma_metodo/migration.sql`
+   con psql (firewall abierto), **antes** de empujar el código: una columna nueva en
+   `editorials` rompe `findMany()` si el código llega primero. Luego `db:migrate:resolve`.
+2. **C6 · Empujar** los commits de B5/B6.
+3. **C2 · La primera editorial**: notas del director en el panel → borrador → edición → firma
+   y método → publicar. Al publicarla, «la primera editorial está en camino» desaparece solo.
+
+**Decisión técnica:** tier `medium` para el borrador (A1: el grande costó seis veces más y
+falló más). Sin página de autor todavía (B7): la firma es texto, no enlace.
+
 ### 9 · Riesgos nombrados
 
 - **El modelo inventa más cuando escribe más.** Por eso los candados son de fallo cerrado: sin

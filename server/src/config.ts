@@ -137,6 +137,15 @@ export const config = {
     // weekly send always has a fresh pool to draw from.
     storyAssignmentDays: parseInt(process.env.STORY_ASSIGNMENT_DAYS || "14", 10),
   },
+  // La editorial firmada (B5, 25-oct-2026): se redacta desde las notas del
+  // director con el tier medium. Medido en A1 del mismo plan: el modelo grande
+  // costó seis veces más y falló más.
+  editorial: {
+    modelTier: 'medium' as const,
+    // Bajo este largo, las «notas» son un título y el modelo tendría que
+    // inventar el resto: se rechaza y se dice por qué.
+    minNotesChars: parseInt(process.env.EDITORIAL_MIN_NOTES_CHARS || '200', 10),
+  },
   newsletter: {
     storiesPerIssue: parseInt(
       process.env.NEWSLETTER_STORIES_PER_ISSUE || "4",

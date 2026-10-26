@@ -54,6 +54,7 @@ spec wins and the context file is what gets corrected.
 | `twitter.md` | OAuth 1.0a static credentials, text reused from Bluesky, admin panel | `social-posting.allium` |
 | `facebook.md` | Page token vs Instagram token, link-card posting, groups impossible | `social-posting.allium` |
 | `story-carousel.md` | Carrusel de una noticia desde el artículo original: rutas, candados, formato, costo medido | — |
+| `own-content.md` | Contenido propio firmado: la editorial desde las notas del director, firma, método, fuentes, candados | `own-content.allium` |
 
 ### Interface
 
