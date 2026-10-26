@@ -52,9 +52,47 @@ export interface StoryCarouselDraft {
 
 const AUTORES_GENERICOS = /^(admin|administrator|administrador|editor|redacci[oó]n|staff|prensa)$/i
 
+/** Agencias que firman con una sola palabra: ahí la firma sí es autoría, la del cable. */
+const AGENCIAS = /^(efe|afp|ap|reuters|lusa|dw|ansa|ips|xinhua|bloomberg)$/i
+
+/**
+ * El autor que se nombra en la lámina de cierre, o null. Una firma de una sola
+ * palabra casi nunca es una persona: es la cuenta con que se publica en el
+ * sitio. El 26-oct-2026 el carrusel de Belo Sun firmó «Amazon Watch · ZAP», y
+ * «ZAP» es la cuenta web de Amazon Watch. Medido ese día en 1.000 noticias
+ * publicadas: 165 traían un autor de una palabra (83 distintos), entre cuentas
+ * del sitio (ZAP ×13, bobbybascomb ×8, lkyu0285, plc2020), genéricos
+ * (Redacción, prensa, Staff), agencias (EFE, AFP, Lusa, DW) y nombres de pila
+ * sueltos. Un nombre con apellido tiene al menos dos palabras; de una sola,
+ * solo se nombra una agencia.
+ */
+export function autorNombrable(autor: string | null | undefined, medio: string): string | null {
+  const a = autor?.trim()
+  if (!a || AUTORES_GENERICOS.test(a) || a.toLowerCase() === medio.toLowerCase()) return null
+  if (!/\s/.test(a) && !AGENCIAS.test(a)) return null
+  return a
+}
+
 const FORMATO_FECHA = new Intl.DateTimeFormat('es-CL', {
   day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago',
 })
+const FORMATO_FECHA_UTC = new Intl.DateTimeFormat('es-CL', {
+  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
+})
+
+/**
+ * La fecha del original, como la dice la firma. Una fecha sin hora (la que
+ * devuelve el análisis, «2026-10-21 00:00:00», o un feed que solo da el día)
+ * queda guardada a medianoche UTC, y dibujada en hora de Chile caía en el día
+ * anterior: el 26-oct-2026 el carrusel de Belo Sun firmó «20 de octubre» sobre
+ * un comunicado del 21. Esa medianoche es un día del calendario, no una hora,
+ * así que se lee en UTC; una fecha con hora se lee en hora de Chile.
+ */
+export function fechaDelOriginal(fecha: Date): string {
+  const sinHora = fecha.getUTCHours() === 0 && fecha.getUTCMinutes() === 0
+    && fecha.getUTCSeconds() === 0 && fecha.getUTCMilliseconds() === 0
+  return (sinHora ? FORMATO_FECHA_UTC : FORMATO_FECHA).format(fecha)
+}
 
 async function cargarNoticia(storyId: string) {
   const story = await prisma.story.findUnique({
@@ -141,11 +179,10 @@ export function atribucionDe(story: NoticiaCargada): CarouselAttribution {
     )
   }
 
-  const autor = story.sourceAuthor?.trim()
   return {
     medio,
-    autor: autor && !AUTORES_GENERICOS.test(autor) && autor.toLowerCase() !== medio.toLowerCase() ? autor : null,
-    fecha: story.sourceDatePublished ? FORMATO_FECHA.format(story.sourceDatePublished) : null,
+    autor: autorNombrable(story.sourceAuthor, medio),
+    fecha: story.sourceDatePublished ? fechaDelOriginal(story.sourceDatePublished) : null,
     tituloOriginal: story.sourceTitle,
     dominio,
   }

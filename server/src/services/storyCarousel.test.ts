@@ -26,7 +26,10 @@ vi.mock('../lib/loadRemoteImage.js', () => ({ loadRemoteImage: mockFoto }))
 const mockOgImage = vi.hoisted(() => vi.fn())
 vi.mock('../lib/extract-og-image.js', () => ({ fetchOgImage: mockOgImage }))
 
-const { buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError } = await import('./storyCarousel.js')
+const {
+  buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError,
+  atribucionDe, autorNombrable, fechaDelOriginal,
+} = await import('./storyCarousel.js')
 
 const ORIGINAL = [
   'La comunidad mapuche Txokin Pehuen, de Curarrehue, presentó este martes su plan de manejo del bosque nativo ante la Corporación Nacional Forestal.',
@@ -275,5 +278,63 @@ describe('las láminas armadas desde el original', () => {
     const anterior = ['https://pub.r2.dev/social/8b95a474-slide1-1792832458341.jpg']
     expect(armadoDesdeElOriginal(anterior)).toBe(false)
     expect(armadoDesdeElOriginal([])).toBe(false)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// La firma: fecha y autor (corrección del 26-oct-2026)
+// ---------------------------------------------------------------------------
+
+describe('la fecha de la firma', () => {
+  // El carrusel de Belo Sun del 26-oct firmó «20 de octubre» sobre un comunicado
+  // de Amazon Watch del 21: el análisis guarda el día a medianoche UTC, y en hora
+  // de Chile esa medianoche es el día anterior.
+  it('una fecha sin hora dice el mismo día, no el anterior', () => {
+    expect(fechaDelOriginal(new Date('2026-10-21T00:00:00.000Z'))).toBe('21 de octubre de 2026')
+  })
+
+  it('una fecha con hora se lee en hora de Chile', () => {
+    // 18:49 UTC del 21 son las 15:49 del 21 en Chile.
+    expect(fechaDelOriginal(new Date('2026-10-21T18:49:51Z'))).toBe('21 de octubre de 2026')
+    // 02:00 UTC del 22 son las 23:00 del 21 en Chile.
+    expect(fechaDelOriginal(new Date('2026-10-22T02:00:00Z'))).toBe('21 de octubre de 2026')
+  })
+
+  it('la atribución completa usa esa fecha', () => {
+    const a = atribucionDe({ ...noticia(), sourceDatePublished: new Date('2026-10-21T00:00:00.000Z') } as any)
+    expect(a.fecha).toBe('21 de octubre de 2026')
+  })
+})
+
+describe('el autor que se nombra', () => {
+  // «ZAP» es la cuenta web de Amazon Watch; el carrusel del 26-oct la nombró autora.
+  it('no nombra la cuenta del sitio', () => {
+    expect(autorNombrable('ZAP', 'Amazon Watch')).toBeNull()
+    expect(autorNombrable('bobbybascomb', 'ICT News')).toBeNull()
+    expect(autorNombrable('lkyu0285', 'Korea Herald')).toBeNull()
+  })
+
+  it('no nombra un genérico ni al propio medio', () => {
+    expect(autorNombrable('Redacción', 'BioBío Chile')).toBeNull()
+    expect(autorNombrable('prensa', 'Radio Kurruf')).toBeNull()
+    expect(autorNombrable('Amazon Watch', 'Amazon Watch')).toBeNull()
+    expect(autorNombrable('  ', 'Amazon Watch')).toBeNull()
+    expect(autorNombrable(null, 'Amazon Watch')).toBeNull()
+  })
+
+  it('nombra a una persona con nombre y apellido', () => {
+    expect(autorNombrable('Antonio Paz Cardona', 'Mongabay')).toBe('Antonio Paz Cardona')
+    expect(autorNombrable('Amelia Schafer', 'ICT News')).toBe('Amelia Schafer')
+  })
+
+  it('nombra una agencia aunque sea una sola palabra', () => {
+    expect(autorNombrable('EFE', 'Infobae')).toBe('EFE')
+    expect(autorNombrable('Agencia EFE', 'Infobae')).toBe('Agencia EFE')
+    expect(autorNombrable('AFP', 'France 24')).toBe('AFP')
+  })
+
+  it('la atribución completa deja fuera la cuenta del sitio', () => {
+    const a = atribucionDe({ ...noticia(), sourceAuthor: 'ZAP' } as any)
+    expect(a.autor).toBeNull()
   })
 })
