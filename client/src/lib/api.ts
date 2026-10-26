@@ -341,6 +341,7 @@ export interface EditorialSummary {
   title: string
   publishedAt: string | null
   createdAt: string
+  authorName: string
 }
 
 export interface EditorialFull {
@@ -351,6 +352,10 @@ export interface EditorialFull {
   publishedAt: string | null
   createdAt: string
   updatedAt: string
+  authorName: string
+  /** 'humana' | 'ia_revisada' | '' (editoriales anteriores al 26-oct-2026) */
+  method: string
+  sources: string
 }
 
 // ─── Spotlight types ──────────────────────────────────────────────────────────

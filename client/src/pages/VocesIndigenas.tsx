@@ -98,6 +98,9 @@ export default function VocesIndigenasPage() {
                   <h2 className="mt-1 text-lg font-bold text-neutral-900 group-hover:text-brand-600 transition-colors leading-snug">
                     {ed.title}
                   </h2>
+                  {ed.authorName && (
+                    <p className="text-sm text-neutral-500 mt-1">Por {ed.authorName}</p>
+                  )}
                   <span className="text-sm text-brand-600 group-hover:underline mt-1 inline-block">
                     Leer editorial →
                   </span>
