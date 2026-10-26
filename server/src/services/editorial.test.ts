@@ -145,6 +145,39 @@ describe('toPublicEditorial', () => {
   })
 })
 
+describe('lectura con respaldo cuando faltan las columnas del 26-oct-2026', () => {
+  // Medido en vivo el 26-oct-2026 01:39Z: el código llegó antes que el SQL y
+  // /api/editorials respondió 500 con P2022 («editorials.notes does not exist»).
+  const p2022 = Object.assign(new Error('The column `editorials.notes` does not exist'), { code: 'P2022' })
+  const vieja = { id: 'ed-1', title: 'T', content: 'C', status: 'published', publishedAt: null, createdAt: new Date(), updatedAt: new Date() }
+
+  beforeEach(() => vi.clearAllMocks())
+
+  it('getEditorials repite con las columnas anteriores y rellena las nuevas vacías', async () => {
+    mockPrisma.editorial.findMany.mockRejectedValueOnce(p2022).mockResolvedValueOnce([vieja])
+    mockPrisma.editorial.count.mockResolvedValue(1)
+    const { getEditorials } = await import('./editorial.js')
+    const resultado = await getEditorials({ status: 'published' })
+    expect(resultado.data).toHaveLength(1)
+    expect(resultado.data[0]).toMatchObject({ id: 'ed-1', notes: '', authorName: '', method: '', sources: '' })
+    expect(mockPrisma.editorial.findMany.mock.calls[1][0].select).toBeDefined()
+  })
+
+  it('getEditorialById hace lo mismo y devuelve null si no existe', async () => {
+    mockPrisma.editorial.findUnique.mockRejectedValueOnce(p2022).mockResolvedValueOnce(vieja)
+    const { getEditorialById } = await import('./editorial.js')
+    expect(await getEditorialById('ed-1')).toMatchObject({ id: 'ed-1', authorName: '' })
+    mockPrisma.editorial.findUnique.mockResolvedValueOnce(null)
+    expect(await getEditorialById('nada')).toBeNull()
+  })
+
+  it('cualquier otro error se propaga', async () => {
+    mockPrisma.editorial.findMany.mockRejectedValueOnce(new Error('caída'))
+    const { getEditorials } = await import('./editorial.js')
+    await expect(getEditorials({})).rejects.toThrow('caída')
+  })
+})
+
 describe('limpiarContenido y formatForLinkedIn', () => {
   it('quita una firma pegada por el modelo y normaliza los párrafos', () => {
     expect(limpiarContenido('Uno.\r\n\r\n\r\nDos.\n\n—  Venancio Coñuepán')).toBe('Uno.\n\nDos.')

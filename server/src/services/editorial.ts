@@ -59,21 +59,55 @@ export function toPublicEditorial(editorial: Record<string, unknown>): PublicEdi
   return salida as PublicEditorial
 }
 
+/**
+ * Las columnas anteriores al 26-oct-2026 y los valores con que se rellenan las
+ * nuevas cuando la base todavía no las tiene.
+ *
+ * POR QUÉ. La migración `20261026000000_editorial_firma_metodo` la aplica el
+ * director a mano y el despliegue no la aplica. Medido en vivo el 26-oct-2026,
+ * 01:39Z: el código llegó antes que el SQL y `/api/editorials` respondió 500
+ * (P2022, «The column editorials.notes does not exist»). Con este respaldo la
+ * lectura funciona con las columnas que haya; lo que no existe sale vacío. La
+ * ESCRITURA de notas, firma, método o fuentes sigue necesitando el SQL.
+ */
+const COLUMNAS_ANTERIORES = {
+  id: true, title: true, content: true, status: true, publishedAt: true, createdAt: true, updatedAt: true,
+} as const
+const NUEVAS_VACIAS = { notes: '', authorName: '', method: '', sources: '' } as const
+
+function faltanColumnas(err: unknown): boolean {
+  return typeof err === 'object' && err !== null && (err as { code?: string }).code === 'P2022'
+}
+
+/** Corre la lectura completa; si faltan las columnas nuevas, repite solo con las anteriores. */
+async function conRespaldoSinColumnas<T extends object>(
+  completa: () => Promise<T[]>,
+  anterior: () => Promise<Partial<T>[]>,
+): Promise<T[]> {
+  try {
+    return await completa()
+  } catch (err) {
+    if (!faltanColumnas(err)) throw err
+    log.warn({ err }, 'editorials sin las columnas del 26-oct-2026: lectura con respaldo; falta aplicar el SQL')
+    const filas = await anterior()
+    return filas.map((f) => ({ ...NUEVAS_VACIAS, ...f }) as T)
+  }
+}
+
 export async function getEditorials(filters: EditorialFilters) {
   const page = filters.page || 1
   const pageSize = filters.pageSize || 25
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const where: any = {}
   if (filters.status) where.status = filters.status as ContentStatus
+  const consulta = { where, orderBy: { createdAt: 'desc' as const }, skip: (page - 1) * pageSize, take: pageSize }
 
   return paginate({
     findMany: () =>
-      prisma.editorial.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-      }),
+      conRespaldoSinColumnas(
+        () => prisma.editorial.findMany(consulta),
+        () => prisma.editorial.findMany({ ...consulta, select: COLUMNAS_ANTERIORES }),
+      ),
     count: () => prisma.editorial.count({ where }),
     page,
     pageSize,
@@ -81,16 +115,25 @@ export async function getEditorials(filters: EditorialFilters) {
 }
 
 export async function getEditorialById(id: string) {
-  return prisma.editorial.findUnique({ where: { id } })
+  const [editorial] = await conRespaldoSinColumnas(
+    async () => {
+      const e = await prisma.editorial.findUnique({ where: { id } })
+      return e ? [e] : []
+    },
+    async () => {
+      const e = await prisma.editorial.findUnique({ where: { id }, select: COLUMNAS_ANTERIORES })
+      return e ? [e] : []
+    },
+  )
+  return editorial ?? null
 }
 
 export async function getLatestPublishedEditorials(limit = 10) {
-  return prisma.editorial.findMany({
-    where: { status: ContentStatus.published },
-    orderBy: { publishedAt: 'desc' },
-    take: limit,
-    select: { id: true, title: true, publishedAt: true, createdAt: true, authorName: true },
-  })
+  const consulta = { where: { status: ContentStatus.published }, orderBy: { publishedAt: 'desc' as const }, take: limit }
+  return conRespaldoSinColumnas(
+    () => prisma.editorial.findMany({ ...consulta, select: { id: true, title: true, publishedAt: true, createdAt: true, authorName: true } }),
+    () => prisma.editorial.findMany({ ...consulta, select: { id: true, title: true, publishedAt: true, createdAt: true } }),
+  )
 }
 
 export async function createEditorial(data: { title: string }) {
