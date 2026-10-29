@@ -18,6 +18,10 @@ vi.mock('./llm.js', () => ({
 const mockUpload = vi.hoisted(() => vi.fn(async (_b: Buffer, nombre: string) => `https://r2.test/social/${nombre}`))
 vi.mock('../lib/imageStorage.js', () => ({ uploadImageToR2: mockUpload }))
 
+// La foto del medio se baja por la guardia SSRF; acá se simula la descarga.
+const mockFoto = vi.hoisted(() => vi.fn())
+vi.mock('../lib/loadRemoteImage.js', () => ({ loadRemoteImage: mockFoto }))
+
 const { buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError } = await import('./storyCarousel.js')
 
 const ORIGINAL = [
@@ -102,6 +106,64 @@ describe('buildStoryCarouselForSocial (Instagram y LinkedIn, sin editor)', () =>
 
     expect(error).toBeInstanceOf(StoryCarouselError)
     expect(error.avisos.map((a: { tipo: string }) => a.tipo)).toContain('identidad')
+  })
+})
+
+describe('la foto del medio en la portada (decisión del director, 29-oct-2026)', () => {
+  const FOTO_DEL_MEDIO = 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/oghero-story-1.jpg'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    elModeloDevuelve(FIEL)
+  })
+
+  async function fotoDe(ancho: number, alto: number) {
+    const { createCanvas } = await import('@napi-rs/canvas')
+    const c = createCanvas(ancho, alto)
+    const ctx = c.getContext('2d')
+    ctx.fillStyle = '#336699'
+    ctx.fillRect(0, 0, ancho, alto)
+    return c
+  }
+
+  it('baja la foto rehospedada del medio y arma todas las láminas', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: FOTO_DEL_MEDIO })
+    mockFoto.mockResolvedValue(await fotoDe(1600, 900))
+
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+
+    expect(mockFoto).toHaveBeenCalledTimes(1)
+    expect(mockFoto).toHaveBeenCalledWith(FOTO_DEL_MEDIO)
+    expect(carrusel.imagenes).toHaveLength(FIEL.length)
+  })
+
+  it('una imagen de IA no se pide: la portada sale con el fondo de marca', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({
+      ...noticia(),
+      imageUrl: 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/99d66c21-6277-461a-9f16-e18c82b9d899-1793271943280.png',
+    })
+
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+
+    expect(mockFoto).not.toHaveBeenCalled()
+    expect(carrusel.imagenes).toHaveLength(FIEL.length)
+  })
+
+  it('sin imagen no se pide nada', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: null })
+
+    await buildStoryCarouselForSocial('story-1')
+
+    expect(mockFoto).not.toHaveBeenCalled()
+  })
+
+  it('si la foto no se puede bajar, el carrusel sale igual, sin foto', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: FOTO_DEL_MEDIO })
+    mockFoto.mockRejectedValue(new Error('No se pudo descargar la imagen'))
+
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+
+    expect(carrusel.imagenes).toHaveLength(FIEL.length)
   })
 })
 

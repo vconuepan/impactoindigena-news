@@ -4,6 +4,7 @@ import { createLogger } from '../lib/logger.js'
 import { withRetry } from '../lib/retry.js'
 import { publisherFromUrl } from '../lib/publisher.js'
 import { uploadImageToR2 } from '../lib/imageStorage.js'
+import { fotoDelMedio } from '../lib/fotoDelMedio.js'
 import { revisarCarrusel, temaRespaldado, type CarouselAviso, type CarouselSlideText } from '../lib/storyCarouselGuards.js'
 import { renderStoryCarousel, carruselEnZip, type CarouselAttribution } from '../lib/storyCarouselRender.js'
 import { buildStoryCarouselPrompt } from '../prompts/story-carousel.js'
@@ -195,11 +196,15 @@ export async function renderStoryCarouselImages(storyId: string, req: RenderRequ
 
   const original = story.sourceContent ?? ''
   const avisosDeTexto = revisarCarrusel(laminas, lectura, original)
+  // La foto con que el medio publicó la nota, acreditada a ese medio. Una
+  // imagen de IA o la tarjeta compuesta no van (decisión del director, 29-oct).
+  const fotoUrl = fotoDelMedio(story.imageUrl)
   const { imagenes, avisos: avisosDeEspacio } = await renderStoryCarousel({
     laminas,
     lectura,
     atribucion,
     categoria: temaRespaldado(story.issue?.name ?? '', original),
+    foto: fotoUrl ? { url: fotoUrl, credito: atribucion.medio } : null,
   })
 
   return { story, imagenes, avisos: [...avisosDeTexto, ...avisosDeEspacio] }

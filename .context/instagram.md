@@ -38,7 +38,7 @@ The env var is the **bootstrap**: set by hand once. After the first automatic re
 
 ### Carousel Post (R2 required)
 
-`generateDraft()` builds the carousel with `buildStoryCarouselForSocial()` (`server/src/services/storyCarousel.ts`): the model writes the slide text from `story.sourceContent` (informative, without the director's reading), the guards in `lib/storyCarouselGuards.ts` check it, and `lib/storyCarouselRender.ts` draws it — cover, one idea per slide, and a closing slide with «Lee la nota completa» (outlet, author, original title, domain) and the AI line. Every slide carries «Reporteó: <medio>». **No photos and no AI image.**
+`generateDraft()` builds the carousel with `buildStoryCarouselForSocial()` (`server/src/services/storyCarousel.ts`): the model writes the slide text from `story.sourceContent` (informative, without the director's reading), the guards in `lib/storyCarouselGuards.ts` check it, and `lib/storyCarouselRender.ts` draws it — cover, one idea per slide, and a closing slide with «Lee la nota completa» (outlet, author, original title, domain) and the AI line. Every slide carries «Reporteó: <medio>». **The cover and the closing slide carry the outlet's own photo** (`story.imageUrl` when `lib/fotoDelMedio.ts` says it is the outlet's: `oghero-` or served from the outlet's domain) with «Foto: <medio>»; **never an AI image nor the branded story card** (director, 29-oct-2026). Without one, both slides use the brand background.
 
 Slides are uploaded to R2 by `subirCarrusel()` as `<storyId>-original-NN-<timestamp>.jpg`. The `-original-` marker is how `armadoDesdeElOriginal()` tells a carousel from the original apart from one built by the previous generator: those are never published (see below).
 

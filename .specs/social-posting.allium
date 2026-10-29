@@ -252,7 +252,9 @@ rule RegenerateDraft {
 
 -- Instagram builds its carousel from the original article (text,
 -- guards, render), its caption and the uploads before a draft is
--- reviewable. The record is created in `generating` and flipped to
+-- reviewable. The cover and the closing slide carry the outlet's own
+-- photo with «Foto: <medio>» when the story has one (`fotoDelMedio`);
+-- never an AI image nor the branded story card (director, 29-oct-2026). The record is created in `generating` and flipped to
 -- `draft` or `rejected` when the work lands, so the panel returns
 -- immediately and the row reserves the story. The auto-post job waits
 -- for the work and publishes in the same run.

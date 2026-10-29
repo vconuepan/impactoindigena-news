@@ -1,12 +1,14 @@
-import { createCanvas } from '@napi-rs/canvas'
+import { createCanvas, type Image } from '@napi-rs/canvas'
 import PDFDocument from 'pdfkit'
 import archiver from 'archiver'
 import { PassThrough } from 'node:stream'
 import {
   C, FONT, W, H, SCALE, RW, RH, M,
-  drawPill, drawLogo, drawCleanBg, exportCanvas, footerUrl,
+  drawPill, drawLogo, drawCleanBg, drawPhotoBg, bottomGradient, exportCanvas, footerUrl,
 } from './carouselGen.js'
 import { AI_LABEL } from './ai-label.js'
+import { loadRemoteImage } from './loadRemoteImage.js'
+import { createLogger } from './logger.js'
 import type { CarouselAviso, CarouselSlideText } from './storyCarouselGuards.js'
 
 /**
@@ -18,10 +20,13 @@ import type { CarouselAviso, CarouselSlideText } from './storyCarouselGuards.js'
  * que sale del artículo original, y el pie de cada lámina, que nombra al medio
  * que reporteó.
  *
- * SIN FOTOS. De las imágenes de las noticias, la mayoría es fotografía del
- * medio citado (112 de 154 en la portada del 7-sep-2026, ver
- * `client/src/lib/story-image.ts`), y ponerla en un carrusel propio no es
- * citarla. Una ilustración de IA, a su vez, se confundiría con el reporteo.
+ * LA FOTO ES DEL MEDIO, O NO HAY FOTO. Decisión del director, 29-oct-2026:
+ * la portada y el cierre llevan la fotografía con que el medio publicó la nota
+ * (`lib/fotoDelMedio.ts`), a sangre y con el crédito «Foto: <medio>» junto a
+ * «Reporteó». Hasta ese día el carrusel salía sin foto (23-oct), y antes con
+ * una ilustración de IA que el 24-oct inventó una escena. Si la noticia no
+ * tiene foto del medio, o no se puede bajar, las dos láminas salen con el
+ * fondo de marca: nunca una imagen de IA ni la tarjeta compuesta.
  *
  * NUNCA RECORTA EN SILENCIO. Un texto que no cabe se devuelve como aviso y
  * bloquea la descarga: una lámina publicada con «…» a media frase dice menos de
@@ -39,13 +44,24 @@ export interface CarouselAttribution {
   dominio: string
 }
 
+/** La foto del medio para la portada y el cierre, con a quién acreditarla. */
+export interface FotoDeNoticia {
+  url: string
+  /** El medio, para «Foto: <medio>». */
+  credito: string
+}
+
 export interface RenderInput {
   laminas: CarouselSlideText[]
   lectura: CarouselSlideText | null
   atribucion: CarouselAttribution
   /** Tema de la noticia, para la píldora de la portada. Puede ir vacío. */
   categoria: string
+  /** `null` si la noticia no tiene foto del medio (`fotoDelMedio`). */
+  foto?: FotoDeNoticia | null
 }
+
+const log = createLogger('story-carousel-render')
 
 export interface RenderResult {
   /** JPEG de 1080×1350, en el orden en que se publican. */
@@ -115,15 +131,39 @@ function dibujarLineas(ctx: any, lineas: string[], x: number, y: number, lh: num
   return y + lineas.length * lh
 }
 
-/** La línea de atribución sobre el pie: «Reporteó: <medio> · <fecha>». */
-function lineaDeAtribucion(ctx: any, texto: string): void {
-  ctx.textAlign = 'left'
+/**
+ * La línea de atribución sobre el pie: «Reporteó: <medio> · <fecha>». Con
+ * `credito`, a la derecha va «Foto: <medio>» y la atribución cede el espacio.
+ */
+function lineaDeAtribucion(ctx: any, texto: string, credito: string | null = null): void {
   ctx.fillStyle = C.mute
   ctx.font = `500 ${s(24)}px '${FONT}'`
-  const maxW = RW - M * 2
+  const y = RH - M - s(52)
+  let maxW = RW - M * 2
+  if (credito) {
+    const foto = `Foto: ${credito}`
+    ctx.textAlign = 'right'
+    ctx.fillText(foto, RW - M, y)
+    maxW -= ctx.measureText(foto).width + s(40)
+  }
+  ctx.textAlign = 'left'
   let t = texto
   while (ctx.measureText(t).width > maxW && t.length > 1) t = t.slice(0, -2) + '…'
-  ctx.fillText(t, M, RH - M - s(52))
+  ctx.fillText(t, M, y)
+}
+
+/**
+ * Baja y decodifica la foto por la guardia SSRF. Si falla, las láminas salen
+ * con el fondo de marca: una foto que no llega no detiene la publicación.
+ */
+async function cargarFoto(foto: FotoDeNoticia | null | undefined): Promise<Image | null> {
+  if (!foto) return null
+  try {
+    return await loadRemoteImage(foto.url)
+  } catch (err) {
+    log.warn({ err, url: foto.url }, 'no se pudo cargar la foto del medio; la portada sale sin foto')
+    return null
+  }
 }
 
 function reporteo(a: CarouselAttribution): string {
@@ -138,10 +178,16 @@ const ZONA_ABAJO = s(1150)
 // ---------------------------------------------------------------------------
 // Portada
 // ---------------------------------------------------------------------------
-async function portada(l: CarouselSlideText, input: RenderInput, n: number, total: number) {
+async function portada(l: CarouselSlideText, input: RenderInput, foto: Image | null, n: number, total: number) {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
-  drawCleanBg(ctx)
+  if (foto) {
+    // La foto a sangre y el degradado de tinta: el texto va anclado abajo.
+    drawPhotoBg(ctx, foto, 0)
+    bottomGradient(ctx)
+  } else {
+    drawCleanBg(ctx)
+  }
   await drawLogo(ctx, M, M, s(100))
 
   const fTitulo = `700 ${s(66)}px '${FONT}'`, lhT = s(80), maxT = 5
@@ -159,9 +205,9 @@ async function portada(l: CarouselSlideText, input: RenderInput, n: number, tota
   ctx.font = fTitulo
   dibujarLineas(ctx, titulo.lineas, M, yTitulo, lhT, C.white, true)
   ctx.font = fBajada
-  dibujarLineas(ctx, bajada.lineas, M, yBajada, lhB, C.mute)
+  dibujarLineas(ctx, bajada.lineas, M, yBajada, lhB, foto ? C.white : C.mute)
 
-  lineaDeAtribucion(ctx, reporteo(input.atribucion))
+  lineaDeAtribucion(ctx, reporteo(input.atribucion), foto ? input.foto!.credito : null)
   footerUrl(ctx, n, total)
   return {
     imagen: exportCanvas(canvas),
@@ -240,10 +286,16 @@ async function lectura(l: CarouselSlideText, input: RenderInput, n: number, tota
 // ---------------------------------------------------------------------------
 // Cierre: síntesis + nota original + declaración de IA
 // ---------------------------------------------------------------------------
-async function cierre(l: CarouselSlideText, indice: number, input: RenderInput, n: number, total: number) {
+async function cierre(l: CarouselSlideText, indice: number, input: RenderInput, foto: Image | null, n: number, total: number) {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
-  drawCleanBg(ctx)
+  if (foto) {
+    // La misma foto, muy oscurecida: señala la nota original sin competir con el texto.
+    drawPhotoBg(ctx, foto, 0.82)
+    bottomGradient(ctx)
+  } else {
+    drawCleanBg(ctx)
+  }
   await drawLogo(ctx, M, M, s(72))
   const a = input.atribucion
 
@@ -274,6 +326,9 @@ async function cierre(l: CarouselSlideText, indice: number, input: RenderInput, 
   ctx.fillStyle = C.mute
   ctx.font = `500 ${s(24)}px '${FONT}'`
   ctx.fillText(a.dominio, M, y + s(4))
+  // El crédito de la foto va con la nota original, no junto a la línea de IA:
+  // esa línea es una regla binaria y no puede ceder espacio ni recortarse.
+  if (foto) ctx.fillText(`Foto: ${input.foto!.credito}`, M, y + s(4) + s(36))
 
   // La declaración de IA va dibujada, no en el prompt: es una regla binaria.
   lineaDeAtribucion(ctx, AI_LABEL)
@@ -290,7 +345,8 @@ async function cierre(l: CarouselSlideText, indice: number, input: RenderInput, 
 
 /**
  * Dibuja el carrusel: portada, desarrollo, la lectura (si hay) y el cierre.
- * Exige al menos portada y cierre.
+ * Exige al menos portada y cierre. La foto del medio, si viene, se baja una
+ * sola vez y va en la portada y en el cierre.
  */
 export async function renderStoryCarousel(input: RenderInput): Promise<RenderResult> {
   const { laminas } = input
@@ -298,12 +354,13 @@ export async function renderStoryCarousel(input: RenderInput): Promise<RenderRes
 
   const total = laminas.length + (input.lectura ? 1 : 0)
   const ultimo = laminas.length - 1
+  const foto = await cargarFoto(input.foto)
   const trabajos: Array<Promise<{ imagen: Buffer; avisos: CarouselAviso[] }>> = []
 
-  trabajos.push(portada(laminas[0], input, 1, total))
+  trabajos.push(portada(laminas[0], input, foto, 1, total))
   for (let i = 1; i < ultimo; i++) trabajos.push(desarrollo(laminas[i], i, input, i + 1, total))
   if (input.lectura) trabajos.push(lectura(input.lectura, input, ultimo + 1, total))
-  trabajos.push(cierre(laminas[ultimo], ultimo, input, total, total))
+  trabajos.push(cierre(laminas[ultimo], ultimo, input, foto, total, total))
 
   const hechos = await Promise.all(trabajos)
   return {

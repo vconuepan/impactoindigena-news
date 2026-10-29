@@ -1,4 +1,4 @@
-import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas'
+import { createCanvas, loadImage, GlobalFonts, type Image } from '@napi-rs/canvas'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { createLogger } from './logger.js'
@@ -104,8 +104,37 @@ export async function drawLogo(ctx: any, x: number, y: number, h: number, align:
   ctx.drawImage(logo, align === 'center' ? (RW - w) / 2 : x, y, w, h)
 }
 
-/** Clean branded dark background: warm ink + a soft green glow. Every slide
- *  of the carousel uses it: there are no photos (see storyCarouselRender.ts). */
+/**
+ * La foto del medio a sangre: ajustada al lienzo (cover-fit, centrada) y
+ * oscurecida `darken` (0 = tal cual). Quien llama ya decodificó la imagen por
+ * la guardia SSRF (`loadRemoteImage`) y cae a `drawCleanBg` si no pudo.
+ */
+export function drawPhotoBg(ctx: any, foto: Image, darken: number): void {
+  ctx.fillStyle = C.ink
+  ctx.fillRect(0, 0, RW, RH)
+  const tr = RW / RH
+  const sw = Math.min(foto.width, foto.height * tr)
+  const sh = sw / tr
+  ctx.drawImage(foto, (foto.width - sw) / 2, (foto.height - sh) / 2, sw, sh, 0, 0, RW, RH)
+  if (darken > 0) {
+    ctx.fillStyle = `rgba(20,17,15,${darken})`
+    ctx.fillRect(0, 0, RW, RH)
+  }
+}
+
+/** Degradado de tinta de abajo hacia arriba, para leer texto sobre la foto. */
+export function bottomGradient(ctx: any): void {
+  const g = ctx.createLinearGradient(0, RH * 0.32, 0, RH)
+  g.addColorStop(0, 'rgba(20,17,15,0)')
+  g.addColorStop(0.55, 'rgba(20,17,15,0.55)')
+  g.addColorStop(1, 'rgba(20,17,15,0.96)')
+  ctx.fillStyle = g
+  ctx.fillRect(0, 0, RW, RH)
+}
+
+/** Clean branded dark background: warm ink + a soft green glow. The text
+ *  slides use it; the cover and the closing slide draw the outlet's photo when
+ *  the story has one (see storyCarouselRender.ts). */
 export function drawCleanBg(ctx: any): void {
   ctx.fillStyle = C.ink
   ctx.fillRect(0, 0, RW, RH)

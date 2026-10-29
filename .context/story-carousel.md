@@ -49,9 +49,16 @@ pasar de 8. El cierre dibuja aparte, sin pasar por el modelo: «Lee la nota comp
 con medio, autor, título original y dominio (art. 71 B de la Ley 17.336: fuente,
 título y autor), y la línea fija de IA (`AI_LABEL`).
 
-**Sin fotos**: 112 de 154 imágenes de la portada eran fotografía del medio
-(7-sep-2026, `client/src/lib/story-image.ts`), y ponerlas en un carrusel propio no es
-citarlas.
+**La foto es del medio, o no hay foto** (decisión del director, 29-oct-2026). La
+portada lleva a sangre la fotografía con que el medio publicó la nota, con el degradado
+de tinta y «Foto: <medio>» a la derecha de «Reporteó»; el cierre la repite muy
+oscurecida, con el crédito bajo el dominio. `lib/fotoDelMedio.ts` decide por el nombre
+del objeto (la misma tabla que rotula el sitio, `client/src/lib/story-image.ts`):
+`oghero-` y las servidas desde el dominio del medio van; `storycard-` (trae nuestra
+marca y el título) y las de IA (`<uuid>-<ms>`) no. Sin foto, o si no se puede bajar,
+las dos láminas salen con el fondo de marca. Del 23 al 29-oct el carrusel salió sin
+foto; hasta el 24-oct, con una ilustración de IA que inventó una escena. Cada noticia
+guarda una sola imagen: para más fotos del artículo habría que capturarlas al extraer.
 
 **Atribución** (`atribucionDe` en `services/storyCarousel.ts`): `publisherFromUrl`; si
 devuelve el dominio pelado y el feed no es Google News, firma con el nombre del feed
