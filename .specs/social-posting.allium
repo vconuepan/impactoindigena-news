@@ -254,7 +254,15 @@ rule RegenerateDraft {
 -- guards, render), its caption and the uploads before a draft is
 -- reviewable. The cover and the closing slide carry the outlet's own
 -- photo with «Foto: <medio>» when the story has one (`fotoDelMedio`);
--- never an AI image nor the branded story card (director, 29-oct-2026). The record is created in `generating` and flipped to
+-- never an AI image nor the branded story card (director, 29-oct-2026).
+-- The development slides carry the article's other photos
+-- (pipeline/StoryImage rows with a hosted copy, in article order, one
+-- per slide) with the same credit, under one invariant: the text's
+-- line limits are the same with and without a photo, so a photo never
+-- causes an `espacio` warning that did not exist before. A photo is
+-- drawn only when the measured text leaves room for a frame of at
+-- least 300 px (cap 500); otherwise that slide has no photo. The
+-- record is created in `generating` and flipped to
 -- `draft` or `rejected` when the work lands, so the panel returns
 -- immediately and the row reserves the story. The auto-post job waits
 -- for the work and publishes in the same run.

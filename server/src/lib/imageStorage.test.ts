@@ -35,7 +35,17 @@ vi.mock('../config.js', () => ({
   },
 }))
 
-const { rehostExternalImage, downloadExternalImage } = await import('./imageStorage.js')
+const { rehostExternalImage, downloadExternalImage, rehostArticlePhoto } = await import('./imageStorage.js')
+const { createCanvas } = await import('@napi-rs/canvas')
+
+/** Un PNG real de ancho × alto, para que `loadImage` lo decodifique. */
+function pngDe(ancho: number, alto: number): Buffer {
+  const c = createCanvas(ancho, alto)
+  const ctx = c.getContext('2d')
+  ctx.fillStyle = '#336699'
+  ctx.fillRect(0, 0, ancho, alto)
+  return c.toBuffer('image/png')
+}
 
 function imageResponse(contentType: string, bytes: number) {
   return {
@@ -137,5 +147,52 @@ describe('downloadExternalImage — shared SSRF-safe fetch', () => {
     const dl = await downloadExternalImage('http://169.254.169.254/latest/meta-data/')
 
     expect(dl).toBeNull()
+  })
+})
+
+describe('rehostArticlePhoto — las fotos del cuerpo del artículo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockS3Send.mockResolvedValue({})
+  })
+
+  it('baja por la guardia SSRF, normaliza y sube como ogfoto-<storyId>-NN.jpg', async () => {
+    mockSafeAxiosGet.mockResolvedValue({ status: 200, headers: { 'content-type': 'image/png' }, data: pngDe(1600, 900) })
+
+    const url = await rehostArticlePhoto('https://source.example/cuerpo.png', 'story-1', 2)
+
+    expect(mockSafeAxiosGet).toHaveBeenCalledTimes(1)
+    expect(mockSafeAxiosGet.mock.calls[0][0]).toBe('https://source.example/cuerpo.png')
+    expect(url).toBe('https://cdn.example/social/ogfoto-story-1-02.jpg')
+    const puesto = mockS3Send.mock.calls[0][0] as { Key: string; ContentType: string }
+    expect(puesto.Key).toBe('social/ogfoto-story-1-02.jpg')
+    expect(puesto.ContentType).toBe('image/jpeg')
+  })
+
+  it('una imagen demasiado angosta no se sube: un ícono con el crédito del medio es peor que ninguna foto', async () => {
+    mockSafeAxiosGet.mockResolvedValue({ status: 200, headers: { 'content-type': 'image/png' }, data: pngDe(200, 200) })
+
+    const url = await rehostArticlePhoto('https://source.example/icono.png', 'story-1', 1)
+
+    expect(url).toBeNull()
+    expect(mockS3Send).not.toHaveBeenCalled()
+  })
+
+  it('lo que no se puede decodificar no se sube', async () => {
+    mockSafeAxiosGet.mockResolvedValue({ status: 200, headers: { 'content-type': 'image/jpeg' }, data: Buffer.alloc(500, 1) })
+
+    const url = await rehostArticlePhoto('https://source.example/rota.jpg', 'story-1', 1)
+
+    expect(url).toBeNull()
+    expect(mockS3Send).not.toHaveBeenCalled()
+  })
+
+  it('una URL que la guardia rechaza devuelve null', async () => {
+    mockSafeAxiosGet.mockRejectedValue(new Error('Blocked URL: private address'))
+
+    const url = await rehostArticlePhoto('http://169.254.169.254/latest/meta-data/', 'story-1', 1)
+
+    expect(url).toBeNull()
+    expect(mockS3Send).not.toHaveBeenCalled()
   })
 })

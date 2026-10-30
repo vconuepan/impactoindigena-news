@@ -116,6 +116,7 @@ model Story {
   communityPosts         CommunityPost[]
   communityReviews       StoryCommunityReview[]
   brandAssessments       StoryBrandAssessment[]
+  images                 StoryImage[]
   createdAt              DateTime     @default(now()) @map("created_at")
   updatedAt              DateTime     @updatedAt @map("updated_at")
 
@@ -128,6 +129,27 @@ model Story {
   @@index([countryFocus])
   @@index([clusterId])
   @@map("stories")
+}
+
+/// Las fotos del cuerpo del artículo original, además de la og:image que vive
+/// en `Story.imageUrl`. Se capturan al extraer (`lib/fotosDelArticulo.ts`) y se
+/// rehospedan al publicar como `ogfoto-<storyId>-NN` (`hostedUrl`); el carrusel
+/// dibuja solo las rehospedadas. Tabla aparte y no columna de `stories`: una
+/// columna nueva rompe todo `findMany()` de Story con P2022 hasta que se
+/// aplique el SQL (pasó el 26-oct-2026 con `editorials`); una tabla nueva solo
+/// la consulta el código nuevo, que tolera que no exista.
+model StoryImage {
+  id        String   @id @default(uuid())
+  storyId   String   @map("story_id")
+  /// Orden en el artículo, desde 1.
+  position  Int
+  sourceUrl String   @map("source_url")
+  hostedUrl String?  @map("hosted_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, position])
+  @@map("story_images")
 }
 
 model StoryCluster {

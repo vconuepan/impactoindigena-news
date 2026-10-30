@@ -16,7 +16,7 @@ import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { buscarNoticias } from '../lib/googleNewsSearch.js'
 import { extractContent } from '../services/extractor.js'
-import { getExistingUrls } from '../services/story.js'
+import { getExistingUrls, guardarFotosDelArticulo } from '../services/story.js'
 import { normalizeUrl } from '../utils/urlNormalization.js'
 import { withRetry } from '../lib/retry.js'
 import { checkSourceAge } from '../lib/source-age.js'
@@ -241,7 +241,7 @@ export async function runGoogleNewsDiscover(): Promise<void> {
             continue
           }
 
-          await prisma.story.create({
+          const creada = await prisma.story.create({
             data: {
               sourceUrl: item.url,
               sourceTitle: extracted.title || item.titulo,
@@ -255,6 +255,8 @@ export async function runGoogleNewsDiscover(): Promise<void> {
               crawlMethod: extracted.method,
             },
           })
+          // Las fotos del cuerpo, igual que el crawler (createStory las guarda).
+          await guardarFotosDelArticulo(creada.id, extracted.imageUrls ?? [])
 
           totalNew++
           log.info({ url: item.url, query }, 'story created')

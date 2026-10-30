@@ -310,6 +310,8 @@ export async function createStory(data: {
   sourceDatePublished?: string
   crawlMethod?: 'selector' | 'readability' | 'diffbot' | 'pipfeed'
   imageUrl?: string | null
+  /** Las fotos del cuerpo del articulo, en su orden (`lib/fotosDelArticulo.ts`). */
+  sourceImageUrls?: string[]
 }): Promise<Story> {
   const feed = await prisma.feed.findUnique({ where: { id: data.feedId } })
   if (!feed) {
@@ -331,7 +333,7 @@ export async function createStory(data: {
       throw new SourceTooOldError(data.sourceUrl, ageMonths)
     }
   }
-  return prisma.story.create({
+  const story = await prisma.story.create({
     data: {
       sourceUrl: data.sourceUrl,
       sourceTitle: data.sourceTitle,
@@ -343,6 +345,27 @@ export async function createStory(data: {
       imageUrl: data.imageUrl || null,
     },
   })
+  await guardarFotosDelArticulo(story.id, data.sourceImageUrls ?? [])
+  return story
+}
+
+/**
+ * Guarda las fotos del cuerpo del articulo en `story_images`, en un paso
+ * aparte de la creacion y que nunca lanza: la tabla es nueva
+ * (20261029000000_story_images) y hasta que el director aplique el SQL no
+ * existe en produccion. Una noticia sin sus fotos de desarrollo es una
+ * noticia; una noticia que no se crea porque fallo la tabla de fotos, no.
+ */
+export async function guardarFotosDelArticulo(storyId: string, urls: string[]): Promise<void> {
+  if (urls.length === 0) return
+  try {
+    await prisma.storyImage.createMany({
+      data: urls.map((sourceUrl, i) => ({ storyId, position: i + 1, sourceUrl })),
+      skipDuplicates: true,
+    })
+  } catch (err) {
+    log.warn({ storyId, fotos: urls.length, err }, 'no se guardaron las fotos del articulo (¿falta aplicar el SQL de story_images?)')
+  }
 }
 
 export async function getExistingUrls(urls: string[]): Promise<Set<string>> {

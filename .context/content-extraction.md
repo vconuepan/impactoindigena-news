@@ -41,6 +41,19 @@ Every tier also captures the original article's author into `Story.sourceAuthor`
 
 **null is a correct answer.** When the outlet doesn't publish an author, the field stays null and the page shows outlet + title only. The law requires mentioning the author, not inventing one.
 
+## Body photos (`story_images`)
+
+Since 2026-10-29 every tier also returns `imageUrls`: the `<img>` of the article body, in article order, so the story carousel can show more of the outlet's own photos with credit (director's request that day; see `story-carousel.md`). Before that a story kept exactly one image (`Story.imageUrl`, the og:image fetched at publish time) and Readability's `textContent` dropped everything else.
+
+**Where they come from.** Readability exposes `article.content`, the cleaned HTML, with relative URLs and lazy-loaded `data-src` already resolved; the selector tier reads the container's HTML; Diffbot returns `images[]` (the `primary` one is skipped, it is the og:image); PipFeed returns none. `lib/fotosDelArticulo.ts` does the filtering, and it is biased toward discarding, because a slipped icon or avatar gets published on Instagram with «Foto: <medio>» under it:
+
+- not http(s) (`data:`, `blob:`); SVG, GIF, ICO, BMP (logos, animations, pixels);
+- paths naming avatars, logos, icons, share buttons, ads, audience trackers, and the known ad/analytics domains;
+- a declared `width` under 300 or `height` under 200 (undeclared sizes pass; the real size is checked again when the photo is decoded at rehost time, minimum 480 px wide);
+- duplicates (same origin + path; a CDN's `?w=` variants are the same photo), the og:image (`ogImageFromHtml` in `lib/extract-og-image.ts`), and anything past the first 6.
+
+**Where they go.** `createStory` (and the discover job, which writes with `prisma.story.create` directly) saves them to `story_images` in a separate, guarded step (`guardarFotosDelArticulo` in `services/story.ts`) that never fails the story: the table is new (`20261029000000_story_images`, applied by hand by the director) and until the SQL runs every crawl logs one warning per story and goes on. Rehosting happens at **publish**, not at crawl (`rehostStoryPhotos` in `jobs/publishStories.ts`): the crawler creates far more stories than get published, and storing their photos in R2 would pay for what is never used. Rehosted copies are named `ogfoto-<storyId>-NN.jpg` (JPEG, ≤ 1200 px, same SSRF guard and size cap as the og:image) and stored in `hosted_url`; a photo that fails to download, does not decode or is too small leaves the row with `hosted_url = NULL`, and only rows with a hosted copy are drawn. No backfill: stories extracted before the change have no rows.
+
 ## Extraction Chain
 
 ```
@@ -124,6 +137,7 @@ URLs are normalized (HTTPS, no trailing slash, no tracking params, sorted query)
 | `server/src/services/crawler.ts` | Orchestration: RSS → deduplicate → extract → create stories |
 | `server/src/services/extractor.ts` | 3-tier extraction chain |
 | `server/src/services/rssParser.ts` | RSS/Atom feed parsing (max `config.crawl.rssItemLimit` items) |
+| `server/src/lib/fotosDelArticulo.ts` | Body photo capture and filtering (`imageUrls`) |
 | `server/src/lib/retry.ts` | Retry utility with exponential backoff (used by RSS parser, extractor) |
 | `server/src/jobs/crawlFeeds.ts` | Scheduled job handler |
 

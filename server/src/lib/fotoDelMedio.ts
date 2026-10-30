@@ -14,6 +14,7 @@
  * | Prefijo         | Quién la hizo                          | ¿Va al carrusel? |
  * |-----------------|----------------------------------------|------------------|
  * | `oghero-`       | el medio; se rehospeda tal cual        | sí               |
+ * | `ogfoto-`       | el medio; una foto del cuerpo (`story_images`) | sí      |
  * | (otro dominio)  | el medio, servida desde su propio sitio| sí               |
  * | `storycard-`    | el medio, con nuestra marca y el título| no: ya trae texto|
  * | `<uuid>-<ms>`   | nuestra generación de imágenes         | no: es IA        |
@@ -26,6 +27,8 @@
 const BUCKET = /\.r2\.dev\//
 
 export const PREFIJO_MEDIO = 'oghero-'
+/** Las fotos del cuerpo del artículo, rehospedadas al publicar (`imageStorage.ts`). */
+export const PREFIJO_FOTO_ARTICULO = 'ogfoto-'
 export const PREFIJO_COMPUESTA = 'storycard-'
 
 export type OrigenImagen = 'medio' | 'externa' | 'compuesta' | 'ia'
@@ -34,7 +37,7 @@ export function origenDeImagen(imageUrl: string | null | undefined): OrigenImage
   if (!imageUrl) return null
   if (!BUCKET.test(imageUrl)) return 'externa'
   const nombre = imageUrl.split('?')[0].split('#')[0].split('/').pop() ?? ''
-  if (nombre.startsWith(PREFIJO_MEDIO)) return 'medio'
+  if (nombre.startsWith(PREFIJO_MEDIO) || nombre.startsWith(PREFIJO_FOTO_ARTICULO)) return 'medio'
   if (nombre.startsWith(PREFIJO_COMPUESTA)) return 'compuesta'
   return 'ia'
 }

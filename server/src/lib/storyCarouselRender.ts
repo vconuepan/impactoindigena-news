@@ -4,7 +4,7 @@ import archiver from 'archiver'
 import { PassThrough } from 'node:stream'
 import {
   C, FONT, W, H, SCALE, RW, RH, M,
-  drawPill, drawLogo, drawCleanBg, drawPhotoBg, bottomGradient, exportCanvas, footerUrl,
+  drawPill, drawLogo, drawCleanBg, drawPhotoBg, bottomGradient, exportCanvas, footerUrl, roundRect,
 } from './carouselGen.js'
 import { AI_LABEL } from './ai-label.js'
 import { loadRemoteImage } from './loadRemoteImage.js'
@@ -27,6 +27,15 @@ import type { CarouselAviso, CarouselSlideText } from './storyCarouselGuards.js'
  * una ilustración de IA que el 24-oct inventó una escena. Si la noticia no
  * tiene foto del medio, o no se puede bajar, las dos láminas salen con el
  * fondo de marca: nunca una imagen de IA ni la tarjeta compuesta.
+ *
+ * MÁS FOTOS DEL MISMO MEDIO. Las demás fotos del artículo (`story_images`,
+ * rehospedadas como `ogfoto-`) van en las láminas de desarrollo, una por
+ * lámina, enmarcadas arriba del texto y con «Foto: <medio>» junto a
+ * «Reporteó». Con una condición que manda sobre la foto: el texto conserva
+ * sus mismos máximos de líneas, así que la foto nunca produce un aviso
+ * `espacio` que antes no existía (en Instagram un aviso rechaza el post
+ * entero). La foto se dibuja solo si, con el texto medido, queda sitio para
+ * un marco de al menos MARCO_MIN; si no, esa lámina sale sin foto.
  *
  * NUNCA RECORTA EN SILENCIO. Un texto que no cabe se devuelve como aviso y
  * bloquea la descarga: una lámina publicada con «…» a media frase dice menos de
@@ -59,6 +68,12 @@ export interface RenderInput {
   categoria: string
   /** `null` si la noticia no tiene foto del medio (`fotoDelMedio`). */
   foto?: FotoDeNoticia | null
+  /**
+   * Las demás fotos del artículo, en su orden, para las láminas de desarrollo:
+   * la primera va en la primera lámina de desarrollo, y así. Las que sobran no
+   * se dibujan.
+   */
+  fotosDesarrollo?: FotoDeNoticia[]
 }
 
 const log = createLogger('story-carousel-render')
@@ -68,6 +83,8 @@ export interface RenderResult {
   imagenes: Buffer[]
   /** Textos que no caben. Vacío si todo cabe. */
   avisos: CarouselAviso[]
+  /** Cuántas láminas de desarrollo salieron con foto del artículo. */
+  fotosDibujadas: number
 }
 
 const s = (n: number) => n * SCALE
@@ -175,6 +192,37 @@ const ANCHO = RW - M * 2
 const ZONA_ARRIBA = s(300)
 const ZONA_ABAJO = s(1150)
 
+/*
+ * El marco de la foto en una lámina de desarrollo (px a 1×, lienzo de 1080×1350).
+ * Empieza bajo el logo y el texto va debajo, con un aire de MARCO_AIRE.
+ *
+ * Medido el 29-oct-2026 con las fuentes reales (DM Sans 58/42 px a 2×, 43
+ * caracteres por línea) y textos del formato del prompt (desarrollo de 25 a 40
+ * palabras, título de 2 a 7): el texto ocupa de 4 a 7 líneas y deja, sobre
+ * él y desde y=200, entre 398 px (40 palabras) y 572 px (25 palabras) con un
+ * título de una línea, y entre 258 y 432 con uno de tres. Un texto de 48
+ * palabras (9 líneas) deja 282 o 142. De ahí los dos topes: por encima de 500
+ * la foto le quita protagonismo al texto, y por debajo de 300 el marco es una
+ * franja de 3:1 que recorta cualquier foto. El texto no cede ni una línea.
+ */
+const MARCO_Y = s(200)
+const MARCO_MIN = s(300)
+const MARCO_MAX = s(500)
+const MARCO_AIRE = s(40)
+const MARCO_RADIO = s(28)
+
+/** La foto cubriendo el marco (cover-fit, centrada), con esquinas redondeadas. */
+function dibujarFotoEnmarcada(ctx: any, foto: Image, x: number, y: number, w: number, h: number): void {
+  ctx.save()
+  roundRect(ctx, x, y, w, h, MARCO_RADIO)
+  ctx.clip()
+  const tr = w / h
+  const sw = Math.min(foto.width, foto.height * tr)
+  const sh = sw / tr
+  ctx.drawImage(foto, (foto.width - sw) / 2, (foto.height - sh) / 2, sw, sh, x, y, w, h)
+  ctx.restore()
+}
+
 // ---------------------------------------------------------------------------
 // Portada
 // ---------------------------------------------------------------------------
@@ -218,31 +266,50 @@ async function portada(l: CarouselSlideText, input: RenderInput, foto: Image | n
 // ---------------------------------------------------------------------------
 // Desarrollo: una idea por lámina
 // ---------------------------------------------------------------------------
-async function desarrollo(l: CarouselSlideText, indice: number, input: RenderInput, n: number, total: number) {
+async function desarrollo(
+  l: CarouselSlideText,
+  indice: number,
+  input: RenderInput,
+  foto: { imagen: Image; credito: string } | null,
+  n: number,
+  total: number,
+) {
   const canvas = createCanvas(RW, RH)
   const ctx = canvas.getContext('2d')
   drawCleanBg(ctx)
   await drawLogo(ctx, M, M, s(72))
 
+  // Los máximos del texto son los mismos con y sin foto: la foto nunca
+  // produce un aviso `espacio` que antes no existía.
   const fTitulo = `700 ${s(58)}px '${FONT}'`, lhT = s(70), maxT = 3
   const fTexto = `500 ${s(42)}px '${FONT}'`, lhX = s(58), maxX = 10
   const titulo = medir(ctx, l.titulo, fTitulo, ANCHO, maxT)
   const texto = medir(ctx, l.texto, fTexto, ANCHO, maxX)
-
-  // Centrado en la zona útil.
   const alto = titulo.lineas.length * lhT + s(36) + texto.lineas.length * lhX
-  const y0 = ZONA_ARRIBA + Math.max(0, (ZONA_ABAJO - ZONA_ARRIBA - alto) / 2) + s(54)
+
+  // La foto, solo si con el texto ya medido queda sitio para el marco mínimo.
+  const altoMarco = foto ? Math.min(MARCO_MAX, ZONA_ABAJO - MARCO_Y - MARCO_AIRE - alto) : 0
+  const conFoto = foto !== null && altoMarco >= MARCO_MIN
+  let y0: number
+  if (conFoto) {
+    dibujarFotoEnmarcada(ctx, foto!.imagen, M, MARCO_Y, ANCHO, altoMarco)
+    y0 = MARCO_Y + altoMarco + MARCO_AIRE + s(54)
+  } else {
+    // Centrado en la zona útil, como siempre.
+    y0 = ZONA_ARRIBA + Math.max(0, (ZONA_ABAJO - ZONA_ARRIBA - alto) / 2) + s(54)
+  }
   ctx.textAlign = 'left'
   ctx.font = fTitulo
   const yFinTitulo = dibujarLineas(ctx, titulo.lineas, M, y0, lhT, C.white, true)
   ctx.font = fTexto
   dibujarLineas(ctx, texto.lineas, M, yFinTitulo + s(36), lhX, C.white)
 
-  lineaDeAtribucion(ctx, reporteo(input.atribucion))
+  lineaDeAtribucion(ctx, reporteo(input.atribucion), conFoto ? foto!.credito : null)
   footerUrl(ctx, n, total)
   return {
     imagen: exportCanvas(canvas),
     avisos: [...avisoDeEspacio(indice, 'título', titulo, maxT), ...avisoDeEspacio(indice, 'texto', texto, maxX)],
+    conFoto,
   }
 }
 
@@ -346,7 +413,8 @@ async function cierre(l: CarouselSlideText, indice: number, input: RenderInput, 
 /**
  * Dibuja el carrusel: portada, desarrollo, la lectura (si hay) y el cierre.
  * Exige al menos portada y cierre. La foto del medio, si viene, se baja una
- * sola vez y va en la portada y en el cierre.
+ * sola vez y va en la portada y en el cierre; las fotos de desarrollo se
+ * bajan solo las que tienen lámina (hay más láminas que fotos, o al revés).
  */
 export async function renderStoryCarousel(input: RenderInput): Promise<RenderResult> {
   const { laminas } = input
@@ -354,11 +422,16 @@ export async function renderStoryCarousel(input: RenderInput): Promise<RenderRes
 
   const total = laminas.length + (input.lectura ? 1 : 0)
   const ultimo = laminas.length - 1
-  const foto = await cargarFoto(input.foto)
-  const trabajos: Array<Promise<{ imagen: Buffer; avisos: CarouselAviso[] }>> = []
+  const deDesarrollo = (input.fotosDesarrollo ?? []).slice(0, Math.max(0, ultimo - 1))
+  const [foto, ...fotosDesarrollo] = await Promise.all([cargarFoto(input.foto), ...deDesarrollo.map(cargarFoto)])
+  const trabajos: Array<Promise<{ imagen: Buffer; avisos: CarouselAviso[]; conFoto?: boolean }>> = []
 
   trabajos.push(portada(laminas[0], input, foto, 1, total))
-  for (let i = 1; i < ultimo; i++) trabajos.push(desarrollo(laminas[i], i, input, i + 1, total))
+  for (let i = 1; i < ultimo; i++) {
+    const imagen = fotosDesarrollo[i - 1]
+    const fotoDeLamina = imagen ? { imagen, credito: deDesarrollo[i - 1].credito } : null
+    trabajos.push(desarrollo(laminas[i], i, input, fotoDeLamina, i + 1, total))
+  }
   if (input.lectura) trabajos.push(lectura(input.lectura, input, ultimo + 1, total))
   trabajos.push(cierre(laminas[ultimo], ultimo, input, foto, total, total))
 
@@ -366,6 +439,7 @@ export async function renderStoryCarousel(input: RenderInput): Promise<RenderRes
   return {
     imagenes: hechos.map((h) => h.imagen),
     avisos: hechos.flatMap((h) => h.avisos),
+    fotosDibujadas: hechos.filter((h) => h.conFoto).length,
   }
 }
 

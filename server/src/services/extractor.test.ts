@@ -201,6 +201,52 @@ describe('extractContent', () => {
   })
 })
 
+describe('las fotos del cuerpo del artículo (imageUrls)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    delete process.env.PIPFEED_API_KEY
+    delete process.env.DIFFBOT_TOKEN
+    _resetApiState()
+  })
+
+  it('readability: salen del HTML limpio (content), sin la og:image ni los íconos', async () => {
+    const html = `<html><head><meta property="og:image" content="https://cdn.ejemplo.cl/img/portada.jpg?w=1200"></head><body></body></html>`
+    mockAxiosGet.mockResolvedValue({ data: html })
+    mockReadabilityParse.mockReturnValue({
+      title: 'Nota',
+      textContent: 'Meaningful content '.repeat(20),
+      content: `<div><img src="https://cdn.ejemplo.cl/img/portada.jpg?w=800"><p>x</p>`
+        + `<img src="https://cdn.ejemplo.cl/img/foto-1.jpg"><img src="https://cdn.ejemplo.cl/img/logo.png">`
+        + `<img src="https://cdn.ejemplo.cl/img/foto-2.jpg"></div>`,
+    })
+
+    // example.com: la guardia SSRF resuelve el DNS de la URL de la nota.
+    const result = await extractContent('https://example.com/nota')
+
+    expect(result!.imageUrls).toEqual(['https://cdn.ejemplo.cl/img/foto-1.jpg', 'https://cdn.ejemplo.cl/img/foto-2.jpg'])
+  })
+
+  it('readability sin content devuelve una lista vacía, no falla', async () => {
+    mockAxiosGet.mockResolvedValue({ data: '<html><body></body></html>' })
+    mockReadabilityParse.mockReturnValue({ title: 'Nota', textContent: 'Meaningful content '.repeat(20) })
+
+    const result = await extractContent('https://example.com/nota')
+
+    expect(result!.imageUrls).toEqual([])
+  })
+
+  it('selector: salen del contenedor, resueltas contra la URL de la nota', async () => {
+    const html = `<html><body><nav><img src="/logo.png"></nav><article class="post">`
+      + `<p>${'Content '.repeat(60)}</p><img src="/media/foto.jpg" width="900"><img src="/media/icono.jpg" width="40"></article></body></html>`
+    mockAxiosGet.mockResolvedValue({ data: html })
+
+    const result = await extractContent('https://example.com/nota', { htmlSelector: 'article.post' })
+
+    expect(result!.method).toBe('selector')
+    expect(result!.imageUrls).toEqual(['https://example.com/media/foto.jpg'])
+  })
+})
+
 describe('Diffbot extraction', () => {
   beforeEach(() => {
     vi.clearAllMocks()

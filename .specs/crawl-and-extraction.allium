@@ -173,6 +173,13 @@ rule ExtractAndCreate {
             source_date_published: extracted.date_published ?? item.date_published,
             crawl_method: extracted.method
         )
+        -- The article body's photos (since 2026-10-29): the <img> of the
+        -- extracted body, in article order, without the og:image, icons,
+        -- tracking pixels, non-photo formats, duplicates, and capped at 6.
+        -- Saved in a separate step that never fails the story: the table
+        -- may not exist yet in production (SQL applied by hand).
+        ensures: for each (i, url) in extracted.image_urls:
+            pipeline/StoryImage.created(story: story, position: i + 1, source_url: url, hosted_url: null)
 
     -- Concurrent insert race: if another crawl already created this URL,
     -- the unique constraint violation is silently treated as a skip (not
@@ -199,6 +206,8 @@ rule CrawlSingleUrl {
         source_date_published: extracted.date_published,
         crawl_method: extracted.method
     )
+    ensures: for each (i, url) in extracted.image_urls:
+        pipeline/StoryImage.created(story: story, position: i + 1, source_url: url, hosted_url: null)
 }
 
 -- ─── Resource Limits ─────────────────────────────────────────────

@@ -92,6 +92,24 @@ value Embedding {
     content_hash: String                                 -- prevents needless regeneration
 }
 
+-- The photos of the original article's body, besides the og:image in
+-- Story.image_url (director, 2026-10-29: more of the outlet's own photos
+-- in the carousel, with credit). Captured at extraction (see
+-- crawl-and-extraction.allium) and rehosted when the story is published:
+-- hosted_url is the R2 copy (`ogfoto-<story_id>-NN`), null while the story
+-- is unpublished or when the photo could not be fetched, decoded or was
+-- narrower than 480 px. Only rows with a hosted copy are ever drawn.
+-- A separate table, not a column of Story: a new column breaks every
+-- Story.findMany() until the hand-applied SQL runs; a new table is only
+-- read by new code, which tolerates its absence.
+entity StoryImage {
+    story: Story
+    position: Integer                                    -- order in the article, from 1
+    source_url: URL
+    hosted_url: URL?
+    invariant: unique(story, position)
+}
+
 entity Cluster {
     members: Story with cluster = this                   -- one-to-many
     primary: Story                                       -- best representative

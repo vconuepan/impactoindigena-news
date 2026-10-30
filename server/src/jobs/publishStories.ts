@@ -4,6 +4,7 @@ import { translateStoriesBatch } from '../services/translation.js'
 import { fetchOgImage } from '../lib/extract-og-image.js'
 import { generateStoryImage } from '../lib/imageGen.js'
 import { rehostOrComposeStoryImage } from '../lib/storyCard.js'
+import { rehostArticlePhoto } from '../lib/imageStorage.js'
 import { assertUrlAllowed } from '../utils/urlValidation.js'
 import { config } from '../config.js'
 import { createLogger } from '../lib/logger.js'
@@ -124,6 +125,43 @@ export async function generateHeroImages(ids: string[]): Promise<void> {
   }
 }
 
+/**
+ * Las fotos del cuerpo del artículo (`story_images`, capturadas al extraer) se
+ * rehospedan recién al publicar, como la og:image: el rastreo crea muchas más
+ * noticias de las que se publican, y bajar y guardar sus fotos en R2 sería
+ * pagar por lo que nunca se usa. Una por una, por la guardia SSRF y con el
+ * mismo tope de tamaño; la que no pasa queda sin `hostedUrl` y el carrusel no
+ * la usa. Nunca lanza: una foto que no llega no detiene la publicación.
+ *
+ * Tolera que la tabla no exista todavía (el SQL lo aplica el director).
+ */
+export async function rehostStoryPhotos(ids: string[]): Promise<void> {
+  if (ids.length === 0) return
+  let fotos: Array<{ id: string; storyId: string; position: number; sourceUrl: string }>
+  try {
+    fotos = await prisma.storyImage.findMany({
+      where: { storyId: { in: ids }, hostedUrl: null },
+      select: { id: true, storyId: true, position: true, sourceUrl: true },
+      orderBy: [{ storyId: 'asc' }, { position: 'asc' }],
+    })
+  } catch (err) {
+    log.warn({ err }, 'no se leyeron las fotos del artículo (¿falta aplicar el SQL de story_images?)')
+    return
+  }
+  let subidas = 0
+  for (const foto of fotos) {
+    try {
+      const url = await rehostArticlePhoto(foto.sourceUrl, foto.storyId, foto.position)
+      if (!url) continue
+      await prisma.storyImage.update({ where: { id: foto.id }, data: { hostedUrl: url } })
+      subidas++
+    } catch (err) {
+      log.warn({ err, storyId: foto.storyId, position: foto.position }, 'foto del artículo: no se pudo rehospedar')
+    }
+  }
+  log.info({ stories: ids.length, fotos: fotos.length, subidas }, 'article photos rehosted')
+}
+
 export async function runPublishStories(): Promise<void> {
   log.info('starting publish job')
 
@@ -149,6 +187,10 @@ export async function runPublishStories(): Promise<void> {
 
     log.info({ count: publishedIds.length }, 'generating AI hero images')
     await generateHeroImages(publishedIds)
+
+    // Las fotos del cuerpo del artículo, para las láminas de desarrollo del
+    // carrusel. Después de las heroes: el carrusel se arma más tarde todavía.
+    await rehostStoryPhotos(publishedIds)
   }
 
   // El snapshot va AL FINAL, despues de traducir y de generar las imagenes:

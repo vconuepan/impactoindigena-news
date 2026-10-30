@@ -6,7 +6,7 @@ import { publisherFromUrl } from '../lib/publisher.js'
 import { uploadImageToR2 } from '../lib/imageStorage.js'
 import { fotoDelMedio } from '../lib/fotoDelMedio.js'
 import { revisarCarrusel, temaRespaldado, type CarouselAviso, type CarouselSlideText } from '../lib/storyCarouselGuards.js'
-import { renderStoryCarousel, carruselEnZip, type CarouselAttribution } from '../lib/storyCarouselRender.js'
+import { renderStoryCarousel, carruselEnZip, type CarouselAttribution, type FotoDeNoticia } from '../lib/storyCarouselRender.js'
 import { buildStoryCarouselPrompt } from '../prompts/story-carousel.js'
 import { storyCarouselSchema, storyCarouselWithReadingSchema } from '../schemas/llm.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
@@ -65,6 +65,28 @@ async function cargarNoticia(storyId: string) {
 }
 
 type NoticiaCargada = Awaited<ReturnType<typeof cargarNoticia>>
+
+/**
+ * Las fotos del cuerpo del artículo ya rehospedadas (`story_images.hosted_url`,
+ * `ogfoto-`), en el orden del artículo, para las láminas de desarrollo. Solo
+ * las rehospedadas: una fila sin `hostedUrl` es una foto que no se pudo bajar
+ * o era demasiado chica, y la dirección original no se dibuja. Tolera que la
+ * tabla no exista todavía: el carrusel sale como el 29-oct, con foto solo en
+ * la portada y el cierre.
+ */
+async function fotosDelArticulo(storyId: string, credito: string): Promise<FotoDeNoticia[]> {
+  try {
+    const filas = await prisma.storyImage.findMany({
+      where: { storyId, hostedUrl: { not: null } },
+      select: { hostedUrl: true },
+      orderBy: { position: 'asc' },
+    })
+    return filas.flatMap((f) => (f.hostedUrl ? [{ url: f.hostedUrl, credito }] : []))
+  } catch (err) {
+    log.warn({ storyId, err }, 'no se leyeron las fotos del artículo; el desarrollo sale sin fotos')
+    return []
+  }
+}
 
 /**
  * Quién reporteó. Si la URL quedó en news.google.com, el medio real nunca se
@@ -199,13 +221,17 @@ export async function renderStoryCarouselImages(storyId: string, req: RenderRequ
   // La foto con que el medio publicó la nota, acreditada a ese medio. Una
   // imagen de IA o la tarjeta compuesta no van (decisión del director, 29-oct).
   const fotoUrl = fotoDelMedio(story.imageUrl)
-  const { imagenes, avisos: avisosDeEspacio } = await renderStoryCarousel({
+  const { imagenes, avisos: avisosDeEspacio, fotosDibujadas } = await renderStoryCarousel({
     laminas,
     lectura,
     atribucion,
     categoria: temaRespaldado(story.issue?.name ?? '', original),
     foto: fotoUrl ? { url: fotoUrl, credito: atribucion.medio } : null,
+    // Las demás fotos del artículo, una por lámina de desarrollo mientras
+    // quepan sin quitarle espacio al texto (ver `desarrollo` en el render).
+    fotosDesarrollo: await fotosDelArticulo(storyId, atribucion.medio),
   })
+  log.info({ storyId, laminas: imagenes.length, fotosDibujadas }, 'carousel rendered')
 
   return { story, imagenes, avisos: [...avisosDeTexto, ...avisosDeEspacio] }
 }

@@ -23,6 +23,25 @@ function decodeHtmlEntities(s: string): string {
     .replace(/&amp;/g, '&')
 }
 
+/**
+ * La og:image de un HTML ya descargado, o null. La usa `fetchOgImage` al
+ * publicar y el extractor al rastrear, para dejar esa foto fuera de las del
+ * cuerpo (`lib/fotosDelArticulo.ts`): ya va en la portada del carrusel.
+ */
+export function ogImageFromHtml(html: string): string | null {
+  // Match og:image — handle both property= and name= forms, single or double quotes
+  const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+
+  if (!match) return null
+
+  const url = decodeHtmlEntities(match[1].trim())
+  // Basic sanity check — must look like an absolute URL
+  if (!url.startsWith('http')) return null
+
+  return url
+}
+
 /** Tope de lo que se lee de la pagina: del og:image solo se necesita el <head>. */
 const MAX_HTML_BYTES = 5 * 1024 * 1024
 
@@ -54,17 +73,7 @@ export async function fetchOgImage(sourceUrl: string): Promise<string | null> {
       return typeof res.data === 'string' ? res.data : String(res.data ?? '')
     })
 
-    // Match og:image — handle both property= and name= forms, single or double quotes
-    const match = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-      ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
-
-    if (!match) return null
-
-    const url = decodeHtmlEntities(match[1].trim())
-    // Basic sanity check — must look like an absolute URL
-    if (!url.startsWith('http')) return null
-
-    return url
+    return ogImageFromHtml(html)
   } catch (err) {
     log.warn({ sourceUrl, err }, 'could not extract og:image')
     return null

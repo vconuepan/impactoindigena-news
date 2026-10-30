@@ -57,8 +57,34 @@ del objeto (la misma tabla que rotula el sitio, `client/src/lib/story-image.ts`)
 `oghero-` y las servidas desde el dominio del medio van; `storycard-` (trae nuestra
 marca y el título) y las de IA (`<uuid>-<ms>`) no. Sin foto, o si no se puede bajar,
 las dos láminas salen con el fondo de marca. Del 23 al 29-oct el carrusel salió sin
-foto; hasta el 24-oct, con una ilustración de IA que inventó una escena. Cada noticia
-guarda una sola imagen: para más fotos del artículo habría que capturarlas al extraer.
+foto; hasta el 24-oct, con una ilustración de IA que inventó una escena.
+
+**Más fotos del mismo medio, en el desarrollo** (pedido del director, 29-oct-2026).
+Cada noticia guardaba una sola imagen (la og:image) y el extractor conservaba solo el
+texto. Desde el 29-oct el extractor captura también las `<img>` del cuerpo del artículo
+(`lib/fotosDelArticulo.ts`, tabla `story_images`; ver `content-extraction.md`), el job de
+publicación las rehospeda en R2 como `ogfoto-<storyId>-NN` (`rehostArticlePhoto` en
+`lib/imageStorage.ts`, mismo tope de tamaño y misma guardia SSRF que la og:image; una foto
+de menos de 480 px de ancho no se sube), y el render las pone en las láminas de
+desarrollo, una por lámina en el orden del artículo, enmarcadas arriba del texto y con
+«Foto: <medio>» a la derecha de «Reporteó». Solo las rehospedadas: una fila sin
+`hosted_url` no se dibuja.
+
+La regla que manda sobre la foto: **el texto no cede ni una línea.** Los máximos de
+líneas de la lámina de desarrollo son los mismos con y sin foto (3 de título, 10 de
+texto), así que la foto no puede producir un aviso `espacio` que antes no existía, y en
+Instagram un aviso rechaza el post entero. La foto se dibuja solo si, con el texto ya
+medido, queda sitio para un marco de al menos 300 px (tope 500, desde y=200 y con 40 px
+de aire); si no, esa lámina sale sin foto. Medido el 29-oct con la fuente real y textos del
+formato del prompt (25–40 palabras): con título de una línea quedan entre 398 y 572 px;
+con uno de tres líneas, entre 258 y 432; con 48 palabras, 282 o 142. En una prueba con
+cuatro láminas de desarrollo (25, 32 y 40 palabras con título de tres líneas, y una de
+diez líneas justas), salieron con foto las dos primeras y las otras dos como siempre, sin
+ningún aviso (`storyCarouselRender.test.ts`).
+
+Solo aplica a noticias extraídas después del cambio: no hay backfill, y el director no lo
+pidió. Hasta que el SQL de `story_images` se aplique en producción, el rastreo guarda las
+noticias sin sus fotos (un aviso en el log por noticia) y el carrusel sale como el 29-oct.
 
 **Atribución** (`atribucionDe` en `services/storyCarousel.ts`): `publisherFromUrl`; si
 devuelve el dominio pelado y el feed no es Google News, firma con el nombre del feed
@@ -113,6 +139,9 @@ candado no lo ve. Lo revisa el editor.
 | `server/src/lib/storyCarouselGuards.ts` | Los candados |
 | `server/src/lib/storyCarouselRender.ts` | Las láminas, el PDF y el ZIP |
 | `server/src/lib/carouselGen.ts` | Lienzo, paleta, logo y pie compartidos con Instagram |
+| `server/src/lib/fotosDelArticulo.ts` | Captura y depura las `<img>` del cuerpo al extraer (iconos, píxeles, repetidas, la og:image fuera) |
+| `server/src/lib/fotoDelMedio.ts` | Decide si `story.imageUrl` es del medio (`oghero-`, `ogfoto-`, externa) o no (IA, `storycard-`) |
+| `server/src/jobs/publishStories.ts` | `rehostStoryPhotos`: rehospeda las fotos del cuerpo al publicar (`ogfoto-<storyId>-NN`) |
 | `client/src/components/admin/StoryCarouselSection.tsx` | La sección en la ficha |
 
 ## Modificar
@@ -122,7 +151,12 @@ candado no lo ve. Lo revisa el editor.
 - **Otro pueblo o grafía** → `PUEBLOS` en el mismo archivo. No agregar nombres que sean
   palabra corriente («Cree», «Nasa»): harían saltar el candado por un verbo.
 - **Diagramación** → `storyCarouselRender.ts`; cada bloque declara su máximo de líneas,
-  y el exceso vuelve como aviso `espacio`.
+  y el exceso vuelve como aviso `espacio`. **No bajar esos máximos para hacerle sitio a
+  la foto**: subirían los rechazos de Instagram. Si se cambia el marco (`MARCO_MIN`,
+  `MARCO_MAX`), volver a medir con láminas reales y mirar `fotosDibujadas` en el log.
+- **Qué se descarta como «no foto»** → `RUTA_NO_FOTO` y los mínimos en
+  `fotosDelArticulo.ts`, con test. El sesgo es hacia descartar: un ícono publicado con el
+  crédito del medio cuesta más que una lámina sin foto.
 - **Instagram y LinkedIn** usan este mismo carrusel desde el 25-oct-2026 (decisión del
   director): `buildStoryCarouselForSocial` arma el texto informativo, sin la lectura, lo
   revisa y lo dibuja. Sin editor, **cualquier aviso rechaza**: el post de Instagram queda

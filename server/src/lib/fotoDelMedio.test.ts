@@ -10,6 +10,12 @@ describe('fotoDelMedio (la foto real de la noticia para el carrusel)', () => {
     expect(fotoDelMedio(url)).toBe(url)
   })
 
+  it('una foto del cuerpo del artículo, rehospedada como ogfoto-, también es del medio', () => {
+    const url = `${BUCKET}/ogfoto-11cfa890-1234-4abc-9def-000000000001-02.jpg`
+    expect(origenDeImagen(url)).toBe('medio')
+    expect(fotoDelMedio(url)).toBe(url)
+  })
+
   it('la foto servida desde el sitio del medio también va', () => {
     const url = 'https://www.biobiochile.cl/static/foto-plan-bosque.jpg'
     expect(origenDeImagen(url)).toBe('externa')

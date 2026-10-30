@@ -11,6 +11,8 @@ import { extractAuthorFromHtml, normalizeAuthor } from '../lib/author.js'
 import { isAllowedByRobots } from '../lib/robots.js'
 import { withRetry, isRetryableError } from '../lib/retry.js'
 import { crawlLimiter } from '../lib/crawlLimiter.js'
+import { ogImageFromHtml } from '../lib/extract-og-image.js'
+import { extraerFotosDelCuerpo, depurarFotos } from '../lib/fotosDelArticulo.js'
 
 const log = createLogger('extractor')
 // Use a browser-compatible User-Agent to avoid 403 blocks from sites that
@@ -39,6 +41,12 @@ export interface ExtractionResult {
   author: string | null
   datePublished: string | null
   method: 'selector' | 'readability' | 'diffbot' | 'pipfeed'
+  /**
+   * Las fotos del cuerpo del articulo, en su orden, sin la og:image y sin
+   * iconos ni pixeles (`lib/fotosDelArticulo.ts`). Vacio si el medio no las
+   * publica o la via de extraccion no las entrega (PipFeed).
+   */
+  imageUrls: string[]
 }
 
 /**
@@ -144,7 +152,7 @@ async function fetchPage(url: string): Promise<string | null> {
   }
 }
 
-function extractBySelector(html: string, selector: string): ExtractionResult | null {
+function extractBySelector(html: string, selector: string, url: string): ExtractionResult | null {
   try {
     const $ = cheerio.load(html)
     const container = $(selector).first()
@@ -159,6 +167,7 @@ function extractBySelector(html: string, selector: string): ExtractionResult | n
       author: extractAuthorFromHtml(html),
       datePublished: null,
       method: 'selector',
+      imageUrls: extraerFotosDelCuerpo(container.html() ?? '', url, [ogImageFromHtml(html)]),
     }
   } catch (err) {
     log.warn({ reason: summarizeError(err) }, 'selector extraction failed')
@@ -181,6 +190,10 @@ function extractByReadability(html: string, url: string): ExtractionResult | nul
       author: normalizeAuthor(article.byline) ?? extractAuthorFromHtml(html),
       datePublished: null,
       method: 'readability',
+      // `content` es el HTML limpio del articulo: ahi estan las <img> del
+      // cuerpo, que `textContent` pierde. Readability ya resolvio las rutas
+      // relativas y la carga perezosa (`data-src`).
+      imageUrls: extraerFotosDelCuerpo(article.content ?? '', url, [ogImageFromHtml(html)]),
     }
   } catch (err) {
     log.warn({ reason: summarizeError(err) }, 'readability extraction failed')
@@ -231,6 +244,11 @@ async function extractByDiffbot(url: string): Promise<ExtractionResult | null> {
     author: normalizeAuthor(article.author) ?? normalizeAuthor(article.authors?.[0]?.name),
     datePublished: article.date || article.estimatedDate || null,
     method: 'diffbot',
+    // Diffbot entrega `images[]` con `primary` en la principal, que es la que
+    // suele ir de og:image; las demas son las del cuerpo.
+    imageUrls: depurarFotos(
+      (article.images ?? []).filter((i: any) => i?.url && !i.primary).map((i: any) => String(i.url)),
+    ),
   }
 }
 
@@ -272,6 +290,7 @@ async function extractByPipfeed(url: string): Promise<ExtractionResult | null> {
     author: normalizeAuthor(data.author),
     datePublished: data.date || null,
     method: 'pipfeed',
+    imageUrls: [],
   }
 }
 
@@ -329,7 +348,7 @@ export async function extractContent(
 
     // Tier 1: CSS selector extraction
     if (html && options?.htmlSelector) {
-      const result = extractBySelector(html, options.htmlSelector)
+      const result = extractBySelector(html, options.htmlSelector, url)
       if (result) {
         log.info({ url, method: result.method, contentLength: result.content.length }, 'extraction succeeded')
         return result

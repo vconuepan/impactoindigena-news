@@ -6,7 +6,7 @@ vi.mock('@napi-rs/canvas', async (importOriginal) => {
   return { ...real, loadImage: vi.fn().mockRejectedValue(new Error('sin red en los tests')) }
 })
 
-const mockPrisma = vi.hoisted(() => ({ story: { findUnique: vi.fn() } }))
+const mockPrisma = vi.hoisted(() => ({ story: { findUnique: vi.fn() }, storyImage: { findMany: vi.fn() } }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
 const mockLLM = vi.hoisted(() => ({ invoke: vi.fn(), withStructuredOutput: vi.fn() }))
@@ -62,6 +62,7 @@ describe('buildStoryCarouselForSocial (Instagram y LinkedIn, sin editor)', () =>
   beforeEach(() => {
     vi.clearAllMocks()
     mockPrisma.story.findUnique.mockResolvedValue(noticia())
+    mockPrisma.storyImage.findMany.mockResolvedValue([])
   })
 
   it('dibuja una lámina por cada una del texto, desde el original', async () => {
@@ -115,6 +116,7 @@ describe('la foto del medio en la portada (decisión del director, 29-oct-2026)'
   beforeEach(() => {
     vi.clearAllMocks()
     elModeloDevuelve(FIEL)
+    mockPrisma.storyImage.findMany.mockResolvedValue([])
   })
 
   async function fotoDe(ancho: number, alto: number) {
@@ -163,6 +165,49 @@ describe('la foto del medio en la portada (decisión del director, 29-oct-2026)'
 
     const carrusel = await buildStoryCarouselForSocial('story-1')
 
+    expect(carrusel.imagenes).toHaveLength(FIEL.length)
+  })
+})
+
+describe('las fotos del cuerpo del artículo en el desarrollo', () => {
+  const BUCKET = 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    elModeloDevuelve(FIEL)
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: null })
+  })
+
+  async function fotoDe(ancho: number, alto: number) {
+    const { createCanvas } = await import('@napi-rs/canvas')
+    const c = createCanvas(ancho, alto)
+    c.getContext('2d').fillRect(0, 0, ancho, alto)
+    return c
+  }
+
+  it('lee solo las rehospedadas, en orden, y las baja para las láminas de desarrollo', async () => {
+    mockPrisma.storyImage.findMany.mockResolvedValue([
+      { hostedUrl: `${BUCKET}/ogfoto-story-1-01.jpg` },
+      { hostedUrl: `${BUCKET}/ogfoto-story-1-02.jpg` },
+    ])
+    mockFoto.mockImplementation(async () => fotoDe(1600, 900))
+
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+
+    expect(mockPrisma.storyImage.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { storyId: 'story-1', hostedUrl: { not: null } },
+      orderBy: { position: 'asc' },
+    }))
+    expect(mockFoto.mock.calls.map((c) => c[0])).toEqual([`${BUCKET}/ogfoto-story-1-01.jpg`, `${BUCKET}/ogfoto-story-1-02.jpg`])
+    expect(carrusel.imagenes).toHaveLength(FIEL.length)
+  })
+
+  it('si la tabla no existe todavía, el carrusel sale igual, sin fotos de desarrollo', async () => {
+    mockPrisma.storyImage.findMany.mockRejectedValue(Object.assign(new Error('table does not exist'), { code: 'P2021' }))
+
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+
+    expect(mockFoto).not.toHaveBeenCalled()
     expect(carrusel.imagenes).toHaveLength(FIEL.length)
   })
 })

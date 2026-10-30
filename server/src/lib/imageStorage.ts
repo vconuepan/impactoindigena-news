@@ -1,7 +1,9 @@
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { loadImage } from '@napi-rs/canvas'
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { safeAxiosGet } from './safeHttp.js'
+import { normalizarDecodificada } from './imagen-normalizar.js'
 
 const log = createLogger('image-storage')
 
@@ -119,6 +121,53 @@ export async function rehostExternalImage(imageUrl: string, storyId: string): Pr
     return await uploadImageToR2(dl.buffer, `oghero-${storyId}.${dl.ext}`, dl.contentType)
   } catch (err) {
     log.warn({ err, imageUrl }, 'rehost: failed to upload rehosted image')
+    return null
+  }
+}
+
+/**
+ * Prefijo de las fotos del cuerpo del artículo rehospedadas, una por foto:
+ * `ogfoto-<storyId>-NN.jpg`. Distinto de `oghero-` (la og:image, una por
+ * noticia) para que el nombre siga diciendo qué es cada objeto del bucket
+ * (`fotoDelMedio.ts`, `client/src/lib/story-image.ts`).
+ */
+export const PREFIJO_FOTO_ARTICULO = 'ogfoto-'
+
+/**
+ * Ancho real mínimo de una foto del cuerpo. El filtro de la extracción mira el
+ * `width` declarado, que muchos sitios no ponen; acá ya está decodificada. Un
+ * ícono de 200 px en una lámina de 1080 con el crédito del medio es peor que
+ * una lámina sin foto.
+ */
+export const FOTO_ARTICULO_ANCHO_MINIMO = 480
+
+/**
+ * Baja una foto del cuerpo del artículo por la guardia SSRF, comprueba que sea
+ * una fotografía de verdad (decodifica y mide), la normaliza como las demás
+ * (JPEG, ≤ 1200 px) y la sube como `ogfoto-<storyId>-NN`. Devuelve la URL
+ * pública, o null si no se pudo bajar, no se pudo decodificar, es demasiado
+ * chica o no se pudo subir. Quien llama deja la fila sin `hostedUrl`.
+ */
+export async function rehostArticlePhoto(imageUrl: string, storyId: string, position: number): Promise<string | null> {
+  const dl = await downloadExternalImage(imageUrl)
+  if (!dl) return null
+  const img = await loadImage(dl.buffer).catch(() => null)
+  if (!img) {
+    log.warn({ imageUrl, storyId, position }, 'foto del artículo: no se pudo decodificar, no se sube')
+    return null
+  }
+  if (img.width < FOTO_ARTICULO_ANCHO_MINIMO) {
+    log.info({ imageUrl, storyId, position, width: img.width }, 'foto del artículo: demasiado chica, no se sube')
+    return null
+  }
+  const nn = String(position).padStart(2, '0')
+  const normalizada = normalizarDecodificada(img, dl.buffer)
+  try {
+    return normalizada
+      ? await uploadImageToR2(normalizada, `${PREFIJO_FOTO_ARTICULO}${storyId}-${nn}.jpg`, 'image/jpeg')
+      : await uploadImageToR2(dl.buffer, `${PREFIJO_FOTO_ARTICULO}${storyId}-${nn}.${dl.ext}`, dl.contentType)
+  } catch (err) {
+    log.warn({ err, imageUrl, storyId, position }, 'foto del artículo: falló la subida a R2')
     return null
   }
 }

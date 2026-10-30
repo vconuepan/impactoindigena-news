@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockPrisma = vi.hoisted(() => ({
   story: { findMany: vi.fn(), update: vi.fn() },
+  storyImage: { findMany: vi.fn(), update: vi.fn() },
 }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
@@ -15,6 +16,9 @@ vi.mock('../lib/extract-og-image.js', () => ({ fetchOgImage: mockFetchOg }))
 
 const mockRehost = vi.hoisted(() => vi.fn())
 vi.mock('../lib/storyCard.js', () => ({ rehostOrComposeStoryImage: mockRehost }))
+
+const mockRehostFoto = vi.hoisted(() => vi.fn())
+vi.mock('../lib/imageStorage.js', () => ({ rehostArticlePhoto: mockRehostFoto }))
 
 // La guardia SSRF: el respaldo en crudo solo se guarda si la URL todavia la pasa.
 const mockAssertUrl = vi.hoisted(() => vi.fn())
@@ -35,7 +39,7 @@ vi.mock('../lib/logger.js', () => ({
 vi.mock('../services/story.js', () => ({ getStoryIdsByStatus: vi.fn(), bulkUpdateStatus: vi.fn() }))
 vi.mock('../services/translation.js', () => ({ translateStoriesBatch: vi.fn() }))
 
-const { generateHeroImages } = await import('./publishStories.js')
+const { generateHeroImages, rehostStoryPhotos } = await import('./publishStories.js')
 
 const story = (over: Record<string, unknown>) => ({
   id: 'id', title: 'T', sourceTitle: 'ST', summary: 'S',
@@ -139,5 +143,54 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     expect(mockGenerateImage).not.toHaveBeenCalled()
     expect(mockFetchOg).not.toHaveBeenCalled()
     expect(mockPrisma.story.update).not.toHaveBeenCalled()
+  })
+})
+
+describe('rehostStoryPhotos — las fotos del cuerpo del artículo, al publicar', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma.storyImage.update.mockResolvedValue({})
+  })
+
+  it('rehospeda cada foto sin copia y guarda su URL en la fila', async () => {
+    mockPrisma.storyImage.findMany.mockResolvedValue([
+      { id: 'f1', storyId: 'id', position: 1, sourceUrl: 'https://src/1.jpg' },
+      { id: 'f2', storyId: 'id', position: 2, sourceUrl: 'https://src/2.jpg' },
+    ])
+    mockRehostFoto.mockImplementation(async (_u: string, storyId: string, n: number) => `https://cdn.r2.example/ogfoto-${storyId}-0${n}.jpg`)
+
+    await rehostStoryPhotos(['id'])
+
+    expect(mockPrisma.storyImage.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { storyId: { in: ['id'] }, hostedUrl: null },
+    }))
+    expect(mockRehostFoto).toHaveBeenCalledTimes(2)
+    expect(mockPrisma.storyImage.update).toHaveBeenCalledWith({ where: { id: 'f1' }, data: { hostedUrl: 'https://cdn.r2.example/ogfoto-id-01.jpg' } })
+    expect(mockPrisma.storyImage.update).toHaveBeenCalledWith({ where: { id: 'f2' }, data: { hostedUrl: 'https://cdn.r2.example/ogfoto-id-02.jpg' } })
+  })
+
+  it('una foto que no pasa queda sin copia, y no detiene a las demás', async () => {
+    mockPrisma.storyImage.findMany.mockResolvedValue([
+      { id: 'f1', storyId: 'id', position: 1, sourceUrl: 'https://src/icono.jpg' },
+      { id: 'f2', storyId: 'id', position: 2, sourceUrl: 'https://src/2.jpg' },
+    ])
+    mockRehostFoto.mockResolvedValueOnce(null).mockResolvedValueOnce('https://cdn.r2.example/ogfoto-id-02.jpg')
+
+    await rehostStoryPhotos(['id'])
+
+    expect(mockPrisma.storyImage.update).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.storyImage.update).toHaveBeenCalledWith({ where: { id: 'f2' }, data: { hostedUrl: 'https://cdn.r2.example/ogfoto-id-02.jpg' } })
+  })
+
+  it('si la tabla no existe todavía (SQL pendiente), no lanza', async () => {
+    mockPrisma.storyImage.findMany.mockRejectedValue(Object.assign(new Error('table does not exist'), { code: 'P2021' }))
+
+    await expect(rehostStoryPhotos(['id'])).resolves.toBeUndefined()
+    expect(mockRehostFoto).not.toHaveBeenCalled()
+  })
+
+  it('sin ids no consulta nada', async () => {
+    await rehostStoryPhotos([])
+    expect(mockPrisma.storyImage.findMany).not.toHaveBeenCalled()
   })
 })
