@@ -19,9 +19,27 @@
  * | `storycard-`    | el medio, con nuestra marca y el título| no: ya trae texto|
  * | `<uuid>-<ms>`   | nuestra generación de imágenes         | no: es IA        |
  *
+ * POR QUÉ CASI NUNCA ES `oghero-` EN LAS NOTICIAS QUE VAN A INSTAGRAM. El job
+ * de publicación (`jobs/publishStories.ts`) le pone a cada noticia UNA imagen
+ * para el sitio: a las destacadas (relevancia ≥ `heroAiMinRelevance`, hoy 8)
+ * una ilustración de IA, sin pedir siquiera la og:image; a las demás, la
+ * og:image del medio, rehospedada tal cual si mide 1200 px o más y, si no,
+ * fundida en la tarjeta compuesta. El job social elige por relevancia, así
+ * que elige destacadas, y del 29 al 30-oct sus carruseles salieron sin foto
+ * aunque el medio sí tenía una. Por eso `services/storyCarousel.ts`, cuando
+ * esta tabla dice «no», va a buscar la og:image al artículo original.
+ *
  * Es lógica duplicada con el cliente, que no puede importar fuera de su `src/`.
  * Los prefijos nacen en `storyCard.ts` e `imageStorage.ts`.
  */
+
+/**
+ * Ancho real mínimo de una foto que va a una lámina (1080 px de ancho). Es el
+ * mismo tope con que `imageStorage.ts` descarta una foto del cuerpo al
+ * rehospedarla; acá se aplica también a la de la portada, que puede llegar
+ * en vivo desde el sitio del medio sin haber pasado por ese filtro.
+ */
+export const FOTO_ANCHO_MINIMO = 480
 
 /** Nuestro bucket público. Todo lo que sube el servidor vive bajo `/social/`. */
 const BUCKET = /\.r2\.dev\//

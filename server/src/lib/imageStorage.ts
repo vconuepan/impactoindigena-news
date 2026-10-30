@@ -4,6 +4,7 @@ import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { safeAxiosGet } from './safeHttp.js'
 import { normalizarDecodificada } from './imagen-normalizar.js'
+import { FOTO_ANCHO_MINIMO } from './fotoDelMedio.js'
 
 const log = createLogger('image-storage')
 
@@ -139,7 +140,7 @@ export const PREFIJO_FOTO_ARTICULO = 'ogfoto-'
  * ícono de 200 px en una lámina de 1080 con el crédito del medio es peor que
  * una lámina sin foto.
  */
-export const FOTO_ARTICULO_ANCHO_MINIMO = 480
+export const FOTO_ARTICULO_ANCHO_MINIMO = FOTO_ANCHO_MINIMO
 
 /**
  * Baja una foto del cuerpo del artículo por la guardia SSRF, comprueba que sea

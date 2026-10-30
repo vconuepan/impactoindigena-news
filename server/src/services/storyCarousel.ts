@@ -5,6 +5,7 @@ import { withRetry } from '../lib/retry.js'
 import { publisherFromUrl } from '../lib/publisher.js'
 import { uploadImageToR2 } from '../lib/imageStorage.js'
 import { fotoDelMedio } from '../lib/fotoDelMedio.js'
+import { fetchOgImage } from '../lib/extract-og-image.js'
 import { revisarCarrusel, temaRespaldado, type CarouselAviso, type CarouselSlideText } from '../lib/storyCarouselGuards.js'
 import { renderStoryCarousel, carruselEnZip, type CarouselAttribution, type FotoDeNoticia } from '../lib/storyCarouselRender.js'
 import { buildStoryCarouselPrompt } from '../prompts/story-carousel.js'
@@ -86,6 +87,33 @@ async function fotosDelArticulo(storyId: string, credito: string): Promise<FotoD
     log.warn({ storyId, err }, 'no se leyeron las fotos del artículo; el desarrollo sale sin fotos')
     return []
   }
+}
+
+/**
+ * La foto del medio para la portada y el cierre, o `null`.
+ *
+ * Primero la imagen guardada de la noticia, si `fotoDelMedio` dice que es del
+ * medio. Pero esa imagen la elige el job de publicación para el sitio, no para
+ * el carrusel: a las destacadas les pone una ilustración de IA sin pedir la
+ * og:image, y a las demás con una og:image de menos de 1200 px les funde esa
+ * foto en la tarjeta compuesta. El job social elige por relevancia, así que
+ * elige destacadas, y del 29 al 30-oct-2026 los carruseles de Instagram
+ * salieron sin foto aunque el medio sí tenía una. Cuando la guardada no sirve,
+ * se va a buscar la og:image al artículo original, en vivo y por la guardia
+ * SSRF: es la misma foto con que el medio publicó la nota, servida desde su
+ * sitio, y queda dibujada en la lámina (no se enlaza). Sin og:image, o si la
+ * página ya no responde, las dos láminas salen con el fondo de marca.
+ */
+async function fotoDePortada(story: NoticiaCargada): Promise<string | null> {
+  const guardada = fotoDelMedio(story.imageUrl)
+  if (guardada) return guardada
+  const ogImage = await fetchOgImage(story.sourceUrl)
+  const foto = fotoDelMedio(ogImage)
+  log.info(
+    { storyId: story.id, imagenGuardada: story.imageUrl, ogImage, foto },
+    foto ? 'la foto de la portada sale de la og:image del original' : 'la noticia no tiene foto del medio; la portada sale sin foto',
+  )
+  return foto
 }
 
 /**
@@ -220,7 +248,7 @@ export async function renderStoryCarouselImages(storyId: string, req: RenderRequ
   const avisosDeTexto = revisarCarrusel(laminas, lectura, original)
   // La foto con que el medio publicó la nota, acreditada a ese medio. Una
   // imagen de IA o la tarjeta compuesta no van (decisión del director, 29-oct).
-  const fotoUrl = fotoDelMedio(story.imageUrl)
+  const fotoUrl = await fotoDePortada(story)
   const { imagenes, avisos: avisosDeEspacio, fotosDibujadas } = await renderStoryCarousel({
     laminas,
     lectura,

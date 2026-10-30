@@ -59,6 +59,20 @@ marca y el título) y las de IA (`<uuid>-<ms>`) no. Sin foto, o si no se puede b
 las dos láminas salen con el fondo de marca. Del 23 al 29-oct el carrusel salió sin
 foto; hasta el 24-oct, con una ilustración de IA que inventó una escena.
 
+**Cuando la imagen guardada no es del medio, la foto se busca en el original**
+(30-oct-2026). `story.imageUrl` la elige el job de publicación para el sitio, no para
+el carrusel: a las destacadas (relevancia ≥ `heroAiMinRelevance`, hoy 8) les pone una
+ilustración de IA sin pedir siquiera la og:image, y a las demás con una og:image de
+menos de 1200 px se la funde en la tarjeta compuesta. El job social elige por
+relevancia, así que elige destacadas: del 29 al 30-oct los carruseles de Instagram
+siguieron saliendo sin foto aunque el medio sí tenía una. `fotoDePortada`
+(`services/storyCarousel.ts`) pide entonces la og:image al artículo original
+(`fetchOgImage`, en vivo, por la guardia SSRF) y la dibuja en la portada y el cierre:
+es la foto con que el medio publicó la nota, servida desde su sitio, y queda dentro del
+JPEG de la lámina (no se enlaza). Una foto de menos de 480 px de ancho
+(`FOTO_ANCHO_MINIMO`) no va a sangre con el crédito del medio: la lámina sale sin foto.
+Sin og:image, o si la página ya no responde, el fondo de marca.
+
 **Más fotos del mismo medio, en el desarrollo** (pedido del director, 29-oct-2026).
 Cada noticia guardaba una sola imagen (la og:image) y el extractor conservaba solo el
 texto. Desde el 29-oct el extractor captura también las `<img>` del cuerpo del artículo
@@ -140,7 +154,8 @@ candado no lo ve. Lo revisa el editor.
 | `server/src/lib/storyCarouselRender.ts` | Las láminas, el PDF y el ZIP |
 | `server/src/lib/carouselGen.ts` | Lienzo, paleta, logo y pie compartidos con Instagram |
 | `server/src/lib/fotosDelArticulo.ts` | Captura y depura las `<img>` del cuerpo al extraer (iconos, píxeles, repetidas, la og:image fuera) |
-| `server/src/lib/fotoDelMedio.ts` | Decide si `story.imageUrl` es del medio (`oghero-`, `ogfoto-`, externa) o no (IA, `storycard-`) |
+| `server/src/lib/fotoDelMedio.ts` | Decide si una imagen es del medio (`oghero-`, `ogfoto-`, externa) o no (IA, `storycard-`); `FOTO_ANCHO_MINIMO` |
+| `server/src/lib/extract-og-image.ts` | `fetchOgImage`: la og:image del artículo original, para la portada cuando la guardada no es del medio |
 | `server/src/jobs/publishStories.ts` | `rehostStoryPhotos`: rehospeda las fotos del cuerpo al publicar (`ogfoto-<storyId>-NN`) |
 | `client/src/components/admin/StoryCarouselSection.tsx` | La sección en la ficha |
 

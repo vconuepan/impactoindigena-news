@@ -44,6 +44,23 @@ describe('las fotos del artículo en las láminas de desarrollo', () => {
     mockFoto.mockImplementation(async () => fotoDe(1600, 900))
   })
 
+  it('una foto de menos de 480 px de ancho no se dibuja, ni en la portada ni en el desarrollo', async () => {
+    mockFoto.mockImplementation(async () => fotoDe(320, 240))
+
+    const r = await renderStoryCarousel({
+      laminas: [PORTADA, CORTA, CIERRE],
+      lectura: null,
+      atribucion: ATRIBUCION,
+      categoria: '',
+      foto: { url: 'https://www.biobiochile.cl/static/icono.jpg', credito: 'BioBío Chile' },
+      fotosDesarrollo: FOTOS.slice(0, 1),
+    })
+
+    expect(r.imagenes).toHaveLength(3)
+    expect(r.avisos).toEqual([])
+    expect(r.fotosDibujadas).toBe(0)
+  })
+
   it('una foto por lámina de desarrollo, en orden, con el texto del formato', async () => {
     const r = await renderStoryCarousel({
       laminas: [PORTADA, CORTA, CORTA, CORTA, CIERRE],

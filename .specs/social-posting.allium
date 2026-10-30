@@ -253,7 +253,9 @@ rule RegenerateDraft {
 -- Instagram builds its carousel from the original article (text,
 -- guards, render), its caption and the uploads before a draft is
 -- reviewable. The cover and the closing slide carry the outlet's own
--- photo with «Foto: <medio>» when the story has one (`fotoDelMedio`);
+-- photo with «Foto: <medio>» when the story has one: the stored image
+-- if `fotoDelMedio` says it is the outlet's, otherwise the original
+-- article's og:image fetched live (`fotoDePortada`, 30-oct-2026);
 -- never an AI image nor the branded story card (director, 29-oct-2026).
 -- The development slides carry the article's other photos
 -- (pipeline/StoryImage rows with a hosted copy, in article order, one

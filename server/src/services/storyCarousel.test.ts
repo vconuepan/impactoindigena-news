@@ -22,6 +22,10 @@ vi.mock('../lib/imageStorage.js', () => ({ uploadImageToR2: mockUpload }))
 const mockFoto = vi.hoisted(() => vi.fn())
 vi.mock('../lib/loadRemoteImage.js', () => ({ loadRemoteImage: mockFoto }))
 
+// La og:image del artículo original, cuando la imagen guardada no es del medio.
+const mockOgImage = vi.hoisted(() => vi.fn())
+vi.mock('../lib/extract-og-image.js', () => ({ fetchOgImage: mockOgImage }))
+
 const { buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError } = await import('./storyCarousel.js')
 
 const ORIGINAL = [
@@ -111,12 +115,17 @@ describe('buildStoryCarouselForSocial (Instagram y LinkedIn, sin editor)', () =>
 })
 
 describe('la foto del medio en la portada (decisión del director, 29-oct-2026)', () => {
-  const FOTO_DEL_MEDIO = 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/oghero-story-1.jpg'
+  const BUCKET = 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social'
+  const FOTO_DEL_MEDIO = `${BUCKET}/oghero-story-1.jpg`
+  const ILUSTRACION_DE_IA = `${BUCKET}/99d66c21-6277-461a-9f16-e18c82b9d899-1793271943280.png`
+  const TARJETA_COMPUESTA = `${BUCKET}/storycard-story-1.jpg`
+  const OG_IMAGE = 'https://media.biobiochile.cl/wp-content/uploads/2026/10/plan-bosque.jpg'
 
   beforeEach(() => {
     vi.clearAllMocks()
     elModeloDevuelve(FIEL)
     mockPrisma.storyImage.findMany.mockResolvedValue([])
+    mockOgImage.mockResolvedValue(null)
   })
 
   async function fotoDe(ancho: number, alto: number) {
@@ -128,7 +137,7 @@ describe('la foto del medio en la portada (decisión del director, 29-oct-2026)'
     return c
   }
 
-  it('baja la foto rehospedada del medio y arma todas las láminas', async () => {
+  it('baja la foto rehospedada del medio y arma todas las láminas, sin consultar el original', async () => {
     mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: FOTO_DEL_MEDIO })
     mockFoto.mockResolvedValue(await fotoDe(1600, 900))
 
@@ -136,14 +145,39 @@ describe('la foto del medio en la portada (decisión del director, 29-oct-2026)'
 
     expect(mockFoto).toHaveBeenCalledTimes(1)
     expect(mockFoto).toHaveBeenCalledWith(FOTO_DEL_MEDIO)
+    expect(mockOgImage).not.toHaveBeenCalled()
     expect(carrusel.imagenes).toHaveLength(FIEL.length)
   })
 
-  it('una imagen de IA no se pide: la portada sale con el fondo de marca', async () => {
-    mockPrisma.story.findUnique.mockResolvedValue({
-      ...noticia(),
-      imageUrl: 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/99d66c21-6277-461a-9f16-e18c82b9d899-1793271943280.png',
-    })
+  // Las destacadas (las que elige el job social) llevan en el sitio una
+  // ilustración de IA; del 29 al 30-oct-2026 sus carruseles salieron sin foto
+  // aunque el medio sí tenía una. La foto se busca en el artículo original.
+  it('con una imagen de IA, la portada lleva la og:image del artículo original', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: ILUSTRACION_DE_IA })
+    mockOgImage.mockResolvedValue(OG_IMAGE)
+    mockFoto.mockResolvedValue(await fotoDe(1600, 900))
+
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+
+    expect(mockOgImage).toHaveBeenCalledWith(noticia().sourceUrl)
+    expect(mockFoto).toHaveBeenCalledTimes(1)
+    expect(mockFoto).toHaveBeenCalledWith(OG_IMAGE)
+    expect(carrusel.imagenes).toHaveLength(FIEL.length)
+  })
+
+  it('con la tarjeta compuesta, también va a buscar la og:image', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: TARJETA_COMPUESTA })
+    mockOgImage.mockResolvedValue(OG_IMAGE)
+    mockFoto.mockResolvedValue(await fotoDe(1600, 900))
+
+    await buildStoryCarouselForSocial('story-1')
+
+    expect(mockFoto).toHaveBeenCalledWith(OG_IMAGE)
+  })
+
+  it('una imagen de IA nunca se dibuja: sin og:image, la portada sale con el fondo de marca', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: ILUSTRACION_DE_IA })
+    mockOgImage.mockResolvedValue(null)
 
     const carrusel = await buildStoryCarouselForSocial('story-1')
 
@@ -151,12 +185,24 @@ describe('la foto del medio en la portada (decisión del director, 29-oct-2026)'
     expect(carrusel.imagenes).toHaveLength(FIEL.length)
   })
 
-  it('sin imagen no se pide nada', async () => {
+  it('sin imagen guardada, consulta el original y sin og:image no pide nada', async () => {
     mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: null })
 
     await buildStoryCarouselForSocial('story-1')
 
+    expect(mockOgImage).toHaveBeenCalledTimes(1)
     expect(mockFoto).not.toHaveBeenCalled()
+  })
+
+  it('una og:image demasiado chica no va a sangre con el crédito del medio', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue({ ...noticia(), imageUrl: ILUSTRACION_DE_IA })
+    mockOgImage.mockResolvedValue(OG_IMAGE)
+    mockFoto.mockResolvedValue(await fotoDe(200, 200))
+
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+
+    expect(mockFoto).toHaveBeenCalledWith(OG_IMAGE)
+    expect(carrusel.imagenes).toHaveLength(FIEL.length)
   })
 
   it('si la foto no se puede bajar, el carrusel sale igual, sin foto', async () => {

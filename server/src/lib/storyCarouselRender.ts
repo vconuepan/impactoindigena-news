@@ -8,6 +8,7 @@ import {
 } from './carouselGen.js'
 import { AI_LABEL } from './ai-label.js'
 import { loadRemoteImage } from './loadRemoteImage.js'
+import { FOTO_ANCHO_MINIMO } from './fotoDelMedio.js'
 import { createLogger } from './logger.js'
 import type { CarouselAviso, CarouselSlideText } from './storyCarouselGuards.js'
 
@@ -172,13 +173,22 @@ function lineaDeAtribucion(ctx: any, texto: string, credito: string | null = nul
 /**
  * Baja y decodifica la foto por la guardia SSRF. Si falla, las láminas salen
  * con el fondo de marca: una foto que no llega no detiene la publicación.
+ * Una foto de menos de FOTO_ANCHO_MINIMO tampoco va: la de la portada puede
+ * llegar en vivo desde el sitio del medio (`fotoDePortada`), sin el filtro de
+ * ancho que las rehospedadas ya pasaron, y un ícono a sangre con el crédito
+ * del medio es peor que una lámina sin foto.
  */
 async function cargarFoto(foto: FotoDeNoticia | null | undefined): Promise<Image | null> {
   if (!foto) return null
   try {
-    return await loadRemoteImage(foto.url)
+    const imagen = await loadRemoteImage(foto.url)
+    if (imagen.width < FOTO_ANCHO_MINIMO) {
+      log.warn({ url: foto.url, width: imagen.width }, 'la foto del medio es demasiado chica para una lámina; sale sin foto')
+      return null
+    }
+    return imagen
   } catch (err) {
-    log.warn({ err, url: foto.url }, 'no se pudo cargar la foto del medio; la portada sale sin foto')
+    log.warn({ err, url: foto.url }, 'no se pudo cargar la foto del medio; la lámina sale sin foto')
     return null
   }
 }
