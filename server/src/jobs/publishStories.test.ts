@@ -38,6 +38,7 @@ vi.mock('../lib/logger.js', () => ({
 // story.js / translation.js are imported by the module but unused by generateHeroImages.
 vi.mock('../services/story.js', () => ({ getStoryIdsByStatus: vi.fn(), bulkUpdateStatus: vi.fn() }))
 vi.mock('../services/translation.js', () => ({ translateStoriesBatch: vi.fn() }))
+vi.mock('../services/storyBody.js', () => ({ draftStoryBodies: vi.fn().mockResolvedValue({ saved: 0, blocked: 0, skipped: 0, failed: 0 }) }))
 
 const { generateHeroImages, rehostStoryPhotos } = await import('./publishStories.js')
 

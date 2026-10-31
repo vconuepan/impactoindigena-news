@@ -16,6 +16,25 @@ const feedRefSchema = z.object({
   issue: issueRefSchema.nullable(),
 }).openapi({ ref: 'FeedRef' })
 
+// La nota con claves (B3, 25-oct-2026): el cuerpo de la ficha, redactado desde
+// el artículo original completo. Null cuando un candado la bloqueó o la nota
+// es anterior. Los campos `*En` son null hasta que el traductor los escribe.
+const publicStoryBodySchema = z.object({
+  bajada: z.string(),
+  quePaso: z.string(),
+  porQueImporta: z.string(),
+  contexto: z.string(),
+  queSigue: z.string().openapi({ description: 'Empty when the article says nothing about what comes next' }),
+  bajadaEn: z.string().nullable(),
+  quePasoEn: z.string().nullable(),
+  porQueImportaEn: z.string().nullable(),
+  contextoEn: z.string().nullable(),
+  queSigueEn: z.string().nullable(),
+  method: z.enum(['ia_sin_revision', 'ia_revisada', 'humana']).openapi({ description: 'How the body was made: drafted by a model with no human review, drafted by a model and reviewed by a person, or written by a person' }),
+  reviewedBy: z.string().openapi({ description: 'Who reviewed it; empty when nobody did' }),
+  updatedAt: z.string().datetime(),
+}).openapi({ ref: 'PublicStoryBody' })
+
 const publicStorySchema = z.object({
   id: z.string().uuid(),
   slug: z.string().nullable().openapi({ example: 'comunidad-achuar-impulsa-observatorio-tecnologico-en-ecuador' }),
@@ -47,6 +66,7 @@ const publicStorySchema = z.object({
   relevanceSummaryEn: z.string().nullable(),
   issue: issueRefSchema.nullable(),
   feed: feedRefSchema,
+  body: publicStoryBodySchema.nullable().optional().openapi({ description: 'Only on GET /stories/{slug}; absent from lists' }),
 }).openapi({ ref: 'PublicStory' })
 
 // The homepage omits these three fields from each story (HOMEPAGE_OMITE in

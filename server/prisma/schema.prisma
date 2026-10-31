@@ -117,6 +117,7 @@ model Story {
   communityReviews       StoryCommunityReview[]
   brandAssessments       StoryBrandAssessment[]
   images                 StoryImage[]
+  body                   StoryBody?
   createdAt              DateTime     @default(now()) @map("created_at")
   updatedAt              DateTime     @updatedAt @map("updated_at")
 
@@ -150,6 +151,41 @@ model StoryImage {
 
   @@unique([storyId, position])
   @@map("story_images")
+}
+
+// La nota con claves (plan del 25-oct-2026, B1-B4): el cuerpo que la ficha
+// pública muestra en lugar del resumen de 45 palabras. Se redacta desde el
+// artículo original completo al publicar, pasa por los candados de
+// lib/storyBodyGuards.ts y, si alguno bloquea, no se escribe: la ficha sale
+// como hoy. Tabla aparte y no columnas de stories, por la lección del 26-oct
+// con editorials (P2022 si el código llega antes que el SQL): solo el código
+// nuevo la consulta y tolera que no exista.
+model StoryBody {
+  id              String   @id @default(uuid())
+  storyId         String   @unique @map("story_id")
+  bajada          String
+  quePaso         String   @map("que_paso")
+  porQueImporta   String   @map("por_que_importa")
+  contexto        String
+  queSigue        String   @default("") @map("que_sigue")
+  bajadaEn        String?  @map("bajada_en")
+  quePasoEn       String?  @map("que_paso_en")
+  porQueImportaEn String?  @map("por_que_importa_en")
+  contextoEn      String?  @map("contexto_en")
+  queSigueEn      String?  @map("que_sigue_en")
+  /// 'ia_sin_revision' | 'ia_revisada' | 'humana' (TEXT + CHECK en la base)
+  method          String   @default("ia_sin_revision")
+  reviewedBy      String   @default("") @map("reviewed_by")
+  /// Despliegue que redactó, y lo que costó: para medir sin estimar.
+  model           String   @default("")
+  inputTokens     Int      @default(0) @map("input_tokens")
+  outputTokens    Int      @default(0) @map("output_tokens")
+  sourceChars     Int      @default(0) @map("source_chars")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  story           Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@map("story_bodies")
 }
 
 model StoryCluster {

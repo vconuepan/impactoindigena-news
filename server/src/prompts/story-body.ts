@@ -5,9 +5,11 @@ import { REGLAS_FUNDACION } from './voz-venancio.js'
  * La nota con claves de una noticia: el cuerpo que la ficha pública muestra
  * en lugar del resumen de 45 palabras.
  *
- * BORRADOR DE MEDICIÓN (plan `.plans/2026-10-25_contenido-propio-y-ficha-con-claves.md`,
- * ítem A1). Se corre con `scripts/medir-nota-claves.ts` sobre noticias reales
- * antes de entrar al pipeline. Lo que la medición diga cambia este archivo.
+ * Plan `.plans/2026-10-25_contenido-propio-y-ficha-con-claves.md`. Se midió en
+ * A1 con `scripts/medir-nota-claves.ts` sobre cinco noticias reales (tres
+ * rondas) antes de entrar al pipeline; desde B2 lo corre `services/storyBody.ts`
+ * al publicar. Las reglas de fecha, atribución y mecanismo salieron de esa
+ * medición: cada una corrige un error que el modelo cometió de verdad.
  *
  * POR QUÉ EXISTE. La ficha de hoy es una tarjeta: el prompt de análisis pide
  * un resumen de 40 a 70 palabras y le da al modelo los primeros 4.000

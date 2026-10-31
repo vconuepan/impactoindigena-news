@@ -134,7 +134,47 @@ export interface Story {
   facebookPosts?: { permalink: string | null }[]
 }
 
+/** Cómo se hizo el cuerpo de una nota (B4, 25-oct-2026). */
+export type StoryBodyMethod = 'ia_sin_revision' | 'ia_revisada' | 'humana'
+
+/** Lo que los candados vieron en el cuerpo de una nota. */
+export interface StoryBodyAviso {
+  campo: 'bajada' | 'quePaso' | 'porQueImporta' | 'contexto' | 'queSigue'
+  tipo: 'cita' | 'cifra' | 'identidad' | 'pueblo' | 'anio' | 'copia' | 'agencia' | 'meta' | 'largo'
+  mensaje: string
+}
+
+/** La nota con claves tal como la ve la ficha pública (solo en GET /stories/:slug). */
+export interface PublicStoryBody {
+  bajada: string
+  quePaso: string
+  porQueImporta: string
+  contexto: string
+  queSigue: string
+  bajadaEn: string | null
+  quePasoEn: string | null
+  porQueImportaEn: string | null
+  contextoEn: string | null
+  queSigueEn: string | null
+  method: StoryBodyMethod
+  reviewedBy: string
+  updatedAt: string
+}
+
+/** La nota con claves en el panel: lo público más lo que costó. */
+export interface StoryBodyAdmin extends PublicStoryBody {
+  id: string
+  storyId: string
+  model: string
+  inputTokens: number
+  outputTokens: number
+  sourceChars: number
+  createdAt: string
+}
+
 export interface PublicStory extends Story {
+  /** Solo en la ficha; null cuando un candado la bloqueó o la nota es anterior al cuerpo. */
+  body?: PublicStoryBody | null
   /**
    * Nota que entró a una vertical por la marca (D5): no tiene slug global y su
    * ficha vive en la vertical, en /comunidad/:communitySlug/n/:brandSlug.

@@ -1,6 +1,7 @@
 import prisma from '../lib/prisma.js'
 import { getStoryIdsByStatus, bulkUpdateStatus } from '../services/story.js'
 import { translateStoriesBatch } from '../services/translation.js'
+import { draftStoryBodies } from '../services/storyBody.js'
 import { fetchOgImage } from '../lib/extract-og-image.js'
 import { generateStoryImage } from '../lib/imageGen.js'
 import { rehostOrComposeStoryImage } from '../lib/storyCard.js'
@@ -179,6 +180,12 @@ export async function runPublishStories(): Promise<void> {
 
   const publishedIds = ids
   if (publishedIds.length > 0) {
+    // La nota con claves va ANTES de traducir, para que el traductor la
+    // encuentre y la lleve al inglés en la misma pasada. Nunca lanza: una
+    // noticia sin cuerpo se publica igual, con el resumen (B2, 25-oct-2026).
+    log.info({ count: publishedIds.length }, 'drafting story bodies from the original articles')
+    await draftStoryBodies(publishedIds)
+
     // Translation first (fast, user-visible); image generation after (slow:
     // the image API can take minutes per story).
     log.info({ count: publishedIds.length }, 'translating published stories to English')

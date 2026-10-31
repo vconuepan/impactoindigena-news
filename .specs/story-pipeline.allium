@@ -257,6 +257,124 @@ rule Publish {
     ensures: story.status = published
 }
 
+-- ─── Stage 4b: Body (the "nota con claves") ────────────────────────────
+-- Plan 2026-10-25 (B1-B4). The public page used to show a 40-70 word summary
+-- written from the first 4,000 characters of the article, followed by the
+-- scoring bullets. The body replaces it: a lede plus four keys (what happened,
+-- why it matters to the peoples, context, what comes next), written from the
+-- FULL article at publish time. Its own entity, never columns on Story: a new
+-- column on an existing model breaks every findMany() until the SQL is
+-- applied (editorials, 2026-10-26).
+
+value BodyMethod = ia_sin_revision      -- drafted by a model, nobody reviewed it (how every body is born)
+                 | ia_revisada          -- drafted by a model, a person read, corrected and approved it
+                 | humana               -- a person wrote it
+
+entity StoryBody {
+    story: Story                                         -- one body per story
+    bajada: String
+    que_paso: String
+    por_que_importa: String
+    contexto: String
+    que_sigue: String                                    -- empty when the article says nothing about what comes next
+    -- English, set by rule TranslateBody; null means "not translated"
+    bajada_en: String?
+    que_paso_en: String?
+    por_que_importa_en: String?
+    contexto_en: String?
+    que_sigue_en: String?
+    method: BodyMethod
+    reviewed_by: String                                  -- empty while nobody reviewed it
+    -- Provenance, so cost is measured and never estimated
+    model: String
+    input_tokens: Integer
+    output_tokens: Integer
+    source_chars: Integer
+}
+
+rule DraftBody {
+    when: Publish(story) completed
+    -- Same job, right after the status change and BEFORE Translate, so the
+    -- translator finds the body in the same pass. Non-fatal: a story without a
+    -- body is published all the same, with its summary.
+    requires: story.source_url is not a Google News URL        -- the outlet is unknown
+    requires: length(story.source_content) >= 1200             -- below that it is the feed's teaser
+
+    -- The model receives the full article (capped at 15,000 characters), the
+    -- outlet and ALWAYS a date (source date, else publish date, else crawl
+    -- date): without it, measured 2026-10-25, it dated this year's election
+    -- in 2023.
+    let draft = LLM.draft_body(story.source_content, publisher, date)
+    let clean = strip_non_verbatim_quote_marks(empty_meta_que_sigue(draft))
+
+    -- FAIL CLOSED. If any blocking guard fires, nothing is written.
+    requires: Guards.blocking(clean, story.source_content) = []
+    ensures: StoryBody.created(story, clean, method: ia_sin_revision, reviewed_by: "")
+    -- A redraft from the admin panel replaces the body, clears the English
+    -- fields and resets method to ia_sin_revision.
+}
+
+-- Binary rules enforced in code (server/src/lib/storyBodyGuards.ts). The
+-- first four are inherited from the carousel; the rest are specific to a
+-- long text published as a note.
+invariant BodyQuotesAreVerbatim {
+    -- Anything between quotation marks is letter for letter in the source.
+    -- A translated quote loses its marks and becomes indirect speech.
+    forall b: StoryBody, q in quotes(b.text): verbatim(q, b.story.source_content)
+}
+invariant BodyFiguresAreSourced {
+    -- Every digit group in the body is in the source (a year the outlet did not
+    -- give is an invented fact under the outlet's byline).
+    forall b: StoryBody, n in digit_groups(b.text): n in digit_groups(b.story.source_content)
+}
+invariant BodyNamesNoPeopleTheSourceDidNot {
+    -- «indígena» and the name of a people only if the source says so.
+    forall b: StoryBody: not identity_without_support(b.text, b.story.source_content)
+}
+invariant BodyHasNoFutureYear {
+    forall b: StoryBody: years_after(b.text, year(date_of(b.story))) = []
+}
+invariant BodyDoesNotCopyTheSource {
+    -- Chile has no press exception; art. 71 B covers the short quote, not
+    -- reproduction. Outside the quote, no 12 consecutive words match the source.
+    forall b: StoryBody: shared_windows(b.text minus quotes, b.story.source_content, 12) = []
+}
+invariant BodyDoesNotOpenWithTheOutlet {
+    -- House language rule 1: the lede's subject is the peoples, people or facts.
+    forall b: StoryBody: not opens_with_outlet(b.bajada)
+}
+invariant BodyDoesNotTalkAboutTheArticle {
+    -- «el artículo muestra…» is the model talking about its source, not telling the news.
+    forall b: StoryBody: not talks_about_the_article(b.text)
+}
+-- Length per field is informative only: it is reported, never enforced.
+
+rule ReviewBody {
+    when: EditorEditsOrApprovesBody(story, changes, reviewed_by)
+    -- Edited text passes the same guards; what blocks is not saved.
+    requires: Guards.blocking(merged(body, changes), story.source_content) = []
+    ensures: body.text = merged(body, changes)
+    ensures: body.method = changes.method ?? (text changed or reviewed_by != "" ? ia_revisada : body.method)
+    ensures: text changed implies English fields = null           -- retranslate
+}
+
+rule TranslateBody {
+    when: Translate(story) completed and story.body exists and story.body.que_paso_en = null
+    -- Non-fatal: a body without English falls back to Spanish.
+    ensures: body.*_en = translate(body.*) or unchanged
+}
+invariant BodyTranslationIsNotACopy {
+    -- Same lock as TranslationIsNotACopy, decided by que_paso.
+    forall b: StoryBody: b.que_paso_en != null implies normalize(b.que_paso_en) != normalize(b.que_paso)
+}
+
+invariant PublicPageDeclaresTheMethod {
+    -- The public page shows a fixed «¿Cómo hicimos esta nota?» text per method,
+    -- and the honest default says nobody reviewed it.
+    forall s: Story where s.body exists and s.status = published:
+        PublicStoryPage(s) shows method_text(s.body.method, s.body.reviewed_by)
+}
+
 rule Translate {
     when: Publish(story) completed
     -- Same job, right after the status change. Non-fatal: a failed

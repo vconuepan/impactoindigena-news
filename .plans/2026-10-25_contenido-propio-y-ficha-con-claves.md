@@ -441,6 +441,12 @@ la base no es alcanzable (P1001 con la regla de firewall `verificar-deploy` vige
 IP), así que ni `db:migrate:resolve` ni una verificación directa son posibles: **la columna
 la confirma el director con `psql`**.
 
+**29-oct-2026, 12:00Z, releído en el log de Azure:** la columna `editorials.notes` sigue sin
+existir (el respaldo de lectura deja su advertencia en cada llamada) y no hay ninguna regla de
+firewall para una IP personal. La IP pública del Mac cambió tres veces en cuatro días, así que
+el camino por firewall no es estable. **Recomendación: aplicar el SQL desde Azure Cloud Shell**,
+que entra por la regla de servicios de Azure sin tocar el firewall.
+
 **Lo que falta para que exista la primera editorial, en orden:**
 1. **C5 · El director aplica el SQL** `server/prisma/migrations/20261026000000_editorial_firma_metodo/migration.sql`
    con psql (firewall abierto), **antes** de empujar el código: una columna nueva en
@@ -451,6 +457,25 @@ la confirma el director con `psql`**.
 
 **Decisión técnica:** tier `medium` para el borrador (A1: el grande costó seis veces más y
 falló más). Sin página de autor todavía (B7): la firma es texto, no enlace.
+
+### 8 quater · Resultados de B1 a B4 (30-oct-2026)
+
+**Hecho, sin empujar.** Tabla aparte `story_bodies` (`StoryBody`, SQL
+`20261030000000_story_bodies`, idempotente, puede aplicarse antes o después del despliegue:
+todo lector tolera que no exista). Etapa `draftStoryBodies` en el job de publicación, antes de
+traducir, no fatal, fallo cerrado con los candados de `lib/storyBodyGuards.ts`; siempre con la
+fecha de la noticia; salta Google News y originales cortos; `STORY_BODY_ENABLED=false` la apaga.
+Traducción del cuerpo dentro de `translateStory`, con guardarraíl de copia por `quePaso`. API
+pública con `body` en la ficha (OpenAPI `PublicStoryBody`). Ficha con `StoryBodyClaves`: bajada,
+cuatro claves, recuadro «¿Cómo hicimos esta nota?» por método en ES y EN, scoring plegado en
+«Cómo la evaluamos». Panel: `StoryBodySection` (leer, corregir, dar por revisada, volver a
+redactar) sobre `GET/POST/PUT /api/admin/stories/:id/body`. Script `backfill-story-bodies.ts`
+(simulación por defecto). Spec: `DraftBody`, `ReviewBody`, `TranslateBody` y ocho invariantes en
+`story-pipeline.allium`. Docs en `story-pipeline.md` y `public-website.md`.
+
+**Lo que falta, en orden:** C5 el director aplica el SQL · C6 empuja · con la primera franja
+publicada, medir en el log cuántas salieron `saved`, `blocked`, `skipped` y leer tres fichas en
+vivo · `backfill` de las rezagadas si el director lo pide (US$0,002 por nota).
 
 ### 9 · Riesgos nombrados
 

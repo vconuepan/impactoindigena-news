@@ -34,6 +34,30 @@ fetched → pre_analyzed → analyzed → selected → published
 - **selected → published**: Publish job or manual admin action. The `publish_stories` job publishes all `selected` stories, sets `datePublished` if not already set, and generates a URL slug if the story doesn't have one yet. Embeddings must already exist from the assessment step; `ensureEmbedding()` acts as a safety net for edge cases.
 - **Any → trashed**: Admin can trash any story at any time.
 
+### La nota con claves (`story_bodies`, desde el 30-oct-2026)
+
+Plan `.plans/2026-10-25_contenido-propio-y-ficha-con-claves.md`, B1-B4. Al publicar, el job
+`publish_stories` llama a `draftStoryBodies()` (`services/storyBody.ts`) **antes** de traducir:
+por cada noticia, el modelo (`config.storyBody.modelTier`, `medium`) lee el artículo original
+completo (tope `maxSourceChars`, 15.000) con el medio y **siempre una fecha** (la del feed, si no
+la de publicación, si no la de rastreo) y redacta bajada + cuatro claves (`prompts/story-body.ts`).
+El resultado pasa por `limpiarCuerpo` (quita comillas de una cita no textual, vacía un «qué sigue»
+que explica que no hay) y por `revisarCuerpo` (`lib/storyBodyGuards.ts`): cita, cifra, identidad,
+pueblo, año futuro, copia de doce palabras, agencia de la bajada y texto «meta» **bloquean**; el
+largo solo avisa. **Fallo cerrado:** con un bloqueante no se escribe nada y la ficha sale con el
+resumen. Se salta sin llamar al modelo: URL de Google News, original bajo `minSourceChars` (1.200),
+`STORY_BODY_ENABLED=false`, tabla ausente (P2021).
+
+Tabla aparte (`StoryBody`, `story_bodies`), no columnas de `stories`: ver `database-migrations.md`
+y el incidente del 26-oct con `editorials`. Todo lector tolera que no exista:
+`getPublishedStoryBySlug` cae al `select` sin cuerpo. Nace con `method = ia_sin_revision` y
+`reviewedBy = ''`; en el panel (`StoryBodySection`, rutas `GET/POST/PUT /api/admin/stories/:id/body`)
+el editor corrige y da por revisada (→ `ia_revisada`), y una edición del texto borra la traducción
+para que se vuelva a traducir. La traducción (`translateStoryBody` en `services/translation.ts`)
+corre dentro de `translateStory`, no fatal, con el mismo guardarraíl de copia decidido por `quePaso`.
+Rezagadas: `npm run` no tiene atajo; `npx tsx src/scripts/backfill-story-bodies.ts --limit N [--apply]`,
+simulación por defecto. Costo medido en A1: US$0,0013-0,0025 por nota.
+
 ### Slugs
 
 Stories get a URL slug (e.g. `ai-breakthrough-in-protein-folding`) when they are first published. Slugs are **immutable by default** — changing the title of a published story does not regenerate the slug, preserving existing URLs. Admins can manually edit a slug via the story edit form.

@@ -1158,11 +1158,30 @@ export async function rejectStory(id: string): Promise<Story> {
   })
 }
 
+/**
+ * Lo que la ficha pública muestra del cuerpo de la nota con claves (B3,
+ * 25-oct-2026). Nunca los tokens ni el modelo: eso es del panel.
+ */
+export const PUBLIC_STORY_BODY_SELECT = {
+  bajada: true, quePaso: true, porQueImporta: true, contexto: true, queSigue: true,
+  bajadaEn: true, quePasoEn: true, porQueImportaEn: true, contextoEn: true, queSigueEn: true,
+  method: true, reviewedBy: true, updatedAt: true,
+} as const
+
 export async function getPublishedStoryBySlug(slug: string) {
-  return prisma.story.findFirst({
-    where: { slug, status: 'published' },
-    select: PUBLIC_STORY_SELECT,
-  })
+  try {
+    return await prisma.story.findFirst({
+      where: { slug, status: 'published' },
+      select: { ...PUBLIC_STORY_SELECT, body: { select: PUBLIC_STORY_BODY_SELECT } },
+    })
+  } catch (err) {
+    // La tabla story_bodies la aplica el director a mano; hasta entonces la
+    // ficha sale como siempre, sin cuerpo, en vez de responder 500.
+    const code = (err as { code?: string } | null)?.code
+    if (code !== 'P2021' && code !== 'P2022') throw err
+    const story = await prisma.story.findFirst({ where: { slug, status: 'published' }, select: PUBLIC_STORY_SELECT })
+    return story ? { ...story, body: null } : null
+  }
 }
 
 export async function getClusterRedirectSlug(slug: string): Promise<string | null> {

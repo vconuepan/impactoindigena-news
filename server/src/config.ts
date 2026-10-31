@@ -137,6 +137,19 @@ export const config = {
     // weekly send always has a fresh pool to draw from.
     storyAssignmentDays: parseInt(process.env.STORY_ASSIGNMENT_DAYS || "14", 10),
   },
+  // La nota con claves (B1-B4, plan del 25-oct-2026): el cuerpo de la ficha,
+  // redactado desde el artículo completo al publicar. Medido en A1 del plan
+  // sobre cinco noticias reales: US$0,0013-0,0025 por nota con el tier medium;
+  // el grande costó seis veces más y falló más. STORY_BODY_ENABLED=false la
+  // apaga sin desplegar.
+  storyBody: {
+    enabled: process.env.STORY_BODY_ENABLED !== 'false',
+    modelTier: 'medium' as const,
+    // Bajo este largo el texto guardado es la bajada del feed: no alcanza para
+    // cuatro claves sin inventar, y la ficha se queda con el resumen.
+    minSourceChars: parseInt(process.env.STORY_BODY_MIN_SOURCE_CHARS || '1200', 10),
+    maxSourceChars: parseInt(process.env.STORY_BODY_MAX_SOURCE_CHARS || '15000', 10),
+  },
   // La editorial firmada (B5, 25-oct-2026): se redacta desde las notas del
   // director con el tier medium. Medido en A1 del mismo plan: el modelo grande
   // costó seis veces más y falló más.

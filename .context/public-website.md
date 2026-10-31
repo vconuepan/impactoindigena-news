@@ -50,6 +50,17 @@ Feed items include: title, link to story page, AI-generated summary, publish dat
 - `server/src/routes/public/index.ts` — Registers feed router at `/feed`
 - `client/vite.config.ts` — Dev proxy for `/api` to `localhost:3001`
 
+## La ficha con claves (30-oct-2026)
+
+`GET /api/stories/:slug` trae `body` (`PublicStoryBody`, ver `story-pipeline.md`) o `null`. Con
+cuerpo, `StoryPage` pinta `StoryBodyClaves` en lugar del resumen: bajada, «Qué pasó», «Por qué
+importa a los pueblos», «Contexto», «Qué sigue» (omitido si está vacío) y el recuadro «¿Cómo hicimos
+esta nota?», cuyo texto depende de `body.method` (`storyPage.body.method.*` en `es.json`/`en.json`)
+y dice la verdad: sin revisión lo declara. Los bloques de puntaje («Por qué importa»,
+«Advertencias») bajan a un `<details>` «Cómo la evaluamos». Sin cuerpo, la ficha es la de antes.
+En inglés cada campo cae al español mientras no esté traducido. Las tarjetas, el RSS, el boletín y
+la meta description siguen usando `summary`: el cuerpo no cambia su significado.
+
 ## Positivity Slider
 
 A 5-position slider (0%, 25%, 50%, 75%, 100%) that controls the emotional tone of displayed stories. Default is 50% (balanced). Persisted in localStorage under `ar-positivity`. On the homepage the mix happens client-side with no extra request; on issue pages the slider position becomes an `emotionTags` filter sent to the server (see below).

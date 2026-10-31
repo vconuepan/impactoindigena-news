@@ -139,6 +139,78 @@ export async function translateStory(storyId: string): Promise<void> {
   })
 
   log.info({ storyId }, 'translation complete')
+
+  // El cuerpo de la nota con claves, si lo hay. Aparte y sin lanzar: que una
+  // traducción del cuerpo falle no deshace la del título y el resumen.
+  try {
+    await translateStoryBody(storyId)
+  } catch (err) {
+    log.warn({ err, storyId }, 'story body translation failed')
+  }
+}
+
+// ─── La nota con claves (B3, 25-oct-2026) ───────────────────────────────────
+
+export const bodyTranslationSchema = z.object({
+  bajadaEn: z.string().describe('English translation of bajada'),
+  quePasoEn: z.string().describe('English translation of quePaso'),
+  porQueImportaEn: z.string().describe('English translation of porQueImporta'),
+  contextoEn: z.string().describe('English translation of contexto'),
+  queSigueEn: z.string().describe('English translation of queSigue; empty string if queSigue is empty'),
+})
+
+function buildBodyTranslationPrompt(cuerpo: { bajada: string; quePaso: string; porQueImporta: string; contexto: string; queSigue: string }): string {
+  return `Translate the five fields of this Spanish news note into English. Keep every fact, figure, name and attribution exactly as written; translate quotes faithfully and keep them in quotation marks; do not add or remove information. Plain text, no markdown.
+
+<bajada>${cuerpo.bajada}</bajada>
+<quePaso>${cuerpo.quePaso}</quePaso>
+<porQueImporta>${cuerpo.porQueImporta}</porQueImporta>
+<contexto>${cuerpo.contexto}</contexto>
+<queSigue>${cuerpo.queSigue}</queSigue>`
+}
+
+/**
+ * Traduce el cuerpo de la nota con claves, si existe y no está traducido.
+ * Mismo guardarraíl que el resumen: si `quePaso` vuelve igual al español, el
+ * modelo copió y no se escribe nada. Tolera que la tabla no exista todavía.
+ * Nunca lanza hacia `translateStory`: una nota sin cuerpo en inglés cae al
+ * español, que es lo que ya pasaba.
+ */
+export async function translateStoryBody(storyId: string): Promise<'translated' | 'skipped' | 'copied'> {
+  let cuerpo
+  try {
+    cuerpo = await prisma.storyBody.findUnique({
+      where: { storyId },
+      select: { bajada: true, quePaso: true, porQueImporta: true, contexto: true, queSigue: true, quePasoEn: true },
+    })
+  } catch (err) {
+    const code = (err as { code?: string } | null)?.code
+    if (code === 'P2021' || code === 'P2022') return 'skipped'
+    throw err
+  }
+  if (!cuerpo || cuerpo.quePasoEn) return 'skipped'
+
+  const llm = getSmallLLM()
+  const structuredLlm = llm.withStructuredOutput(bodyTranslationSchema, { method: 'functionCalling' })
+  await rateLimitDelay()
+  const result = await structuredLlm.invoke([new SystemMessage(SYSTEM_PROMPT), new HumanMessage(buildBodyTranslationPrompt(cuerpo))])
+
+  if (isUntranslated(cuerpo.quePaso, result.quePasoEn)) {
+    log.warn({ storyId }, 'story body translation came back identical to the Spanish original, not written')
+    return 'copied'
+  }
+  await prisma.storyBody.update({
+    where: { storyId },
+    data: {
+      bajadaEn: result.bajadaEn || null,
+      quePasoEn: result.quePasoEn || null,
+      porQueImportaEn: result.porQueImportaEn || null,
+      contextoEn: result.contextoEn || null,
+      queSigueEn: cuerpo.queSigue ? result.queSigueEn || null : '',
+    },
+  })
+  log.info({ storyId }, 'story body translated')
+  return 'translated'
 }
 
 export async function translateStoriesBatch(storyIds: string[]): Promise<{ translated: number; failed: number }> {
