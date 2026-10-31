@@ -120,6 +120,21 @@
     "composedImage": "Imagen: {{publisher}} · composición de Voces Indígenas",
     "whyItMatters": "Por qué importa",
     "caveats": "Advertencias",
+    "howWeScored": "Cómo la evaluamos",
+    "body": {
+      "label": "Nota",
+      "quePaso": "Qué pasó",
+      "porQueImporta": "Por qué importa a los pueblos",
+      "contexto": "Contexto",
+      "queSigue": "Qué sigue",
+      "howWeMadeThis": "¿Cómo hicimos esta nota?",
+      "someone": "una persona del equipo",
+      "method": {
+        "ia_sin_revision": "Un modelo de lenguaje leyó el artículo completo de {{publisher}} y redactó esta nota con las cuatro claves de Voces Indígenas. Nadie la revisó antes de publicarla: toda cifra, cita y nombre pasó por candados automáticos que exigen que esté en el artículo, pero un error de interpretación puede quedar. Si encuentras uno, escríbenos.",
+        "ia_revisada": "Un modelo de lenguaje leyó el artículo completo de {{publisher}} y redactó esta nota con las cuatro claves de Voces Indígenas. {{reviewer}} la leyó, la corrigió y la aprobó antes de publicarla.",
+        "humana": "{{reviewer}} escribió esta nota a partir del artículo de {{publisher}}. Un modelo de lenguaje pudo ayudar a ordenar el borrador; el texto es suyo."
+      }
+    },
     "searchSimilar": "Buscar noticias similares →",
     "moreIn": "Más en {{issue}} →",
     "opensInNewTab": "(abre en nueva pestaña)",

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import Markdown from 'react-markdown'
 import ArticleInlineCta from '../components/ArticleInlineCta'
 import { esFraseDelArticulo } from '../lib/quote-attribution'
+import StoryBodyClaves from '../components/StoryBodyClaves'
 import { usePublicStory } from '../hooks/usePublicStories'
 import { getCategoryColor, shiftHex } from '../lib/category-colors'
 import { parsePoints } from '../lib/parse-points'
@@ -387,7 +388,16 @@ export default function StoryPage() {
         <div className="page-section !pt-8">
 
           {/* Summary */}
-          {loc.summary && (
+          {/* La nota con claves reemplaza al resumen cuando existe (B3,
+              25-oct-2026): bajada + cuatro claves desde el artículo completo,
+              con el recuadro de método. Sin cuerpo, la ficha sigue como hoy. */}
+          {story.body ? (
+            <StoryBodyClaves
+              body={story.body}
+              publisher={publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title)}
+              accentColor={colors.hex}
+            />
+          ) : loc.summary && (
             <section className="mb-10">
               <div
                 className="prose drop-cap"
@@ -445,22 +455,45 @@ export default function StoryPage() {
           */}
           {story.slug && <RelatedStories slug={story.slug} />}
 
-          {/* Why This Matters */}
-          {story.relevanceReasons && (
-            <AnalysisSection
-              title={t('storyPage.whyItMatters')}
-              text={story.relevanceReasons}
-              accentColor={colors.hex}
-            />
-          )}
+          {/* El scoring no desaparece: con nota con claves baja a un desplegable
+              «Cómo la evaluamos» (indicador 5 del Trust Project hecho interfaz);
+              sin cuerpo sigue a la vista, como hasta el 25-oct-2026. */}
+          {story.body ? (
+            (story.relevanceReasons || story.antifactors) && (
+              <details className="mb-10 border-t border-neutral-200 pt-4">
+                <summary className="cursor-pointer text-[11px] uppercase tracking-wider text-neutral-500 select-none">
+                  {t('storyPage.howWeScored')}
+                </summary>
+                <div className="mt-6">
+                  {story.relevanceReasons && (
+                    <AnalysisSection title={t('storyPage.whyItMatters')} text={story.relevanceReasons} accentColor={colors.hex} />
+                  )}
+                  {story.antifactors && (
+                    <AnalysisSection title={t('storyPage.caveats')} text={story.antifactors} accentColor={shiftHex(colors.hex, -0.25)} />
+                  )}
+                </div>
+              </details>
+            )
+          ) : (
+            <>
+              {/* Why This Matters */}
+              {story.relevanceReasons && (
+                <AnalysisSection
+                  title={t('storyPage.whyItMatters')}
+                  text={story.relevanceReasons}
+                  accentColor={colors.hex}
+                />
+              )}
 
-          {/* Caveats */}
-          {story.antifactors && (
-            <AnalysisSection
-              title={t('storyPage.caveats')}
-              text={story.antifactors}
-              accentColor={shiftHex(colors.hex, -0.25)}
-            />
+              {/* Caveats */}
+              {story.antifactors && (
+                <AnalysisSection
+                  title={t('storyPage.caveats')}
+                  text={story.antifactors}
+                  accentColor={shiftHex(colors.hex, -0.25)}
+                />
+              )}
+            </>
           )}
 
           {/* Newsletter CTA — inline email capture, end of article */}

@@ -27,6 +27,8 @@ import type {
   FacebookPost,
   FacebookTokenStatus,
   Editorial,
+  StoryBodyAdmin,
+  StoryBodyAviso,
 } from '@shared/types'
 
 export interface CommunityRef {
@@ -426,6 +428,13 @@ export const adminApi = {
       request<StoryCarouselDraft>(`/stories/${id}/carousel`, { method: 'POST', body: JSON.stringify({ conLectura }) }),
     carouselPreview: (id: string, body: { laminas: StoryCarouselSlide[]; lectura: StoryCarouselSlide | null }) =>
       request<StoryCarouselPreview>(`/stories/${id}/carousel/preview`, { method: 'POST', body: JSON.stringify(body) }),
+    // La nota con claves (B2, 25-oct-2026): leer, redactar de nuevo desde el
+    // original (llama al modelo) y corregir o dar por revisada.
+    body: (id: string) => request<{ body: StoryBodyAdmin | null }>(`/stories/${id}/body`),
+    draftBody: (id: string) =>
+      request<{ body: StoryBodyAdmin; avisos: StoryBodyAviso[] }>(`/stories/${id}/body`, { method: 'POST' }),
+    updateBody: (id: string, cambios: Partial<Pick<StoryBodyAdmin, 'bajada' | 'quePaso' | 'porQueImporta' | 'contexto' | 'queSigue' | 'method' | 'reviewedBy'>>) =>
+      request<{ body: StoryBodyAdmin; avisos: StoryBodyAviso[] }>(`/stories/${id}/body`, { method: 'PUT', body: JSON.stringify(cambios) }),
     carouselDownload: (id: string, body: { laminas: StoryCarouselSlide[]; lectura: StoryCarouselSlide | null }) =>
       // El Content-Type va explícito: el reintento de `requestBlob` tras renovar
       // la sesión solo lleva Authorization, y sin él el cuerpo no se lee.

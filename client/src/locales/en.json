@@ -120,6 +120,21 @@
     "composedImage": "Image: {{publisher}} · composed by Voces Indígenas",
     "whyItMatters": "Why it matters",
     "caveats": "Caveats",
+    "howWeScored": "How we scored it",
+    "body": {
+      "label": "Story",
+      "quePaso": "What happened",
+      "porQueImporta": "Why it matters to the peoples",
+      "contexto": "Context",
+      "queSigue": "What comes next",
+      "howWeMadeThis": "How we made this story",
+      "someone": "a member of the team",
+      "method": {
+        "ia_sin_revision": "A language model read the full article from {{publisher}} and wrote this story in the four keys of Voces Indígenas. Nobody reviewed it before publication: every figure, quote and name passed automatic checks that require it to be in the article, but an error of interpretation can remain. If you find one, write to us.",
+        "ia_revisada": "A language model read the full article from {{publisher}} and wrote this story in the four keys of Voces Indígenas. {{reviewer}} read it, corrected it and approved it before publication.",
+        "humana": "{{reviewer}} wrote this story from the article by {{publisher}}. A language model may have helped organize the draft; the text is theirs."
+      }
+    },
     "searchSimilar": "Search similar stories →",
     "moreIn": "More in {{issue}} →",
     "opensInNewTab": "(opens in new tab)",

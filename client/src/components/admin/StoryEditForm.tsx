@@ -13,6 +13,7 @@ import { PANEL_BODY } from './EditPanel'
 import { PanelFooter } from './PanelFooter'
 import { buildIssueOptions } from './StoryFiltersBar'
 import { StoryCarouselSection } from './StoryCarouselSection'
+import { StoryBodySection } from './StoryBodySection'
 
 interface StoryEditFormProps {
   story: Story
@@ -432,6 +433,7 @@ export function StoryEditForm({ story, issues, onDone, onBlueskyGenerate, onMast
       )}
 
       {/* Carrusel desde el artículo original: no publica, descarga. */}
+      {story.status === 'published' && <StoryBodySection story={story} />}
       {story.status === 'published' && <StoryCarouselSection story={story} />}
     </>
   )
