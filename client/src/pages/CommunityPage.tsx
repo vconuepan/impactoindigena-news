@@ -9,6 +9,8 @@ import { communityDotColor } from '../lib/category-colors'
 import { publicApi, memberAuth } from '../lib/api'
 import type { PublicStory } from '@shared/types'
 import { scrollBehavior } from '../lib/scroll'
+import NoIndex from '../components/NoIndex'
+import { esNoEncontrado } from '../lib/noEncontrado'
 
 const PAGE_SIZE = 20
 
@@ -421,7 +423,7 @@ export default function CommunityPage() {
   // (Previously stored member_token in localStorage; now the httpOnly cookie is set
   //  server-side by GET /api/auth/magic/verify before redirecting here.)
 
-  const { data: community, isLoading: communityLoading, isError: communityError } = useCommunity(slug ?? '')
+  const { data: community, isLoading: communityLoading, isError: communityError, error: communityErrorObj } = useCommunity(slug ?? '')
   const { data: storiesData, isLoading: storiesLoading } = useCommunityStories(slug ?? '', { page, pageSize: PAGE_SIZE })
   const { data: membership } = useMembership(slug ?? '')
 
@@ -432,6 +434,7 @@ export default function CommunityPage() {
   if (communityError || (!communityLoading && !community)) {
     return (
       <div className="page-section text-center">
+        {esNoEncontrado(communityErrorObj, community) && <NoIndex />}
         <h1 className="page-title">Comunidad no encontrada</h1>
         <p className="text-neutral-500 mb-6">Esta comunidad no existe o fue eliminada.</p>
         <Link to="/comunidades" className="text-brand-800 hover:text-brand-700 font-normal focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1">

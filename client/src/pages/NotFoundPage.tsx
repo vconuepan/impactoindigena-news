@@ -2,6 +2,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { SEO } from '../lib/seo'
+import NoIndex from '../components/NoIndex'
 
 export default function NotFoundPage() {
   const { t } = useTranslation()
@@ -11,6 +12,7 @@ export default function NotFoundPage() {
       <Helmet>
         <title>{t('notFound.title')} - {SEO.siteName}</title>
       </Helmet>
+      <NoIndex />
       <div className="page-section text-center">
         <h1 className="page-title">{t('notFound.title')}</h1>
         <p className="page-intro">{t('notFound.message')}</p>

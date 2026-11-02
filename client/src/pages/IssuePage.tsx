@@ -17,6 +17,8 @@ import DailySnippet from '../components/DailySnippet'
 import { positivityToEmotionTags } from '../lib/mix-stories'
 import type { PublicStory } from '@shared/types'
 import { scrollBehavior } from '../lib/scroll'
+import NoIndex from '../components/NoIndex'
+import { esNoEncontrado } from '../lib/noEncontrado'
 
 // ---------------------------------------------------------------------------
 // Story group with a specific layout variant
@@ -121,7 +123,7 @@ export default function IssuePage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = parseInt(searchParams.get('page') ?? '1', 10) || 1
   const { positivity } = usePositivity()
-  const { data: issue, isLoading, isError } = usePublicIssue(slug ?? '')
+  const { data: issue, isLoading, isError, error } = usePublicIssue(slug ?? '')
 
   const emotionTags = positivityToEmotionTags(positivity)
 
@@ -148,6 +150,7 @@ export default function IssuePage() {
   if (isError || !issue) {
     return (
       <div className="page-section text-center">
+        {esNoEncontrado(error, issue) && <NoIndex />}
         <h1 className="page-title">{t('issuePage.notFound')}</h1>
         <p className="text-neutral-500 mb-6">{t('issuePage.notFoundDesc')}</p>
         <Link

@@ -6,6 +6,8 @@ import { SEO, CommonOgTags } from '../lib/seo'
 import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import NoIndex from '../components/NoIndex'
+import { esNoEncontrado } from '../lib/noEncontrado'
 
 /**
  * Qué dice el recuadro «¿Cómo se hizo?» según el método declarado (plan del
@@ -64,6 +66,7 @@ export default function VocesIndigenasDetailPage() {
   if (error || !editorial) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-24 text-center">
+        {esNoEncontrado(error, editorial) && <NoIndex />}
         <p className="text-neutral-500">Editorial no encontrada.</p>
         <Link to="/voces-indigenas" className="text-brand-600 hover:underline mt-4 inline-block">
           ← Volver a Voces Indígenas

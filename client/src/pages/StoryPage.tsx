@@ -25,7 +25,8 @@ import { SEO, CommonOgTags } from '../lib/seo'
 import { buildArticleSchema, buildBreadcrumbSchema } from '../lib/structured-data'
 import { ECOSYSTEM_AI_URL } from '../config'
 import { publisherFromUrl } from '@shared/utils/publisher'
-import { ApiError } from '../lib/api'
+import NoIndex from '../components/NoIndex'
+import { esNoEncontrado } from '../lib/noEncontrado'
 
 // ---------------------------------------------------------------------------
 // Guide links shown below related stories for specific issue areas
@@ -159,9 +160,10 @@ export default function StoryPage() {
   }
 
   if (error || !story) {
-    const is404 = !story || (error instanceof ApiError && error.status === 404)
+    const is404 = esNoEncontrado(error, story)
     return (
       <div className="page-section text-center max-w-lg mx-auto">
+        {is404 && <NoIndex />}
         <h1 className="page-title">
           {is404 ? t('storyPage.notFound') : t('storyPage.apiError')}
         </h1>

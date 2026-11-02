@@ -10,7 +10,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="google-site-verification" content="QseCHXNru2YkgxCW3xA7d54iFsXSpVc6IiW4On0ptu0" />
     <meta name="theme-color" content="#0D5F3C" />
-    <meta name="description" content="Noticias sobre pueblos indígenas desde dos perspectivas: el impacto que el mundo genera en sus territorios y derechos, y el impacto que ellos generan en el mundo con su conocimiento y liderazgo. Curadas con inteligencia artificial." />
+    <!-- Sin meta description fija: cada página pone la suya con Helmet.
+         Medido el 2-nov-2026: con esta fija, las 37 rutas prerenderizadas
+         llevaban DOS descripciones, y Google suele tomar la primera, que era
+         esta misma en todo el sitio. Las fichas (/stories/*) las reescribe
+         og.ts, que borra todas y pone la suya. -->
     <meta name="author" content="Venancio Coñuepan Mesías" />
     <!-- Google Discover / News: max-image-preview:large lets Google show the
          large image card (Discover is 100% visual). Without it, articles are

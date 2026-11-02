@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -27,7 +27,35 @@ function renderPage(url: string) {
   )
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+  vi.clearAllMocks()
+  document.head.querySelectorAll('meta[name="robots"]').forEach((m) => m.remove())
+})
+
+const noindex = () => document.head.querySelector('meta[name="robots"][content="noindex"]')
+
+describe('BrandStoryPage · noindex solo si la nota de verdad no existe', () => {
+  it('con un 404, la página pide noindex', async () => {
+    const { ApiError } = await import('../lib/api')
+    brandStory.mockRejectedValue(new ApiError(404, 'Not found'))
+    renderPage('/comunidad/wallmapu-araucania/n/no-existe')
+
+    expect(await screen.findByText('Nota no encontrada')).toBeTruthy()
+    await waitFor(() => expect(noindex()).not.toBeNull())
+  })
+
+  it('con un 500 NO: una caída no saca una página real del índice', async () => {
+    const { ApiError } = await import('../lib/api')
+    brandStory.mockRejectedValue(new ApiError(500, 'Internal'))
+    renderPage('/comunidad/wallmapu-araucania/n/angol-abc')
+
+    expect(await screen.findByText('Nota no encontrada')).toBeTruthy()
+    // Helmet escribe el <head> en el siguiente cuadro: se le da tiempo antes de
+    // afirmar que NO apareció, o el test pasaría sin probar nada.
+    await new Promise((r) => setTimeout(r, 100))
+    expect(noindex()).toBeNull()
+  })
+})
 
 describe('BrandStoryPage (D5)', () => {
   it('muestra la vitrina de marca, la fuente y el regreso a la vertical; sin tema ni relevancia', async () => {

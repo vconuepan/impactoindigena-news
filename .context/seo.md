@@ -120,6 +120,24 @@ if one has a prefix the other doesn't.
 - `monthly` — Static pages (methodology, about), individual stories
 - `yearly` — Pages that rarely change (imprint, privacy, subscribed)
 
+## Unknown URLs: noindex, not a 404 status (2-nov-2026)
+
+Azure Static Web Apps answers **every** unknown path through `navigationFallback` with `/index.html` and status **200**, and that file is the prerendered homepage. Measured 2-nov: `/pagina-que-no-existe-xyz`, `/issues/tema-inventado-xyz` and `/comunidad/inventada-xyz` returned the homepage byte for byte (138,637 bytes), with `canonical` to `/` and `index, follow`: a soft 404 on every invented URL. A true 404 status is not available while `navigationFallback` is on, and turning it off would break every client route that is not prerendered (`/admin/*`, `/archivo/:id`, `/comunidad/:slug/n/:brandSlug`…).
+
+Google documents two ways out for single-page apps (JavaScript SEO basics): a JS redirect to a URL the server answers with 404, or adding `noindex` with JavaScript on the error page. This site does the second:
+
+- `components/NoIndex.tsx` adds `<meta name="robots" content="noindex">` with Helmet. The fixed robots meta in `index.html` says `index`; with conflicting rules Google applies the more restrictive one. Same pattern as `/search` and `/profile`.
+- It is rendered by `NotFoundPage` (the `*` route) and by the «not found» state of the story, topic, community, brand-note and editorial pages.
+- **Only when the page really does not exist** (`lib/noEncontrado.ts`): the API answered 404, or answered with no data. A network error or a 5xx does not count, or a backend hiccup while Googlebot renders would drop a real page from the index. The story page used to compute `!story || is404`, which is true on a 500 too; its «service temporarily unavailable» message never showed. Fixed with the same helper.
+
+The fallback HTML still carries the homepage's `canonical` and content for non-JS crawlers. Google renders JavaScript and sees the `noindex`; others may not.
+
+## One description per page (2-nov-2026)
+
+`client/index.html` no longer carries a fixed `<meta name="description">`. With it, all 37 prerendered routes had **two** descriptions (the fixed one first), and Google usually takes the first: the same text on the whole site. Every prerendered route sets its own with Helmet, measured on all 37. Story pages are unaffected: `og.ts` strips every description from the shell and injects the story's.
+
+**Still open:** the fixed `og:title`, `og:description`, `og:image` and `og:url` in `index.html` are duplicated the same way on 30 to 32 of the 37 routes, but five routes set none of their own (`/alertas`, `/archivo`, `/casos`, `/fuentes`, `/saved`) and depend on the fixed ones. Removing them needs those five to set their own first.
+
 ## Google News sitemap (`sitemap-news.xml`)
 
 A second, separate sitemap for Google News / Discover freshness. Served at `GET /api/sitemap-news.xml` (`newsSitemapRouter` in `server/src/routes/public/sitemap.ts`); the Azure SWA rewrite in `client/public/staticwebapp.config.json` maps `/sitemap-news.xml` → `/api/sitemap-news.xml`, and `client/public/robots.txt` lists it as a second `Sitemap:` line.
