@@ -79,7 +79,7 @@ A live send (`sendLive`, called by the `send_newsletter` and `send_weekly_newsle
 
 **Stale in this file:** the HTML template section still describes a Ko-fi link and Plunk's unsubscribe tag. Ko-fi is gone from the code (director, 2-3 oct-2026) and the provider is Brevo.
 
-**Open:** the editor's byline photo is served from `impactoindigena.com/wp-content/…/vc-vertical.webp` (another brand's WordPress, WebP, 125 KB) in every email.
+**Editor photo (2-nov-2026, with the director's permission):** the byline photo lives at `client/public/images/editor-venancio.jpg`, served as `${config.siteUrl}/images/editor-venancio.jpg`. Until then every email loaded it from `impactoindigena.com/wp-content/…/vc-vertical.webp`: another brand's WordPress, a WebP several desktop email clients don't show, 804×921 px and 125,738 bytes for a 40 px circle, squashed wherever `object-fit` is ignored. Now it is a 120×120 JPEG cropped to the face (6,081 bytes). `newsletter.test.ts` checks that the email points to the site and that the file is a square JPEG under 20 KB.
 
 ## Podcast
 

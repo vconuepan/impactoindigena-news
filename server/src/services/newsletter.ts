@@ -627,7 +627,11 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
           </tr>`
     : ''
 
-  // Editor byline
+  // Editor byline. La foto vive en el sitio (`client/public/images/editor-venancio.jpg`):
+  // hasta el 2-nov-2026 cada correo la pedía al WordPress de impactoindigena.com, otra
+  // marca y otro dominio, en WebP de 804×921 (125 KB) que varios clientes de correo de
+  // escritorio no muestran. Ahora es un JPEG cuadrado de 120×120 recortado a la cara:
+  // sin `object-fit`, que muchos clientes ignoran y aplastaban la foto vertical.
   const editorSection = `
           <!-- Editor byline -->
           <tr>
@@ -635,7 +639,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="padding-right: 12px; vertical-align: middle;">
-                    <img src="https://impactoindigena.com/wp-content/uploads/2025/05/vc-vertical.webp" alt="Venancio Co&ntilde;uepan" width="40" height="40" style="display: block; width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
+                    <img src="${config.siteUrl}/images/editor-venancio.jpg" alt="Venancio Co&ntilde;uepan" width="40" height="40" style="display: block; width: 40px; height: 40px; border-radius: 50%;" />
                   </td>
                   <td style="vertical-align: middle;">
                     <p style="margin: 0; font-size: 13px; font-weight: 700; color: #111827;">Venancio Co&ntilde;uepan</p>

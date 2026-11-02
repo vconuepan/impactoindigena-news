@@ -72,6 +72,32 @@ describe('generateHtmlContent', () => {
     return lines.join('\n')
   }
 
+  // La foto del editor vive en el sitio. Hasta el 2-nov-2026 cada correo la pedía al
+  // WordPress de impactoindigena.com (otra marca), en WebP que varios clientes no muestran.
+  it('la foto del editor sale del sitio, nunca del WordPress de la marca anterior', async () => {
+    mockPrisma.newsletter.findUnique.mockResolvedValue({
+      ...baseNewsletter,
+      content: storyBlock({ issue: 'Territorio', title: 'Una nota', publisher: 'Medio', url: 'https://example.com/n', body: 'Texto.' }),
+    })
+    const html = await generateHtmlContent('nl-1')
+
+    expect(html).toContain('/images/editor-venancio.jpg')
+    expect(html).not.toContain('impactoindigena.com')
+    expect(html).not.toMatch(/\.webp/)
+  })
+
+  it('el archivo de la foto existe en el sitio: JPEG cuadrado y liviano', async () => {
+    const { readFileSync, statSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const ruta = fileURLToPath(new URL('../../../client/public/images/editor-venancio.jpg', import.meta.url))
+    const bytes = readFileSync(ruta)
+    expect(bytes.subarray(0, 3)).toEqual(Buffer.from([0xff, 0xd8, 0xff]))
+    expect(statSync(ruta).size).toBeLessThan(20_000)
+    const { loadImage } = await import('@napi-rs/canvas')
+    const img = await loadImage(bytes)
+    expect(img.width).toBe(img.height)
+  })
+
   it('renders the intro section before stories', async () => {
     const content = [
       'Something hopeful happened in climate science.',
