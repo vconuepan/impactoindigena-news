@@ -34,6 +34,7 @@
     "migration:backfill-narrative-frame": "tsx src/scripts/migrations/backfill-narrative-frame.ts",
     "migration:backfill-narrative-frame:test": "tsx src/scripts/migrations/backfill-narrative-frame.ts --test",
     "migration:backfill-embeddings": "tsx src/scripts/migrations/backfill-embeddings.ts",
+    "calibrar:busqueda": "tsx --env-file=.env src/scripts/calibrar-busqueda.ts",
     "migration:backfill-embeddings:test": "tsx src/scripts/migrations/backfill-embeddings.ts --test",
     "migration:backfill-old-story-titles": "tsx src/scripts/migrations/backfill-old-story-titles.ts",
     "migration:backfill-old-story-titles:test": "tsx src/scripts/migrations/backfill-old-story-titles.ts --test",

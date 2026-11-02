@@ -184,19 +184,23 @@ export const config = {
   },
   search: {
     // Distancia coseno maxima para que una historia entre en los resultados
-    // semanticos. `<=>` de pgvector sobre embeddings normalizados da [0,2], y
-    // **1.0 es la ortogonalidad**: dos textos sin relacion lineal. El valor sale
-    // de esa geometria, no de una calibracion sobre este corpus.
+    // semanticos (`<=>` de pgvector: 1 - coseno). CALIBRADO el 2-nov-2026 con
+    // datos reales: `lib/calibracion/busqueda-2026-11-02.json`, el script
+    // `scripts/calibrar-busqueda.ts` y `.context/embeddings.md`.
     //
-    // Hasta el 11-sep-2026 no habia ningun filtro: la consulta ordenaba por
-    // distancia y cortaba en 50, asi que un teclazo como `qwertzxcvnoexiste`
-    // devolvia 50 articulos sin relacion —contra 96 de «mapuche»— y la pagina
-    // no podia mostrar su estado vacio porque nunca llegaba a cero.
+    // Por que 0.76. Con el tope anterior (1.0, la ortogonalidad, elegido por
+    // geometria) no se descartaba nada: un teclazo devolvia los 50 mas cercanos.
+    // Calificados a ciegas 329 pares de la franja dudosa, por encima de 0.76 la
+    // pertinencia media es 0.043; entre 0.74 y 0.76, 0.49. Con 0.76 se pierden 4
+    // de 154 pertinentes (2 los recupera la pierna de texto) y los no
+    // pertinentes bajan de 175 a 87. Las consultas sin sentido quedan vacias.
     //
-    // Es conservador a proposito: mas vale dejar pasar algo dudoso que esconder
-    // un resultado bueno. Para ajustarlo con datos reales hace falta la base;
-    // el procedimiento esta en el comentario de `searchByEmbedding`.
-    maxCosineDistance: parseFloat(process.env.SEARCH_MAX_COSINE_DISTANCE || "1.0"),
+    // Sigue el criterio conservador de septiembre: mas vale dejar pasar algo
+    // dudoso que esconder un resultado bueno. Va junto con la pierna de texto en
+    // ingles (`hybridSearch`): sin ella, una palabra suelta en ingles («water»)
+    // quedaba vacia. `vectors-calibracion.test.ts` impide cambiarlo sin datos
+    // nuevos. Se ajusta con `SEARCH_MAX_COSINE_DISTANCE`.
+    maxCosineDistance: parseFloat(process.env.SEARCH_MAX_COSINE_DISTANCE || "0.76"),
   },
   audit: {
     // Días que se conserva el registro de actividad (`audit_log`) antes de

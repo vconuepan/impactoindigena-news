@@ -119,6 +119,30 @@ describe('Public Stories API', () => {
       )
     })
 
+    // Una palabra suelta en inglés queda lejos de los vectores en español aunque
+    // trate de lo mismo; sin esto, el umbral semántico (0,76) dejaba «water» sin
+    // ningún resultado (medido el 2-nov-2026).
+    it('la pierna de texto busca también en el título y el resumen en inglés', async () => {
+      mockPrisma.story.findMany.mockResolvedValue([publicStory])
+
+      const res = await request(app).get('/api/stories?search=water')
+      expect(res.status).toBe(200)
+      expect(mockPrisma.story.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            AND: expect.arrayContaining([
+              expect.objectContaining({
+                OR: expect.arrayContaining([
+                  expect.objectContaining({ titleEn: { contains: 'water', mode: 'insensitive' } }),
+                  expect.objectContaining({ summaryEn: { contains: 'water', mode: 'insensitive' } }),
+                ]),
+              }),
+            ]),
+          }),
+        }),
+      )
+    })
+
     it('alerts and falls back to text-only when semantic search fails', async () => {
       mockEmbedding.generateSearchEmbedding.mockRejectedValueOnce(new Error('Azure 401 Unauthorized'))
       mockPrisma.story.findMany.mockResolvedValue([publicStory])

@@ -829,7 +829,12 @@ async function hybridSearch(options: {
         return []
       }
     })(),
-    // Text search leg
+    // Text search leg. Busca tambien en el titulo y el resumen en ingles: las
+    // palabras sueltas en ingles quedan lejos de los vectores en espanol aunque
+    // traten de lo mismo («water» → 0,767 del mas cercano, con 90 % de
+    // pertinentes), asi que el umbral semantico calibrado (0,76) las vaciaba y
+    // esta pierna, solo en espanol, no las rescataba. Medido el 2-nov-2026:
+    // `.context/embeddings.md`.
     (async () => {
       const conditions: Prisma.StoryWhereInput[] = []
       conditions.push({
@@ -837,6 +842,8 @@ async function hybridSearch(options: {
           { title: { contains: query, mode: 'insensitive' } },
           { sourceTitle: { contains: query, mode: 'insensitive' } },
           { summary: { contains: query, mode: 'insensitive' } },
+          { titleEn: { contains: query, mode: 'insensitive' } },
+          { summaryEn: { contains: query, mode: 'insensitive' } },
         ],
       })
       if (issueSlug) {

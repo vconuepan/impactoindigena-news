@@ -124,22 +124,14 @@ export async function saveEmbeddingTx(
  * `search.noResults` existe y esta traducida—, pero ese estado era inalcanzable
  * porque el backend nunca devolvia cero.
  *
- * SOBRE EL UMBRAL: `<=>` es distancia coseno y los embeddings de OpenAI vienen
- * normalizados, asi que el rango es [0,2] y **1.0 es la ortogonalidad** — dos
- * textos sin ninguna relacion lineal. El valor por defecto sale de ahi, de la
- * geometria y no de una calibracion: es deliberadamente conservador, descarta
- * solo lo que por construccion no guarda relacion.
- *
- * **No esta calibrado contra este corpus**, porque medir distancias reales exige
- * la base y esta tras el firewall. Para ajustarlo con datos, con el firewall
- * abierto:
- *
- *   SELECT s.title, s.embedding <=> '[...]'::vector AS distancia
- *   FROM stories s WHERE s.status='published' AND s.embedding IS NOT NULL
- *   ORDER BY 2 LIMIT 20;
- *
- * comparando una consulta real contra una inventada y poniendo el corte entre
- * las dos nubes. Se cambia con `SEARCH_MAX_COSINE_DISTANCE`, sin tocar codigo.
+ * SOBRE EL UMBRAL: `<=>` es distancia coseno (1 - coseno). El primer valor,
+ * 1.0, era la ortogonalidad y no descartaba nada: con text-embedding-3-small dos
+ * textos sin relacion quedan entre 0,7 y 0,9. **Calibrado el 2-nov-2026 en 0.76**
+ * sin tocar la base: se replicaron los embeddings de las 4.893 noticias desde la
+ * API publica y se calificaron a ciegas 329 pares de la franja dudosa. Por encima
+ * de 0,76 la pertinencia media es 0,043. Metodo y datos: `scripts/calibrar-busqueda.ts`,
+ * `lib/calibracion/busqueda-2026-11-02.json` y `.context/embeddings.md`. Se cambia
+ * con `SEARCH_MAX_COSINE_DISTANCE`, sin tocar codigo.
  */
 export async function searchByEmbedding(
   queryEmbedding: number[],

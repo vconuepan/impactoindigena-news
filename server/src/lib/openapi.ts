@@ -290,7 +290,9 @@ export function getOpenAPIDocument(): any {
               description:
                 'Semantic search query — searches by meaning, not just keywords. Subject to a stricter rate limit (20 requests per 15 minutes). ' +
                 'Returns at most 100 matches (up to 50 semantic matches plus up to the 50 most recent keyword matches, merged by reciprocal rank fusion); ' +
-                '`total` counts that capped set, not every matching story.',
+                '`total` counts that capped set, not every matching story. ' +
+                'Semantic matches farther than a calibrated cosine distance are dropped, so a query with no related stories returns zero results. ' +
+                'Keyword matching covers the Spanish and English title and summary.',
             },
             {
               name: 'emotionTags',
