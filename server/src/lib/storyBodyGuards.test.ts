@@ -4,6 +4,7 @@ import {
   avisosBloqueantes,
   hablaDelArticulo,
   limpiarCuerpo,
+  respaldoConFecha,
   revisarCuerpo,
   sinComillasAjenas,
   tramosCopiados,
@@ -42,9 +43,9 @@ describe('revisarCuerpo', () => {
     expect(avisos.map((a) => a.tipo)).toContain('anio')
   })
 
-  it('un tramo de doce palabras copiado fuera de la cita es bloqueante', () => {
+  it('un tramo de más de dieciséis palabras copiado fuera de la cita es bloqueante', () => {
     const avisos = revisarCuerpo(
-      cuerpo({ queSigue: 'Se construirán dos Bachilleratos Nacionales Margarita Maza, un centro deportivo México Imparable y un Centro LIBRE para mujeres en Apatzingán.' }),
+      cuerpo({ queSigue: 'Sheinbaum también anunció la construcción de dos Bachilleratos Nacionales Margarita Maza, un centro deportivo México Imparable y un Centro LIBRE para mujeres en Apatzingán.' }),
       ORIGINAL,
       2026,
     )
@@ -92,8 +93,8 @@ describe('tramosCopiados', () => {
     expect(tramosCopiados(copia, ORIGINAL)).toHaveLength(1)
   })
 
-  it('no salta con once palabras ni con la cita', () => {
-    expect(tramosCopiados('aprobó el proyecto de Ley de Inviolabilidad de la Propiedad Privada', ORIGINAL)).toEqual([])
+  it('no salta con quince palabras ni con la cita', () => {
+    expect(tramosCopiados('La Cámara de Diputados aprobó el proyecto de Ley de Inviolabilidad de la Propiedad Privada', ORIGINAL)).toEqual([])
     expect(tramosCopiados('Dijo: «Las comunidades van a resistir», y nada más que eso dijo esa tarde.', ORIGINAL)).toEqual([])
   })
 })
@@ -105,10 +106,39 @@ describe('agencia y meta', () => {
   it('los pueblos de sujeto no abren con el medio', () => {
     expect(abreConElMedio('Las comunidades mapuche enfrentan…')).toBe(false)
   })
-  it.each(['El artículo muestra', 'Según la nota,', 'Este reportaje indica'])('%s habla del artículo', (t) => {
+  it.each(['El artículo muestra', 'Según el artículo,', 'Este artículo indica'])('%s habla del artículo', (t) => {
     expect(hablaDelArticulo(t)).toBe(true)
   })
-  it('nombrar un artículo de ley no es hablar del artículo', () => {
-    expect(hablaDelArticulo('El artículo 19 de la Constitución…')).toBe(false)
+  it.each([
+    'El artículo 19 de la Constitución…',
+    // Medido en producción el 2-nov-2026: «el informe» y «la nota» son la noticia misma.
+    'El informe de la ONG señala que…',
+    'La nota diplomática exige…',
+    'Según el reportaje de Mongabay, …',
+  ])('%s no es hablar del artículo', (t) => {
+    expect(hablaDelArticulo(t)).toBe(false)
+  })
+})
+
+describe('respaldoConFecha y sinAnioImposible', () => {
+  it('el día y el año de la fecha dada al modelo no cuentan como cifras inventadas', () => {
+    const bajada = 'Las comunidades presentaron la denuncia el 2 de noviembre de 2026 en Ciudad de Guatemala.'
+    const sin = revisarCuerpo(cuerpo({ bajada }), ORIGINAL, 2026).filter((a) => a.campo === 'bajada')
+    expect(sin.map((a) => a.tipo)).toContain('cifra')
+    const con = revisarCuerpo(cuerpo({ bajada }), respaldoConFecha(ORIGINAL, '2 de noviembre de 2026'), 2026).filter((a) => a.campo === 'bajada')
+    expect(con.map((a) => a.tipo)).not.toContain('cifra')
+  })
+
+  it('un año imposible copiado de la errata de la fuente sigue bloqueando, aunque la fuente lo traiga', () => {
+    const avisos = revisarCuerpo(cuerpo({ queSigue: 'Las comunidades presentaron la denuncia en octubre de 2027.' }), ORIGINAL + ' 2 de noviembre de 2027', 2026)
+    expect(avisos.filter((a) => a.tipo === 'anio')).toHaveLength(1)
+  })
+
+  it('un nombre oficial con su artículo (quince palabras) no cuenta como copia; dieciséis seguidas sí', () => {
+    const nombre = 'Plan de Acción Nacional de Canadá para el Decenio Internacional de las Lenguas Indígenas'
+    const fuente = `${ORIGINAL} El ${nombre} fue presentado en Ottawa.`
+    expect(tramosCopiados(`Hoy se presentó el ${nombre} con fondos nuevos, según el Gobierno.`, fuente)).toEqual([])
+    const dieciseis = 'la camara de diputados aprobo el proyecto de ley de inviolabilidad de la propiedad privada que facilita los desalojos y restringe'
+    expect(tramosCopiados(`Ayer ${dieciseis} todo, y nadie protestó.`, ORIGINAL)).toHaveLength(1)
   })
 })

@@ -22,7 +22,7 @@ import { withRetry } from '../lib/retry.js'
 import { publisherFromUrl } from '../lib/publisher.js'
 import { buildStoryBodyPrompt } from '../prompts/story-body.js'
 import { storyBodySchema, type StoryBodyResult } from '../schemas/llm.js'
-import { CAMPOS, avisosBloqueantes, limpiarCuerpo, palabras, revisarCuerpo, type BodyAviso } from '../lib/storyBodyGuards.js'
+import { CAMPOS, avisosBloqueantes, limpiarCuerpo, palabras, respaldoConFecha, revisarCuerpo, type BodyAviso } from '../lib/storyBodyGuards.js'
 
 const API = process.env.VOCES_API ?? 'https://vocesindigenas.org/api'
 const MAX_CHARS = parseInt(process.env.STORY_BODY_MAX_SOURCE_CHARS || '15000', 10)
@@ -102,8 +102,10 @@ async function medir(slug: string): Promise<string> {
   const precio = PRECIOS[despliegue] ?? { entrada: 0, salida: 0 }
   const costo = (entrada * precio.entrada + salida * precio.salida) / 1_000_000
 
+  // Igual que el pipeline (services/storyBody.ts): la fecha dada al modelo
+  // cuenta como respaldo de sus cifras.
   const cuerpo = limpiarCuerpo(parsed as StoryBodyResult, original)
-  const avisos = revisarCuerpo(cuerpo, original, anioReferencia)
+  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fechaOriginal), anioReferencia)
   const bloqueantes = avisosBloqueantes(avisos)
   const totalPalabras = CAMPOS.reduce((n, c) => n + palabras(cuerpo[c] ?? '').length, 0)
 

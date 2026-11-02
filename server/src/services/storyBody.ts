@@ -10,6 +10,7 @@ import {
   CAMPOS,
   avisosBloqueantes,
   limpiarCuerpo,
+  respaldoConFecha,
   revisarCuerpo,
   type BodyAviso,
   type StoryBodyText,
@@ -95,11 +96,12 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
   // La fecha va siempre: sin ella, el modelo puso «la elección de 2023» a una
   // nota de The Guardian sobre la elección de este año (medido el 25-oct-2026).
   const fechaRef = story.sourceDatePublished ?? story.datePublished ?? story.dateCrawled
+  const fecha = FORMATO_FECHA.format(fechaRef)
   const prompt = buildStoryBodyPrompt({
     sourceTitle: story.sourceTitle,
     sourceContent: recortar(original, config.storyBody.maxSourceChars),
     publisher,
-    sourceDate: FORMATO_FECHA.format(fechaRef),
+    sourceDate: fecha,
   })
 
   const tier = config.storyBody.modelTier
@@ -114,8 +116,9 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
     return { outcome: 'failed', reason: err instanceof Error ? err.message : String(err) }
   }
   const uso = (raw as { usage_metadata?: { input_tokens?: number; output_tokens?: number } } | null)?.usage_metadata
+  const anio = fechaRef.getFullYear()
   const cuerpo = limpiarCuerpo(parsed as StoryBodyResult, original)
-  const avisos = revisarCuerpo(cuerpo, original, fechaRef.getFullYear())
+  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fecha), anio)
   const bloqueantes = avisosBloqueantes(avisos)
 
   if (bloqueantes.length > 0) {
@@ -200,8 +203,9 @@ export async function updateStoryBody(
     queSigue: cambios.queSigue ?? existente.queSigue,
   }
   const original = story.sourceContent ?? ''
-  const anio = (story.sourceDatePublished ?? story.datePublished ?? story.dateCrawled).getFullYear()
-  const avisos = revisarCuerpo(cuerpo, original, anio)
+  const fechaRef = story.sourceDatePublished ?? story.datePublished ?? story.dateCrawled
+  const anio = fechaRef.getFullYear()
+  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, FORMATO_FECHA.format(fechaRef)), anio)
   const bloqueantes = avisosBloqueantes(avisos)
   if (bloqueantes.length > 0) {
     throw new StoryBodyError(`No se guarda: ${bloqueantes.map((a) => a.mensaje).join(' ')}`, avisos)

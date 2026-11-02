@@ -43,8 +43,13 @@ completo (tope `maxSourceChars`, 15.000) con el medio y **siempre una fecha** (l
 la de publicación, si no la de rastreo) y redacta bajada + cuatro claves (`prompts/story-body.ts`).
 El resultado pasa por `limpiarCuerpo` (quita comillas de una cita no textual, vacía un «qué sigue»
 que explica que no hay) y por `revisarCuerpo` (`lib/storyBodyGuards.ts`): cita, cifra, identidad,
-pueblo, año futuro, copia de doce palabras, agencia de la bajada y texto «meta» **bloquean**; el
-largo solo avisa. **Fallo cerrado:** con un bloqueante no se escribe nada y la ficha sale con el
+pueblo, año futuro, copia de dieciséis palabras, agencia de la bajada y texto «meta» («el artículo…»)
+**bloquean**; el largo solo avisa. Tres ajustes medidos en las cuatro primeras franjas (31-oct a
+2-nov-2026, 20 de 36 bloqueadas): el día y el año de la fecha que el prompt da al modelo cuentan como
+respaldo de cifras (`respaldoConFecha`: 11 de 13 bloqueos eran «cifra:bajada» por esa fecha); la
+ventana de copia pasó de 12 a 16 (un nombre oficial con su artículo tiene quince); y «meta» ya no
+mira «el informe», «el reportaje» ni «la nota», que son la noticia misma. El año futuro **no** se
+quita a mitad de frase (borraría fechas futuras legítimas): una fuente con errata «2027» pierde el cuerpo. **Fallo cerrado:** con un bloqueante no se escribe nada y la ficha sale con el
 resumen. Se salta sin llamar al modelo: URL de Google News, original bajo `minSourceChars` (1.200),
 `STORY_BODY_ENABLED=false`, tabla ausente (P2021).
 

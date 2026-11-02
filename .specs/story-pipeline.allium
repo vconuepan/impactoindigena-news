@@ -323,21 +323,28 @@ invariant BodyQuotesAreVerbatim {
     forall b: StoryBody, q in quotes(b.text): verbatim(q, b.story.source_content)
 }
 invariant BodyFiguresAreSourced {
-    -- Every digit group in the body is in the source (a year the outlet did not
-    -- give is an invented fact under the outlet's byline).
-    forall b: StoryBody, n in digit_groups(b.text): n in digit_groups(b.story.source_content)
+    -- Every digit group in the body is in the source or in the date the prompt
+    -- gave the model (a year the outlet did not give is an invented fact under
+    -- the outlet's byline; the feed's date is not). Measured 2026-10-31 to
+    -- 11-02: 11 of 13 blocked bodies were the date's day or year in the lede.
+    forall b: StoryBody, n in digit_groups(b.text):
+        n in digit_groups(b.story.source_content) or n in digit_groups(date_text(b.story))
 }
 invariant BodyNamesNoPeopleTheSourceDidNot {
     -- «indígena» and the name of a people only if the source says so.
     forall b: StoryBody: not identity_without_support(b.text, b.story.source_content)
 }
 invariant BodyHasNoFutureYear {
+    -- Blocks even when the source carries the year: two outlets date their
+    -- ledes «2027» by mistake. Nothing is stripped mid-sentence (it would erase
+    -- legitimate future dates); the story keeps its summary instead.
     forall b: StoryBody: years_after(b.text, year(date_of(b.story))) = []
 }
 invariant BodyDoesNotCopyTheSource {
     -- Chile has no press exception; art. 71 B covers the short quote, not
-    -- reproduction. Outside the quote, no 12 consecutive words match the source.
-    forall b: StoryBody: shared_windows(b.text minus quotes, b.story.source_content, 12) = []
+    -- reproduction. Outside the quote, no 16 consecutive words match the source
+    -- (12 until 2026-11-02: it flagged official names of fifteen words).
+    forall b: StoryBody: shared_windows(b.text minus quotes, b.story.source_content, 16) = []
 }
 invariant BodyDoesNotOpenWithTheOutlet {
     -- House language rule 1: the lede's subject is the peoples, people or facts.

@@ -33,6 +33,23 @@ import {
 } from './storyCarouselGuards.js'
 import { yearsAfter } from './future-year.js'
 
+/**
+ * Lo que el candado de cifras acepta además del artículo: la fecha que el
+ * prompt le dio al modelo. Medido en las cuatro primeras franjas en producción
+ * (31-oct a 2-nov-2026): 11 de 13 cuerpos bloqueados lo fueron por
+ * «cifra:bajada», y la cifra era el día o el año de esa fecha, que el modelo
+ * escribe en la bajada porque se le pide «cuándo» y que el texto del artículo
+ * no trae. Un día y un año que vienen del feed no son cifras inventadas.
+ *
+ * El año FUTURO no se quita: `future-year.ts` solo toca «En AAAA,» al inicio
+ * de una oración en pretérito y, si duda, no toca; estirarlo a mitad de frase
+ * borraría fechas futuras legítimas («la audiencia se fijó para 2027»). Un
+ * cuerpo con un año imposible sigue bloqueado, y la ficha sale con el resumen.
+ */
+export function respaldoConFecha(original: string, fechaTexto: string): string {
+  return `${original}\n${fechaTexto}`
+}
+
 export interface StoryBodyText {
   bajada: string
   quePaso: string
@@ -62,8 +79,15 @@ export const LARGOS: Record<CampoCuerpo, [number, number]> = {
 
 export const CAMPOS: CampoCuerpo[] = ['bajada', 'quePaso', 'porQueImporta', 'contexto', 'queSigue']
 
-/** Palabras del tramo que no puede coincidir con el original. */
-export const VENTANA_COPIA = 12
+/**
+ * Palabras del tramo que no puede coincidir con el original. Era 12 hasta el
+ * 2-nov-2026; medido en las cuatro primeras franjas en producción, bloqueó
+ * nombres oficiales largos («Plan de Acción Nacional de Canadá para el Decenio
+ * Internacional de las Lenguas Indígenas»), que no son copia sino el nombre de
+ * la cosa: con su artículo son quince palabras. Con 16 sigue siendo un
+ * «fragmento breve» para el art. 71 B.
+ */
+export const VENTANA_COPIA = 16
 
 export function palabras(texto: string): string[] {
   return normalizar(texto).replace(/[^a-z0-9ñ' ]+/g, ' ').split(' ').filter(Boolean)
@@ -84,7 +108,10 @@ export function abreConElMedio(texto: string): boolean {
  */
 // «El artículo 19» es una ley y «el texto» suele ser un proyecto de ley: ni uno
 // ni otro es la nota hablando de su fuente. Solo cuenta «el artículo» sin número.
-const HABLA_DEL_ARTICULO = /(^|[^a-z])(el|este|dicho) (articulo|reportaje|informe)(?! \d)($|[^a-z])|(^|[^a-z])(la|esta) nota($|[^a-z])|segun (el|la) (nota|articulo|medio)/
+// «El informe», «el reportaje» y «la nota» salieron el 2-nov-2026: medido en
+// producción, «el informe» es casi siempre la noticia misma (el informe de una
+// ONG que la nota cuenta) y bloqueaba cuerpos fieles.
+const HABLA_DEL_ARTICULO = /(^|[^a-z])(el|este|dicho) articulo(?! \d)($|[^a-z])|segun el articulo/
 
 /** Un campo que dice que el artículo no trae el dato tenía que ir vacío. */
 const DICE_QUE_NO_HAY = /^(el|este) (articulo|texto|reportaje) no (menciona|indica|detalla|dice|precisa|informa|senala|especifica)/

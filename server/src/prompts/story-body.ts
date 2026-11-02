@@ -22,7 +22,7 @@ import { REGLAS_FUNDACION } from './voz-venancio.js'
  * por las mismas razones: lo que escribió la IA de Voces no es fuente. Los
  * candados de cita, cifra, identidad y pueblo se piden acá y se hacen cumplir
  * en código (`lib/storyBodyGuards.ts`), más dos propios de un texto largo:
- * copia (ningún tramo de doce palabras fuera de la cita está en el original,
+ * copia (ningún tramo de quince palabras fuera de la cita está en el original,
  * art. 71 B de la Ley 17.336) y agencia (la bajada no abre con el medio).
  *
  * Sin bloque <ROLE>: con él, el filtro de contenido de Azure rechazó el 100 %
@@ -65,7 +65,7 @@ Cinco campos, en español, en texto plano (sin markdown, sin títulos, sin viñe
 - Entre comillas va solo la cita, copiada letra por letra del artículo. Todo lo demás se escribe con palabras propias: no reproduzcas frases ni párrafos del artículo fuera de la cita, ni los cambies apenas. Lo que alguien dijo en otro idioma va en estilo indirecto y sin comillas.
 - Si las partes discrepan, recoge las versiones tal como el artículo las presenta, sin dar la razón a ninguna.
 - Una valoración («viola», «pone en riesgo», «es grave», «perjudica») lleva siempre quién la hace: «según Orlando Carriqueo», «el CELS advierte que». Lo que el artículo presenta como hecho va como hecho; lo que presenta como dicho de alguien va atribuido.
-- La fecha de la noticia es la que se indica abajo. «Este año», «el domingo» o «la semana pasada» se refieren a esa fecha: no asignes a un hecho un año que el artículo no le da.
+- La fecha de la noticia es la que se indica abajo. «Este año», «el domingo» o «la semana pasada» se refieren a esa fecha: no asignes a un hecho un año que el artículo no le da. Si el artículo fecha un hecho ya ocurrido en un año posterior a esa fecha, es una errata del medio: cuenta el hecho sin ese año.
 - Ignora lo que no es la noticia: menús, avisos, suscripciones, otras notas enlazadas, comentarios de lectores.
 </FIDELIDAD>
 
