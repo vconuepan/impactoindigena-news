@@ -4,6 +4,7 @@ import { escapeHtml } from '../../lib/escapeHtml.js'
 import prisma from '../../lib/prisma.js'
 import { config } from '../../config.js'
 import { requireMember } from '../../middleware/auth.js'
+import { conPiso } from '../../lib/agregado.js'
 import { sendTransactional } from '../../services/brevo.js'
 import { vitrinaEncendida, notasDeVitrina, contarVitrina, comoNotaPublica, mezclarPorFecha, fichaDeVitrina, itemsDeVitrina, mezclarItems, elegirDestacadas, CANDIDATAS_DESTACADAS, type ItemDeSuperficie } from '../../services/brandShowcase.js'
 import {
@@ -83,7 +84,10 @@ router.get('/:slug', async (req, res) => {
     }
     res.set('Cache-Control', 'public, max-age=300')
     const { _count, ...rest } = community
-    res.json({ ...rest, memberCount: _count.members })
+    // k ≥ 5: por debajo del piso el conteo va en null y la página no lo
+    // muestra. En una comunidad PUEBLO, «1 miembro» es una persona que se
+    // adscribió a un pueblo (lib/agregado.ts).
+    res.json({ ...rest, memberCount: conPiso(_count.members) })
   } catch (err) {
     log.error({ err, slug: req.params.slug }, 'failed to fetch community')
     res.status(500).json({ error: 'Failed to fetch community' })

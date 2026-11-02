@@ -61,6 +61,10 @@ y dice la verdad: sin revisión lo declara. Los bloques de puntaje («Por qué i
 En inglés cada campo cae al español mientras no esté traducido. Las tarjetas, el RSS, el boletín y
 la meta description siguen usando `summary`: el cuerpo no cambia su significado.
 
+## Aggregates published about people: k ≥ 5 (2-nov-2026)
+
+`GET /api/communities/:slug` returns `memberCount` only when the community has at least 5 members; below that it is `null` and `CommunityPage` shows nothing (`server/src/lib/agregado.ts`, `conPiso`). The rule is the project's: indigenous data is published aggregated, with k ≥ 5 and without crossing dimensions (CLAUDE.md, «El origen étnico es dato sensible»). In a PUEBLO community, «1 miembro» is one person who declared belonging to a people, which is the sensitive datum itself. Measured 18-oct and 2-nov-2026: the endpoint published `memberCount: 0` with no floor on all seven PUEBLO communities. Any new public count about members, subscribers or readers of a community goes through `conPiso` too.
+
 ## Positivity Slider
 
 A 5-position slider (0%, 25%, 50%, 75%, 100%) that controls the emotional tone of displayed stories. Default is 50% (balanced). Persisted in localStorage under `ar-positivity`. On the homepage the mix happens client-side with no extra request; on issue pages the slider position becomes an `emotionTags` filter sent to the server (see below).

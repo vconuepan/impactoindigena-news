@@ -121,6 +121,25 @@ describe('Communities API', () => {
       expect(res.body._count).toBeUndefined()
     })
 
+    // k ≥ 5 (CLAUDE.md): en una comunidad PUEBLO, «1 miembro» es una persona
+    // que se adscribió a un pueblo. Medido el 18-oct-2026: se publicaba 0 sin piso.
+    it.each([0, 1, 4])('con %i miembros el conteo va en null, no se publica', async (n) => {
+      mockPrisma.community.findFirst.mockResolvedValue({ ...sampleCommunity(), _count: { members: n } })
+
+      const res = await request(app).get('/api/communities/pueblo-mapuche')
+
+      expect(res.status).toBe(200)
+      expect(res.body.memberCount).toBeNull()
+    })
+
+    it('con 5 miembros, el piso, se publica', async () => {
+      mockPrisma.community.findFirst.mockResolvedValue({ ...sampleCommunity(), _count: { members: 5 } })
+
+      const res = await request(app).get('/api/communities/pueblo-mapuche')
+
+      expect(res.body.memberCount).toBe(5)
+    })
+
     it('returns 404 for unknown slug', async () => {
       mockPrisma.community.findFirst.mockResolvedValue(null)
 

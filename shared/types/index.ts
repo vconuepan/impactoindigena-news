@@ -763,7 +763,8 @@ export interface Community {
   keywords: string[]
   lat: number | null
   lng: number | null
-  memberCount?: number
+  /** Solo en `GET /api/communities/:slug`; `null` por debajo del piso k ≥ 5. */
+  memberCount?: number | null
   createdAt: string
   updatedAt: string
 }

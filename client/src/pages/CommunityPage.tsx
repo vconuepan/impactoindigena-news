@@ -488,9 +488,10 @@ export default function CommunityPage() {
               {community.region && (
                 <p className="text-xs text-neutral-400">{community.region}</p>
               )}
-              {community.memberCount !== undefined && community.memberCount > 0 && (
+              {/* El servidor manda null por debajo del piso k ≥ 5: no se muestra. */}
+              {typeof community.memberCount === 'number' && community.memberCount > 0 && (
                 <p className="text-xs text-neutral-400">
-                  {community.memberCount} {community.memberCount === 1 ? 'miembro' : 'miembros'}
+                  {community.memberCount} miembros
                 </p>
               )}
             </div>
