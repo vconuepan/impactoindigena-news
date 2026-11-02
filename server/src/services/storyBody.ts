@@ -118,7 +118,7 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
   const uso = (raw as { usage_metadata?: { input_tokens?: number; output_tokens?: number } } | null)?.usage_metadata
   const anio = fechaRef.getFullYear()
   const cuerpo = limpiarCuerpo(parsed as StoryBodyResult, original)
-  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fecha), anio)
+  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fecha, story.sourceTitle), anio)
   const bloqueantes = avisosBloqueantes(avisos)
 
   if (bloqueantes.length > 0) {
@@ -192,7 +192,7 @@ export async function updateStoryBody(
 ): Promise<{ avisos: BodyAviso[] }> {
   const existente = await getStoryBody(storyId)
   if (!existente) throw new StoryBodyError('Esta noticia no tiene nota con claves')
-  const story = await prisma.story.findUnique({ where: { id: storyId }, select: { sourceContent: true, sourceDatePublished: true, datePublished: true, dateCrawled: true } })
+  const story = await prisma.story.findUnique({ where: { id: storyId }, select: { sourceTitle: true, sourceContent: true, sourceDatePublished: true, datePublished: true, dateCrawled: true } })
   if (!story) throw new StoryBodyError('Story not found')
 
   const cuerpo: StoryBodyText = {
@@ -205,7 +205,7 @@ export async function updateStoryBody(
   const original = story.sourceContent ?? ''
   const fechaRef = story.sourceDatePublished ?? story.datePublished ?? story.dateCrawled
   const anio = fechaRef.getFullYear()
-  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, FORMATO_FECHA.format(fechaRef)), anio)
+  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, FORMATO_FECHA.format(fechaRef), story.sourceTitle), anio)
   const bloqueantes = avisosBloqueantes(avisos)
   if (bloqueantes.length > 0) {
     throw new StoryBodyError(`No se guarda: ${bloqueantes.map((a) => a.mensaje).join(' ')}`, avisos)

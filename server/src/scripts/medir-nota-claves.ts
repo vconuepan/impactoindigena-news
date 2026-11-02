@@ -42,7 +42,7 @@ const PRECIOS: Record<string, { entrada: number; salida: number }> = {
   'gpt-4.1-mini': { entrada: 0.4, salida: 1.6 },
   'gpt-4o': { entrada: 2.5, salida: 10 },
 }
-const slugs = args.filter((a, i) => !['--out', '--solo-original', '--tier'].includes(a) && i !== outIdx + 1 && i !== tierIdx + 1)
+const slugs = args.filter((a, i) => !['--out', '--solo-original', '--tier'].includes(a) && (outIdx < 0 || i !== outIdx + 1) && (tierIdx < 0 || i !== tierIdx + 1))
 if (slugs.length === 0 || !out) {
   console.error('uso: medir-nota-claves.ts <slug> [<slug>...] --out <ruta.md>')
   process.exit(1)
@@ -105,7 +105,7 @@ async function medir(slug: string): Promise<string> {
   // Igual que el pipeline (services/storyBody.ts): la fecha dada al modelo
   // cuenta como respaldo de sus cifras.
   const cuerpo = limpiarCuerpo(parsed as StoryBodyResult, original)
-  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fechaOriginal), anioReferencia)
+  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fechaOriginal, extraido.title ?? story.sourceTitle), anioReferencia)
   const bloqueantes = avisosBloqueantes(avisos)
   const totalPalabras = CAMPOS.reduce((n, c) => n + palabras(cuerpo[c] ?? '').length, 0)
 

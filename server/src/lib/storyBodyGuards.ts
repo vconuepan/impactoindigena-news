@@ -45,9 +45,13 @@ import { yearsAfter } from './future-year.js'
  * de una oración en pretérito y, si duda, no toca; estirarlo a mitad de frase
  * borraría fechas futuras legítimas («la audiencia se fijó para 2027»). Un
  * cuerpo con un año imposible sigue bloqueado, y la ficha sale con el resumen.
+ *
+ * El titular del medio también va: el prompt se lo da al modelo, y en la quinta
+ * franja (2-nov-2026, 23:00Z) el único cuerpo bloqueado lo fue por «casi 400»,
+ * que La Tercera escribió en su titular y no en el texto.
  */
-export function respaldoConFecha(original: string, fechaTexto: string): string {
-  return `${original}\n${fechaTexto}`
+export function respaldoConFecha(original: string, fechaTexto: string, titulo = ''): string {
+  return `${titulo}\n${original}\n${fechaTexto}`
 }
 
 export interface StoryBodyText {

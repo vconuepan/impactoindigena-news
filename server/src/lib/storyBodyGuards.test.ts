@@ -129,6 +129,15 @@ describe('respaldoConFecha y sinAnioImposible', () => {
     expect(con.map((a) => a.tipo)).not.toContain('cifra')
   })
 
+  it('una cifra del titular del medio no cuenta como inventada (La Tercera, 2-nov-2026)', () => {
+    const bajada = 'Las comunidades beduinas sufrieron casi 400 ataques de colonos durante octubre.'
+    const titulo = 'Máximo histórico: ONU documenta casi 400 ataques de colonos israelíes en Cisjordania durante octubre'
+    const sin = revisarCuerpo(cuerpo({ bajada }), respaldoConFecha(ORIGINAL, '2 de noviembre de 2026'), 2026).filter((a) => a.campo === 'bajada')
+    expect(sin.map((a) => a.tipo)).toContain('cifra')
+    const con = revisarCuerpo(cuerpo({ bajada }), respaldoConFecha(ORIGINAL, '2 de noviembre de 2026', titulo), 2026).filter((a) => a.campo === 'bajada')
+    expect(con.map((a) => a.tipo)).not.toContain('cifra')
+  })
+
   it('un año imposible copiado de la errata de la fuente sigue bloqueando, aunque la fuente lo traiga', () => {
     const avisos = revisarCuerpo(cuerpo({ queSigue: 'Las comunidades presentaron la denuncia en octubre de 2027.' }), ORIGINAL + ' 2 de noviembre de 2027', 2026)
     expect(avisos.filter((a) => a.tipo === 'anio')).toHaveLength(1)

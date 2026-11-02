@@ -324,6 +324,7 @@ decisión técnica mía, con fundamento; C necesita que el director decida, y se
 | C4 | **Umbral de la nota con claves**: todo lo seleccionado o solo relevancia ≥ 7 | Lo decide el costo medido en A1; si está bajo US$0,01 por nota, todo |
 | C5 | **Aplicar las migraciones** (B1, B5, B8) en pgAdmin cuando el SQL esté | — |
 | C6 | **Empujar** cada tanda cuando esté verificada | — |
+| C7 | **Qué hacer con 3 de 8 cuerpos con error de hecho** (medido el 2-nov, 8 quater): seguir publicando sin revisión con el recuadro · ocultar los `ia_sin_revision` hasta revisarlos · medir antes un segundo paso que contraste cada afirmación con el original | Medir el segundo paso sobre las 24 guardadas del 31-oct al 2-nov (unos US$0,05) antes de decidir, y corregir hoy en el panel las tres con error |
 
 ### 8 · Orden de ejecución y verificación
 
@@ -499,6 +500,39 @@ contenedor corra lo desplegado: hay que leer `Site is running with deployment ve
 
 **Lo que falta:** C6 empujar el ajuste · medir la franja siguiente (esperado: bloqueos por `cifra`
 cerca de cero) · `backfill` de las rezagadas si el director lo pide.
+
+**Ajuste empujado el 2-nov (`e134a0b`, `11977ac`). Quinta franja, 2-nov 20:00 (23:00Z), con la
+versión de despliegue `5ef3a0d3` (corriendo desde las 22:30Z, y contiene `e134a0b`): 9 notas,
+8 guardadas, 1 bloqueada, 0 saltadas, 0 fallidas.** Guardadas: 275 a 429 palabras, 1.902 a 4.208
+tokens de entrada y 400 a 580 de salida, US$0,0019 por nota en promedio (US$0,40 y 1,60 por millón),
+las ocho con inglés. La bloqueada (La Tercera, ataques de colonos en Cisjordania,
+`cifra:bajada`) es **falso positivo**: «casi 400» está en el titular del medio, que el prompt le
+da al modelo y el respaldo del candado no traía. Arreglo commiteado sin empujar: el titular entra
+al respaldo (`respaldoConFecha(original, fecha, titulo)`), con test.
+
+**Hallazgo mayor: lo que los candados no ven.** Las ocho guardadas se leyeron completas en la
+API pública y cuatro se contrastaron contra el original re-extraído. Tres traen errores de hecho
+que pasaron todos los candados, porque las cifras y los nombres existen en el original y lo
+errado es la relación entre ellos:
+
+| Nota | Dice | Dice el original |
+|---|---|---|
+| Nación Osage (Grist) | la Nación Osage recibió «la mayor parte» de los US$4.700 millones | de US$4.700 millones, unos US$150 millones fueron a tribus, y la Osage recibió la mayor parte **de esos** |
+| Acadia (ICT) | «Durante 2026» se retiraron las señales; «la Secretaria» Doug Burgum; «administración Burgum» | «Burgum's 2025 campaign»; «Interior Secretary Doug Burgum»; «a Trump administration campaign» |
+| Nepal (Kathmandu Post) | la crítica «llega en el marco de la COP28» | Lama habló en la COP28 en el pasado; lo de ahora es la COP17 de biodiversidad en Ereván, 19-30 oct 2026 |
+
+Además, en la nota Osage la cita de Fred Beartrack sale sin comillas y con doble verbo («Ellos
+dijeron que…, dijo Fred Beartrack»): una cita traducida del inglés nunca es textual, así que
+`limpiarCuerpo` le quita las comillas. Sin verificar si la frase torcida la escribió el modelo
+o la dejó la limpieza.
+
+Y una nota de Infobae del 26-feb-2026 (Ana Guetío, Cauca) entró por el feed de Google News el
+2-nov y se publicó como noticia del día; el cuerpo le es fiel, el defecto está aguas arriba.
+
+**Lectura:** el bloqueo bajó de 56 % a 11 % y el único que quedó es falso; pero en 3 de 8 hay un
+error que un lector podría detectar. El recuadro lo declara («Nadie la revisó antes de
+publicarla»), que es lo que el plan decidió; el dato nuevo es la tasa. Decisión del director en
+la sección 7, C7.
 
 ### 9 · Riesgos nombrados
 
