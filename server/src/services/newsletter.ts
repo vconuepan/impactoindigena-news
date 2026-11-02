@@ -836,10 +836,18 @@ export async function refreshSendStats(sendId: string) {
   const send = await prisma.newsletterSend.findUniqueOrThrow({ where: { id: sendId } })
   if (!send.plunkCampaignId) throw new Error('No Brevo campaign ID')
 
-  const stats = await brevo.getCampaignStats(send.plunkCampaignId)
+  const { stats, status, sentDate } = await brevo.getCampaignDelivery(send.plunkCampaignId)
 
+  // La transición `sending`/`scheduled` → `sent` no existía: hasta el 2-nov-2026
+  // ninguna línea la escribía, y las 52 ediciones del archivo público salían
+  // sin fecha. Ocurre cuando Brevo confirma la campaña como enviada, con la
+  // hora que Brevo registra (si no la da, se conserva la que ya había).
+  const confirmada = status === 'sent' && send.status !== 'sent'
   return prisma.newsletterSend.update({
     where: { id: sendId },
-    data: { stats: stats as unknown as Prisma.JsonObject },
+    data: {
+      stats: stats as unknown as Prisma.JsonObject,
+      ...(confirmada ? { status: 'sent' as NewsletterSendStatus, sentAt: sentDate ? new Date(sentDate) : (send.sentAt ?? new Date()) } : {}),
+    },
   })
 }

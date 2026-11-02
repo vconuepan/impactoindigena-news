@@ -149,14 +149,39 @@ rule SendLive {
     )
 }
 
--- Stats refresh — polls Plunk for campaign delivery metrics.
+-- Stats refresh — reads the campaign from the email provider (Brevo
+-- since the Plunk era; the field keeps its old name). It is also where
+-- a send finally becomes `sent`: until 2026-11-02 no rule wrote that
+-- status, every live send stayed `sending`, and the public archive,
+-- which required `sent`, showed all 52 editions without a date.
 rule RefreshSendStats {
     when: AdminRefreshesStats(send)
     requires: send.plunk_campaign_id != null
 
-    let stats = get_plunk_campaign_stats(send.plunk_campaign_id)
-    ensures: send.stats = stats
+    let campaign = get_campaign(send.plunk_campaign_id)   -- one call: stats, status, sent_date
+    ensures: send.stats = campaign.stats
+    if campaign.status = "sent" and send.status != sent:
+        ensures: send.status = sent
+        ensures: send.sent_at = campaign.sent_date ?? send.sent_at
 }
+
+-- The public archive (/archivo) dates an edition by its latest send to
+-- the list: not a test, status `sending` or `sent`, with a sent_at.
+-- `sending` counts because SendLive creates the row only after the
+-- provider accepted the send, stamped with that moment.
+rule ArchiveDate {
+    when: PublicArchiveRequested(newsletter)
+    requires: newsletter.status = published
+    let send = latest(newsletter.sends where not is_test
+                      and status in {sending, sent} and sent_at != null)
+    ensures: archive_date(newsletter) = send.sent_at ?? null
+}
+
+-- Known, latent (2026-11-02): SendLive with scheduled_for sets the
+-- campaign's scheduledAt and then calls Brevo's sendNow, which the
+-- provider documents as "scheduling it for the current time": a
+-- scheduled send would go out at once. Neither the panel nor the jobs
+-- pass scheduled_for today.
 
 -- ─── Carousel ────────────────────────────────────────────────────
 -- Generates social media carousel images (1200x675px per story),

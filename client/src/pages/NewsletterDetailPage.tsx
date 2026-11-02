@@ -21,6 +21,14 @@ function formatDate(iso: string | null) {
   })
 }
 
+/** Sin fecha no se escribe «del .»: medido el 2-nov-2026 en las 52 ediciones. */
+export function descripcionDe(data: Pick<NewsletterDetail, 'sentAt' | 'storyCount'>): string {
+  const fecha = formatDate(data.sentAt)
+  return fecha
+    ? `Boletín de Voces Indígenas del ${fecha}. ${data.storyCount} noticias sobre pueblos indígenas.`
+    : `Boletín de Voces Indígenas. ${data.storyCount} noticias sobre pueblos indígenas.`
+}
+
 export default function NewsletterDetailPage() {
   const { id } = useParams<{ id: string }>()
 
@@ -40,7 +48,7 @@ export default function NewsletterDetailPage() {
         {data && (
           <meta
             name="description"
-            content={`Boletín semanal de Voces Indígenas del ${formatDate(data.sentAt)}. ${data.storyCount} noticias sobre pueblos indígenas.`}
+            content={descripcionDe(data)}
           />
         )}
       </Helmet>

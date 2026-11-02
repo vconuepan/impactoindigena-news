@@ -29,6 +29,7 @@ const {
   createCampaign,
   sendCampaign,
   getCampaignStats,
+  getCampaignDelivery,
   createContact,
   updateContact,
   deleteContact,
@@ -100,6 +101,31 @@ describe('Brevo API client', () => {
       const result = await getCampaignStats('campaign-1')
       expect(result).toEqual({ delivered: 100, opened: 50, clicked: 20, bounced: 2, complained: 0 })
       expect(mockAxiosInstance.get).toHaveBeenCalledWith('/emailCampaigns/campaign-1')
+    })
+  })
+
+  // Referencia de Brevo (GET /emailCampaigns/{id}): `sentDate` solo viene con `status: "sent"`.
+  describe('getCampaignDelivery', () => {
+    it('trae el estado y la fecha de envío en la misma llamada', async () => {
+      mockAxiosInstance.get.mockResolvedValue({
+        data: { status: 'sent', sentDate: '2026-10-26T09:00:12.000Z', statistics: { campaignStats: { delivered: 8 } } },
+      })
+
+      const r = await getCampaignDelivery('campaign-1')
+
+      expect(r.status).toBe('sent')
+      expect(r.sentDate).toBe('2026-10-26T09:00:12.000Z')
+      expect(r.stats.delivered).toBe(8)
+      expect(mockAxiosInstance.get).toHaveBeenCalledTimes(1)
+    })
+
+    it('en proceso no trae fecha', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: { status: 'in_process', statistics: {} } })
+
+      const r = await getCampaignDelivery('campaign-1')
+
+      expect(r.status).toBe('in_process')
+      expect(r.sentDate).toBeNull()
     })
   })
 

@@ -6,12 +6,27 @@
  * publicly accessible for the /archivo web page.
  */
 import { Router } from 'express'
+import type { NewsletterSendStatus } from '@prisma/client'
 import prisma from '../../lib/prisma.js'
 import { TTLCache, cached } from '../../lib/cache.js'
 import { createLogger } from '../../lib/logger.js'
 
 const router = Router()
 const log = createLogger('public:newsletters')
+
+/**
+ * Un envío real a la lista: no de prueba, despachado y con hora.
+ *
+ * `sending` cuenta: `sendLive` crea la fila recién después de que Brevo aceptó
+ * el `sendNow`, con la hora de ese momento. Hasta el 2-nov-2026 se exigía
+ * `sent`, un estado que nada escribía, y las 52 ediciones del archivo salían
+ * sin fecha (y la descripción de /archivo/:id quedaba en «del .»).
+ */
+const ENVIO_A_LA_LISTA = {
+  isTest: false,
+  status: { in: ['sending', 'sent'] as NewsletterSendStatus[] },
+  sentAt: { not: null },
+}
 
 const LIST_TTL  = 10 * 60 * 1000  // 10 minutes
 const listCache = new TTLCache<unknown>(LIST_TTL)
@@ -46,7 +61,7 @@ router.get('/', async (_req, res) => {
           title: true,
           selectedStoryIds: true,
           sends: {
-            where: { isTest: false, status: 'sent' },
+            where: ENVIO_A_LA_LISTA,
             select: { sentAt: true },
             orderBy: { sentAt: 'desc' },
             take: 1,
@@ -85,7 +100,7 @@ router.get('/:id', async (req, res) => {
         status: true,
         selectedStoryIds: true,
         sends: {
-          where: { isTest: false, status: 'sent' },
+          where: ENVIO_A_LA_LISTA,
           select: { sentAt: true },
           orderBy: { sentAt: 'desc' },
           take: 1,

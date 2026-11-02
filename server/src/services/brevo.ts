@@ -147,21 +147,43 @@ export async function sendCampaign(id: string, scheduledFor?: string): Promise<v
   )
 }
 
-export async function getCampaignStats(id: string): Promise<CampaignStats> {
+/**
+ * Lo que Brevo sabe de una campaña: métricas, estado y cuándo salió.
+ *
+ * `status` y `sentDate` según la referencia de Brevo (GET /emailCampaigns/{id},
+ * leída el 2-nov-2026): `status` es draft · sent · archive · queued · suspended
+ * · in_process · in_review · cancelling · cancelled, y `sentDate` (UTC) solo
+ * viene cuando el estado es `sent`.
+ */
+export interface CampaignDelivery {
+  stats: CampaignStats
+  status: string | null
+  sentDate: string | null
+}
+
+export async function getCampaignDelivery(id: string): Promise<CampaignDelivery> {
   return withRetry(
     async () => {
       const { data } = await client.get(`/emailCampaigns/${id}`)
       const stats = data.statistics?.campaignStats || {}
       return {
-        delivered: stats.delivered || 0,
-        opened: stats.uniqueViews || 0,
-        clicked: stats.uniqueClicks || 0,
-        bounced: stats.hardBounces + stats.softBounces || 0,
-        complained: stats.unsubscriptions || 0,
+        stats: {
+          delivered: stats.delivered || 0,
+          opened: stats.uniqueViews || 0,
+          clicked: stats.uniqueClicks || 0,
+          bounced: stats.hardBounces + stats.softBounces || 0,
+          complained: stats.unsubscriptions || 0,
+        },
+        status: typeof data.status === 'string' ? data.status : null,
+        sentDate: typeof data.sentDate === 'string' ? data.sentDate : null,
       }
     },
     { retries: 3, retryOn: isRetryableError },
   )
+}
+
+export async function getCampaignStats(id: string): Promise<CampaignStats> {
+  return (await getCampaignDelivery(id)).stats
 }
 
 export async function listCampaigns(): Promise<Campaign[]> {

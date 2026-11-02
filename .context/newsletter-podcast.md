@@ -67,6 +67,20 @@ The `generate_newsletter` job (default: Saturday 4am, `0 4 * * 6`) chains the fu
 
 Handler: `server/src/jobs/generateNewsletter.ts`. Registered in `server/src/jobs/handlers.ts`.
 
+### Send status and the public archive (2-nov-2026)
+
+A live send (`sendLive`, called by the `send_newsletter` and `send_weekly_newsletter` jobs and the panel's «Send to Subscribers») creates its `NewsletterSend` row **after** Brevo accepted `sendNow`, in status `sending` with `sentAt` = that moment. Nothing moved it to `sent` until 2-nov-2026, and the public archive (`routes/public/newsletters.ts`) required `sent`: all 52 editions came out with `sentAt: null`, and `/archivo/:id` built its meta description as «…del .».
+
+- **The archive** now dates an edition by its latest non-test send in `sending` or `sent` with a `sentAt` (`ENVIO_A_LA_LISTA`). That fixed the whole history at once, with no database write.
+- **The `sent` transition** happens in `refreshSendStats` («Refresh stats» in the panel): `brevo.getCampaignDelivery` reads the campaign once and returns stats, `status` and `sentDate`. Per Brevo's reference, `sentDate` only comes with `status: "sent"`. Nothing refreshes stats automatically yet, so rows stay `sending` until someone does.
+- **The meta description** of `/archivo/:id` omits the date when there is none (`descripcionDe` in `NewsletterDetailPage.tsx`). It says «Boletín», not «Boletín semanal»: the archive mixes the weekly edition with the Monday and Thursday ones.
+
+**Latent defect, not fixed:** with `scheduledFor`, `brevo.sendCampaign` sets `scheduledAt` and then calls `sendNow`, which Brevo documents as sending «by scheduling it for the current time». A scheduled send would go out at once. Nobody passes `scheduledFor` today (the panel and both jobs send immediately).
+
+**Stale in this file:** the HTML template section still describes a Ko-fi link and Plunk's unsubscribe tag. Ko-fi is gone from the code (director, 2-3 oct-2026) and the provider is Brevo.
+
+**Open:** the editor's byline photo is served from `impactoindigena.com/wp-content/…/vc-vertical.webp` (another brand's WordPress, WebP, 125 KB) in every email.
+
 ## Podcast
 
 ### Script generation (`POST /api/admin/podcasts/:id/generate`)
