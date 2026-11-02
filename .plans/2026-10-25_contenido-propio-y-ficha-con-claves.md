@@ -473,9 +473,32 @@ redactar) sobre `GET/POST/PUT /api/admin/stories/:id/body`. Script `backfill-sto
 (simulación por defecto). Spec: `DraftBody`, `ReviewBody`, `TranslateBody` y ocho invariantes en
 `story-pipeline.allium`. Docs en `story-pipeline.md` y `public-website.md`.
 
-**Lo que falta, en orden:** C5 el director aplica el SQL · C6 empuja · con la primera franja
-publicada, medir en el log cuántas salieron `saved`, `blocked`, `skipped` y leer tres fichas en
-vivo · `backfill` de las rezagadas si el director lo pide (US$0,002 por nota).
+**En producción desde el 31-oct (`dccba15`, `ccfd8ab`). Medido el 2-nov sobre las cuatro primeras
+franjas (31-oct 20:00 a 2-nov 08:00, hora de Chile):**
+
+| Franja | Notas | Guardadas | Bloqueadas |
+|---|---|---|---|
+| 31-oct 20:00 | 9 | 7 | 2 |
+| 1-nov 08:00 | 10 | 3 | 7 |
+| 1-nov 20:00 | 7 | 3 | 4 |
+| 2-nov 08:00 | 10 | 3 | 7 |
+
+Saltadas y fallidas: 0. Guardadas: 299 a 440 palabras (media 349), US$0,0022 por nota, todas con
+traducción al inglés. Motivos de bloqueo (13 notas distintas): `cifra:bajada` 11, `copia` 7,
+`meta` 11, `anio` 6; casi todas con dos o más candados a la vez. Reproducidas cuatro con el
+script: **tres eran falsos positivos míos** (la fecha que el prompt da al modelo, un nombre
+oficial de quince palabras, «el informe» como sujeto de la noticia) y una real (fuente con errata
+«2027»). Ajuste commiteado el 2-nov (sin empujar): la fecha cuenta como respaldo de cifras,
+ventana de copia 16, «meta» solo «el artículo»; el año futuro sigue bloqueando.
+
+**Hallazgo de infraestructura (A, nuevo):** la franja de las 08:00 del 31-oct corrió con el código
+viejo aunque el deploy marcó éxito a las 03:5xZ: el contenedor siguió con la versión de despliegue
+`524dcf06` hasta las 21:38Z, con un reinicio de por medio (07:39Z) que tampoco la cambió; la
+versión nueva recién aparece a las 21:38Z. Un «Deploy Backend: success» no prueba que el
+contenedor corra lo desplegado: hay que leer `Site is running with deployment version` en el log.
+
+**Lo que falta:** C6 empujar el ajuste · medir la franja siguiente (esperado: bloqueos por `cifra`
+cerca de cero) · `backfill` de las rezagadas si el director lo pide.
 
 ### 9 · Riesgos nombrados
 
