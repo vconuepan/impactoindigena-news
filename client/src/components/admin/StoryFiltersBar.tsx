@@ -85,6 +85,7 @@ export function StoryFiltersBar({ issues, feeds }: StoryFiltersBarProps) {
     searchParams.get('issueId'),
     searchParams.get('feedId'),
     searchParams.get('emotionTag'),
+    searchParams.get('bodyMethod'),
     searchParams.get('rating'),
     searchParams.get('publishYear'),
     searchParams.get('search'),
@@ -178,6 +179,19 @@ export function StoryFiltersBar({ issues, feeds }: StoryFiltersBarProps) {
           value={searchParams.get('emotionTag') || ''}
           onChange={e => setFilter('emotionTag', e.target.value)}
           options={EMOTION_TAGS.map(e => ({ value: e, label: e.charAt(0).toUpperCase() + e.slice(1) }))}
+        />
+        {/* Las que esperan revisión no salen en la ficha pública (decisión C7, 3-nov-2026) */}
+        <Select
+          id="filter-body"
+          label="Nota con claves"
+          placeholder="Todas"
+          value={searchParams.get('bodyMethod') || ''}
+          onChange={e => setFilter('bodyMethod', e.target.value)}
+          options={[
+            { value: 'ia_sin_revision', label: 'Por revisar' },
+            { value: 'ia_revisada', label: 'Revisada' },
+            { value: 'humana', label: 'Escrita por una persona' },
+          ]}
         />
         <Select
           id="filter-year"

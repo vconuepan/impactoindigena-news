@@ -54,6 +54,17 @@ describe('getStories', () => {
     expect(call.select.feed).toBeDefined()
   })
 
+  it('filtra por el método de la nota con claves: la lista de las que esperan revisión', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([])
+    mockPrisma.story.count.mockResolvedValue(0)
+
+    await getStories({ bodyMethod: 'ia_sin_revision' })
+
+    const call = mockPrisma.story.findMany.mock.calls[0][0]
+    expect(call.where.body).toEqual({ is: { method: 'ia_sin_revision' } })
+    expect(mockPrisma.story.count.mock.calls[0][0].where.body).toEqual({ is: { method: 'ia_sin_revision' } })
+  })
+
   it('applies search filter with OR on title, sourceTitle, summary', async () => {
     mockPrisma.story.findMany.mockResolvedValue([])
     mockPrisma.story.count.mockResolvedValue(0)

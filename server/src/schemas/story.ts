@@ -66,6 +66,9 @@ export const storyQuerySchema = z.object({
   ratingMax: z.coerce.number().int().min(0).max(10).optional(),
   rating: ratingFilterEnum.optional(),
   emotionTag: emotionTagEnum.optional(),
+  // La nota con claves por su método: «ia_sin_revision» es la lista de las que
+  // esperan revisión, que la ficha pública no muestra (decisión C7, 3-nov-2026).
+  bodyMethod: z.enum(['ia_sin_revision', 'ia_revisada', 'humana']).optional(),
   publishYear: z.coerce.number().int().min(1900).max(2100).optional(),
   search: z.string().max(200).optional(),
   sort: storySortEnum.optional(),

@@ -64,7 +64,9 @@ muestra un cuerpo `ia_sin_revision`**: `cuerpoPublico()` en `services/story.ts` 
 redacta y se traduce igual, para que revisarlo sea leer y aprobar. La medición que lo decidió, en el
 plan (8 quater): 5 de 22 cuerpos con error de hecho que ningún candado ve. El script
 `medir-contraste-nota-claves.ts` contrasta cada cuerpo con el original y sirve como lista de lectura
-para quien revisa, no como candado. La traducción (`translateStoryBody` en `services/translation.ts`)
+para quien revisa, no como candado. **La cola de revisión** es el filtro «Nota con claves → Por
+revisar» de `/admin/stories` (`?bodyMethod=ia_sin_revision`, `where.body = { is: { method } }` en
+`buildWhereClause`): con «Publicada» al lado, son las que el lector ve hoy con el resumen. La traducción (`translateStoryBody` en `services/translation.ts`)
 corre dentro de `translateStory`, no fatal, con el mismo guardarraíl de copia decidido por `quePaso`.
 Rezagadas: `npm run` no tiene atajo; `npx tsx src/scripts/backfill-story-bodies.ts --limit N [--apply]`,
 simulación por defecto. Costo medido en A1: US$0,0013-0,0025 por nota.

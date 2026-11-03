@@ -41,6 +41,7 @@ function useFiltersFromParams(): StoryFilters {
     issueId: searchParams.get('issueId') || undefined,
     feedId: searchParams.get('feedId') || undefined,
     emotionTag: searchParams.get('emotionTag') as StoryFilters['emotionTag'] || undefined,
+    bodyMethod: searchParams.get('bodyMethod') as StoryFilters['bodyMethod'] || undefined,
     rating: searchParams.get('rating') || undefined,
     publishYear: searchParams.get('publishYear') || undefined,
     sort: (searchParams.get('sort') as StorySort) || 'date_desc',

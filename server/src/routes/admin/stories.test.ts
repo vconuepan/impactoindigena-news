@@ -190,6 +190,24 @@ describe('Admin Stories API', () => {
         .set(authHeader())
       expect(res.status).toBe(400)
     })
+
+    it('acepta bodyMethod para listar las notas con claves por revisar, y rechaza un método que no existe', async () => {
+      mockPrisma.story.findMany.mockResolvedValue([])
+      mockPrisma.story.count.mockResolvedValue(0)
+
+      const ok = await request(app)
+        .get('/api/admin/stories?bodyMethod=ia_sin_revision')
+        .set(authHeader())
+      expect(ok.status).toBe(200)
+      expect(mockPrisma.story.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ body: { is: { method: 'ia_sin_revision' } } }) })
+      )
+
+      const mal = await request(app)
+        .get('/api/admin/stories?bodyMethod=cualquiera')
+        .set(authHeader())
+      expect(mal.status).toBe(400)
+    })
   })
 
   describe('GET /api/admin/stories/stats', () => {

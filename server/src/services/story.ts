@@ -41,6 +41,7 @@ interface StoryFilters {
   ratingMax?: number
   rating?: string
   emotionTag?: string
+  bodyMethod?: string
   publishYear?: number
   search?: string
   sort?: string
@@ -128,6 +129,9 @@ function buildWhereClause(filters: StoryFilters): Prisma.StoryWhereInput {
   }
   if (filters.emotionTag) {
     where.emotionTag = filters.emotionTag as EmotionTag
+  }
+  if (filters.bodyMethod) {
+    where.body = { is: { method: filters.bodyMethod } }
   }
   if (filters.publishYear) {
     where.sourceDatePublished = {

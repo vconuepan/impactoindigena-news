@@ -724,6 +724,7 @@ export interface StoryFilters {
   ratingMax?: number
   rating?: string
   emotionTag?: EmotionTag
+  bodyMethod?: StoryBodyMethod
   publishYear?: string
   sort?: StorySort
   page?: number

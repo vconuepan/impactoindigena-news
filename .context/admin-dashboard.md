@@ -34,7 +34,7 @@ The admin dashboard is a React SPA at `/admin/*` with 9 pages, JWT-based auth wi
 
 ## Key Patterns
 
-- **Story filters** persist in URL search params via `useSearchParams()`
+- **Story filters** persist in URL search params via `useSearchParams()`. «Nota con claves» (`bodyMethod`) lists the bodies waiting for review, which the public page hides (decision C7, 2026-11-03; see `story-pipeline.md`)
 - **Bulk actions** use selection state (resets on filter/page change) with confirmation dialogs
 - **Bulk LLM operations** (preassess, assess, select) run as background tasks via `useBackgroundTasks()` — dialog closes immediately, progress toasts persist across navigation, query invalidation fires on completion
 - **LLM operations** (newsletter/podcast generation) show persistent loading state with "may take a minute" message
