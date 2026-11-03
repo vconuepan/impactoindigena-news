@@ -11,6 +11,10 @@ const mockStopScheduler = vi.hoisted(() => vi.fn())
 
 const mockGetProcessingStoryIds = vi.hoisted(() => vi.fn().mockReturnValue([]))
 const mockTaskRegistryDestroy = vi.hoisted(() => vi.fn())
+// La limpieza de registros sin fecha corre en el callback de listen, al importar
+// el módulo; se guardan los argumentos aparte porque clearAllMocks los borraría.
+const llamadasBorrar = vi.hoisted(() => [] as unknown[][])
+const mockBorrar = vi.hoisted(() => vi.fn(async (...args: unknown[]) => { llamadasBorrar.push(args); return [] as string[] }))
 
 const mockServerClose = vi.hoisted(() => vi.fn((cb: () => void) => cb()))
 const mockListen = vi.hoisted(() =>
@@ -33,6 +37,9 @@ vi.mock('./lib/logger.js', () => ({
     error: vi.fn(),
     warn: vi.fn(),
   }),
+  borrarRegistrosSinFecha: mockBorrar,
+  logDir: 'logs-de-prueba',
+  retentionDays: 14,
 }))
 vi.mock('./jobs/scheduler.js', () => ({
   initScheduler: mockInitScheduler,
@@ -72,6 +79,10 @@ describe('server index', () => {
 
   afterEach(() => {
     vi.useRealTimers()
+  })
+
+  it('al arrancar borra los registros sin fecha vencidos, con el directorio y los días configurados', () => {
+    expect(llamadasBorrar).toEqual([['logs-de-prueba', 14]])
   })
 
   describe('shutdown()', () => {

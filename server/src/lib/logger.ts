@@ -1,57 +1,178 @@
 import pino from 'pino'
+import { readdir, stat, unlink } from 'node:fs/promises'
+import { join } from 'node:path'
 
 const isProduction = process.env.NODE_ENV === 'production'
-const logDir = process.env.LOG_DIR || 'logs'
-const retentionDays = parseInt(process.env.LOG_RETENTION_DAYS || '14', 10)
+export const logDir = process.env.LOG_DIR || 'logs'
+/**
+ * Dias de retencion: entero >= 1, o 14. Un valor que no es numero hacia que
+ * `borrarRegistrosSinFecha` borrara TODO (comparar contra NaN es siempre falso) y
+ * que pino-roll dejara de borrar (`files.length > NaN` nunca es verdadero).
+ */
+export function diasDeRetencion(valor: string | undefined): number {
+  const n = Number(valor ?? '14')
+  return Number.isInteger(n) && n >= 1 ? n : 14
+}
+export const retentionDays = diasDeRetencion(process.env.LOG_RETENTION_DAYS)
 
-const transports = pino.transport({
-  targets: [
-    // Stdout: pretty in dev, JSON in prod
-    isProduction
-      ? {
-          target: 'pino/file',
-          options: { destination: 1 },
-          level: 'debug',
-        }
-      : {
-          target: 'pino-pretty',
-          options: {
-            colorize: true,
-            translateTime: 'HH:MM:ss.l',
-            ignore: 'pid,hostname,module',
-            messageFormat: '{module} | {msg}',
-          },
-          level: 'debug',
-        },
-    // Rotating file: always JSON
-    {
-      target: 'pino-roll',
+/**
+ * Opciones del archivo rotativo (pino-roll 4.0.0), en `LOG_DIR`.
+ *
+ * `dateFormat` NO es opcional. Sin fecha en el nombre, pino-roll numera
+ * `server.1.log`, `server.2.log`… desde 1 cada dia, y su limpieza
+ * (`removeOtherLogFiles`) ordena por numero: conservaba los 14 numeros mas altos
+ * —`server.54` a `server.67`, de julio y agosto de 2026, para siempre— y cada dia
+ * borraba los recientes, incluido EL ARCHIVO EN USO. Eso causaba dos defectos:
+ *
+ * - A3: el historial de 14 dias que promete la Politica nunca existia.
+ * - A4: en un deploy conviven dos contenedores sobre `/home/LogFiles/app`, que es
+ *   almacenamiento compartido. El 3-nov-2026 a las 00:00 el contenedor viejo roto
+ *   a `server.9.log` y la limpieza se lo borro estando abierto; a las 00:57 el
+ *   nuevo lo vio en el directorio, lo eligio y no pudo abrirlo: `ENOENT` sin
+ *   manejar, y el arranque murio con codigo 1 (registro de arranque de Azure,
+ *   `2026_11_03_lw1mdlwk0000UX_failure.log`). Misma firma el 19 y el 26-oct.
+ *
+ * Con fecha (`server.2026-11-03.1.log`), la limpieza ordena por fecha y despues
+ * por numero: borra los mas viejos, y el del dia nunca es el borrado.
+ *
+ * `count` es `dias - 1`, y salio de medir, no del README. En una rotacion real,
+ * pino-roll reabre el archivo nuevo y lanza la limpieza en el mismo instante: el
+ * `readdir` de la limpieza casi siempre corre antes de que el archivo nuevo exista,
+ * asi que quedan `count` viejos MAS el nuevo (medido rotando de verdad por una
+ * revision independiente, 3-nov-2026). Si el archivo nuevo ya existe, quedan
+ * `count` en total. Con `dias - 1` son 14 dias o, a lo sumo, 13: «hasta 14 dias»,
+ * como promete la Politica. Con `count: 14` eran 15.
+ *
+ * `removeOtherLogFiles` sigue siendo necesario: sin el, la limpieza solo mira los
+ * archivos que creo ESTE proceso, y cada deploy arranca uno nuevo.
+ */
+export function opcionesDelArchivo(dir: string, dias: number) {
+  return {
+    file: `${dir}/server.log`,
+    frequency: 'daily',
+    dateFormat: 'yyyy-MM-dd',
+    limit: { count: Math.max(1, dias - 1), removeOtherLogFiles: true },
+    mkdir: true,
+  }
+}
+
+/** Formato sin fecha, anterior al 3-nov-2026. La limpieza de pino-roll ya no lo reconoce. */
+const SIN_FECHA = /^server\.\d+\.log$/
+
+/**
+ * Borra los archivos de registro del formato sin fecha que pasaron el plazo de la
+ * Politica. Con la fecha en el nombre, la limpieza de pino-roll ya no los ve: sin
+ * esto, `server.54` a `server.67` (julio-agosto) y el ultimo `server.N.log` en
+ * uso quedarian para siempre, con correos de lectores dentro aunque `maskEmail`
+ * cubra la mayoria de los caminos. Por fecha de modificacion: el ultimo en uso se
+ * va en la primera pasada despues de `dias` dias sin escribirse (corre al arrancar
+ * y cada hora, `index.ts`). Solo toca archivos regulares llamados `server.<n>.log`.
+ * Lanza solo si no puede leer el directorio por algo distinto de que no exista.
+ */
+export async function borrarRegistrosSinFecha(dir: string, dias: number, ahora: number = Date.now()): Promise<string[]> {
+  const borrados: string[] = []
+  if (!Number.isInteger(dias) || dias < 1) return borrados
+  const limite = ahora - dias * 24 * 60 * 60 * 1000
+  let nombres: string[]
+  try {
+    nombres = await readdir(dir)
+  } catch (err) {
+    // Sin directorio no hay nada que limpiar. Cualquier otra falla se informa: si
+    // no, un permiso o un corte del disco dejaria los archivos para siempre sin senal.
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return borrados
+    throw err
+  }
+  for (const nombre of nombres) {
+    if (!SIN_FECHA.test(nombre)) continue
+    const ruta = join(dir, nombre)
+    try {
+      const st = await stat(ruta)
+      if (!st.isFile() || st.mtimeMs >= limite) continue
+      await unlink(ruta)
+      borrados.push(nombre)
+    } catch {
+      // Otro contenedor puede estar borrandolo o usandolo: se reintenta en el proximo arranque.
+    }
+  }
+  return borrados
+}
+
+/*
+ * La salida estandar y el archivo van por caminos SEPARADOS. Hasta el 3-nov-2026
+ * eran dos destinos del mismo transporte: si el archivo fallaba, `thread-stream`
+ * destruia el transporte entero y cada linea posterior volvia a emitir el error.
+ * Sin manejador, el proceso moria (A4); con un manejador y un solo transporte, el
+ * servidor seguiria vivo pero sin ningun registro, ni el que ve Azure.
+ *
+ * Asi, si el archivo falla, la salida estandar sigue y el servidor tambien.
+ */
+const salida = isProduction
+  ? pino.destination({ dest: 1, sync: false })
+  : pino.transport({
+      target: 'pino-pretty',
       options: {
-        file: `${logDir}/server.log`,
-        frequency: 'daily',
-        // `removeOtherLogFiles` NO es opcional aca, es lo que hace cierta la
-        // promesa de la Politica («Registros del servidor: hasta 14 dias, luego
-        // se eliminan automaticamente»).
-        //
-        // Sin el flag, `removeOldFiles()` de pino-roll 4.0.0 solo mira
-        // `createdFileNames` —un array EN MEMORIA con los archivos que creo
-        // ESTE proceso—, asi que los de procesos anteriores nunca entran en la
-        // lista y nunca se borran. Y en produccion hay procesos anteriores todo
-        // el tiempo: cada despliegue o reinicio del App Service arranca uno
-        // nuevo, y `LOG_DIR=/home/LogFiles/app` es almacenamiento PERSISTENTE,
-        // asi que lo que queda, queda. Por esos archivos pasan correos de
-        // lectores, aunque `maskEmail` cubra la mayoria de los caminos.
-        //
-        // Con el flag, `removeOldFiles()` hace `readdir` del directorio y borra
-        // por antiguedad. Es acotado: `identifyLogFile` solo reconoce
-        // `server.log.<entero>` y deja cualquier otro archivo en paz.
-        limit: { count: retentionDays, removeOtherLogFiles: true },
-        mkdir: true,
+        colorize: true,
+        translateTime: 'HH:MM:ss.l',
+        ignore: 'pid,hostname,module',
+        messageFormat: '{module} | {msg}',
       },
-      level: 'debug',
-    },
-  ],
-})
+    })
+
+// `lastId` y `remove` existen en pino 10.3 (`lib/multistream.js`) pero sus tipos
+// no los declaran.
+const transports = pino.multistream([{ level: 'debug', stream: salida }]) as ReturnType<typeof pino.multistream> & {
+  lastId: number
+  remove(id: number): unknown
+}
+
+/** Cada cuanto se reintenta el archivo despues de una falla, y cuanto debe aguantar para darse por recuperado. */
+export const REINTENTO_ARCHIVO_MS = Number(process.env.LOG_FILE_RETRY_MS) > 0 ? Number(process.env.LOG_FILE_RETRY_MS) : 10 * 60 * 1000
+const RECUPERADO_TRAS_MS = Math.min(30 * 1000, REINTENTO_ARCHIVO_MS)
+let fallasDelArchivo = 0
+
+/**
+ * Conecta el archivo rotativo al multistream. Si falla, se QUITA del multistream
+ * (si no, cada linea posterior generaba un «the worker has exited» descartado) y
+ * se reintenta cada 10 minutos. Se avisa en la primera falla, cada hora mientras
+ * dure y al recuperarse, para que un hueco en el historial de 14 dias no pase
+ * inadvertido.
+ */
+function conectarArchivo(): void {
+  let archivo: ReturnType<typeof pino.transport>
+  try {
+    archivo = pino.transport({ target: 'pino-roll', options: opcionesDelArchivo(logDir, retentionDays) })
+  } catch (err) {
+    alFallarElArchivo(err as Error)
+    return
+  }
+  transports.add({ level: 'debug', stream: archivo })
+  const id = transports.lastId
+  let caido = false
+  archivo.on('error', (err: Error) => {
+    if (caido) return
+    caido = true
+    transports.remove(id)
+    alFallarElArchivo(err)
+  })
+  if (fallasDelArchivo > 0) {
+    setTimeout(() => {
+      if (caido) return
+      logger.info({ logDir, fallas: fallasDelArchivo }, 'el archivo de registro se recupero')
+      fallasDelArchivo = 0
+    }, RECUPERADO_TRAS_MS).unref()
+  }
+}
+
+function alFallarElArchivo(err: Error): void {
+  fallasDelArchivo++
+  if (fallasDelArchivo === 1 || fallasDelArchivo % 6 === 0) {
+    logger.error(
+      { err, logDir, fallas: fallasDelArchivo },
+      'el archivo de registro fallo: el servidor sigue y registra por la salida estandar; se reintenta cada 10 minutos',
+    )
+  }
+  setTimeout(conectarArchivo, REINTENTO_ARCHIVO_MS).unref()
+}
 
 /**
  * Custom error serializer that strips bulky axios internals (request, response,
@@ -97,6 +218,11 @@ export const logger = pino(
   },
   transports,
 )
+
+conectarArchivo()
+if (process.env.LOG_RETENTION_DAYS !== undefined && String(retentionDays) !== process.env.LOG_RETENTION_DAYS.trim()) {
+  logger.warn({ valor: process.env.LOG_RETENTION_DAYS, usado: retentionDays }, 'LOG_RETENTION_DAYS no es un entero >= 1: se usan 14 dias')
+}
 
 /**
  * Create a child logger scoped to a module.

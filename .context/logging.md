@@ -37,7 +37,8 @@ log.debug({ storyId, rating }, 'pre-assessment result')
 |---|---|---|
 | `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Minimum log level |
 | `LOG_DIR` | `logs/` | Directory for rotating log files |
-| `LOG_RETENTION_DAYS` | `14` | Daily log files to keep |
+| `LOG_RETENTION_DAYS` | `14` | Days of rotating files to keep (integer >= 1; anything else falls back to 14) |
+| `LOG_FILE_RETRY_MS` | `600000` | How often to reconnect the rotating file after it fails |
 
 ## Output
 
@@ -57,21 +58,31 @@ log.debug({ storyId, rating }, 'pre-assessment result')
 
 ## Transports
 
-Two transports run in parallel via Pino's worker threads:
+Two destinations, on **separate paths** since 3-nov-2026:
 
-1. **Stdout** — `pino-pretty` in dev, raw JSON in production (captured by Render's log aggregator)
-2. **Rotating file** — JSON logs written to `LOG_DIR/server.log`, rotated daily, kept for `LOG_RETENTION_DAYS` days
+1. **Stdout**: `pino.destination(1)` in production (JSON, captured by App Service), `pino-pretty` in dev.
+2. **Rotating file**: `pino-roll` in its own transport, JSON, in `LOG_DIR` (production: `/home/LogFiles/app`), one file per day named `server.YYYY-MM-DD.N.log`, kept `LOG_RETENTION_DAYS` days (`opcionesDelArchivo` in `lib/logger.ts`).
 
-> **`limit.removeOtherLogFiles: true` is load-bearing.** Without it, pino-roll's
-> `removeOldFiles()` only considers `createdFileNames` — an in-memory list of the
-> files *this process* created — so files left by earlier processes are never
-> deleted. In production that is constant: every deploy or App Service restart
-> starts a new process, and `LOG_DIR=/home/LogFiles/app` is **persistent**
-> storage. The Privacy Policy promises "Registros del servidor: hasta 14 días,
-> luego se eliminan automáticamente", and this flag is what makes that true.
-> It is narrow: `identifyLogFile` only matches `server.log.<integer>` and leaves
-> everything else in the directory alone. Verified against pino-roll 4.0.0 and
-> guarded by `logger.test.ts`.
+They are combined with `pino.multistream`. **If the file fails, stdout and the server keep going.** The file transport's `error` handler removes it from the multistream (otherwise every later line allocates a discarded «the worker has exited» error) and reconnects it every `LOG_FILE_RETRY_MS` (10 min). It reports on the first failure, every hour while it lasts, and on recovery (30 s without failing after reconnecting), so a gap in the 14-day history does not go unnoticed. Before, both destinations shared one `thread-stream` transport: a failing file destroyed it, every later log line re-emitted the error, and with no handler the process died.
+
+### Why the file name carries the date (A3 and A4, 3-nov-2026)
+
+Without a date, pino-roll numbers files `server.1.log`, `server.2.log`… restarting at 1 every day, and its cleanup (`removeOtherLogFiles`) sorts **by number**. It kept the 14 highest numbers, `server.54` to `server.67` from July-August, forever, and every day deleted the recent ones, **including the file in use**:
+
+- **A3:** the 14-day history the Privacy Policy promises never existed.
+- **A4:** during a deploy two containers share `/home/LogFiles/app` (persistent network storage). At 00:00 on 3-nov the old container rolled to `server.9.log` and the cleanup deleted it while still open. At 00:57 the new container still saw it in the directory, picked it, and could not open it: `ENOENT: no such file or directory, open '/home/LogFiles/app/server.9.log'`, unhandled, exit code 1 (Azure startup log `StartupLogs/2026_11_03_lw1mdlwk0000UX_failure.log`). Azure retried and it came up, so the deploy showed green. Same `ContainerStartupFailure` on 19-oct 20:08 and 26-oct 01:35. That the share keeps listing a deleted-but-open file is an inference from the evidence, not observed directly; the crash path was reproduced locally with an unopenable file.
+
+With the date, the cleanup sorts by date and then by number: it removes the oldest and never the file of the day.
+
+**`count` is `days - 1`, and it came from measuring.** In a real rotation pino-roll reopens the new file and starts the cleanup at the same moment; the cleanup's `readdir` almost always runs before the new file exists, so `count` old files remain *plus* the new one (measured by rotating for real during an independent review, 3-nov). If the new file already exists, `count` remain in total. With `count: 13` that is 14 days or, at most, 13: «hasta 14 días», as the Policy says. With `count: 14` it was 15. `logger-archivo.test.ts` runs pino-roll's own `removeOldFiles` in both orders. (The README's «count 3 → 4 files» is about the other branch, without `removeOtherLogFiles`.)
+
+**`LOG_RETENTION_DAYS` is validated** (`diasDeRetencion`): an integer >= 1, otherwise 14 with a warning. With a non-number, the old-format cleanup deleted everything (comparing against NaN is always false) and pino-roll stopped deleting.
+
+### Files in the old format
+
+The dated cleanup does not recognize `server.<n>.log`. `borrarRegistrosSinFecha` deletes those older than `LOG_RETENTION_DAYS` by modification time; `index.ts` runs it at startup and every hour (with the token cleanup), and logs a warning if the directory cannot be read for any reason other than not existing. On the first deploy it removes `server.54` to `server.67` (July-August 2026); the last undated file in use goes on the first pass after 14 days without writes. It touches only regular files named exactly `server.<n>.log`, and does nothing with invalid days.
+
+**Not governed here:** what App Service captures from stdout (`/home/LogFiles/*_docker.log`, `StartupLogs/`) lives outside `LOG_DIR`; its retention is the App Service log configuration, not this code.
 
 ## Log Levels
 
@@ -95,7 +106,7 @@ For axios errors, the serializer keeps only: `type`, `message`, `stack`, `code`,
 - **Logger module**: `server/src/lib/logger.ts`
 - **Error summarizer**: `server/src/utils/errors.ts`
 - **HTTP middleware**: `server/src/app.ts` (pino-http)
-- **Log output**: `logs/` directory (gitignored)
+- **Log output**: `logs/` directory (gitignored) locally; `/home/LogFiles/app` in production
 
 ## Adding Logging to a New File
 

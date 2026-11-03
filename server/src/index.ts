@@ -1,5 +1,5 @@
 import prisma from './lib/prisma.js'
-import { createLogger } from './lib/logger.js'
+import { createLogger, borrarRegistrosSinFecha, logDir, retentionDays } from './lib/logger.js'
 import { initScheduler, stopScheduler } from './jobs/scheduler.js'
 import { cleanupExpiredTokens, cleanupExpiredMagicLinks } from './services/auth.js'
 import { taskRegistry } from './lib/taskRegistry.js'
@@ -34,6 +34,10 @@ const server = app.listen(PORT, () => {
   Promise.resolve().then(() => initScheduler()).catch(err => {
     log.error({ err }, 'scheduler initialization failed')
   })
+
+  // Los registros del formato sin fecha (anterior al 3-nov-2026) que pasaron el
+  // plazo de la Politica: la limpieza de pino-roll ya no los reconoce (lib/logger.ts).
+  void limpiarRegistrosSinFecha()
 })
 
 const tokenCleanupTimer = setInterval(async () => {
@@ -50,7 +54,19 @@ const tokenCleanupTimer = setInterval(async () => {
   } catch (err) {
     log.error({ err }, 'failed to clean up expired magic links')
   }
+  // Tambien cada hora, no solo al arrancar: si no hay reinicios, el ultimo
+  // archivo sin fecha quedaria pasado de plazo hasta el proximo deploy.
+  await limpiarRegistrosSinFecha()
 }, CLEANUP_INTERVAL_MS)
+
+async function limpiarRegistrosSinFecha(): Promise<void> {
+  try {
+    const borrados = await borrarRegistrosSinFecha(logDir, retentionDays)
+    if (borrados.length) log.info({ borrados }, 'registros sin fecha vencidos borrados')
+  } catch (err) {
+    log.warn({ err, logDir }, 'no se pudieron revisar los registros sin fecha')
+  }
+}
 
 export async function shutdown(): Promise<void> {
   if (shuttingDown) return

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { serializeError, maskEmail } from './logger.js'
+import { serializeError, maskEmail, opcionesDelArchivo, retentionDays, diasDeRetencion } from './logger.js'
 
 describe('serializeError', () => {
   it('strips axios response body, request, and config from serialized output', () => {
@@ -83,31 +83,43 @@ describe('maskEmail', () => {
 
 /**
  * La Politica promete «Registros del servidor: hasta 14 dias, luego se eliminan
- * automaticamente». Quien lo cumple es una opcion de pino-roll, no codigo
- * propio, asi que el test lee la configuracion del fuente: no hay forma de
- * inspeccionar el transport ya construido sin levantarlo.
+ * automaticamente». Quien lo cumple es la configuracion de pino-roll; el
+ * comportamiento real de su limpieza con esta configuracion lo fija
+ * `logger-archivo.test.ts`.
  */
 describe('retencion de los archivos de log', () => {
-  const FUENTE = readFileSync(path.resolve(__dirname, 'logger.ts'), 'utf8')
-
   it('pasa removeOtherLogFiles a pino-roll', () => {
     // Sin esto, `removeOldFiles()` solo borra los archivos que creo el proceso
-    // actual —los rastrea en un array en memoria— y los de procesos anteriores
-    // se acumulan para siempre. En produccion eso es todo el tiempo: cada
-    // despliegue arranca un proceso nuevo y LOG_DIR=/home/LogFiles/app es
-    // almacenamiento persistente. Verificado en el fuente de pino-roll 4.0.0.
+    // actual, y en produccion cada despliegue arranca uno nuevo sobre
+    // almacenamiento persistente.
     expect(
-      /removeOtherLogFiles:\s*true/.test(FUENTE),
-      'pino-roll volvio a quedar sin removeOtherLogFiles: los archivos de log de procesos anteriores dejan de borrarse y la Politica pasa a prometer una retencion de 14 dias que nada cumple',
+      opcionesDelArchivo('/x', 14).limit.removeOtherLogFiles,
+      'pino-roll volvio a quedar sin removeOtherLogFiles: los archivos de procesos anteriores dejan de borrarse',
     ).toBe(true)
   })
 
-  it('el limite de archivos sale de LOG_RETENTION_DAYS y no de un numero escrito a mano', () => {
-    // Si el conteo se fija en el codigo, cambiar la Politica y la variable de
-    // entorno deja de tener efecto, y la divergencia no se ve en ninguna parte.
-    expect(
-      /limit:\s*\{\s*count:\s*retentionDays/.test(FUENTE),
-      'el limite de archivos de log ya no se deriva de LOG_RETENTION_DAYS',
-    ).toBe(true)
+  it('el limite de archivos sale de los dias de retencion: dias - 1, porque la rotacion real deja uno mas', () => {
+    // Medido rotando de verdad (3-nov-2026): la limpieza lista el directorio antes
+    // de que exista el archivo nuevo y conserva `count` viejos mas el nuevo.
+    expect(opcionesDelArchivo('/x', 14).limit.count).toBe(13)
+    expect(opcionesDelArchivo('/x', 7).limit.count).toBe(6)
+    expect(opcionesDelArchivo('/x', 1).limit.count).toBe(1)
+  })
+
+  it('LOG_RETENTION_DAYS invalido vuelve a 14: con NaN se borraba todo y pino-roll dejaba de borrar', () => {
+    expect(diasDeRetencion(undefined)).toBe(14)
+    expect(diasDeRetencion('7')).toBe(7)
+    expect(diasDeRetencion('catorce')).toBe(14)
+    expect(diasDeRetencion('0')).toBe(14)
+    expect(diasDeRetencion('-3')).toBe(14)
+    expect(diasDeRetencion('1.5')).toBe(14)
+    expect(retentionDays).toBe(diasDeRetencion(process.env.LOG_RETENTION_DAYS))
+  })
+
+  it('el nombre lleva la fecha: sin ella la limpieza ordena por numero y borra el archivo en uso (A3 y A4)', () => {
+    const o = opcionesDelArchivo('/home/LogFiles/app', 14)
+    expect(o.dateFormat).toBe('yyyy-MM-dd')
+    expect(o.frequency).toBe('daily')
+    expect(o.file).toBe('/home/LogFiles/app/server.log')
   })
 })
