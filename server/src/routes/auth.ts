@@ -17,7 +17,16 @@ import { getUserById } from '../services/user.js'
 import { isTrustedOrigin } from '../lib/allowedOrigins.js'
 import { createLogger, maskEmail } from '../lib/logger.js'
 import prisma from '../lib/prisma.js'
-import * as brevo from '../services/brevo.js'
+import {
+  borrarDelBoletin,
+  suprimirPorCorreo,
+  correoDeLaCuenta,
+  suscripcionesConfirmadas,
+  normalizarCorreo,
+  candidatas,
+  esDe,
+  BrevoNoRespondeError,
+} from '../services/supresion.js'
 import { writeAuditLog, actorTitular } from '../services/audit.js'
 
 const log = createLogger('auth')
@@ -252,9 +261,15 @@ router.delete('/digest-exclusions/:communityId', requireMember, async (req, res)
  */
 router.get('/subscription', requireMember, async (req, res) => {
   try {
-    const subscription = await prisma.pendingSubscription.findFirst({
-      where: { email: req.user!.email, confirmedAt: { not: null } },
-    })
+    // El correo de la base, no el del token (que puede ser viejo, o de una
+    // cuenta ya borrada), y sin mayúsculas: el alta guarda el correo como se
+    // escribió.
+    const email = await correoDeLaCuenta(req.user!.userId)
+    if (!email) {
+      res.json({ subscribed: false, confirmedAt: null })
+      return
+    }
+    const [subscription] = await suscripcionesConfirmadas(email)
     res.json({ subscribed: !!subscription, confirmedAt: subscription?.confirmedAt ?? null })
   } catch (err) {
     log.error({ err }, 'failed to fetch subscription status')
@@ -264,28 +279,32 @@ router.get('/subscription', requireMember, async (req, res) => {
 
 /**
  * DELETE /api/auth/subscription
- * Cancels the newsletter subscription for the authenticated user.
- * Removes them from Brevo list 2 and deletes the PendingSubscription record.
+ * Cancels the newsletter subscription for the authenticated user: deletes the
+ * Brevo contact and every subscription row for the email.
  */
 router.delete('/subscription', requireMember, async (req, res) => {
   try {
-    const subscription = await prisma.pendingSubscription.findFirst({
-      where: { email: req.user!.email, confirmedAt: { not: null } },
-    })
-    if (!subscription) {
+    // El correo de la base y sin mayúsculas, como en GET /subscription.
+    const email = await correoDeLaCuenta(req.user!.userId)
+    if (!email || (await suscripcionesConfirmadas(email)).length === 0) {
       res.status(404).json({ error: 'No active subscription found' })
       return
     }
 
-    if (subscription.plunkContactId) {
-      try {
-        await brevo.updateContact(subscription.plunkContactId, { subscribed: false })
-      } catch (err) {
-        log.warn({ err, email: maskEmail(req.user!.email) }, 'failed to update Brevo contact on unsubscribe, deleting record anyway')
+    // Hasta el 3-nov-2026 esto daba de baja en Brevo solo si la fila tenía id
+    // de contacto, y quien había vuelto tras una baja no lo tiene: su fila se
+    // borraba y la campaña le seguía llegando. Ahora se borra el contacto (por
+    // id y por correo). Si Brevo no responde no se borra nada, y la persona ve
+    // un error en vez de una baja que no ocurrió.
+    try {
+      await borrarDelBoletin(email)
+    } catch (err) {
+      if (err instanceof BrevoNoRespondeError) {
+        res.status(503).json({ error: 'Email provider unavailable, please try again' })
+        return
       }
+      throw err
     }
-
-    await prisma.pendingSubscription.delete({ where: { id: subscription.id } })
     log.info({ email: maskEmail(req.user!.email) }, 'subscription cancelled')
     res.json({ success: true })
   } catch (err) {
@@ -302,7 +321,17 @@ router.delete('/subscription', requireMember, async (req, res) => {
 router.get('/export', requireMember, async (req, res) => {
   try {
     const userId = req.user!.userId
-    const email = req.user!.email
+    // Lo que se guarda por correo se busca con el correo que la cuenta tiene
+    // HOY, sin mayúsculas y exacto, igual que la supresión: el del token puede
+    // ser viejo o de una cuenta ya borrada, y entonces es de otra persona.
+    // Así el acceso muestra exactamente lo que el borrado borraría.
+    const correo = await correoDeLaCuenta(userId)
+    const objetivo = correo ? normalizarCorreo(correo) : null
+    const porCorreo = async <T extends { email: string | null }>(buscar: (where: object) => Promise<T[]>) => {
+      if (!objetivo) return []
+      const filas = (await buscar(candidatas(objetivo))).filter(esDe(objetivo))
+      return filas.map(({ email: _email, ...resto }) => resto)
+    }
 
     const [user, memberships, digestExclusions, posts, subscriptions, alerts, feedback] = await Promise.all([
       getUserById(userId),
@@ -318,19 +347,25 @@ router.get('/export', requireMember, async (req, res) => {
       // TODAS las filas, no la primera: quien se suscribio mas de una vez (o dejo
       // una pendiente sin confirmar) tiene varias, y el derecho de acceso alcanza
       // a todas. `findFirst` exportaba una sola y callaba el resto.
-      prisma.pendingSubscription.findMany({
-        where: { email },
-        select: { confirmedAt: true, createdAt: true },
-        orderBy: { createdAt: 'asc' },
-      }),
-      prisma.alertSubscription.findMany({
-        where: { email },
-        select: { topics: true, confirmedAt: true, active: true, createdAt: true },
-      }),
-      prisma.feedback.findMany({
-        where: { email },
-        select: { category: true, message: true, status: true, createdAt: true },
-      }),
+      porCorreo((where) =>
+        prisma.pendingSubscription.findMany({
+          where,
+          select: { email: true, confirmedAt: true, createdAt: true },
+          orderBy: { createdAt: 'asc' },
+        }),
+      ),
+      porCorreo((where) =>
+        prisma.alertSubscription.findMany({
+          where,
+          select: { email: true, topics: true, confirmedAt: true, active: true, createdAt: true },
+        }),
+      ),
+      porCorreo((where) =>
+        prisma.feedback.findMany({
+          where,
+          select: { email: true, category: true, message: true, status: true, createdAt: true },
+        }),
+      ),
     ])
 
     const exportData = {
@@ -372,35 +407,24 @@ router.delete('/account', requireMember, async (req, res) => {
     const userId = req.user!.userId
     const email = req.user!.email
 
-    // Borrar al titular del proveedor de correo, no solo darlo de baja: el derecho
-    // de supresion alcanza al encargado, y un contacto «dado de baja» sigue siendo
-    // su correo guardado en Brevo. El identificador es el id del contacto o, si no
-    // hay fila (quien solo se unio a comunidades quiza nunca llego a Brevo), el
-    // correo: un 404 solo dice que no habia nada que borrar. Mejor esfuerzo: un
-    // fallo del proveedor no puede impedir el borrado local.
-    const sub = await prisma.pendingSubscription.findFirst({ where: { email } })
+    // Todo lo que guarda su correo, aquí y en Brevo (services/supresion.ts).
+    // El contacto se BORRA, no se da de baja: el derecho de supresión alcanza
+    // al encargado, y un contacto «dado de baja» sigue siendo su correo guardado
+    // allá. La cuenta va por su id y los datos por el correo que tiene hoy en
+    // la base, no por el del token. Si Brevo no responde no se borra nada y la
+    // persona ve un error para reintentar: seguir de largo la dejaba en la lista
+    // del boletín sin ningún registro con que reintentar.
+    let resultado
     try {
-      await brevo.deleteContact(sub?.plunkContactId || email)
+      resultado = await suprimirPorCorreo({ correo: email, userId })
     } catch (err) {
-      if ((err as { response?: { status?: number } })?.response?.status !== 404) {
-        log.warn({ err, email: maskEmail(email) }, 'failed to delete Brevo contact on account deletion, continuing')
+      if (err instanceof BrevoNoRespondeError) {
+        log.warn({ userId }, 'account deletion postponed: brevo did not respond')
+        res.status(503).json({ error: 'Email provider unavailable, please try again' })
+        return
       }
+      throw err
     }
-
-    // Delete the user (cascades CommunityMember, DigestExclusion, CommunityPost, RefreshToken)
-    try {
-      await prisma.user.delete({ where: { id: userId } })
-    } catch (err: any) {
-      if (err?.code !== 'P2025') throw err // already gone → idempotent
-    }
-
-    // Clean up records keyed by email that have no FK cascade to User
-    await Promise.all([
-      prisma.magicLink.deleteMany({ where: { email } }),
-      prisma.pendingSubscription.deleteMany({ where: { email } }),
-      prisma.alertSubscription.deleteMany({ where: { email } }),
-      prisma.feedback.deleteMany({ where: { email } }),
-    ])
 
     // Clear session cookies (mirror auth-public cookie options)
     const secure = process.env.NODE_ENV !== 'development'
@@ -412,7 +436,13 @@ router.delete('/account', requireMember, async (req, res) => {
     // correo no entra al registro. Guardarlo aqui dejaba el correo del titular
     // en `audit_log` justo al borrar su cuenta, y como nada purgaba esa tabla
     // era el unico dato suyo que sobrevivia al borrado.
-    await writeAuditLog({ actor: actorTitular(req.user), action: 'account.delete', targetType: 'user', targetId: userId })
+    await writeAuditLog({
+      actor: actorTitular(req.user),
+      action: 'account.delete',
+      targetType: 'user',
+      targetId: userId,
+      metadata: { ...resultado },
+    })
     log.info({ email: maskEmail(email) }, 'member account deleted (self-service)')
     res.json({ success: true })
   } catch (err) {

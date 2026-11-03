@@ -21,6 +21,14 @@ const mockPrisma = vi.hoisted(() => ({
 }))
 
 vi.mock('../../lib/prisma.js', () => ({ default: mockPrisma }))
+
+// El borrado completo vive en services/supresion.ts y tiene sus propias pruebas;
+// aquí se prueba que la ruta lo llame bien y traduzca sus errores.
+const mockSuprimir = vi.hoisted(() => vi.fn())
+vi.mock('../../services/supresion.js', async (original) => ({
+  ...(await original<typeof import('../../services/supresion.js')>()),
+  suprimirPorCorreo: mockSuprimir,
+}))
 vi.mock('../../services/crawler.js', () => ({
   crawlFeed: vi.fn(),
   crawlAllDueFeeds: vi.fn(),
@@ -143,19 +151,30 @@ describe('Admin Users API', () => {
   })
 
   describe('DELETE /api/admin/users/:id', () => {
-    it('deletes a user', async () => {
+    const RESULTADO = { cuentas: 1, suscripciones: 1, alertas: 2, enlaces: 0, comentarios: 0, brevo: 'borrado' }
+
+    it('suprime todo lo del correo de la cuenta, no solo la fila del usuario', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(sampleUser({ id: 'u1', email: 'ana@x.cl' }))
       mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 0 })
-      mockPrisma.user.delete.mockResolvedValue(sampleUser())
+      mockSuprimir.mockResolvedValue(RESULTADO)
 
       const res = await request(app)
         .delete('/api/admin/users/u1')
         .set(authHeader())
+
       expect(res.status).toBe(204)
+      expect(mockSuprimir).toHaveBeenCalledWith({
+        correo: 'ana@x.cl',
+        userId: 'u1',
+        protegerUserId: 'test-admin-id',
+      })
+      expect(mockPrisma.user.delete, 'volvio el borrado a secas de la fila').not.toHaveBeenCalled()
     })
 
-    it('revokes tokens before deleting', async () => {
+    it('revokes tokens', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue(sampleUser({ id: 'u1' }))
       mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 2 })
-      mockPrisma.user.delete.mockResolvedValue(sampleUser())
+      mockSuprimir.mockResolvedValue(RESULTADO)
 
       await request(app)
         .delete('/api/admin/users/u1')
@@ -165,13 +184,38 @@ describe('Admin Users API', () => {
     })
 
     it('returns 404 for unknown user', async () => {
-      mockPrisma.refreshToken.deleteMany.mockResolvedValue({ count: 0 })
-      mockPrisma.user.delete.mockRejectedValue({ code: 'P2025' })
+      mockPrisma.user.findUnique.mockResolvedValue(null)
 
       const res = await request(app)
         .delete('/api/admin/users/unknown')
         .set(authHeader())
       expect(res.status).toBe(404)
+      expect(mockSuprimir).not.toHaveBeenCalled()
+    })
+
+    it('si Brevo no responde, 502 y no se borra nada', async () => {
+      const { BrevoNoRespondeError } = await import('../../services/supresion.js')
+      mockPrisma.user.findUnique.mockResolvedValue(sampleUser({ id: 'u1' }))
+      mockSuprimir.mockRejectedValue(new BrevoNoRespondeError())
+
+      const res = await request(app)
+        .delete('/api/admin/users/u1')
+        .set(authHeader())
+
+      expect(res.status).toBe(502)
+      expect(mockPrisma.refreshToken.deleteMany).not.toHaveBeenCalled()
+    })
+
+    it('blocks deleting an account that shares the operator’s email', async () => {
+      const { SupresionPropiaError } = await import('../../services/supresion.js')
+      mockPrisma.user.findUnique.mockResolvedValue(sampleUser({ id: 'u9' }))
+      mockSuprimir.mockRejectedValue(new SupresionPropiaError())
+
+      const res = await request(app)
+        .delete('/api/admin/users/u9')
+        .set(authHeader())
+
+      expect(res.status).toBe(400)
     })
 
     it('blocks self-delete', async () => {

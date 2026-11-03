@@ -55,9 +55,10 @@ export async function updateUser(id: string, data: { email?: string; name?: stri
   })
 }
 
-export async function deleteUser(id: string) {
-  return prisma.user.delete({ where: { id } })
-}
+// AQUI VIVIA `deleteUser(id)`, un `prisma.user.delete` a secas que dejaba el
+// boletín, el contacto en Brevo, las alertas y los comentarios de la persona.
+// Se borró el 3-nov-2026: el borrado de una cuenta es `suprimirPorCorreo`
+// (services/supresion.ts), para que no vuelva a haber un camino incompleto.
 
 export async function changePassword(
   userId: string,

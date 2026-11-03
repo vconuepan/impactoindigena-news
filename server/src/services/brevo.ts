@@ -18,6 +18,13 @@ const DISPOSABLE_DOMAINS = new Set([
 
 const log = createLogger('brevo')
 
+/**
+ * La lista de Brevo del boletín. Las campañas se envían a ella y el alta
+ * confirmada la agrega; un contacto que no está en ninguna lista no recibe
+ * nada. Antes era un `2` repetido en cuatro lugares.
+ */
+export const LISTA_BOLETIN = 2
+
 const client = axios.create({
   baseURL: 'https://api.brevo.com/v3',
   timeout: 15000,
@@ -93,7 +100,7 @@ export async function createCampaign(opts: CreateCampaignOpts): Promise<Campaign
         },
         recipients: opts.audienceType === 'SEGMENT' && opts.segmentId
           ? { listIds: [parseInt(opts.segmentId)] }
-          : { listIds: [2] },
+          : { listIds: [LISTA_BOLETIN] },
       }
 
       const { data } = await client.post('/emailCampaigns', payload)
@@ -215,7 +222,7 @@ export async function createContact(opts: CreateContactOpts): Promise<Contact> {
       }
       // If subscribed, add to list 2 (default list); if not, just create
       if (opts.subscribed) {
-        payload.listIds = [2]
+        payload.listIds = [LISTA_BOLETIN]
       }
       const { data } = await client.post('/contacts', payload)
       log.info({ contactId: data.id }, 'contact created')
@@ -239,8 +246,8 @@ export async function updateContact(id: string, updates: Partial<CreateContactOp
       const payload: Record<string, unknown> = {}
       if (updates.data) payload.attributes = updates.data
       if (updates.subscribed !== undefined) {
-        payload.listIds = updates.subscribed ? [2] : []
-        payload.unlinkListIds = updates.subscribed ? [] : [2]
+        payload.listIds = updates.subscribed ? [LISTA_BOLETIN] : []
+        payload.unlinkListIds = updates.subscribed ? [] : [LISTA_BOLETIN]
         // Volver a la lista no basta si el contacto quedó en la lista de
         // supresión: Brevo no le envía campañas aunque figure en la lista, y la
         // baja resultaba irreversible. `emailBlacklisted: false` la levanta
@@ -263,10 +270,16 @@ export async function updateContact(id: string, updates: Partial<CreateContactOp
   )
 }
 
-export async function getContact(id: string): Promise<Contact> {
+export interface ContactDetail extends Contact {
+  /** Listas en las que está. Vacío: no recibe ninguna campaña. */
+  listIds: number[]
+}
+
+export async function getContact(id: string): Promise<ContactDetail> {
   return withRetry(
     async () => {
-      const { data } = await client.get(`/contacts/${id}`)
+      // Como en deleteContact: id o correo, y el correo va codificado.
+      const { data } = await client.get(`/contacts/${encodeURIComponent(id)}`)
       return {
         id: String(data.id),
         email: data.email,
@@ -274,6 +287,7 @@ export async function getContact(id: string): Promise<Contact> {
         data: data.attributes || {},
         createdAt: data.createdAt || '',
         updatedAt: data.modifiedAt || '',
+        listIds: Array.isArray(data.listIds) ? data.listIds.map(Number) : [],
       }
     },
     { retries: 3, retryOn: isRetryableError },

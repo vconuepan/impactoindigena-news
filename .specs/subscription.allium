@@ -1,6 +1,7 @@
 -- subscription.allium
--- Distilled from: server/src/services/{subscribe,plunk}.ts,
---                 server/src/routes/public/subscribe.ts
+-- Distilled from: server/src/services/{subscribe,plunk,supresion}.ts,
+--                 server/src/routes/public/subscribe.ts,
+--                 server/src/routes/admin/{subscribers,supresion}.ts
 --
 -- Email subscription with double opt-in: visitor submits email,
 -- receives a confirmation link, clicks to confirm. Brevo handles
@@ -13,6 +14,8 @@
 --
 -- Visitors are unauthenticated public users, distinct from the
 -- admin User entity in authentication.allium.
+
+use "./authentication.allium" as auth
 
 config {
     -- 24, no 48: el codigo lo lee de SUBSCRIBE_TOKEN_EXPIRY_HOURS con 24 por
@@ -140,6 +143,14 @@ rule ConfirmSubscription {
     -- de supresion, sin la cual la baja seria irreversible.
     ensures: try_update_contact(pending.plunk_contact_id or subscriber.email,
         subscribed: true, suppressed: false)
+    -- Si el contacto ya no existe (la limpieza de altas abandonadas pudo
+    -- borrarlo mientras la persona volvia a suscribirse), se crea dentro
+    -- de la lista: confirmada sin contacto, no recibiria nada. Antes se
+    -- relee la fila: si ya no esta, el 404 era un borrado en curso y no
+    -- se recrea. Si la fila desaparece despues, al marcarla, el contacto
+    -- recreado se borra.
+    if provider_contact_missing and exists pending:
+        ensures: try_create_contact(subscriber.email, subscribed: true)
 
     ensures: pending.confirmed_at = now
 }
@@ -165,11 +176,26 @@ rule ConfirmSubscription {
 -- cobertura documental a un defecto: la direccion se quedaba
 -- indefinidamente.
 
+-- El alta crea el contacto en el proveedor ANTES de que la persona
+-- confirme, asi que un alta abandonada deja dos copias del correo: la fila
+-- y el contacto. Hasta el 3-nov-2026 se borraba solo la fila. El contacto
+-- se borra solo si es residuo puro: ninguna otra fila del mismo correo lo
+-- comparte (una suscripcion confirmada, o un alta nueva en curso), no esta
+-- en ninguna lista y no esta en la lista de supresion (esa baja es memoria
+-- que el proveedor necesita). Si el proveedor falla la fila se conserva
+-- para reintentar, salvo que lleve mas de 30 dias vencida: reintentar no
+-- puede volverse guardar el correo sin plazo.
 rule CleanupExpiredPendingSubscriptions {
     when: SubscriptionCleanupJobRuns()
 
     for entry in PendingSubscriptions where is_expired:
-        ensures: not exists entry
+        let siblings = PendingSubscriptions
+            where lower(email) = lower(entry.email) and not is_expired
+        let contact = provider_contact(entry.email)
+        if siblings.count = 0 and contact.lists.count = 0 and not contact.suppressed:
+            ensures: not exists contact
+        if provider_responded or entry.expires_at < now - 30.days:
+            ensures: not exists entry
 }
 
 -- La baja ocurre en el proveedor de correo, asi que la unica forma de
@@ -190,6 +216,66 @@ rule ReconcileUnsubscribed {
         ensures: not exists entry
 }
 
+-- ─── Supresion ────────────────────────────────────────────────────
+-- Un solo borrado por correo, que usan todos los caminos: el autoservicio
+-- ARCO, el borrado de usuario del panel y la herramienta «Suprimir por
+-- correo». Hasta el 3-nov-2026 cada camino limpiaba algo distinto.
+--
+-- El correo se compara sin mayusculas y EXACTO: las tablas lo guardan como
+-- se escribio, y la busqueda sin mayusculas de la base trata `_` y `%`
+-- como comodines, asi que cada candidata se vuelve a comparar antes de
+-- borrar. «a_b@x.cl» no puede arrastrar a «axb@x.cl».
+--
+-- El contacto en el proveedor se borra por cada id guardado y por el
+-- correo, y ANTES que lo local: los ids viven en las filas. Si el
+-- proveedor falla no se borra nada local y quien llamo responde un error
+-- para reintentar. El autoservicio ARCO seguia de largo hasta la revision
+-- del 3-nov-2026: la persona quedaba en la lista, la campaña le llegaba y
+-- no quedaba ningun registro con su correo para reintentar.
+--
+-- Con una cuenta (ARCO, borrado de usuario del panel) la cuenta se
+-- identifica SOLO por su id y los datos por el correo que tiene HOY en la
+-- base. El correo del token de sesion puede ser viejo y ser ya de otra
+-- persona con su propia cuenta.
+
+rule SuppressByEmail {
+    when: SuppressByEmail(email, account?)
+
+    -- Cuenta ya borrada: el correo vendria de un token huerfano y puede ser
+    -- de otra persona. No se borra nada.
+    requires: account? = null or exists account
+    let target = account?.email or email           -- el de la base, no el del token
+    requires: account? != operator and (account? or User{email: target}) != operator
+    ensures: not exists provider_contact(target)
+    if provider_failed:
+        ensures: nothing_deleted
+    if account?:
+        ensures: not exists account                  -- con sus cascadas; solo por id
+    if not account?:
+        for user in Users where lower(user.email) = lower(target):
+            ensures: not exists user
+    for t in [PendingSubscription, AlertSubscription, MagicLink, Feedback]:
+        for row in t where lower(row.email) = lower(target):
+            ensures: not exists row
+    ensures: AuditLogged(action, counts)             -- nunca el correo suprimido
+}
+
+-- Sacar a alguien del boletin (el panel, o la baja desde su perfil):
+-- el contacto y TODAS sus filas de suscripcion, no su cuenta ni sus
+-- alertas. La baja desde el perfil daba de baja en el proveedor solo si
+-- la fila tenia id, y quien volvio tras una baja no lo tiene. El perfil
+-- busca la suscripcion por el correo de la base y sin mayusculas: el alta
+-- guarda el correo como se escribio y el enlace magico lo baja.
+rule RemoveFromNewsletter {
+    when: AdminDeletesSubscriber(entry) or MemberCancelsSubscription(email)
+
+    ensures: not exists provider_contact(entry.email)
+    if provider_failed:
+        ensures: nothing_deleted
+    for row in PendingSubscriptions where lower(email) = lower(entry.email):
+        ensures: not exists row
+}
+
 -- ─── Surfaces ─────────────────────────────────────────────────────
 
 surface SubscribeForm {
@@ -204,6 +290,24 @@ surface SubscribeForm {
         Server-side: Plunk verify API provides authoritative validation.
         On success, display a message directing the visitor to check
         their inbox. On EmailValidationError, show the error inline."
+}
+
+-- Para responder a quien pide por correo que se le borre. Solo admins.
+surface SuppressionTool {
+    facing super: auth.SuperAdmin
+
+    exposes:
+        preview_counts(email)                        -- sin borrar nada
+
+    provides:
+        SuppressByEmail(email)
+            when typed_confirmation = "SUPRIMIR"
+
+    guidance:
+        "Lives in the Subscribers page, admins only. The email travels in the
+        POST body, never in the URL. First show what would be deleted; changing
+        the email discards the preview, so nobody suppresses an address that
+        was not reviewed."
 }
 
 surface ConfirmationPage {

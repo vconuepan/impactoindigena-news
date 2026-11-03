@@ -3,6 +3,7 @@ import prisma from '../../lib/prisma.js'
 import { createLogger } from '../../lib/logger.js'
 import * as brevo from '../../services/brevo.js'
 import { writeAuditLog } from '../../services/audit.js'
+import { borrarDelBoletin, BrevoNoRespondeError } from '../../services/supresion.js'
 
 const router = Router()
 const log = createLogger('admin:subscribers')
@@ -93,18 +94,33 @@ router.get('/engagement', async (_req, res) => {
 
 /**
  * DELETE /api/admin/subscribers/:id
+ *
+ * Saca a la persona del boletín: el contacto en Brevo y TODAS sus filas de
+ * suscripción, no solo la de este id. Hasta el 3-nov-2026 borraba la fila y
+ * nada más, y como la campaña se envía a la lista de Brevo la persona seguía
+ * recibiendo el boletín. Si Brevo no responde no se borra nada en la base (502).
  */
 router.delete('/:id', async (req, res) => {
   const { id } = req.params
   try {
-    await prisma.pendingSubscription.delete({ where: { id } })
-    log.info({ id }, 'subscriber deleted by admin')
-    await writeAuditLog({ actor: req.user, action: 'subscriber.delete', targetType: 'pending_subscription', targetId: id })
-    res.json({ ok: true })
-  } catch (err: unknown) {
-    const code = (err as { code?: string }).code
-    if (code === 'P2025') {
+    const fila = await prisma.pendingSubscription.findUnique({ where: { id }, select: { email: true } })
+    if (!fila) {
       res.status(404).json({ error: 'Subscriber not found' })
+      return
+    }
+    const resultado = await borrarDelBoletin(fila.email)
+    log.info({ id, ...resultado }, 'subscriber deleted by admin')
+    await writeAuditLog({
+      actor: req.user,
+      action: 'subscriber.delete',
+      targetType: 'pending_subscription',
+      targetId: id,
+      metadata: { ...resultado },
+    })
+    res.json({ ok: true, ...resultado })
+  } catch (err: unknown) {
+    if (err instanceof BrevoNoRespondeError) {
+      res.status(502).json({ error: 'Brevo no respondió; no se borró nada en nuestra base. Reintenta en unos minutos.' })
       return
     }
     log.error({ err }, 'failed to delete subscriber')

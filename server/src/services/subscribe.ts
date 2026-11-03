@@ -202,22 +202,70 @@ export async function confirmSubscription(token: string, email: string) {
   // nada — y el job de reconciliacion le borraba la fila al dia siguiente,
   // dejandola en un ciclo silencioso.
   const identificador = pending.plunkContactId || email
+  let recreado = false
   try {
     await brevo.updateContact(identificador, {
       subscribed: true,
     })
   } catch (err) {
-    log.warn({ err, email: maskEmail(email) }, 'failed to update Brevo contact, marking as confirmed anyway')
+    // Un 404 es que el contacto ya no está: la limpieza de altas abandonadas
+    // pudo borrarlo justo mientras esta persona volvía a suscribirse (revisión
+    // del 3-nov-2026). Sin crearlo, la fila quedaba confirmada y nadie en la
+    // lista: «suscrito» en el perfil y ningún boletín.
+    const status = (err as { response?: { status?: number } })?.response?.status
+    // Antes de crearlo se relee la fila: si un borrado (ARCO, baja, panel)
+    // corrió mientras tanto, el 404 es ese borrado, y recrearlo volvería a
+    // meter en la lista a quien acaba de pedir salir. La relectura no cierra
+    // la ventana entera: un borrado que ya borró en Brevo y aún no las filas
+    // pasa. Si la fila desaparece antes de marcarla, el final de esta función
+    // borra el contacto recreado; si desaparece después, lo borra el segundo
+    // barrido de la supresión (`barridoFinal`, services/supresion.ts).
+    const sigue = status === 404 && (await prisma.pendingSubscription.findUnique({ where: { id: pending.id }, select: { id: true } }))
+    if (status === 404 && !sigue) {
+      log.warn({ email: maskEmail(email) }, 'subscription deleted while confirming, Brevo contact not recreated')
+      throw new Error('Invalid confirmation link')
+    }
+    if (status === 404) {
+      try {
+        await brevo.createContact({ email, subscribed: true, data: {} })
+        recreado = true
+      } catch (errCrear) {
+        log.warn({ err: errCrear, email: maskEmail(email) }, 'failed to recreate Brevo contact, marking as confirmed anyway')
+      }
+    } else {
+      log.warn({ err, email: maskEmail(email) }, 'failed to update Brevo contact, marking as confirmed anyway')
+    }
   }
 
   // Mark as confirmed
-  await prisma.pendingSubscription.update({
-    where: { id: pending.id },
-    data: { confirmedAt: new Date() },
-  })
+  try {
+    await prisma.pendingSubscription.update({
+      where: { id: pending.id },
+      data: { confirmedAt: new Date() },
+    })
+  } catch (err) {
+    if ((err as { code?: string })?.code !== 'P2025') throw err
+    // La fila se borró mientras confirmaba: hubo un borrado en curso. Si este
+    // alta recreó el contacto, se deshace, o quien pidió salir quedaría en la
+    // lista sin ninguna fila para encontrarlo.
+    if (recreado) {
+      try {
+        await brevo.deleteContact(email)
+      } catch (errBorrar) {
+        log.warn({ err: errBorrar, email: maskEmail(email) }, 'failed to undo recreated Brevo contact')
+      }
+    }
+    throw new Error('Invalid confirmation link')
+  }
 
   log.info({ email: maskEmail(email) }, 'subscription confirmed')
 }
+
+/**
+ * Pasado este plazo desde que venció, la fila se borra aunque Brevo siga sin
+ * responder: reintentar a diario no puede volverse guardar el correo sin plazo.
+ */
+const ABANDONO_TOPE_MS = 30 * 24 * 60 * 60 * 1000
 
 /**
  * Remove abandoned double opt-in records: unconfirmed pending subscriptions
@@ -226,12 +274,79 @@ export async function confirmSubscription(token: string, email: string) {
  * yet they retain the visitor's email. Confirmed subscriptions are kept — they
  * back the "already subscribed" idempotency check in subscribe(). Supports the
  * storage-limitation principle of Ley 21.719 (conservación limitada).
+ *
+ * EL CONTACTO EN BREVO TAMBIÉN. El alta crea el contacto antes de que la
+ * persona confirme (`subscribe()`), así que hasta el 3-nov-2026 quien nunca
+ * confirmaba perdía la fila acá y su correo quedaba en Brevo para siempre. Se
+ * borra solo si es residuo puro: ninguna otra fila del mismo correo (una
+ * suscripción confirmada, o un alta nueva en curso, comparten el contacto), en
+ * ninguna lista y no en la lista de supresión de Brevo (esa baja es memoria que
+ * sirve). Si Brevo falla, la fila se queda y se reintenta al día siguiente.
  */
 export async function cleanupExpiredPendingSubscriptions(): Promise<number> {
-  const result = await prisma.pendingSubscription.deleteMany({
-    where: { confirmedAt: null, expiresAt: { lt: new Date() } },
+  const ahora = Date.now()
+  const vencidas = await prisma.pendingSubscription.findMany({
+    where: { confirmedAt: null, expiresAt: { lt: new Date(ahora) } },
+    select: { id: true, email: true, expiresAt: true },
   })
+  if (vencidas.length === 0) return 0
+
+  const idsVencidas = new Set(vencidas.map((v) => v.id))
+  const porCorreo = new Map<string, typeof vencidas>()
+  for (const v of vencidas) {
+    const correo = v.email.toLowerCase()
+    porCorreo.set(correo, [...(porCorreo.get(correo) ?? []), v])
+  }
+
+  const aBorrar: string[] = []
+  for (const [correo, filas] of porCorreo) {
+    if (await soltarContactoAbandonado(correo, idsVencidas)) {
+      aBorrar.push(...filas.map((f) => f.id))
+    } else {
+      aBorrar.push(...filas.filter((f) => ahora - f.expiresAt.getTime() > ABANDONO_TOPE_MS).map((f) => f.id))
+    }
+  }
+  if (aBorrar.length === 0) return 0
+
+  const result = await prisma.pendingSubscription.deleteMany({ where: { id: { in: aBorrar } } })
   return result.count
+}
+
+/**
+ * Deja Brevo sin el contacto de un alta abandonada, si era residuo puro.
+ * `true`: no queda nada que hacer allá y la fila local puede irse. `false`:
+ * Brevo falló y conviene conservar la fila para reintentar.
+ */
+async function soltarContactoAbandonado(correo: string, idsVencidas: Set<string>): Promise<boolean> {
+  // ILIKE trata `_` y `%` como comodines: se vuelve a comparar exacto.
+  const hermanas = (
+    await prisma.pendingSubscription.findMany({
+      where: { email: { equals: correo, mode: 'insensitive' } },
+      select: { id: true, email: true },
+    })
+  ).filter((f) => f.email.toLowerCase() === correo && !idsVencidas.has(f.id))
+  if (hermanas.length > 0) return true
+
+  const estado = (err: unknown) => (err as { response?: { status?: number } })?.response?.status
+  let contacto: brevo.ContactDetail
+  try {
+    contacto = await brevo.getContact(correo)
+  } catch (err) {
+    if (estado(err) === 404) return true
+    log.warn({ err, email: maskEmail(correo) }, 'abandoned signup: brevo lookup failed, row kept for retry')
+    return false
+  }
+  if (contacto.listIds.length > 0 || !contacto.subscribed) return true
+
+  try {
+    await brevo.deleteContact(contacto.id)
+    log.info({ email: maskEmail(correo) }, 'abandoned signup: brevo contact deleted')
+    return true
+  } catch (err) {
+    if (estado(err) === 404) return true
+    log.warn({ err, email: maskEmail(correo) }, 'abandoned signup: brevo deletion failed, row kept for retry')
+    return false
+  }
 }
 
 /**

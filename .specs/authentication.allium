@@ -207,12 +207,17 @@ rule CreateUser {
     )
 }
 
+-- Borrar una cuenta es suprimir a la persona (subscription.allium,
+-- SuppressByEmail), igual que el autoservicio ARCO. Hasta el 3-nov-2026
+-- borraba solo la fila del usuario y dejaba su boletin, su contacto en
+-- Brevo, sus alertas y sus comentarios.
 rule DeleteUser {
     when: AdminDeletesUser(user)
+    requires: user != operator
     -- Cascade: all refresh tokens are removed with the user
     for token in user.refresh_tokens:
         ensures: not exists token
-    ensures: not exists user
+    ensures: SuppressByEmail(user.email, account: user)
 }
 
 -- ─── Actor Declarations ──────────────────────────────────────────

@@ -114,6 +114,22 @@ export interface Subscriber {
   createdAt: string
 }
 
+/** Qué pasó con el contacto en Brevo (server/src/services/supresion.ts). Un fallo llega como error 502. */
+export type EstadoBrevo = 'borrado' | 'no-estaba'
+
+export interface ResultadoSupresion {
+  cuentas: number
+  suscripciones: number
+  alertas: number
+  enlaces: number
+  comentarios: number
+  brevo: EstadoBrevo
+}
+
+export interface VistaPreviaSupresion extends Omit<ResultadoSupresion, 'brevo'> {
+  brevo: 'esta' | 'no-esta' | 'desconocido'
+}
+
 export interface SubscriberStats {
   confirmed: number
   pending: number
@@ -814,8 +830,17 @@ export const adminApi = {
         `/subscribers${toQueryString((params || {}) as Record<string, unknown>)}`
       ),
     stats: () => request<SubscriberStats>('/subscribers/stats'),
-    delete: (id: string) => request<{ ok: boolean }>(`/subscribers/${id}`, { method: 'DELETE' }),
+    delete: (id: string) =>
+      request<{ ok: boolean; suscripciones: number; brevo: EstadoBrevo }>(`/subscribers/${id}`, { method: 'DELETE' }),
     engagement: () => request<SubscriberEngagement[]>('/subscribers/engagement'),
+  },
+
+  // Supresión por correo (solo admin). El correo va en el cuerpo, nunca en la URL.
+  supresion: {
+    vistaPrevia: (email: string) =>
+      request<VistaPreviaSupresion>('/supresion/vista-previa', { method: 'POST', body: JSON.stringify({ email }) }),
+    suprimir: (email: string) =>
+      request<ResultadoSupresion>('/supresion', { method: 'POST', body: JSON.stringify({ email, confirm: 'SUPRIMIR' }) }),
   },
 
   // Spotlights (En Foco)

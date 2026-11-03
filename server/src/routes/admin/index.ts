@@ -21,6 +21,7 @@ import maintenanceRouter from './maintenance.js'
 import membersRouter from './members.js'
 import adminCommunitiesRouter from './communities.js'
 import subscribersRouter from './subscribers.js'
+import supresionRouter from './supresion.js'
 import analyticsRouter from './analytics.js'
 import spotlightsRouter from './spotlights.js'
 import casesRouter from './cases.js'
@@ -56,6 +57,7 @@ router.use('/maintenance', maintenanceRouter)
 router.use('/members', membersRouter)
 router.use('/communities', adminCommunitiesRouter)
 router.use('/subscribers', subscribersRouter)
+router.use('/supresion', supresionRouter)
 router.use('/analytics', analyticsRouter)
 router.use('/spotlights', spotlightsRouter)
 router.use('/cases', casesRouter)

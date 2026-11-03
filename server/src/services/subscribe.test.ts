@@ -4,6 +4,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockPrisma = {
   pendingSubscription: {
     findFirst: vi.fn(),
+    findUnique: vi.fn(),
+    findMany: vi.fn(),
     create: vi.fn(),
     deleteMany: vi.fn(),
     update: vi.fn(),
@@ -16,6 +18,8 @@ const mockBrevo = {
   sendTransactional: vi.fn(),
   verifyEmail: vi.fn(),
   listContacts: vi.fn(),
+  getContact: vi.fn(),
+  deleteContact: vi.fn(),
 }
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
@@ -188,15 +192,111 @@ describe('subscribe service', () => {
   })
 
   describe('cleanupExpiredPendingSubscriptions (retention — Ley 21.719)', () => {
-    it('deletes only unconfirmed pending subscriptions whose token expired', async () => {
-      mockPrisma.pendingSubscription.deleteMany.mockResolvedValue({ count: 3 })
+    const DIA = 24 * 60 * 60 * 1000
+    const vencida = (id: string, email: string, diasVencida = 1) => ({
+      id,
+      email,
+      expiresAt: new Date(Date.now() - diasVencida * DIA),
+    })
+    const http = (status: number) => Object.assign(new Error(`HTTP ${status}`), { response: { status } })
 
-      const count = await cleanupExpiredPendingSubscriptions()
-
-      expect(count).toBe(3)
-      expect(mockPrisma.pendingSubscription.deleteMany).toHaveBeenCalledWith({
-        where: { confirmedAt: null, expiresAt: { lt: expect.any(Date) } },
+    /** La primera búsqueda trae las vencidas; las siguientes, las filas de un correo. */
+    function filas(vencidas: ReturnType<typeof vencida>[], porCorreo: Record<string, { id: string; email: string }[]> = {}) {
+      mockPrisma.pendingSubscription.findMany.mockImplementation(async ({ where }: any) => {
+        if (where.confirmedAt === null) return vencidas
+        const correo = where.email.equals as string
+        return porCorreo[correo] ?? vencidas.filter((v) => v.email.toLowerCase() === correo)
       })
+      mockPrisma.pendingSubscription.deleteMany.mockImplementation(async ({ where }: any) => ({ count: where.id.in.length }))
+    }
+
+    beforeEach(() => {
+      mockBrevo.getContact.mockResolvedValue({ id: '77', listIds: [], subscribed: true })
+      mockBrevo.deleteContact.mockResolvedValue(undefined)
+    })
+
+    it('busca solo las no confirmadas cuyo token venció', async () => {
+      filas([])
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(0)
+      expect(mockPrisma.pendingSubscription.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { confirmedAt: null, expiresAt: { lt: expect.any(Date) } } }),
+      )
+      expect(mockPrisma.pendingSubscription.deleteMany).not.toHaveBeenCalled()
+    })
+
+    it('borra la fila Y el contacto que el alta dejó en Brevo', async () => {
+      filas([vencida('p1', 'Ana@x.cl')])
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(1)
+      expect(mockBrevo.getContact).toHaveBeenCalledWith('ana@x.cl')
+      expect(mockBrevo.deleteContact).toHaveBeenCalledWith('77')
+      expect(mockPrisma.pendingSubscription.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ['p1'] } } })
+    })
+
+    it('NO toca Brevo si el correo tiene otra fila (una suscripción confirmada comparte el contacto)', async () => {
+      filas([vencida('p1', 'ana@x.cl')], { 'ana@x.cl': [{ id: 'p1', email: 'ana@x.cl' }, { id: 'c1', email: 'ANA@x.cl' }] })
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(1)
+      expect(mockBrevo.getContact).not.toHaveBeenCalled()
+      expect(mockBrevo.deleteContact, 'borró el contacto de un suscriptor activo').not.toHaveBeenCalled()
+    })
+
+    it('una fila de OTRO correo que ILIKE trae por comodín no cuenta como hermana', async () => {
+      filas([vencida('p1', 'a_b@x.cl')], { 'a_b@x.cl': [{ id: 'p1', email: 'a_b@x.cl' }, { id: 'c9', email: 'axb@x.cl' }] })
+
+      await cleanupExpiredPendingSubscriptions()
+
+      expect(mockBrevo.deleteContact).toHaveBeenCalledWith('77')
+    })
+
+    it('NO borra un contacto que está en alguna lista', async () => {
+      filas([vencida('p1', 'ana@x.cl')])
+      mockBrevo.getContact.mockResolvedValue({ id: '77', listIds: [2], subscribed: true })
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(1)
+      expect(mockBrevo.deleteContact).not.toHaveBeenCalled()
+    })
+
+    it('NO borra un contacto en la lista de supresión: esa baja es memoria que sirve', async () => {
+      filas([vencida('p1', 'ana@x.cl')])
+      mockBrevo.getContact.mockResolvedValue({ id: '77', listIds: [], subscribed: false })
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(1)
+      expect(mockBrevo.deleteContact).not.toHaveBeenCalled()
+    })
+
+    it('si Brevo no tiene el contacto (404), la fila se borra igual', async () => {
+      filas([vencida('p1', 'ana@x.cl')])
+      mockBrevo.getContact.mockRejectedValue(http(404))
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(1)
+    })
+
+    it('si Brevo falla, la fila se queda para reintentar mañana', async () => {
+      filas([vencida('p1', 'ana@x.cl'), vencida('p2', 'luis@x.cl')])
+      mockBrevo.getContact.mockImplementation(async (correo: string) => {
+        if (correo === 'ana@x.cl') throw http(503)
+        return { id: '88', listIds: [], subscribed: true }
+      })
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(1)
+      expect(mockPrisma.pendingSubscription.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ['p2'] } } })
+    })
+
+    it('pero pasados 30 días de vencida se borra aunque Brevo siga caído', async () => {
+      filas([vencida('p1', 'ana@x.cl', 31)])
+      mockBrevo.getContact.mockResolvedValue({ id: '77', listIds: [], subscribed: true })
+      mockBrevo.deleteContact.mockRejectedValue(http(503))
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(1)
+    })
+
+    it('consulta Brevo una vez por correo, no una por fila', async () => {
+      filas([vencida('p1', 'ana@x.cl'), vencida('p2', 'ANA@x.cl')])
+
+      expect(await cleanupExpiredPendingSubscriptions()).toBe(2)
+      expect(mockBrevo.getContact).toHaveBeenCalledTimes(1)
     })
   })
   describe('reconcileUnsubscribedFromBrevo (la baja del boletin)', () => {
@@ -324,6 +424,43 @@ describe('subscribe service', () => {
       await confirmSubscription('tok', 'vuelve@example.com')
 
       expect(mockBrevo.updateContact).toHaveBeenCalledWith('contact-9', { subscribed: true })
+    })
+
+    it('si el contacto ya no existe (404), lo crea dentro de la lista en vez de dejarla confirmada sin boletín', async () => {
+      mockPrisma.pendingSubscription.findFirst.mockResolvedValue(pendiente('77'))
+      mockPrisma.pendingSubscription.findUnique.mockResolvedValue({ id: 'p1' })
+      mockBrevo.updateContact.mockRejectedValueOnce(Object.assign(new Error('Not Found'), { response: { status: 404 } }))
+
+      await confirmSubscription('tok', 'vuelve@example.com')
+
+      expect(mockBrevo.createContact, 'confirmó sin contacto en la lista').toHaveBeenCalledWith(
+        expect.objectContaining({ email: 'vuelve@example.com', subscribed: true }),
+      )
+      expect(mockPrisma.pendingSubscription.update).toHaveBeenCalled()
+    })
+
+    it('NO recrea el contacto si la fila se borró mientras confirmaba (un borrado en curso)', async () => {
+      mockPrisma.pendingSubscription.findFirst.mockResolvedValue(pendiente('77'))
+      mockPrisma.pendingSubscription.findUnique.mockResolvedValue(null)
+      mockBrevo.updateContact.mockRejectedValueOnce(Object.assign(new Error('Not Found'), { response: { status: 404 } }))
+
+      await expect(confirmSubscription('tok', 'vuelve@example.com')).rejects.toThrow('Invalid confirmation link')
+      expect(mockBrevo.createContact, 'volvió a meter en la lista a quien pedía salir').not.toHaveBeenCalled()
+      expect(mockPrisma.pendingSubscription.update).not.toHaveBeenCalled()
+    })
+
+    it('si la fila desaparece al marcarla (un borrado en curso), deshace el contacto que recreó', async () => {
+      mockPrisma.pendingSubscription.findFirst.mockResolvedValue(pendiente('77'))
+      mockPrisma.pendingSubscription.findUnique.mockResolvedValue({ id: 'p1' })
+      mockBrevo.updateContact.mockRejectedValueOnce(Object.assign(new Error('Not Found'), { response: { status: 404 } }))
+      mockPrisma.pendingSubscription.update.mockRejectedValueOnce(Object.assign(new Error('gone'), { code: 'P2025' }))
+      mockBrevo.deleteContact.mockResolvedValue(undefined)
+
+      await expect(confirmSubscription('tok', 'vuelve@example.com')).rejects.toThrow('Invalid confirmation link')
+      expect(mockBrevo.createContact).toHaveBeenCalled()
+      expect(mockBrevo.deleteContact, 'quedó en la lista quien pidió salir, sin fila para encontrarlo').toHaveBeenCalledWith(
+        'vuelve@example.com',
+      )
     })
 
     it('confirma igual si el proveedor falla: la baja no puede dejar a nadie en el limbo', async () => {

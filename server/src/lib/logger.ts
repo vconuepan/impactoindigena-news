@@ -185,11 +185,28 @@ function redactSecrets(str: string): string {
     .replace(/password["\s:=]+[^\s,"'}]+/gi, 'password=[REDACTED]')
 }
 
+/**
+ * Enmascara los correos de un texto como `maskEmail`, también cuando vienen
+ * codificados en una URL (`%40`). Brevo identifica contactos por correo en la
+ * ruta (`/contacts/ana%40x.cl`) y el error de axios trae esa URL: sin esto, un
+ * log que enmascaraba el campo `email` publicaba el correo completo al lado.
+ */
+export function redactarCorreos(str: string): string {
+  // El lookbehind obliga a empezar al comienzo de una tira: sin él, cada
+  // posición de una tira larga sin `@` volvía a recorrerla y el costo era
+  // cuadrático (16 KB, medio segundo síncrono). El dominio termina en letras,
+  // para no tomar por correo un `react@18.3.1` de una traza.
+  return str.replace(
+    /(?<![A-Za-z0-9._%+-])([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*(@|%40)((?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})/g,
+    '$1***$2$3',
+  )
+}
+
 export function serializeError(err: any) {
   const serialized = pino.stdSerializers.err(err)
   if (serialized) {
-    if (serialized.message) serialized.message = redactSecrets(serialized.message)
-    if (serialized.stack) serialized.stack = redactSecrets(serialized.stack)
+    if (serialized.message) serialized.message = redactarCorreos(redactSecrets(serialized.message))
+    if (serialized.stack) serialized.stack = redactarCorreos(redactSecrets(serialized.stack))
   }
   if (serialized && err?.isAxiosError) {
     return {
@@ -198,7 +215,7 @@ export function serializeError(err: any) {
       stack: serialized.stack,
       code: err.code,
       status: err.response?.status,
-      url: err.config?.url,
+      url: typeof err.config?.url === 'string' ? redactarCorreos(err.config.url) : err.config?.url,
     }
   }
   return serialized

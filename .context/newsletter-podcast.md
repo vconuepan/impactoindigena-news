@@ -81,6 +81,31 @@ A live send (`sendLive`, called by the `send_newsletter` and `send_weekly_newsle
 
 **Editor photo (2-nov-2026, with the director's permission):** the byline photo lives at `client/public/images/editor-venancio.jpg`, served as `${config.siteUrl}/images/editor-venancio.jpg`. Until then every email loaded it from `impactoindigena.com/wp-content/…/vc-vertical.webp`: another brand's WordPress, a WebP several desktop email clients don't show, 804×921 px and 125,738 bytes for a 40 px circle, squashed wherever `object-fit` is ignored. Now it is a 120×120 JPEG cropped to the face (6,081 bytes). `newsletter.test.ts` checks that the email points to the site and that the file is a square JPEG under 20 KB.
 
+### Subscribers, unsubscribe and suppression (3-nov-2026)
+
+> **Spec:** `.specs/subscription.allium` (rules `SuppressByEmail`, `RemoveFromNewsletter`, `CleanupExpiredPendingSubscriptions`).
+
+The campaign goes to Brevo list `LISTA_BOLETIN` (`services/brevo.ts`), so **a subscriber exists in two places**: the `pending_subscriptions` row and the Brevo contact. Deleting only the row leaves the person on the list and the campaign keeps reaching them. Until 3-nov-2026 the panel's subscriber delete did exactly that, the admin user delete left newsletter, Brevo contact, alerts and feedback behind, alerts had no admin tool, the profile unsubscribe skipped Brevo when the row had no contact id (anyone who came back after an earlier unsubscribe), and abandoned signups left their Brevo contact forever (`subscribe()` creates it before confirmation).
+
+Every deletion path now goes through `server/src/services/supresion.ts`:
+
+| Path | Function | If Brevo fails |
+|------|----------|----------------|
+| `DELETE /api/auth/account` (ARCO self-service) | `suprimirPorCorreo` with `userId` | 503, nothing deleted; the profile says «No se pudo eliminar. Intenta de nuevo.» |
+| `DELETE /api/admin/users/:id` | `suprimirPorCorreo` with `userId` | 502, nothing deleted |
+| `POST /api/admin/supresion` («Suprimir por correo», Subscribers page, admins only) | `suprimirPorCorreo` | 502 |
+| `DELETE /api/admin/subscribers/:id` | `borrarDelBoletin` (all rows of that email + contact) | 502 |
+| `DELETE /api/auth/subscription` (profile) | `borrarDelBoletin` | 503 |
+
+- **Brevo first, and a Brevo failure stops everything.** The contact is deleted by every stored contact id and by the email. Until the 3-nov review the ARCO path went ahead with Brevo down: the person stayed on the list, kept getting the campaign, and no record with their email remained to retry. «Nothing deleted» means in our database: Brevo may have deleted part (the id but not the email); retrying is safe because a 404 is not a failure.
+- **With an account (`userId`) the account is matched by id only, and the data by the email the account has today in the database.** The member token carries the email for 30 days and an admin can change an account's email; the old email may already be someone else's account. Matching accounts by it deleted theirs (found by the 3-nov review). If the `userId` account no longer exists nothing is deleted, and the profile's `GET`/`DELETE /api/auth/subscription` answer «not subscribed» / 404: the email would come from a token that outlived its account (second review).
+- **Email matching:** case-insensitive and exact. Prisma's `mode: 'insensitive'` is ILIKE, where `_` and `%` are wildcards, so candidates are re-compared in JS before deleting. Tables store the email as typed; the magic link lowercases it, which is why the profile's subscription lookup (`suscripcionesConfirmadas`) is case-insensitive too.
+- **The ARCO export (`GET /api/auth/export`) reads with the same rule:** the account's current email, case-insensitive and exact, nothing by email if the account no longer exists. Access shows exactly what erasure would delete.
+- **The audit log never stores the suppressed email**, only operator, action and row counts. **Logs neither:** Brevo identifies contacts by email in the URL (`/contacts/ana%40x.cl`), and `serializeError` (`lib/logger.ts`) now masks emails in an axios error's URL, message and stack (`redactarCorreos`). The regex is linear (a lookbehind anchors each match at the start of a run; without it a 16 KB run took half a second, synchronously, on every logged error) and requires a letters-only TLD, so `axios@1.7.2` in a stack trace is left alone.
+- **Known limit:** Brevo answers 405 when deleting the email registered as the Brevo account itself; that is treated as a failure and blocks suppression of that one address.
+- **Abandoned signups** (`cleanupExpiredPendingSubscriptions`): the Brevo contact is deleted only when no other row shares the email and the contact is on no list and not blacklisted. If Brevo fails the row stays for the next day, up to 30 days after expiry. Between the sibling check and the deletion a new signup can slip in; `confirmSubscription` repairs it: if updating the contact returns 404 it re-reads the row and, if the row still exists, creates the contact on the list. If the row is gone, the 404 was a deletion in progress and nothing is recreated. A deletion that already hit Brevo but not yet the rows still slips past that read. Both orders are closed: if the rows vanish before the confirmation marks its row, the P2025 makes it delete the contact it recreated; if they vanish after, the suppression's second Brevo deletion (`barridoFinal`, after `deleteMany`) removes it.
+- **Backlog not cleaned by code:** on 3-nov-2026 Brevo held 7 contacts (of 20) on no list and not blacklisted, all older than a week. They predate this change, the daily cleanup does not reach them, and they were not cross-checked against the production database (counted with a read-only listing of the Brevo API).
+
 ## Podcast
 
 ### Script generation (`POST /api/admin/podcasts/:id/generate`)
@@ -137,6 +162,13 @@ different requirements — one address must be able to *send*, the other only to
 | POST | `/api/admin/newsletters/:id/generate` | Generate text content |
 | POST | `/api/admin/newsletters/:id/carousel` | Generate carousel ZIP (download) |
 
+### Subscribers and suppression
+| Method | Path | Description |
+|--------|------|-------------|
+| DELETE | `/api/admin/subscribers/:id` | Remove that email from the newsletter: every row + Brevo contact |
+| POST | `/api/admin/supresion/vista-previa` | Admin only. `{ email }` → counts of what would be deleted, nothing deleted |
+| POST | `/api/admin/supresion` | Admin only. `{ email, confirm: 'SUPRIMIR' }` → full suppression |
+
 ### Podcasts
 | Method | Path | Description |
 |--------|------|-------------|
@@ -164,6 +196,8 @@ different requirements — one address must be able to *send*, the other only to
 | `server/src/prompts/newsletter-select.ts` | `buildNewsletterSelectPrompt` for story selection |
 | `server/src/services/prompts.ts` | `buildPodcastPrompt` for podcast script generation |
 | `server/src/jobs/generateNewsletter.ts` | Automated weekly newsletter generation cron job |
+| `server/src/services/supresion.ts` | The one deletion by email: account, newsletter + Brevo contact, alerts, magic links, feedback |
+| `client/src/components/admin/SupresionPorCorreo.tsx` | «Suprimir por correo» dialog: preview, then delete |
 
 ## Modifying
 

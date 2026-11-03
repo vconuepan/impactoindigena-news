@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { serializeError, maskEmail, opcionesDelArchivo, retentionDays, diasDeRetencion } from './logger.js'
+import { serializeError, redactarCorreos, maskEmail, opcionesDelArchivo, retentionDays, diasDeRetencion } from './logger.js'
 
 describe('serializeError', () => {
   it('strips axios response body, request, and config from serialized output', () => {
@@ -61,6 +61,43 @@ describe('serializeError', () => {
     expect(result.code).toBe('ECONNREFUSED')
     expect(result.status).toBeUndefined()
     expect(result.url).toBe('https://example.com/api')
+  })
+})
+
+describe('el correo no se cuela por el error de axios', () => {
+  it('enmascara el correo de la URL de Brevo, codificado o no', () => {
+    const err = Object.assign(new Error('Request failed with status code 503'), {
+      isAxiosError: true,
+      config: { url: '/contacts/ana.maria%40gmail.com' },
+      response: { status: 503 },
+    })
+    const r = serializeError(err) as { url: string }
+
+    expect(r.url).toBe('/contacts/a***%40gmail.com')
+    expect(JSON.stringify(r)).not.toContain('ana.maria')
+  })
+
+  it('enmascara correos dentro del mensaje y la traza', () => {
+    const r = serializeError(new Error('contact juan+boletin@x.cl already exists')) as { message: string; stack: string }
+
+    expect(r.message).toBe('contact j***@x.cl already exists')
+    expect(r.stack).not.toContain('juan+boletin')
+  })
+
+  it('no toma por correo una versión de paquete de una traza', () => {
+    expect(redactarCorreos('at /node_modules/.pnpm/axios@1.7.2/lib/core.js')).toBe('at /node_modules/.pnpm/axios@1.7.2/lib/core.js')
+  })
+
+  it('es lineal: una tira larga sin correo no bloquea el proceso', () => {
+    const larga = '%20abc'.repeat(20_000)
+    const t = performance.now()
+    redactarCorreos(larga)
+    expect(performance.now() - t, 'la regex volvió a ser cuadrática').toBeLessThan(100)
+  })
+
+  it('no toca un id numérico ni una URL sin correo', () => {
+    expect(redactarCorreos('/contacts/4242')).toBe('/contacts/4242')
+    expect(redactarCorreos('https://api.brevo.com/v3/emailCampaigns/12')).toBe('https://api.brevo.com/v3/emailCampaigns/12')
   })
 })
 

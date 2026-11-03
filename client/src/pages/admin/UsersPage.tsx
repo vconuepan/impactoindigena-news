@@ -151,7 +151,7 @@ export default function UsersPage() {
         onClose={() => setDeletingUser(null)}
         onConfirm={handleDelete}
         title="Eliminar usuario"
-        description={`¿Estás seguro de que quieres eliminar a ${deletingUser?.name}? Esta acción no se puede deshacer.`}
+        description={`¿Eliminar a ${deletingUser?.name}? Se borra su cuenta y todo lo que guardamos con su correo: suscripción al boletín, contacto en Brevo, alertas y comentarios. Esta acción no se puede deshacer.`}
         confirmLabel="Eliminar"
         variant="danger"
         loading={deleteUser.isPending}

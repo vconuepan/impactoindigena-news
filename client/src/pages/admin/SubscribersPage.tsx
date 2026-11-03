@@ -9,6 +9,9 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorState } from '../../components/ui/ErrorState'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { useToast } from '../../components/ui/Toast'
+import { Button } from '../../components/ui/Button'
+import { SupresionPorCorreo } from '../../components/admin/SupresionPorCorreo'
+import { useAuth } from '../../lib/auth'
 
 type StatusFilter = 'all' | 'confirmed' | 'pending' | 'expired'
 
@@ -63,6 +66,9 @@ export default function SubscribersPage() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [page, setPage] = useState(1)
   const [showEngagement, setShowEngagement] = useState(false)
+  const [supresionAbierta, setSupresionAbierta] = useState(false)
+  const { user } = useAuth()
+  const isAdmin = user?.role === 'admin'
   const PAGE_SIZE = 50
 
   const statsQuery = useQuery({
@@ -87,16 +93,17 @@ export default function SubscribersPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => adminApi.subscribers.delete(id),
-    onSuccess: () => {
+    onSuccess: (r) => {
       queryClient.invalidateQueries({ queryKey: ['subscribers'] })
       queryClient.invalidateQueries({ queryKey: ['subscriber-stats'] })
-      toast('success', 'Suscriptor eliminado')
+      toast('success', r.brevo === 'borrado' ? 'Suscriptor eliminado de la base y de Brevo' : 'Suscriptor eliminado. Brevo no tenía el contacto')
     },
-    onError: () => toast('error', 'Error al eliminar suscriptor'),
+    onError: (err) => toast('error', err instanceof Error ? err.message : 'Error al eliminar suscriptor'),
   })
 
   function handleDelete(id: string, email: string) {
-    if (!window.confirm(`¿Eliminar suscriptor "${email}"? Esta acción no se puede deshacer.`)) return
+    const aviso = `¿Eliminar a "${email}" del boletín? Se borran todas sus filas y su contacto en Brevo, y deja de recibir el boletín. Esta acción no se puede deshacer.`
+    if (!window.confirm(aviso)) return
     deleteMutation.mutate(id)
   }
 
@@ -125,7 +132,15 @@ export default function SubscribersPage() {
       <PageHeader
         title="Suscriptores"
         description="Suscriptores del boletín y su estado de confirmación"
+        actions={
+          isAdmin && (
+            <Button variant="secondary" onClick={() => setSupresionAbierta(true)}>
+              Suprimir por correo
+            </Button>
+          )
+        }
       />
+      {isAdmin && <SupresionPorCorreo open={supresionAbierta} onClose={() => setSupresionAbierta(false)} />}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-6">
