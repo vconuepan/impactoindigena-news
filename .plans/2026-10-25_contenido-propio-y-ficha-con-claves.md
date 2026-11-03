@@ -324,7 +324,7 @@ decisión técnica mía, con fundamento; C necesita que el director decida, y se
 | C4 | **Umbral de la nota con claves**: todo lo seleccionado o solo relevancia ≥ 7 | Lo decide el costo medido en A1; si está bajo US$0,01 por nota, todo |
 | C5 | **Aplicar las migraciones** (B1, B5, B8) en pgAdmin cuando el SQL esté | — |
 | C6 | **Empujar** cada tanda cuando esté verificada | — |
-| C7 | **Qué hacer con 3 de 8 cuerpos con error de hecho** (medido el 2-nov, 8 quater): seguir publicando sin revisión con el recuadro · ocultar los `ia_sin_revision` hasta revisarlos · medir antes un segundo paso que contraste cada afirmación con el original | Medir el segundo paso sobre las 24 guardadas del 31-oct al 2-nov (unos US$0,05) antes de decidir, y corregir hoy en el panel las tres con error |
+| C7 | **Qué hacer con 3 de 8 cuerpos con error de hecho** (medido el 2-nov, 8 quater): seguir publicando sin revisión con el recuadro · ocultar los `ia_sin_revision` hasta revisarlos · medir antes un segundo paso que contraste cada afirmación con el original | Medido el 3-nov (8 quater): el contraste no sirve como candado, sí como ayuda para revisar. Decide el director entre seguir publicando con el recuadro u ocultar lo no revisado |
 
 ### 8 · Orden de ejecución y verificación
 
@@ -533,6 +533,30 @@ Y una nota de Infobae del 26-feb-2026 (Ana Guetío, Cauca) entró por el feed de
 error que un lector podría detectar. El recuadro lo declara («Nadie la revisó antes de
 publicarla»), que es lo que el plan decidió; el dato nuevo es la tasa. Decisión del director en
 la sección 7, C7.
+
+**C7 medido (3-nov-2026): un segundo paso de contraste no sirve como candado.** Script
+`medir-contraste-nota-claves.ts`: el modelo lee el original re-extraído y la nota, y entrega cada
+afirmación que el original no respalda, con evidencia, corrección y gravedad. Corrió con
+`gpt-4.1-mini` sobre las 22 notas con cuerpo publicadas del 31-oct al 2-nov (de las 24 guardadas,
+dos no aparecen en la API pública), y con `gpt-4o` sobre cinco de control. La quinta nota con error
+apareció en la corrida: en Colombia, «el domingo 31 de octubre», y el 31-oct-2026 fue sábado.
+
+| Medida | `gpt-4.1-mini` (22 notas) | `gpt-4o` (5 de control) |
+|---|---|---|
+| Costo | US$0,0389 (US$0,0018 por nota) | US$0,0535 (US$0,011 por nota) |
+| Notas con algo marcado | 18 de 18 contrastadas (67 marcas) | 5 de 5 |
+| Fallos | 3 respuestas nulas · 1 original no extraíble | 0 |
+| Acadia, año y género | marcados, como «menor» | marcados, año «grave», género «menor» |
+| Colombia, domingo 31 | marcado, corrección correcta | marcado, «menor» |
+| Nepal, COP28 | marcado, «menor» | no |
+| Osage, US$4.700 millones | **no**, en dos corridas | **no** |
+| «Grave» | 2, los dos inventados (Arizona «2023») | 5: los dos de Acadia son reales; tres inventados (Osage «2024» dos veces, Filipinas) |
+
+Las correcciones propuestas meten años que ningún original trae (2023, 2024): aplicadas solas,
+agregarían errores. La gravedad está al revés: lo real sale «menor» y lo inventado, «grave». Y
+marca algo en todas las notas, así que como candado de fallo cerrado bloquearía todo. **Sirve como
+lista de lectura para quien revisa**: en las cuatro notas con error, tres tenían el error entre lo
+marcado. El error de Osage, una cifra unida al total equivocado, no lo vio ningún modelo.
 
 ### 9 · Riesgos nombrados
 
