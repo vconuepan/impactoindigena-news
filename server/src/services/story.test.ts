@@ -32,7 +32,7 @@ const mockPrisma = vi.hoisted(() => ({
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
-const { getStoryIdsByStatus, generateUniqueSlugs, getStories, deleteStory, dissolveCluster, getClusterRedirectSlug, getPublishedStories, getHomepageData } = await import('./story.js')
+const { getStoryIdsByStatus, generateUniqueSlugs, getStories, deleteStory, dissolveCluster, getClusterRedirectSlug, getPublishedStories, getHomepageData, getPublishedStoryBySlug } = await import('./story.js')
 
 describe('getStories', () => {
   beforeEach(() => {
@@ -680,5 +680,35 @@ describe('secciones geograficas', () => {
     await getPublishedStories({ page: 1, pageSize: 10, issueSlug: 'derechos-indigenas' })
 
     expect(JSON.stringify(mockPrisma.story.findMany.mock.calls[0][0].where)).not.toContain('countryFocus')
+  })
+})
+
+describe('getPublishedStoryBySlug · cuerpo sin revisar (C7, 3-nov-2026)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  const ficha = (method: string) => ({ id: 's1', slug: 'nota', summary: 'Resumen', body: { bajada: 'Bajada', method } })
+
+  it('no muestra un cuerpo que nadie revisó: la ficha queda con el resumen', async () => {
+    mockPrisma.story.findFirst.mockResolvedValue(ficha('ia_sin_revision'))
+    const story = await getPublishedStoryBySlug('nota')
+    expect(story?.body).toBeNull()
+    expect(story?.summary).toBe('Resumen')
+  })
+
+  it('muestra el cuerpo revisado y el escrito por una persona', async () => {
+    for (const method of ['ia_revisada', 'humana']) {
+      mockPrisma.story.findFirst.mockResolvedValue(ficha(method))
+      const story = await getPublishedStoryBySlug('nota')
+      expect(story?.body).toEqual({ bajada: 'Bajada', method })
+    }
+  })
+
+  it('una ficha sin cuerpo sigue sin cuerpo, y una que no existe sigue sin existir', async () => {
+    mockPrisma.story.findFirst.mockResolvedValue({ id: 's1', slug: 'nota', body: null })
+    expect((await getPublishedStoryBySlug('nota'))?.body).toBeNull()
+    mockPrisma.story.findFirst.mockResolvedValue(null)
+    expect(await getPublishedStoryBySlug('nada')).toBeNull()
   })
 })

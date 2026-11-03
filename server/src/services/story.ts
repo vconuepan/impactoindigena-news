@@ -1175,12 +1175,23 @@ export const PUBLIC_STORY_BODY_SELECT = {
   method: true, reviewedBy: true, updatedAt: true,
 } as const
 
+/**
+ * El cuerpo que la ficha pública puede mostrar. Uno que nadie revisó no sale
+ * (decisión C7 del director, 3-nov-2026): la ficha queda con el resumen.
+ */
+export function cuerpoPublico<T extends { method: string }>(body: T | null | undefined): T | null {
+  if (!body) return null
+  if (body.method === 'ia_sin_revision' && !config.storyBody.publicUnreviewed) return null
+  return body
+}
+
 export async function getPublishedStoryBySlug(slug: string) {
   try {
-    return await prisma.story.findFirst({
+    const story = await prisma.story.findFirst({
       where: { slug, status: 'published' },
       select: { ...PUBLIC_STORY_SELECT, body: { select: PUBLIC_STORY_BODY_SELECT } },
     })
+    return story ? { ...story, body: cuerpoPublico(story.body) } : null
   } catch (err) {
     // La tabla story_bodies la aplica el director a mano; hasta entonces la
     // ficha sale como siempre, sin cuerpo, en vez de responder 500.

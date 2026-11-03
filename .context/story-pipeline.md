@@ -58,7 +58,13 @@ y el incidente del 26-oct con `editorials`. Todo lector tolera que no exista:
 `getPublishedStoryBySlug` cae al `select` sin cuerpo. Nace con `method = ia_sin_revision` y
 `reviewedBy = ''`; en el panel (`StoryBodySection`, rutas `GET/POST/PUT /api/admin/stories/:id/body`)
 el editor corrige y da por revisada (→ `ia_revisada`), y una edición del texto borra la traducción
-para que se vuelva a traducir. La traducción (`translateStoryBody` en `services/translation.ts`)
+para que se vuelva a traducir. **Desde el 3-nov-2026 (decisión C7 del director) la ficha pública no
+muestra un cuerpo `ia_sin_revision`**: `cuerpoPublico()` en `services/story.ts` lo devuelve como
+`null` y la ficha sale con el resumen; `STORY_BODY_PUBLIC_UNREVIEWED=true` lo revierte. El cuerpo se
+redacta y se traduce igual, para que revisarlo sea leer y aprobar. La medición que lo decidió, en el
+plan (8 quater): 5 de 22 cuerpos con error de hecho que ningún candado ve. El script
+`medir-contraste-nota-claves.ts` contrasta cada cuerpo con el original y sirve como lista de lectura
+para quien revisa, no como candado. La traducción (`translateStoryBody` en `services/translation.ts`)
 corre dentro de `translateStory`, no fatal, con el mismo guardarraíl de copia decidido por `quePaso`.
 Rezagadas: `npm run` no tiene atajo; `npx tsx src/scripts/backfill-story-bodies.ts --limit N [--apply]`,
 simulación por defecto. Costo medido en A1: US$0,0013-0,0025 por nota.

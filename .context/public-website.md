@@ -52,7 +52,8 @@ Feed items include: title, link to story page, AI-generated summary, publish dat
 
 ## La ficha con claves (30-oct-2026)
 
-`GET /api/stories/:slug` trae `body` (`PublicStoryBody`, ver `story-pipeline.md`) o `null`. Con
+`GET /api/stories/:slug` trae `body` (`PublicStoryBody`, ver `story-pipeline.md`) o `null`; desde el
+3-nov-2026 trae `null` también cuando nadie revisó el cuerpo (decisión C7). Con
 cuerpo, `StoryPage` pinta `StoryBodyClaves` en lugar del resumen: bajada, «Qué pasó», «Por qué
 importa a los pueblos», «Contexto», «Qué sigue» (omitido si está vacío) y el recuadro «¿Cómo hicimos
 esta nota?», cuyo texto depende de `body.method` (`storyPage.body.method.*` en `es.json`/`en.json`)

@@ -149,6 +149,11 @@ export const config = {
     // cuatro claves sin inventar, y la ficha se queda con el resumen.
     minSourceChars: parseInt(process.env.STORY_BODY_MIN_SOURCE_CHARS || '1200', 10),
     maxSourceChars: parseInt(process.env.STORY_BODY_MAX_SOURCE_CHARS || '15000', 10),
+    // Decisión del director, 3-nov-2026 (C7): «Ocultar lo no revisado». En las
+    // 22 notas medidas, cinco traían un error de hecho que ningún candado ve.
+    // El cuerpo se redacta igual, pero la ficha pública lo muestra solo cuando
+    // alguien lo revisó en el panel; hasta entonces sale con el resumen.
+    publicUnreviewed: process.env.STORY_BODY_PUBLIC_UNREVIEWED === 'true',
   },
   // La editorial firmada (B5, 25-oct-2026): se redacta desde las notas del
   // director con el tier medium. Medido en A1 del mismo plan: el modelo grande

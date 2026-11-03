@@ -8,9 +8,10 @@ import { Textarea } from '../ui/Textarea'
  * La nota con claves en la ficha del panel (plan del 25-oct-2026, B2 y B4).
  *
  * Nace sola al publicar, con método «redactada por el modelo, sin revisión»,
- * y la ficha pública lo dice así. Acá el editor la lee, corrige lo que haga
- * falta y la da por revisada con su nombre: entonces el recuadro público pasa
- * a decir que una persona la leyó y aprobó. Lo que se guarda vuelve a pasar
+ * y desde el 3-nov-2026 (decisión C7 del director) la ficha pública no la
+ * muestra: sale con el resumen. Acá el editor la lee, corrige lo que haga
+ * falta y la da por revisada con su nombre: recién entonces se publica, y el
+ * recuadro público dice que una persona la leyó y aprobó. Lo que se guarda vuelve a pasar
  * por los mismos candados que al redactar; lo que bloquea no se guarda.
  */
 
@@ -23,7 +24,7 @@ const CAMPOS: { clave: keyof Pick<StoryBodyAdmin, 'bajada' | 'quePaso' | 'porQue
 ]
 
 const METODO: Record<StoryBodyAdmin['method'], string> = {
-  ia_sin_revision: 'Redactada por el modelo, sin revisión',
+  ia_sin_revision: 'Redactada por el modelo, sin revisión: no se publica hasta revisarla',
   ia_revisada: 'Redactada por el modelo y revisada',
   humana: 'Escrita por una persona',
 }

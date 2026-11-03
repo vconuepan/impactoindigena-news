@@ -19,6 +19,10 @@ Y, por aceptación de la recomendación que acompañaba a esa pregunta:
 - Los ocho indicadores del Trust Project se adoptan **como diseño**, con la fórmula
   «inspirado en». **No se postula** ni se escribe ninguna afiliación (regla 6 de lenguaje).
 
+**3-nov-2026, C7, literal:** «Ocultar lo no revisado». La ficha pública no muestra un cuerpo que
+nadie revisó: sale con el resumen hasta que alguien lo da por revisado en el panel. Medido antes de
+decidir (8 quater): 5 de 22 cuerpos con un error de hecho que ningún candado ve.
+
 ### Propósito
 
 Que una nota de Voces deje de ser un resumen de 45 palabras más una justificación de puntaje,
@@ -324,7 +328,7 @@ decisión técnica mía, con fundamento; C necesita que el director decida, y se
 | C4 | **Umbral de la nota con claves**: todo lo seleccionado o solo relevancia ≥ 7 | Lo decide el costo medido en A1; si está bajo US$0,01 por nota, todo |
 | C5 | **Aplicar las migraciones** (B1, B5, B8) en pgAdmin cuando el SQL esté | — |
 | C6 | **Empujar** cada tanda cuando esté verificada | — |
-| C7 | **Qué hacer con 3 de 8 cuerpos con error de hecho** (medido el 2-nov, 8 quater): seguir publicando sin revisión con el recuadro · ocultar los `ia_sin_revision` hasta revisarlos · medir antes un segundo paso que contraste cada afirmación con el original | Medido el 3-nov (8 quater): el contraste no sirve como candado, sí como ayuda para revisar. Decide el director entre seguir publicando con el recuadro u ocultar lo no revisado |
+| C7 | **Qué hacer con 3 de 8 cuerpos con error de hecho** (medido el 2-nov, 8 quater): seguir publicando sin revisión con el recuadro · ocultar los `ia_sin_revision` hasta revisarlos · medir antes un segundo paso que contraste cada afirmación con el original | **Decidido el 3-nov: «Ocultar lo no revisado».** Hecho con `cuerpoPublico()` en `services/story.ts`; `STORY_BODY_PUBLIC_UNREVIEWED=true` lo revierte |
 
 ### 8 · Orden de ejecución y verificación
 
