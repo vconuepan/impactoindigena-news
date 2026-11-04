@@ -110,8 +110,14 @@ function arrancarHijo(cuerpo: string, env: Record<string, string> = {}) {
   const guion = path.join(dir, 'arrancar.ts')
   writeFileSync(guion, `
     async function main() {
-      const { createLogger } = await import(${JSON.stringify(logger)})
+      const { createLogger, fallasDelArchivoDeRegistro: fallas } = await import(${JSON.stringify(logger)})
       const log = createLogger('prueba-a4')
+      const esperar = async (listo: () => boolean) => {
+        for (const limite = Date.now() + 30_000; !listo(); ) {
+          if (Date.now() > limite) throw new Error('el hijo no vio el estado esperado del archivo en 30 s')
+          await new Promise((r) => setTimeout(r, 50))
+        }
+      }
       ${cuerpo}
     }
     main()
@@ -131,6 +137,7 @@ describe('un archivo de registro que no se puede abrir no tumba el servidor (A4)
     for (const d of diasUtc()) mkdirSync(path.join(dir, `server.${d}.1.log`))
     const r = arrancarHijo(`
       for (let i = 0; i < 4; i++) { log.info({ i }, 'linea de prueba'); await new Promise((r) => setTimeout(r, 200)) }
+      await esperar(() => fallas() > 0)
       log.info('fin sin caida')
       await new Promise((r) => setTimeout(r, 300))
     `)
@@ -147,9 +154,11 @@ describe('un archivo de registro que no se puede abrir no tumba el servidor (A4)
     const r = arrancarHijo(`
       const { rmdirSync } = await import('node:fs')
       log.info('antes de arreglar')
-      await new Promise((r) => setTimeout(r, 400))
+      // Se espera el hecho, no un tiempo: con 400 ms fijos, en una CI cargada
+      // las carpetas se quitaban antes de que pino-roll intentara abrirlas.
+      await esperar(() => fallas() > 0)
       for (const c of ${JSON.stringify(carpetas)}) rmdirSync(c)
-      await new Promise((r) => setTimeout(r, 1500))
+      await esperar(() => fallas() === 0)
       log.info('despues de reconectar')
       await new Promise((r) => setTimeout(r, 500))
     `, { LOG_FILE_RETRY_MS: '300' })

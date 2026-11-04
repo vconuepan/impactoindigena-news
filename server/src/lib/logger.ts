@@ -131,6 +131,16 @@ const RECUPERADO_TRAS_MS = Math.min(30 * 1000, REINTENTO_ARCHIVO_MS)
 let fallasDelArchivo = 0
 
 /**
+ * Fallas seguidas del archivo de registro; vuelve a 0 al recuperarse. Solo
+ * lectura: lo usan las pruebas para esperar el hecho y no un tiempo fijo (con
+ * 400 ms fijos la prueba de reconexión fallaba en una CI cargada, porque el
+ * hilo de pino-roll aún no había intentado abrir el archivo).
+ */
+export function fallasDelArchivoDeRegistro(): number {
+  return fallasDelArchivo
+}
+
+/**
  * Conecta el archivo rotativo al multistream. Si falla, se QUITA del multistream
  * (si no, cada linea posterior generaba un «the worker has exited» descartado) y
  * se reintenta cada 10 minutos. Se avisa en la primera falla, cada hora mientras
