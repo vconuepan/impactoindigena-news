@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockPrisma = vi.hoisted(() => ({
-  story: { findUnique: vi.fn() },
+  story: { findUnique: vi.fn(), findMany: vi.fn() },
   storyBody: { upsert: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
 }))
 const mockInvoke = vi.hoisted(() => vi.fn())
 const mockConfig = vi.hoisted(() => ({
-  storyBody: { enabled: true, modelTier: 'medium', minSourceChars: 1200, maxSourceChars: 15000 },
+  storyBody: { enabled: true, modelTier: 'medium', minSourceChars: 1200, maxSourceChars: 15000, minRelevance: 8, maxPerRun: 4 },
   llm: { provider: 'azure', azure: { deployments: { medium: 'gpt-4.1-mini' } } },
 }))
 
@@ -128,10 +128,32 @@ describe('draftStoryBody', () => {
   })
 
   it('el lote cuenta y nunca lanza', async () => {
+    mockPrisma.story.findMany.mockResolvedValue([{ id: 's1', relevance: 9 }, { id: 's2', relevance: 8 }])
     mockPrisma.story.findUnique.mockResolvedValueOnce(story()).mockRejectedValueOnce(new Error('caída'))
     mockInvoke.mockResolvedValue({ raw: {}, parsed: cuerpoFiel })
     const cuenta = await draftStoryBodies(['s1', 's2'])
     expect(cuenta).toEqual({ saved: 1, blocked: 0, skipped: 0, failed: 1 })
+  })
+
+  it('solo redacta las de relevancia mínima y respeta el tope por corrida', async () => {
+    mockConfig.storyBody.maxPerRun = 1
+    mockPrisma.story.findMany.mockResolvedValue([
+      { id: 's1', relevance: 8 }, { id: 's2', relevance: 10 }, { id: 's3', relevance: 6 }, { id: 's4', relevance: null },
+    ])
+    mockPrisma.story.findUnique.mockResolvedValue(story({ id: 's2' }))
+    mockInvoke.mockResolvedValue({ raw: {}, parsed: cuerpoFiel })
+    const cuenta = await draftStoryBodies(['s1', 's2', 's3', 's4'])
+    mockConfig.storyBody.maxPerRun = 4
+    expect(mockInvoke).toHaveBeenCalledTimes(1)
+    expect(mockPrisma.story.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 's2' } }))
+    expect(cuenta).toEqual({ saved: 1, blocked: 0, skipped: 3, failed: 0 })
+  })
+
+  it('si no puede leer la relevancia, no redacta nada y no lanza', async () => {
+    mockPrisma.story.findMany.mockRejectedValue(new Error('base caída'))
+    const cuenta = await draftStoryBodies(['s1'])
+    expect(cuenta).toEqual({ saved: 0, blocked: 0, skipped: 0, failed: 0 })
+    expect(mockInvoke).not.toHaveBeenCalled()
   })
 })
 

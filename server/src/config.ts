@@ -154,6 +154,15 @@ export const config = {
     // El cuerpo se redacta igual, pero la ficha pública lo muestra solo cuando
     // alguien lo revisó en el panel; hasta entonces sale con el resumen.
     publicUnreviewed: process.env.STORY_BODY_PUBLIC_UNREVIEWED === 'true',
+    // Acotar a lo que una persona alcanza a revisar (5-nov-2026, el director
+    // eligió «acotar y revisar»). Medido en las 300 noticias publicadas del
+    // 25-oct al 5-nov (11 días completos): 25 al día en promedio; con
+    // relevancia 8 o más, 6,2 al día (mínimo 3, máximo 12); con 7 o más, 11,5.
+    // Solo se redacta de forma automática bajo estos dos límites: la relevancia
+    // mínima y un tope por corrida del job (son dos corridas al día). La
+    // redacción manual desde el panel no tiene tope.
+    minRelevance: parseInt(process.env.STORY_BODY_MIN_RELEVANCE || '8', 10),
+    maxPerRun: parseInt(process.env.STORY_BODY_MAX_PER_RUN || '4', 10),
   },
   // La editorial firmada (B5, 25-oct-2026): se redacta desde las notas del
   // director con el tier medium. Medido en A1 del mismo plan: el modelo grande

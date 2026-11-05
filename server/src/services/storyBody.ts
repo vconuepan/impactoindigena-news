@@ -10,11 +10,14 @@ import {
   CAMPOS,
   avisosBloqueantes,
   limpiarCuerpo,
+  puntosDeVerificacion,
   respaldoConFecha,
   revisarCuerpo,
   type BodyAviso,
+  type PuntoVerificacion,
   type StoryBodyText,
 } from '../lib/storyBodyGuards.js'
+import { seleccionarParaRedactar } from '../lib/storyBodySeleccion.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 
 const log = createLogger('story-body')
@@ -159,7 +162,23 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
 export async function draftStoryBodies(ids: string[]): Promise<{ saved: number; blocked: number; skipped: number; failed: number }> {
   const cuenta = { saved: 0, blocked: 0, skipped: 0, failed: 0 }
   if (!config.storyBody.enabled || ids.length === 0) return cuenta
-  for (const id of ids) {
+
+  let elegidas: string[]
+  try {
+    const filas = await prisma.story.findMany({ where: { id: { in: ids } }, select: { id: true, relevance: true } })
+    const sel = seleccionarParaRedactar(filas, config.storyBody.minRelevance, config.storyBody.maxPerRun)
+    elegidas = sel.elegidas
+    cuenta.skipped += sel.descartadas
+    log.info(
+      { publicadas: ids.length, elegidas: elegidas.length, descartadas: sel.descartadas, minRelevance: config.storyBody.minRelevance, maxPerRun: config.storyBody.maxPerRun },
+      'story bodies: selección por relevancia',
+    )
+  } catch (err) {
+    log.warn({ err }, 'story bodies: no se pudo leer la relevancia; no se redacta en esta corrida')
+    return cuenta
+  }
+
+  for (const id of elegidas) {
     try {
       const r = await draftStoryBody(id)
       cuenta[r.outcome]++
@@ -179,6 +198,19 @@ export async function getStoryBody(storyId: string) {
     if (tablaAusente(err)) return null
     throw err
   }
+}
+
+/**
+ * Lo que el revisor necesita para cotejar la nota guardada: cada cifra y cada
+ * nombre con las frases del original donde aparece, y el original entero.
+ * `null` si la noticia no tiene nota con claves.
+ */
+export async function getVerificacionCuerpo(storyId: string): Promise<{ puntos: PuntoVerificacion[]; original: string } | null> {
+  const body = await getStoryBody(storyId)
+  if (!body) return null
+  const story = await prisma.story.findUnique({ where: { id: storyId }, select: { sourceContent: true } })
+  const original = story?.sourceContent ?? ''
+  return { puntos: puntosDeVerificacion(body, original), original: recortar(original, config.storyBody.maxSourceChars) }
 }
 
 /**

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { Story, StoryBodyAdmin, StoryBodyAviso } from '@shared/types'
+import type { Story, StoryBodyAdmin, StoryBodyAviso, StoryBodyPunto, StoryBodyVerificacion } from '@shared/types'
 import { adminApi } from '../../lib/admin-api'
 import { Button } from '../ui/Button'
 import { Textarea } from '../ui/Textarea'
@@ -33,8 +33,73 @@ interface Props {
   story: Pick<Story, 'id' | 'slug'>
 }
 
+const REVISOR_KEY = 'voces.admin.revisorNota'
+
+/** El nombre de quien revisa se recuerda en este navegador, para aprobar de un clic. Es solo comodidad: si el almacenamiento no está, se escribe cada vez. */
+function revisorRecordado(): string {
+  try { return window.localStorage.getItem(REVISOR_KEY) ?? '' } catch { return '' }
+}
+function recordarRevisor(nombre: string) {
+  try { window.localStorage.setItem(REVISOR_KEY, nombre) } catch { /* sin almacenamiento: no pasa nada */ }
+}
+
+const ETIQUETA_CAMPO: Record<StoryBodyPunto['campo'], string> = {
+  bajada: 'bajada', quePaso: 'qué pasó', porQueImporta: 'por qué importa', contexto: 'contexto', queSigue: 'qué sigue',
+}
+
+/** La frase del original con el valor en negrita, si aparece tal cual. */
+function Resaltado({ texto, valor }: { texto: string; valor: string }) {
+  const i = texto.toLowerCase().indexOf(valor.toLowerCase())
+  if (i < 0) return <>{texto}</>
+  return <>{texto.slice(0, i)}<mark className="bg-amber-100 text-neutral-900">{texto.slice(i, i + valor.length)}</mark>{texto.slice(i + valor.length)}</>
+}
+
+/**
+ * Cada cifra y cada nombre de la nota junto a la frase del original donde
+ * aparece. Los errores de hecho medidos el 2-nov-2026 (Osage, Nepal) traían
+ * cifras que sí estaban en el artículo, pero dichas de otra cosa: lo que los
+ * atrapa es leer la cifra en su frase. Lo que no aparece va primero y en rojo.
+ */
+function PuntosParaCotejar({ verificacion }: { verificacion: StoryBodyVerificacion }) {
+  const { puntos, original } = verificacion
+  const sinRespaldo = puntos.filter((p) => !p.enOriginal).length
+  return (
+    <div className="mt-4 space-y-3">
+      <details open>
+        <summary className="cursor-pointer text-xs font-semibold text-neutral-700 select-none">
+          Para cotejar con el original ({puntos.length}{sinRespaldo > 0 ? `, ${sinRespaldo} sin respaldo` : ''})
+        </summary>
+        {puntos.length === 0 ? (
+          <p className="mt-2 text-xs text-neutral-500">La nota no trae cifras ni nombres propios.</p>
+        ) : (
+          <ul className="mt-2 space-y-2">
+            {puntos.map((p) => (
+              <li key={`${p.tipo}-${p.valor}`} className="text-xs leading-snug border-l-2 pl-2" style={{ borderColor: p.enOriginal ? '#d4d4d4' : '#b91c1c' }}>
+                <span className="font-semibold text-neutral-800">{p.valor}</span>
+                <span className="text-neutral-500"> · {p.tipo === 'cifra' ? 'cifra' : 'nombre'} en {ETIQUETA_CAMPO[p.campo]}</span>
+                {p.enOriginal ? (
+                  p.contextos.map((c, i) => <p key={i} className="mt-0.5 text-neutral-600"><Resaltado texto={c} valor={p.valor} /></p>)
+                ) : (
+                  <p className="mt-0.5 text-red-700">No aparece igual en el original: confirma de dónde sale.</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </details>
+      <details>
+        <summary className="cursor-pointer text-xs font-semibold text-neutral-700 select-none">Artículo original</summary>
+        <div className="mt-2 max-h-80 overflow-y-auto whitespace-pre-wrap rounded border border-neutral-200 bg-neutral-50 p-3 text-xs leading-relaxed text-neutral-700">
+          {original || 'No hay texto guardado del original.'}
+        </div>
+      </details>
+    </div>
+  )
+}
+
 export function StoryBodySection({ story }: Props) {
   const [body, setBody] = useState<StoryBodyAdmin | null | undefined>(undefined)
+  const [verificacion, setVerificacion] = useState<StoryBodyVerificacion | null>(null)
   const [borrador, setBorrador] = useState<Record<string, string>>({})
   const [revisor, setRevisor] = useState('')
   const [avisos, setAvisos] = useState<StoryBodyAviso[]>([])
@@ -49,12 +114,23 @@ export function StoryBodySection({ story }: Props) {
         if (!vivo) return
         setBody(body)
         setBorrador(body ? Object.fromEntries(CAMPOS.map((c) => [c.clave, body[c.clave]])) : {})
-        setRevisor(body?.reviewedBy ?? '')
+        // Una nota sin revisar trae el nombre recordado de la última vez: aprobar es un clic.
+        setRevisor(body ? (body.reviewedBy || revisorRecordado()) : '')
+        if (body) cargarVerificacion(() => vivo)
       })
       .catch((e: Error) => vivo && setError(e.message))
       .finally(() => vivo && setOcupado(null))
     return () => { vivo = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [story.id])
+
+  // Si no carga, la revisión sigue siendo posible: el panel de cotejo es ayuda, no requisito.
+  const cargarVerificacion = (sigueVivo: () => boolean = () => true) => {
+    adminApi.stories
+      .bodyVerificacion(story.id)
+      .then((v) => { if (sigueVivo()) setVerificacion(v) })
+      .catch(() => { if (sigueVivo()) setVerificacion(null) })
+  }
 
   const cambiado = body ? CAMPOS.some((c) => borrador[c.clave] !== body[c.clave]) || revisor !== body.reviewedBy : false
 
@@ -66,6 +142,7 @@ export function StoryBodySection({ story }: Props) {
       setBorrador(Object.fromEntries(CAMPOS.map((c) => [c.clave, r.body[c.clave]])))
       setRevisor('')
       setAvisos(r.avisos)
+      cargarVerificacion()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo redactar')
     } finally {
@@ -83,6 +160,8 @@ export function StoryBodySection({ story }: Props) {
       const r = await adminApi.stories.updateBody(story.id, cambios)
       setBody(r.body)
       setAvisos(r.avisos)
+      if (darPorRevisada && revisor.trim()) recordarRevisor(revisor.trim())
+      cargarVerificacion()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar')
     } finally {
@@ -153,6 +232,8 @@ export function StoryBodySection({ story }: Props) {
           </div>
         </div>
       )}
+
+      {body && verificacion && <PuntosParaCotejar verificacion={verificacion} />}
 
       {avisos.length > 0 && (
         <ul className="mt-3 text-xs text-amber-800 list-disc pl-5 space-y-1" role="status">

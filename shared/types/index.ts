@@ -144,6 +144,20 @@ export interface StoryBodyAviso {
   mensaje: string
 }
 
+/** Un dato de la nota (cifra o nombre) con las frases del original donde aparece, para cotejar. */
+export interface StoryBodyPunto {
+  campo: 'bajada' | 'quePaso' | 'porQueImporta' | 'contexto' | 'queSigue'
+  tipo: 'cifra' | 'nombre'
+  valor: string
+  enOriginal: boolean
+  contextos: string[]
+}
+
+export interface StoryBodyVerificacion {
+  puntos: StoryBodyPunto[]
+  original: string
+}
+
 /** La nota con claves tal como la ve la ficha pública (solo en GET /stories/:slug). */
 export interface PublicStoryBody {
   bajada: string

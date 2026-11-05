@@ -68,6 +68,18 @@ para quien revisa, no como candado. **La cola de revisión** es el filtro «Nota
 revisar» de `/admin/stories` (`?bodyMethod=ia_sin_revision`, `where.body = { is: { method } }` en
 `buildWhereClause`): con «Publicada» al lado, son las que el lector ve hoy con el resumen. La traducción (`translateStoryBody` en `services/translation.ts`)
 corre dentro de `translateStory`, no fatal, con el mismo guardarraíl de copia decidido por `quePaso`.
+**Acotar para revisar (5-nov-2026, el director eligió «acotar y revisar»).** El job ya no redacta
+todas las publicadas: `draftStoryBodies` lee la relevancia y `seleccionarParaRedactar`
+(`lib/storyBodySeleccion.ts`) deja las de relevancia ≥ `STORY_BODY_MIN_RELEVANCE` (8) y, de esas, las
+`STORY_BODY_MAX_PER_RUN` (4) más relevantes por corrida; una sin relevancia no entra y el resto cuenta
+como `skipped`. Medido en 300 noticias publicadas (25-oct a 5-nov, 11 días completos): 25 al día,
+6,2 con relevancia ≥ 8 (mínimo 3, máximo 12) y 11,5 con ≥ 7. «Redactar» en el panel no tiene tope ni
+umbral. Para revisar, `GET /api/admin/stories/:id/body/verificacion` devuelve el original y
+`puntosDeVerificacion`: cada cifra y cada nombre propio de la nota con las frases del original donde
+aparece (los que no aparecen, primero). Existe porque los errores de hecho medidos (Osage, Nepal)
+traían cifras que **sí** estaban en el artículo, dichas de otra cosa: ningún candado las ve, una
+persona leyendo la frase sí. El panel la muestra con el original plegable y recuerda el nombre de
+quien revisa en el navegador (`localStorage`, solo comodidad) para aprobar de un clic.
 Rezagadas: `npm run` no tiene atajo; `npx tsx src/scripts/backfill-story-bodies.ts --limit N [--apply]`,
 simulación por defecto. Costo medido en A1: US$0,0013-0,0025 por nota.
 

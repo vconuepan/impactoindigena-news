@@ -272,6 +272,116 @@ export function revisarCuerpo(cuerpo: StoryBodyText, original: string, anioRefer
   return avisos
 }
 
+// ---------------------------------------------------------------------------
+// Ayuda para quien revisa (5-nov-2026)
+// ---------------------------------------------------------------------------
+
+/**
+ * Un dato de la nota que el revisor tiene que cotejar con el original.
+ *
+ * POR QUÉ NO BASTA CON EL CANDADO DE CIFRAS. Los errores de hecho medidos en la
+ * quinta franja (Osage «la mayor parte de US$4.700 M», Nepal «COP28») traían
+ * cifras que SÍ estaban en el artículo, pero dichas de otra cosa: ningún
+ * candado ni segundo paso de modelo los vio. Lo que los atrapa es ver cada
+ * cifra y cada nombre de la nota junto a la frase del original donde aparece.
+ * Esto no decide nada: pone a la vista lo que una persona tiene que mirar.
+ */
+export interface PuntoVerificacion {
+  campo: CampoCuerpo
+  tipo: 'cifra' | 'nombre'
+  valor: string
+  /** El valor está en el original (la cifra por sus dígitos, el nombre tal cual, sin mayúsculas). */
+  enOriginal: boolean
+  /** Hasta dos frases del original donde aparece, para leer de qué se habla. */
+  contextos: string[]
+}
+
+const MAX_PUNTOS = 24
+const MAX_CONTEXTOS = 2
+const RADIO_CONTEXTO = 80
+
+function recorteAlrededor(texto: string, desde: number, hasta: number): string {
+  const ini = Math.max(0, desde - RADIO_CONTEXTO)
+  const fin = Math.min(texto.length, hasta + RADIO_CONTEXTO)
+  const frase = texto.slice(ini, fin).replace(/\s+/g, ' ').trim()
+  return `${ini > 0 ? '…' : ''}${frase}${fin < texto.length ? '…' : ''}`
+}
+
+function escaparRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function contextosDeCifra(valor: string, original: string): string[] {
+  const grupos = valor.match(/\d+/g) ?? []
+  if (grupos.length === 0) return []
+  // «150,3», «150.3» y «150 3» son la misma cifra para el candado: se busca igual.
+  const re = new RegExp(`(?<!\\d)${grupos.join('[.,\\s]{0,2}')}(?!\\d)`, 'g')
+  const salida: string[] = []
+  for (const m of original.matchAll(re)) {
+    salida.push(recorteAlrededor(original, m.index ?? 0, (m.index ?? 0) + m[0].length))
+    if (salida.length >= MAX_CONTEXTOS) break
+  }
+  return salida
+}
+
+function contextosDeNombre(valor: string, original: string): string[] {
+  const re = new RegExp(escaparRegex(valor), 'gi')
+  const salida: string[] = []
+  for (const m of original.matchAll(re)) {
+    salida.push(recorteAlrededor(original, m.index ?? 0, (m.index ?? 0) + m[0].length))
+    if (salida.length >= MAX_CONTEXTOS) break
+  }
+  return salida
+}
+
+/** Nombres propios: una o más palabras con mayúscula, con «de/del/la…» en medio. */
+const NOMBRE_PROPIO =
+  /\p{Lu}[\p{L}'’-]*(?:\s+(?:(?:de|del|la|las|los|y|van|von)\s+)?\p{Lu}[\p{L}'’-]*)*/gu
+
+/**
+ * Las cifras y los nombres propios de la nota, cada uno con las frases del
+ * original donde aparece. Cifras primero (ahí cayeron los errores medidos), y
+ * al revisor se le muestran antes los que NO están en el original.
+ *
+ * Un nombre de una sola palabra al inicio de una oración se ignora: es la
+ * mayúscula de la frase, no un nombre.
+ */
+export function puntosDeVerificacion(cuerpo: StoryBodyText, original: string): PuntoVerificacion[] {
+  const puntos: PuntoVerificacion[] = []
+  const vistos = new Set<string>()
+
+  for (const campo of CAMPOS) {
+    const texto = cuerpo[campo] ?? ''
+    for (const m of texto.matchAll(/\d+(?:[.,\s]\d+)*/g)) {
+      const valor = m[0].trim()
+      const clave = `cifra|${valor}`
+      if (vistos.has(clave)) continue
+      vistos.add(clave)
+      const contextos = contextosDeCifra(valor, original)
+      puntos.push({ campo, tipo: 'cifra', valor, enOriginal: contextos.length > 0, contextos })
+    }
+  }
+
+  for (const campo of CAMPOS) {
+    const texto = cuerpo[campo] ?? ''
+    for (const m of texto.matchAll(NOMBRE_PROPIO)) {
+      const valor = m[0].trim()
+      const inicioDeOracion = (m.index ?? 0) === 0 || /[.!?¿¡«"“]\s*$/.test(texto.slice(0, m.index ?? 0))
+      if (inicioDeOracion && !/\s/.test(valor)) continue
+      const clave = `nombre|${valor.toLowerCase()}`
+      if (vistos.has(clave)) continue
+      vistos.add(clave)
+      const contextos = contextosDeNombre(valor, original)
+      puntos.push({ campo, tipo: 'nombre', valor, enOriginal: contextos.length > 0, contextos })
+    }
+  }
+
+  const cifras = puntos.filter((p) => p.tipo === 'cifra')
+  const nombres = puntos.filter((p) => p.tipo === 'nombre')
+  const orden = (a: PuntoVerificacion, b: PuntoVerificacion) => Number(a.enOriginal) - Number(b.enOriginal)
+  return [...[...cifras].sort(orden), ...[...nombres].sort(orden)].slice(0, MAX_PUNTOS)
+}
+
 /** Los avisos que impiden publicar: todo menos el de largo, que es informativo. */
 export function avisosBloqueantes(avisos: BodyAviso[]): BodyAviso[] {
   return avisos.filter((a) => a.tipo !== 'largo')

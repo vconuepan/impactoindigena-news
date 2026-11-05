@@ -299,6 +299,12 @@ rule DraftBody {
     -- body is published all the same, with its summary.
     requires: story.source_url is not a Google News URL        -- the outlet is unknown
     requires: length(story.source_content) >= 1200             -- below that it is the feed's teaser
+    -- Bounded to what a person can review (2026-11-05, director's choice
+    -- «acotar y revisar»): only stories with relevance >= 8, and at most the 4
+    -- most relevant per run. A story without relevance is not drafted. The
+    -- admin panel's manual redraft has neither limit.
+    requires: story.relevance >= config.story_body_min_relevance
+    requires: story in top(config.story_body_max_per_run, by relevance, among Publish.stories)
 
     -- The model receives the full article (capped at 15,000 characters), the
     -- outlet and ALWAYS a date (source date, else publish date, else crawl

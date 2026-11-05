@@ -4,6 +4,7 @@ import {
   avisosBloqueantes,
   hablaDelArticulo,
   limpiarCuerpo,
+  puntosDeVerificacion,
   respaldoConFecha,
   revisarCuerpo,
   sinComillasAjenas,
@@ -149,5 +150,60 @@ describe('respaldoConFecha y sinAnioImposible', () => {
     expect(tramosCopiados(`Hoy se presentó el ${nombre} con fondos nuevos, según el Gobierno.`, fuente)).toEqual([])
     const dieciseis = 'la camara de diputados aprobo el proyecto de ley de inviolabilidad de la propiedad privada que facilita los desalojos y restringe'
     expect(tramosCopiados(`Ayer ${dieciseis} todo, y nadie protestó.`, ORIGINAL)).toHaveLength(1)
+  })
+})
+
+describe('puntosDeVerificacion', () => {
+  const cuerpo: StoryBodyText = {
+    bajada: 'La Nación Osage recibirá 150 millones de dólares tras el acuerdo con el Departamento del Interior.',
+    quePaso: 'El acuerdo suma US$4.700 M en total y se firmó en Washington.',
+    porQueImporta: '',
+    contexto: 'Ocurrió en el marco de la COP28.',
+    queSigue: '',
+  }
+  const original =
+    'El Departamento del Interior y la Nación Osage cerraron el acuerdo. Del total de US$4.700 M, ' +
+    'unos 150 millones de dólares van a las tribus. La reunión fue en Washington. La cumbre COP17 se celebró en Ereván y la sesión 28 empezó tarde.'
+
+  it('pone cada cifra con la frase del original donde aparece', () => {
+    const p = puntosDeVerificacion(cuerpo, original).find((x) => x.tipo === 'cifra' && x.valor.includes('4.700'))
+    expect(p?.enOriginal).toBe(true)
+    expect(p?.contextos[0]).toContain('US$4.700 M')
+  })
+
+  it('una cifra que no está en el original sale marcada y sin contexto', () => {
+    const p = puntosDeVerificacion({ ...cuerpo, quePaso: 'Participaron 9.999 personas.' }, original).find((x) => x.valor === '9.999')
+    expect(p).toMatchObject({ enOriginal: false, contextos: [] })
+  })
+
+  it('los datos sin respaldo van antes que los respaldados, y las cifras antes que los nombres', () => {
+    const puntos = puntosDeVerificacion({ ...cuerpo, quePaso: 'Participaron 9.999 personas y el total fue de US$4.700 M.' }, original)
+    const cifras = puntos.filter((x) => x.tipo === 'cifra')
+    expect(cifras[0].enOriginal).toBe(false)
+    expect(puntos.findIndex((x) => x.tipo === 'nombre')).toBeGreaterThan(puntos.findLastIndex((x) => x.tipo === 'cifra'))
+  })
+
+  it('la cifra de COP28 pasa el candado de cifras, pero el contexto deja ver que el original dice COP17', () => {
+    const p = puntosDeVerificacion(cuerpo, original).find((x) => x.valor === '28')
+    expect(p?.enOriginal).toBe(true)
+    expect(p?.contextos[0]).toContain('sesión 28')
+    expect(p?.contextos[0]).toContain('COP17')
+  })
+
+  it('un nombre que el original no trae sale marcado', () => {
+    const p = puntosDeVerificacion({ ...cuerpo, bajada: 'La Secretaria Burgum anunció el acuerdo.' }, original).find((x) => x.valor.includes('Burgum'))
+    expect(p?.enOriginal).toBe(false)
+  })
+
+  it('la mayúscula de inicio de oración no cuenta como nombre', () => {
+    const nombres = puntosDeVerificacion({ ...cuerpo, bajada: 'Según el informe, hubo avances.' }, original).filter((x) => x.tipo === 'nombre').map((x) => x.valor)
+    expect(nombres).not.toContain('Según')
+  })
+
+  it('no repite un dato y no pasa de 24 puntos', () => {
+    const muchos = Array.from({ length: 40 }, (_, i) => `${1000 + i} personas`).join(', ')
+    const puntos = puntosDeVerificacion({ ...cuerpo, quePaso: `${muchos}. Eran 1000 personas.` }, original)
+    expect(puntos.length).toBeLessThanOrEqual(24)
+    expect(puntos.filter((x) => x.valor === '1000')).toHaveLength(1)
   })
 })

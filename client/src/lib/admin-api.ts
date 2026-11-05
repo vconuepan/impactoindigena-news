@@ -29,6 +29,7 @@ import type {
   Editorial,
   StoryBodyAdmin,
   StoryBodyAviso,
+  StoryBodyVerificacion,
 } from '@shared/types'
 
 export interface CommunityRef {
@@ -447,6 +448,7 @@ export const adminApi = {
     // La nota con claves (B2, 25-oct-2026): leer, redactar de nuevo desde el
     // original (llama al modelo) y corregir o dar por revisada.
     body: (id: string) => request<{ body: StoryBodyAdmin | null }>(`/stories/${id}/body`),
+    bodyVerificacion: (id: string) => request<StoryBodyVerificacion>(`/stories/${id}/body/verificacion`),
     draftBody: (id: string) =>
       request<{ body: StoryBodyAdmin; avisos: StoryBodyAviso[] }>(`/stories/${id}/body`, { method: 'POST' }),
     updateBody: (id: string, cambios: Partial<Pick<StoryBodyAdmin, 'bajada' | 'quePaso' | 'porQueImporta' | 'contexto' | 'queSigue' | 'method' | 'reviewedBy'>>) =>

@@ -2,7 +2,7 @@ import { Router } from 'express'
 import { createLogger } from '../../lib/logger.js'
 import { validateBody } from '../../middleware/validate.js'
 import { expensiveOpLimiter } from '../../middleware/rateLimit.js'
-import { draftStoryBody, getStoryBody, updateStoryBody, StoryBodyError } from '../../services/storyBody.js'
+import { draftStoryBody, getStoryBody, getVerificacionCuerpo, updateStoryBody, StoryBodyError } from '../../services/storyBody.js'
 import { updateStoryBodySchema } from '../../schemas/storyBody.js'
 
 /**
@@ -21,6 +21,21 @@ router.get('/:id/body', async (req, res) => {
   } catch (err) {
     log.error({ err }, 'failed to read story body')
     res.status(500).json({ error: 'No se pudo leer la nota con claves' })
+  }
+})
+
+/** Cada cifra y nombre de la nota con la frase del original donde aparece, y el original. */
+router.get('/:id/body/verificacion', async (req, res) => {
+  try {
+    const verificacion = await getVerificacionCuerpo(req.params.id)
+    if (!verificacion) {
+      res.status(404).json({ error: 'Esta noticia no tiene nota con claves' })
+      return
+    }
+    res.json(verificacion)
+  } catch (err) {
+    log.error({ err }, 'failed to build story body verification')
+    res.status(500).json({ error: 'No se pudo armar la verificación' })
   }
 })
 
