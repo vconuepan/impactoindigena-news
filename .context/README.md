@@ -78,6 +78,7 @@ skeleton components for loading states.
 | `database-migrations.md` | SQL-first migration workflow, allowed and banned commands | — |
 | `logging.md` | Pino config, error serialization, structured data, log levels | — |
 | `security-audit-2026-05-04.md` | Point-in-time audit. **Historical record, not current state** | — |
+| `security-breaches.md` | Vulneraciones de seguridad (Ley 21.719, art. 14 sexies, rige el 1-dic-2026): qué exige la ley, qué datos cambian la obligación, contención, evaluación, reporte, aviso a titulares y campos del registro (que no vive en este repo público) | — |
 
 Two specs have no context file of their own, because their implementation is
 covered across the files above: `feed-management.allium` and

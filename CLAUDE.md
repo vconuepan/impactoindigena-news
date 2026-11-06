@@ -155,6 +155,7 @@ Implementation reference docs. **Read the relevant file before modifying a subsy
 | `story-carousel.md` | Carrusel de una noticia desde el artículo original (panel → ficha): candados, formato, costo |
 | `own-content.md` | Contenido propio firmado: editorial desde las notas del director, firma, método, fuentes, candados |
 | `security-audit-2026-05-04.md` | Point-in-time security audit. Historical record, not current state |
+| `security-breaches.md` | Vulneraciones de seguridad (art. 14 sexies, 1-dic-2026): contención, evaluación, reporte a la Agencia, aviso a titulares, campos del registro |
 | `client/.context/skeletons.md` | Skeleton components for loading states (prevents CLS) |
 
 ## Memory
