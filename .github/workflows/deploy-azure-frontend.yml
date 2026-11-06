@@ -19,8 +19,15 @@ permissions:
   contents: read
 
 jobs:
+  # El mismo CI de ci.yml, en esta corrida y sobre este commit. Si falla, no
+  # se despliega. Antes del 6-nov-2026 el deploy no lo esperaba.
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
   deploy:
     name: Build & Deploy Frontend
+    needs: ci
     # Fijo en 24.04: `ubuntu-latest` pasa a Ubuntu 26 el 19-oct-2026, y el Chrome
     # del prerender depende de librerias del sistema (ver abajo).
     runs-on: ubuntu-24.04

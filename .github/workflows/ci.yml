@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # Los dos deploys llaman a este mismo workflow y despliegan solo si pasa.
+  # Hasta el 6-nov-2026 corrian en paralelo con el CI y no lo esperaban: el
+  # 4-nov un CI en rojo (5f729e0) desplego igual a produccion.
+  workflow_call: {}
 
 # El GITHUB_TOKEN queda en solo-lectura: ninguno de estos jobs escribe en el
 # repositorio. Los deploys se autentican contra Azure con sus propios
@@ -52,6 +56,12 @@ jobs:
         run: npm run db:generate --prefix server
         env:
           DATABASE_URL: 'postgresql://user:password@localhost:5432/db?schema=public'
+
+      # El build del deploy ya corre `tsc`, pero solo despues de decidir
+      # desplegar; aca el error de tipos del servidor frena antes.
+      - name: Typecheck
+        run: npx tsc --noEmit
+        working-directory: server
 
       - name: Run tests
         run: npm test --prefix server
