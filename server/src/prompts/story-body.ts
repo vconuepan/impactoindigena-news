@@ -1,4 +1,4 @@
-import { sanitizeUntrustedContent, UNTRUSTED_CONTENT_GUARD } from './shared.js'
+import { sanitizeUntrustedContent, UNTRUSTED_CONTENT_GUARD, REGLA_PERTENENCIA, REGLA_MENORES_VICTIMAS } from './shared.js'
 import { REGLAS_FUNDACION } from './voz-venancio.js'
 
 /**
@@ -61,7 +61,9 @@ Cinco campos, en español, en texto plano (sin markdown, sin títulos, sin viñe
 - Todo hecho, cifra, nombre, cargo, lugar y fecha sale del artículo. No completes con conocimiento propio ni con contexto que el artículo no trae: un campo corto y fiel vale más que uno largo y completado.
 - Las cifras y fechas van tal como las da el artículo: si una fecha no trae año, no se lo agregues, y no escribas años que el artículo no menciona. Si el artículo dice «hace cuatro años» o «hace dos décadas», escríbelo así: no lo conviertas en un año.
 - Un mecanismo se describe como lo describe el artículo: qué estructura, qué decisión o qué actor produce el efecto. Si el artículo distingue dos partes de una obra o dos etapas de un proceso, no las fundas en una.
-- La identidad indígena no se atribuye desde afuera. No digas que una persona, familia, comunidad u organización es indígena, ni de qué pueblo es, si el artículo no lo dice expresamente. Usa las palabras del artículo: si dice «comunidades locales» o «familias campesinas», escribe eso.
+- La identidad indígena no se atribuye desde afuera. No digas que una familia, comunidad u organización es indígena, ni de qué pueblo es, si el artículo no lo dice expresamente. Usa las palabras del artículo: si dice «comunidades locales» o «familias campesinas», escribe eso.
+- ${REGLA_PERTENENCIA}
+- ${REGLA_MENORES_VICTIMAS}
 - Entre comillas va solo la cita, copiada letra por letra del artículo. Todo lo demás se escribe con palabras propias: no reproduzcas frases ni párrafos del artículo fuera de la cita, ni los cambies apenas. Lo que alguien dijo en otro idioma va en estilo indirecto y sin comillas.
 - Si las partes discrepan, recoge las versiones tal como el artículo las presenta, sin dar la razón a ninguna.
 - Una valoración («viola», «pone en riesgo», «es grave», «perjudica») lleva siempre quién la hace: «según Orlando Carriqueo», «el CELS advierte que». Lo que el artículo presenta como hecho va como hecho; lo que presenta como dicho de alguien va atribuido.

@@ -23,6 +23,7 @@ import { saveEmbeddingTx } from '../lib/vectors.js'
 import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/title-capitalization.js'
 import { parseLlmPublicationDate, stripImpossibleHistoricalYearOrNull, yearsAfter } from '../lib/future-year.js'
 import { detectarClasificacionSospechosa } from '../lib/clasificacion-guardarrail.js'
+import { limpiarCampos } from '../lib/personasSensibles.js'
 
 const log = createLogger('analysis')
 
@@ -426,7 +427,7 @@ export async function assessStory(storyId: string): Promise<void> {
   // en `schemas/llm.ts` es una restriccion blanda: se midio despues de
   // reforzarla y el 12% de los titulos seguia saliendo con "en chile" o
   // "universidad de chile". Ver lib/title-capitalization.ts.
-  const analysisData = {
+  const analysisDataSinCandado = {
     titleLabel: fixCapitalizationOrNull(parsed.titleLabel),
     title: fixTitleCapitalizationOrNull(sinAnioImposible('title', parsed.relevanceTitle)),
     summary: sinAnioImposible('summary', parsed.summary),
@@ -440,6 +441,20 @@ export async function assessStory(storyId: string): Promise<void> {
     relevance: parsed.relevanceRating,
     status: 'analyzed' as const,
     ...(sourceDatePublished !== undefined && { sourceDatePublished }),
+  }
+
+  // Candado de personas (EILE v1.2 §7, decisión del director del 6-nov-2026):
+  // sin etiqueta étnica sobre una persona que el original no muestre que se
+  // presenta así, y sin el nombre de un menor o una víctima. Antes del
+  // embedding, para que el vector se calcule sobre lo que se publica. El log
+  // lleva solo campos y tipos, nunca el texto. Ver lib/personasSensibles.ts.
+  const { registro: analysisData, resumen: candadoDePersonas } = limpiarCampos(analysisDataSinCandado, {
+    texto: ['title', 'summary', 'marketingBlurb', 'relevanceSummary'],
+    citas: ['quote'],
+    atribuciones: ['quoteAttribution'],
+  })
+  if (candadoDePersonas.hubo) {
+    log.warn({ storyId, campos: candadoDePersonas.campos }, 'candado de personas: texto editado antes de guardar')
   }
 
   // Lo que el guardarrail no toca —un año futuro con verbo en futuro, o una

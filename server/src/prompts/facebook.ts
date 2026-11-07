@@ -1,4 +1,4 @@
-import { escapeXml } from './shared.js'
+import { escapeXml, REGLA_PERTENENCIA, REGLA_MENORES_VICTIMAS } from './shared.js'
 
 export interface StoryForFacebookPost {
   title: string
@@ -52,7 +52,8 @@ Escribe el texto de una publicación para la Página de Facebook sobre la notici
 - Sin enlaces en el texto: la API publica el enlace aparte y Facebook genera la tarjeta
 - Sin emojis
 - Sin promesas que la noticia no sostenga, sin lenguaje sensacionalista
-- No atribuir pertenencia étnica que la noticia no afirme
+- ${REGLA_PERTENENCIA}
+- ${REGLA_MENORES_VICTIMAS}
 - No menciones la IA en el texto: el sistema agrega al final una línea fija que lo declara
 ${countryNote}
 </REGLAS>

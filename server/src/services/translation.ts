@@ -5,6 +5,7 @@ import { getSmallLLM, rateLimitDelay } from './llm.js'
 import prisma from '../lib/prisma.js'
 import { truncateQuote } from '../lib/truncateQuote.js'
 import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/title-capitalization.js'
+import { limpiarCampos } from '../lib/personasSensibles.js'
 
 const log = createLogger('translation')
 
@@ -121,9 +122,11 @@ export async function translateStory(storyId: string): Promise<void> {
     throw new TranslationUnchangedError(storyId, copied)
   }
 
-  await prisma.story.update({
-    where: { id: storyId },
-    data: {
+  // El traductor es otro modelo y puede volver a poner lo que el candado sacó
+  // del español («Mapuche leader …»): el mismo candado de personas, en inglés.
+  // Ver lib/personasSensibles.ts.
+  const { registro: traduccion, resumen: candadoDePersonas } = limpiarCampos(
+    {
       // Mismo guardarrail que la version en espanol: el traductor es otro LLM
       // y comete el mismo error con siglas y toponimos. La lista blanca no
       // depende del idioma — "CONADI" y "Mozambique" se escriben igual en los
@@ -136,6 +139,15 @@ export async function translateStory(storyId: string): Promise<void> {
       marketingBlurbEn: result.marketingBlurbEn || null,
       relevanceSummaryEn: result.relevanceSummaryEn || null,
     },
+    { texto: ['titleEn', 'summaryEn', 'marketingBlurbEn', 'relevanceSummaryEn'], citas: ['quoteEn'] },
+  )
+  if (candadoDePersonas.hubo) {
+    log.warn({ storyId, campos: candadoDePersonas.campos }, 'candado de personas: traducción editada antes de guardar')
+  }
+
+  await prisma.story.update({
+    where: { id: storyId },
+    data: traduccion,
   })
 
   log.info({ storyId }, 'translation complete')

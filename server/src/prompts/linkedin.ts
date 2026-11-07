@@ -1,4 +1,4 @@
-import { escapeXml } from './shared.js'
+import { escapeXml, REGLA_PERTENENCIA, REGLA_MENORES_VICTIMAS } from './shared.js'
 import { VOZ_VENANCIO_ADN, VOZ_VENANCIO_EVITAR, REGLAS_FUNDACION } from './voz-venancio.js'
 
 export interface StoryForLinkedInPost {
@@ -51,6 +51,8 @@ ${REGLAS_FUNDACION}
 - Párrafos de 1 a 2 líneas, con línea en blanco entre ellos: LinkedIn castiga los bloques largos.
 - Una idea por párrafo.
 - Español. Sin guiones largos (em dash): usa comas, puntos o punto y coma.
+- ${REGLA_PERTENENCIA}
+- ${REGLA_MENORES_VICTIMAS}
 - Sin markdown, sin viñetas, sin negritas.
 ${countryNote}
 </FORMATO>

@@ -103,6 +103,19 @@ Two causes, two fixes:
 
 Limit of the measurement: it only sees years *later* than publication. A wrong *earlier* year ("En 2024, …" for a 2026 event) is invisible without reading the source and is not covered.
 
+## Person Rules Guardrail (2026-11-06)
+
+**Spec:** `EthnicityOnlyFromWithin`, `MinorsAndVictimsByRole` (story-pipeline.allium), `PostsFollowThePersonRules` (social-posting.allium). **Plan and measurement:** `.plans/2026-11-06_origen-etnico-menores-victimas.md`.
+
+Safeguards 2 and 3 of the legitimate-interest assessment (EILE v1.2, §7), adopted as an editorial rule by the director on 2026-11-06. Until that day the title schema and the Facebook prompt said «no atribuyas pertenencia étnica que la fuente no afirme», which means the opposite: if the source says it, attribute it.
+
+- **The rule, once:** `REGLA_PERTENENCIA` and `REGLA_MENORES_VICTIMAS` (Spanish), `PERSON_MEMBERSHIP_RULE` and `MINORS_VICTIMS_RULE` (English) in `prompts/shared.ts`. They go in the `.describe()` of title, summary and quote attribution (the schema weighs more than the prompt) and in every prompt that writes about people. `prompts/reglas-personas.test.ts` fails if a prompt loses them or if the old wording comes back.
+- **The guardrail:** `lib/personasSensibles.ts`, deterministic, applied at every write point (`assessStory`, `translateStory`, story body, carousel, Bluesky, Mastodon, Facebook, LinkedIn, Instagram caption). It **edits, never rejects**: a quote attribution («Nombre, cargo») loses the ethnic label unless the role names an organization or community or is a traditional authority; a title, summary, blurb or post loses the label glued to a person's name, only after a closed list of singular person roles (`ROL_PERSONA`); a minor's or victim's name after «la niña», «el adolescente», «la víctima» is removed when the text speaks of a crime. A quote (`quote`, `quoteEn`) is never rewritten for membership, only for minors and victims.
+- **It only looks at the label in lowercase** (plus a capitalized people name glued to a role and a name, because `fixTitleCapitalization` capitalizes «Mapuche» first). «Ministerio de los Pueblos Indígenas» is a proper noun and is left alone.
+- **Logged without text:** `candado de personas: …` with the field and the change type, never the name.
+- **Measured** with `npx tsx src/scripts/medir-personas-sensibles.ts` (simulation, reads the public API or `--archivo`): on the 500 latest it changes 41 stories, all labels on persons. Known false positive: «gerente indígena de Antioquia» (an office). Known misses: a people not in the list stays («candidata Arawak»). The first version accepted any lowercase word as a role and touched «defensa indígena Ngäbe-Buglé»; the closed role list fixed it, and those cases are now negative tests.
+- **What it cannot do:** know whether the source shows the person presenting themselves that way. It prefers not to attribute, which is the bias the EILE asks for.
+
 ## Shared Batch Classification
 
 Both pre-assessment and reclassification use `runBatchClassification()` in `analysis.ts` — a generic helper that handles DB fetching, issue slug resolution, batching, semaphore-gated concurrent LLM calls, progress reporting, and DB transaction writes. Callers provide the LLM instance, schema, prompt builder, and an update function that determines which fields to write per story. The `fallbackToFeedIssue` option controls whether stories omitted from the LLM response get their `issueId` overwritten to the feed default (enabled for pre-assessment, disabled for reclassification to preserve existing assignments).

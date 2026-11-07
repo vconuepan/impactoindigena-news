@@ -7,6 +7,7 @@ import { uploadImageToR2 } from '../lib/imageStorage.js'
 import { fotoDelMedio } from '../lib/fotoDelMedio.js'
 import { fetchOgImage } from '../lib/extract-og-image.js'
 import { revisarCarrusel, temaRespaldado, type CarouselAviso, type CarouselSlideText } from '../lib/storyCarouselGuards.js'
+import { limpiarCampos } from '../lib/personasSensibles.js'
 import { renderStoryCarousel, carruselEnZip, type CarouselAttribution, type FotoDeNoticia } from '../lib/storyCarouselRender.js'
 import { buildStoryCarouselPrompt } from '../prompts/story-carousel.js'
 import { storyCarouselSchema, storyCarouselWithReadingSchema } from '../schemas/llm.js'
@@ -206,6 +207,16 @@ function limpiarLamina(l: CarouselSlideText): CarouselSlideText {
  * (23-oct-2026) el modelo pegó «Reporteó: ictnews.org» al final del cierre
  * aunque el prompt dice que se agrega sola; con eso la lámina la decía dos veces.
  */
+/**
+ * Sin etiqueta étnica sobre una persona ni el nombre de un menor o una víctima
+ * (EILE v1.2 §7, decisión del director del 6-nov-2026). Edita, no rechaza:
+ * el carrusel automático ya pierde franjas por los otros candados. Ver
+ * lib/personasSensibles.ts.
+ */
+function sinEtiquetasSobrePersonas(l: CarouselSlideText): CarouselSlideText {
+  return limpiarCampos(l, { texto: ['titulo', 'texto'] }).registro
+}
+
 function sinFirmaDelModelo(l: CarouselSlideText): CarouselSlideText {
   return { ...l, texto: l.texto.replace(/\s*Reporte[oó]\s*:.*$/i, '').trim() }
 }
@@ -247,11 +258,11 @@ export async function draftStoryCarousel(storyId: string, conLectura: boolean): 
   )
 
   const resultado = parsed as { laminas: CarouselSlideText[]; lectura?: CarouselSlideText }
-  const laminas = (resultado.laminas ?? []).map(limpiarLamina).map(sinFirmaDelModelo).filter((l) => l.titulo || l.texto)
+  const laminas = (resultado.laminas ?? []).map(limpiarLamina).map(sinFirmaDelModelo).map(sinEtiquetasSobrePersonas).filter((l) => l.titulo || l.texto)
   if (laminas.length < 3) {
     throw new StoryCarouselError('El modelo devolvió un carrusel incompleto. Vuelve a intentarlo.')
   }
-  const lectura = conLectura && resultado.lectura ? sinFirmaDelModelo(limpiarLamina(resultado.lectura)) : null
+  const lectura = conLectura && resultado.lectura ? sinEtiquetasSobrePersonas(sinFirmaDelModelo(limpiarLamina(resultado.lectura))) : null
 
   return {
     laminas,

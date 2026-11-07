@@ -1,7 +1,7 @@
 # Origen étnico de personas, menores y víctimas: de la promesa a lo que escribe el modelo
 
-Plan · 2026-11-06 · repo `vocesindigenas` · estado: **propuesto, nada tocado.** Es el ítem A6 de
-la lista de pendientes, que se muestra antes de tocar. Espera la decisión C1.
+Plan · 2026-11-06 · repo `vocesindigenas` · estado: **C1 decidida; Tanda A hecha y commiteada, sin
+empujar** (ver §7). Es el ítem A6 de la lista de pendientes.
 
 > Este plan no nombra a ninguna persona. Las mediciones se hicieron con los nombres borrados, y
 > los tests usarán nombres inventados: el repo es público.
@@ -70,10 +70,14 @@ blurb y sus versiones en inglés.
 - No se cambia la Política de Privacidad acá. Eso va en la v4.0, con la respuesta del abogado.
 - No se escriben nombres de personas reales en el código, los tests ni este plan.
 
+### Decisión del director (6-nov-2026, literal)
+
+> «Sí, adóptala» (C1: la regla de pertenencia y su candado, ya, sin esperar al abogado).
+
 ### La acción siguiente, una sola
 
-**Que el director decida C1:** si se adopta ya la regla de pertenencia como regla editorial, sin
-esperar al abogado. Con su sí, se ejecuta la Tanda A de este plan.
+**Empujar la Tanda A** (§7) y verificar en el log de la primera corrida que el candado edita
+lo esperado.
 
 ---
 
@@ -236,7 +240,7 @@ el resto lo cargan la regla en el esquema y el prompt.
 
 | # | Qué decidir | Recomendación |
 |---|---|---|
-| C1 | **Adoptar ya la regla de pertenencia** (M1) y su candado, como regla editorial, sin esperar al abogado. El abogado (A5.3) dirá si además es exigencia legal. Costo: la atribución de cita pierde la etiqueta étnica también cuando la persona se identifica así y el candado no lo puede ver | **Sí.** Es la doctrina de la Fundación y la promesa de la EILE §7. Toca el 5 % de las atribuciones y el 1 % de los títulos y resúmenes |
+| C1 | ✅ **Decidida el 6-nov: «Sí, adóptala».** **Adoptar ya la regla de pertenencia** (M1) y su candado, como regla editorial, sin esperar al abogado. El abogado (A5.3) dirá si además es exigencia legal. Costo: la atribución de cita pierde la etiqueta étnica también cuando la persona se identifica así y el candado no lo puede ver | **Sí.** Es la doctrina de la Fundación y la promesa de la EILE §7. Toca el 5 % de las atribuciones y el 1 % de los títulos y resúmenes |
 | C2 | **Lo ya publicado:** ¿se corrige hacia atrás? | Primero medir el archivo completo (B2). Después corregir solo las atribuciones de cita, con un script que simula por defecto |
 | C3 | **Reemplazar «más allá del artículo»** en el análisis (M4) | Sí, midiendo antes y después el puntaje de relevancia en 20 notas |
 | C4 | **Si el candado falla dos veces en una nota**, ¿qué pasa? | No se publica y queda en el panel. Volumen medido: ~1 % |
@@ -257,7 +261,7 @@ el resto lo cargan la regla en el esquema y el prompt.
 
 | # | Ítem | Fundamento |
 |---|---|---|
-| B1 | En la atribución, quitar la palabra y no regenerar; en título y resumen, regenerar una vez | La atribución es un campo corto y estructurado. Editar un resumen por regex lo puede dejar roto |
+| B1 | **Cambiada al implementar:** se edita en los dos, no se regenera. En la atribución, quitar la etiqueta del cargo; en título, resumen y posts, quitar la etiqueta pegada a un nombre, solo después de una lista cerrada de roles de persona | Las 6 de título y resumen medidas son todas «rol + etiqueta + nombre», y quitar la etiqueta deja la frase correcta. Regenerar exigía decidir C4; editar no rechaza nada y C4 queda sin objeto mientras el candado no rechace |
 | B2 | Medir el archivo completo por la API pública: 5.004 publicadas el 6-nov | Es el dato que necesita C2 |
 | B3 | El candado de menores mira también la cita, no solo lo que escribe el modelo | Una cita textual de la fuente puede nombrar a la víctima |
 
@@ -272,3 +276,45 @@ el resto lo cargan la regla en el esquema y el prompt.
   primera semana, se revisa antes de seguir.
 - **Costo de regenerar.** Una llamada más del análisis por nota rechazada, sobre ~1 % de las
   notas.
+
+### 7 · Resultados de la Tanda A (6-nov-2026)
+
+**A1 · Las reglas.** `REGLA_PERTENENCIA` y `REGLA_MENORES_VICTIMAS` (y sus versiones en inglés) en
+`prompts/shared.ts`, en el `.describe()` de título, resumen y atribución, y en los prompts de
+análisis, Facebook, LinkedIn, Instagram, carrusel, nota con claves, boletín, Bluesky, Mastodon y
+podcast. La regla contraria salió de `schemas/llm.ts` y de `facebook.ts`. El ejemplo de la
+atribución pide «su cargo o rol» y el pueblo solo si la regla lo permite. Candado de prompts:
+`prompts/reglas-personas.test.ts`. Dos tests de `schemas/llm.test.ts` exigían la frase vieja y
+se actualizaron. **No se tocó** «más allá del artículo» (`assess.ts:177`, C3) ni el `#Mapuche`
+obligatorio (C6): siguen esperando decisión.
+
+**A2 · El candado.** `lib/personasSensibles.ts`, determinista, en todos los puntos de escritura:
+análisis, traducción, nota con claves, carrusel y las cinco redes que generan texto. X reusa el
+de Bluesky o los campos ya limpios. Edita, no rechaza (B1). Las citas no se reescriben por la
+pertenencia, solo por menores y víctimas. El log dice el campo y el tipo de cambio, nunca el
+nombre. 64 tests propios con nombres inventados, más uno de punta a punta en `assessStory`.
+
+**A3 · Medido antes de enchufar** (`npx tsx src/scripts/medir-personas-sensibles.ts --archivo
+…`, simulación sobre las mismas 500):
+
+| Versión | Notas que cambia | Qué pasó |
+|---|---|---|
+| 1.ª | 93 | Aceptaba cualquier palabra como rol: tocaba «defensa indígena Ngäbe-Buglé», «comarca indígena…», y la regla inglesa tomaba «en» por rol («disputa Mapuche en Neuquén» → «disputa en Neuquén»). **Descartada** |
+| 2.ª, lista cerrada de roles de persona en singular | **41** | Atribuciones: 37 cambios en 33 notas; texto libre: 19 cambios, **todos etiquetas sobre una persona**, leídos uno por uno sin nombres |
+
+Falso positivo conocido: «gerente indígena de Antioquia», que es un cargo. Fallas conocidas: un
+pueblo fuera de la lista se queda («candidata Arawak», «mujer Ho-Chunk», «activista San»).
+Menores y víctimas: 0 cambios y 0 sospechas en las 500, como se había medido.
+
+El test de punta a punta encontró un caso que la simulación no veía: el guardarraíl de mayúsculas
+del título escribe «Mapuche» antes del candado. Pegado a un rol y a un nombre, el pueblo se acepta
+ahora también con mayúscula.
+
+**A4 · Spec y doc.** `EthnicityOnlyFromWithin` y `MinorsAndVictimsByRole` en
+`story-pipeline.allium`; `PostsFollowThePersonRules` en `social-posting.allium`; sección
+«Person Rules Guardrail» en `.context/llm-analysis.md`.
+
+**Verificación.** Servidor 2.424 de 2.424 y `tsc` limpio.
+
+**A5 · Pendiente.** La EILE §7 (privada) pasa a «implementada» con la fecha del despliegue
+verificado, no antes.

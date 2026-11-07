@@ -12,6 +12,7 @@ import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildInstagramCaptionPrompt } from '../prompts/instagram.js'
 import { withAiLabel, AI_LABEL } from '../lib/ai-label.js'
 import { config } from '../config.js'
+import { limpiarPost } from '../lib/personasSensibles.js'
 const log = createLogger('instagram-service')
 
 const instagramCaptionSchema = z.object({
@@ -177,11 +178,14 @@ async function runGeneration(postId: string, story: any): Promise<void> {
     sourceCountry: story.feed?.url ?? null,
   })
   const captionResult = await structuredLlm.invoke([new HumanMessage(prompt)])
-  const avisosDelPie = revisarPie(captionResult.caption, carrusel.original)
+  // Candado de personas antes de los candados del pie. Ver lib/personasSensibles.ts.
+  const candado = limpiarPost(captionResult.caption)
+  if (candado.resumen.hubo) log.warn({ storyId, red: 'instagram', campos: candado.resumen.campos }, 'candado de personas: post editado antes de guardar')
+  const avisosDelPie = revisarPie(candado.texto, carrusel.original)
   if (avisosDelPie.length > 0) {
     return rechazar(postId, storyId, `Pie: ${avisosEnTexto(avisosDelPie)}`)
   }
-  const caption = pieConAtribucion(captionResult.caption, carrusel.atribucion.medio, storyUrl)
+  const caption = pieConAtribucion(candado.texto, carrusel.atribucion.medio, storyUrl)
 
   // 3. Recién ahora se sube: un rechazo no deja láminas sueltas en R2.
   const imageUrls = await subirCarrusel(storyId, carrusel.imagenes)

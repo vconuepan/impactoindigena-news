@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { EMOTION_TAG_SCHEMA_DESCRIPTION, NARRATIVE_FRAME_SCHEMA_DESCRIPTION } from "../prompts/shared.js";
+import { EMOTION_TAG_SCHEMA_DESCRIPTION, NARRATIVE_FRAME_SCHEMA_DESCRIPTION, REGLA_PERTENENCIA, REGLA_MENORES_VICTIMAS } from "../prompts/shared.js";
 
 // Candado determinista sobre los dos enums de clasificacion.
 //
@@ -111,8 +111,9 @@ export const assessResultSchema = z.object({
   quoteAttribution: z
     .string()
     .describe(
-      "Atribución de la cita clave. Si se cita a una persona, usa su nombre completo y cargo/rol " +
-        "(ej. 'María Helena Semedo, Directora General Adjunta de la FAO'). Si se cita a una organización o publicación, " +
+      "Atribución de la cita clave. Si se cita a una persona, usa su nombre completo y su cargo o rol " +
+        "(ej. 'María Helena Semedo, Directora General Adjunta de la FAO'). El pueblo de la persona va solo si lo permite " +
+        "esta regla: " + REGLA_PERTENENCIA + " Si se cita a una organización o publicación, " +
         "usa el nombre de la organización (ej. 'Organización Mundial de la Salud'). Si la cita es una oración " +
         "llamativa del artículo y no una cita directa de una persona, usa 'Artículo original'."
     ),
@@ -121,7 +122,8 @@ export const assessResultSchema = z.object({
     .describe(
       "Resumen en texto plano del artículo, 40-70 palabras, en español. " +
         "Usa lenguaje sencillo que una audiencia general pueda entender. " +
-        "Evita redundancia con el título."
+        "Evita redundancia con el título. " +
+        REGLA_PERTENENCIA + " " + REGLA_MENORES_VICTIMAS
     ),
   factors: z
     .array(z.string())
@@ -189,7 +191,8 @@ export const assessResultSchema = z.object({
         "Ninguna palabra o frase debe aparecer tanto en la etiqueta como en el título. " +
         "Sé concreto: nombra al actor, la acción o las consecuencias. Elimina frases vagas como 'podría afectar'. " +
         "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado. " +
-        "Terminología: no atribuyas pertenencia étnica que la fuente no afirme, y NUNCA uses 'araucano/a(s)' " +
+        REGLA_PERTENENCIA + " " + REGLA_MENORES_VICTIMAS + " " +
+        "Terminología: NUNCA uses 'araucano/a(s)' " +
         "como gentilicio de personas (exónimo colonial): si la fuente dice mapuche, escribe 'mapuche'; " +
         "si solo menciona la región, escribe 'de La Araucanía'. " +
         "Años: no agregues un año que el artículo no afirme. Si mencionas uno, debe ser el año " +
@@ -277,7 +280,8 @@ export const extractTitleLabelSchema = z.object({
         "Ninguna palabra o frase debe aparecer tanto en la etiqueta como en el título. " +
         "Sé concreto: nombra al actor, la acción o las consecuencias. Elimina frases vagas como 'podría afectar'. " +
         "NUNCA uses el patrón 'Etiqueta: titular' con dos puntos — la etiqueta es un campo separado. " +
-        "Terminología: no atribuyas pertenencia étnica que la fuente no afirme, y NUNCA uses 'araucano/a(s)' " +
+        REGLA_PERTENENCIA + " " + REGLA_MENORES_VICTIMAS + " " +
+        "Terminología: NUNCA uses 'araucano/a(s)' " +
         "como gentilicio de personas (exónimo colonial): si la fuente dice mapuche, escribe 'mapuche'; " +
         "si solo menciona la región, escribe 'de La Araucanía'. " +
         "Bien: 'CONADI y CORFO financian proyectos productivos indígenas en Chile'. " +
@@ -294,8 +298,9 @@ export const extractQuoteAttributionSchema = z.object({
   quoteAttribution: z
     .string()
     .describe(
-      "Atribución de la cita clave. Si se cita a una persona, usa su nombre completo y cargo/rol " +
-        "(ej. 'María Helena Semedo, Directora General Adjunta de la FAO'). Si se cita a una organización o publicación, " +
+      "Atribución de la cita clave. Si se cita a una persona, usa su nombre completo y su cargo o rol " +
+        "(ej. 'María Helena Semedo, Directora General Adjunta de la FAO'). El pueblo de la persona va solo si lo permite " +
+        "esta regla: " + REGLA_PERTENENCIA + " Si se cita a una organización o publicación, " +
         "usa el nombre de la organización (ej. 'Organización Mundial de la Salud'). Si la cita es una oración " +
         "llamativa del artículo y no una cita directa de una persona, usa 'Artículo original'."
     ),

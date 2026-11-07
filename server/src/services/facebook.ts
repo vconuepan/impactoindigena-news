@@ -12,6 +12,7 @@ import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildFacebookPostPrompt } from '../prompts/facebook.js'
 import { withAiLabel } from '../lib/ai-label.js'
 import { config } from '../config.js'
+import { limpiarPost } from '../lib/personasSensibles.js'
 
 const log = createLogger('facebook-service')
 
@@ -65,9 +66,12 @@ export async function generateDraft(storyId: string) {
   })
 
   const result = await structuredLlm.invoke([new HumanMessage(prompt)])
+  // Candado de personas. Ver lib/personasSensibles.ts.
+  const candado = limpiarPost(result.postText)
+  if (candado.resumen.hubo) log.warn({ storyId, red: 'facebook', campos: candado.resumen.campos }, 'candado de personas: post editado antes de guardar')
 
   const post = await prisma.facebookPost.create({
-    data: { storyId, postText: result.postText, status: 'draft' },
+    data: { storyId, postText: candado.texto, status: 'draft' },
     include: STORY_INCLUDE,
   })
 

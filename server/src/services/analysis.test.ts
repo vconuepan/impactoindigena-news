@@ -432,6 +432,52 @@ describe('assessStory', () => {
     })
   })
 
+  it('el candado de personas edita el texto antes de guardarlo, y la cita no se reescribe', async () => {
+    // Salvaguarda 2 de la EILE v1.2, adoptada por el director el 6-nov-2026:
+    // no se le pone pueblo a una persona porque un medio lo dijo. Nombres inventados.
+    const story = storyWithRelations({ id: 'story-1' })
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.story.update.mockResolvedValue({})
+    mockGenerateEmbeddingForContent.mockResolvedValue({ embedding: [0.1], hash: 'h' })
+    mockSaveEmbeddingTx.mockResolvedValue(undefined)
+
+    mockGetMediumLLM.mockReturnValue({
+      withStructuredOutput: () => ({
+        invoke: vi.fn().mockResolvedValue({
+          publicationDate: '2026-11-01 00:00:00',
+          quote: 'Como comunero mapuche Juan Rojas lo vio todo',
+          quoteAttribution: 'Ana Ruiz, activista climática indígena',
+          summary: 'El comunero mapuche Juan Rojas fue liberado tras la audiencia.',
+          factors: ['f'],
+          limitingFactors: ['l'],
+          relevanceCalculation: ['c'],
+          relevanceRating: 6,
+          relevanceSummary: 'La lideresa indígena Ana Ruiz pidió consulta previa.',
+          titleLabel: 'Justicia',
+          relevanceTitle: 'Liberan al comunero mapuche Juan Rojas',
+          marketingBlurb: 'b',
+        }),
+      }),
+    })
+
+    await assessStory('story-1')
+
+    expect(mockPrisma.story.update).toHaveBeenCalledWith({
+      where: { id: 'story-1' },
+      data: expect.objectContaining({
+        title: 'Liberan al comunero Juan Rojas',
+        summary: 'El comunero Juan Rojas fue liberado tras la audiencia.',
+        relevanceSummary: 'La lideresa Ana Ruiz pidió consulta previa.',
+        quoteAttribution: 'Ana Ruiz, activista climática',
+        quote: 'Como comunero mapuche Juan Rojas lo vio todo',
+      }),
+    })
+    // El embedding se calcula sobre lo que se publica.
+    expect(mockGenerateEmbeddingForContent).toHaveBeenCalledWith(
+      expect.objectContaining({ summary: 'El comunero Juan Rojas fue liberado tras la audiencia.' }),
+    )
+  })
+
   it('quita el año imposible del resumen y no acepta una fecha de publicacion futura', async () => {
     // Caso real del 25-oct-2026: la bajada de la fuente decia «23 de octubre
     // de 2027» en una nota del 23-oct-2026. El modelo fecho el hecho en 2027

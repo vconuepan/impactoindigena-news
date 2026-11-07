@@ -733,3 +733,16 @@ surface SocialPostPicker {
         best candidate and explains its reasoning. The admin
         reviews the pick before publishing."
 }
+
+invariant PostsFollowThePersonRules {
+    -- Every channel's draft text (Bluesky, Mastodon, Facebook, LinkedIn and
+    -- the Instagram caption) carries the same two person rules as the story
+    -- (see EthnicityOnlyFromWithin and MinorsAndVictimsByRole in
+    -- story-pipeline.allium): in the prompt, and enforced on the model's text
+    -- before it is trimmed or saved (lib/personasSensibles.ts). X reuses the
+    -- Bluesky text or the story's already-cleaned fields. An admin's edit to a
+    -- draft is not rewritten: the editor decides.
+    forall post: SocialPost
+        post.status = draft and post.generated_by_llm
+            implies not ethnic_label_glued_to_person_name(post.text) and not names_minor_or_victim(post.text)
+}

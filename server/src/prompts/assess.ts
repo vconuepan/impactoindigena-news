@@ -4,6 +4,8 @@ import {
   buildGuidelinesXml,
   UNTRUSTED_CONTENT_GUARD,
   sanitizeUntrustedContent,
+  REGLA_PERTENENCIA,
+  REGLA_MENORES_VICTIMAS,
 } from "./shared.js";
 
 export function buildAssessPrompt(
@@ -176,6 +178,8 @@ Alguna variación de "[Fuente] informa [punto clave]. [Resumen de relevancia]."
 - Incluye números concretos cuando estén disponibles (personas afectadas, montos en dólares, porcentajes).
 - Utiliza tu conocimiento más allá de lo que está escrito en el artículo.
 - Siempre responde en ESPAÑOL, sin importar el idioma del artículo.
+- ${REGLA_PERTENENCIA}
+- ${REGLA_MENORES_VICTIMAS}
 - Cuando sea relevante, menciona el nombre específico del pueblo indígena involucrado (Mapuche, Quechua, Guaraní, Māori, Sami, etc.).
 - Da especial importancia a noticias que involucren procesos de CLPI (Consentimiento Libre, Previo e Informado), consulta indígena, territorios indígenas, empresas con impacto en comunidades indígenas, o política pública indígena en Chile y Latinoamérica.
 </GUIDELINES>

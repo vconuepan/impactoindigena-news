@@ -443,6 +443,44 @@ invariant NoPreteriteInAFutureYear {
     -- date's, else the year of assessment.
 }
 
+invariant EthnicityOnlyFromWithin {
+    -- Safeguard 2 of the legitimate-interest assessment (EILE v1.2, §7),
+    -- adopted as an editorial rule by the director on 2026-11-06: a person's
+    -- belonging to a people is written only if, per the article, they present
+    -- themselves that way or their own community or Indigenous organization
+    -- does. That a journalist or a third party calls them so is not enough.
+    -- Collectives (a community, a people, an organization) are named as the
+    -- article names them: this invariant is about persons.
+    -- The rule lives in the schema and every prompt (REGLA_PERTENENCIA in
+    -- prompts/shared.ts). Code enforces the part it can see without the source
+    -- (lib/personasSensibles.ts), at every write point: analysis, translation,
+    -- story body, carousel and each social channel. It edits, never rejects:
+    -- a quote attribution loses the label unless it names an organization or
+    -- is a traditional authority; a title or summary loses the label glued to
+    -- a person's name ("el comunero mapuche Juan" -> "el comunero Juan").
+    -- A quote is never rewritten for this rule. Measured 2026-11-06 on the 500
+    -- latest: it changes 41 stories; 0 office or institution names touched,
+    -- 1 known false positive ("gerente indígena de Antioquia").
+    forall story: Story
+        forall field in [story.title, story.summary, story.relevance_summary, story.marketing_blurb]
+            not ethnic_label_glued_to_person_name(field)
+        not ethnic_label_in_attribution_without_organization(story.quote_attribution)
+}
+
+invariant MinorsAndVictimsByRole {
+    -- Safeguard 3 (EILE v1.2, §7) and art. 33 of Ley 19.733: no name of a
+    -- minor linked to a crime or to violence, nor of a victim of the crimes
+    -- that article lists (sexual crimes, trafficking for sexual exploitation,
+    -- torture, aggravated kidnapping), even if the source names them; they
+    -- are named by their role. Enforced at the same write points: the name
+    -- after "la niña", "el adolescente" or "la víctima" is removed when the
+    -- text speaks of a crime; "Nombre, de 15 años" cannot be edited safely and
+    -- is logged as a suspicion. This applies to quotes too.
+    forall story: Story
+        forall field in [story.title, story.summary, story.relevance_summary, story.marketing_blurb, story.quote]
+            not names_minor_or_victim(field)
+}
+
 -- ─── Retention per vertical (D4, Las Otras Voces) ──────────────────
 -- A story can be published on the main site and held in a vertical.
 -- story.status is never touched by this rule. Detail:

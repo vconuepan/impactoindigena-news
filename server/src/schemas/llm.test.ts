@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { toJsonSchema } from '@langchain/core/utils/json_schema'
 import { assessResultSchema, extractQuoteAttributionSchema, extractTitleLabelSchema, preAssessResultSchema } from './llm.js'
+import { REGLA_PERTENENCIA } from '../prompts/shared.js'
 
 describe('assessResultSchema', () => {
   const validResponse = {
@@ -54,11 +55,12 @@ describe('terminology guardrail in title guidance', () => {
   // Regression: a published title turned "jóvenes… en La Araucanía" into
   // "jóvenes araucanos" — a colonial exonym absent from the source. Both
   // title-generating schemas must instruct the model against it.
-  it('assess relevanceTitle forbids "araucano" as demonym and unstated ethnicity', () => {
+  it('assess relevanceTitle forbids "araucano" as demonym and carries the membership rule', () => {
     const desc = assessResultSchema.shape.relevanceTitle.description ?? ''
     expect(desc).toContain('araucano')
     expect(desc).toContain('exónimo colonial')
-    expect(desc).toContain('no atribuyas pertenencia étnica')
+    // Desde el 6-nov-2026, la regla de la EILE §7 y no «que la fuente no afirme».
+    expect(desc).toContain(REGLA_PERTENENCIA)
     expect(desc).toContain('de La Araucanía')
   })
 
@@ -66,7 +68,8 @@ describe('terminology guardrail in title guidance', () => {
     const desc = extractTitleLabelSchema.shape.title.description ?? ''
     expect(desc).toContain('araucano')
     expect(desc).toContain('exónimo colonial')
-    expect(desc).toContain('no atribuyas pertenencia étnica')
+    // Desde el 6-nov-2026, la regla de la EILE §7 y no «que la fuente no afirme».
+    expect(desc).toContain(REGLA_PERTENENCIA)
     expect(desc).toContain('de La Araucanía')
   })
 })

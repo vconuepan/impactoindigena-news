@@ -1,4 +1,4 @@
-import { escapeXml } from './shared.js'
+import { escapeXml, REGLA_PERTENENCIA, REGLA_MENORES_VICTIMAS } from './shared.js'
 
 export interface StoryForNewsletterIntro {
   title: string
@@ -51,6 +51,8 @@ ${chosenStyle}
 - No uses frases como "esta semana" o "en esta edición" — el contexto es obvio.
 - No te dirijas al lector directamente con "tú" ni "estimado lector".
 - Solo texto plano — sin markdown, sin viñetas, sin encabezados.
+- ${REGLA_PERTENENCIA}
+- ${REGLA_MENORES_VICTIMAS}
 - No uses guiones largos (em dashes). Usa comas, puntos o punto y coma.
 - Máximo 60 palabras.
 </GUIDELINES>

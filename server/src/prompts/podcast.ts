@@ -1,3 +1,5 @@
+import { PERSON_MEMBERSHIP_RULE, MINORS_VICTIMS_RULE } from './shared.js'
+
 export interface StoryForPodcast {
   category: string
   title: string
@@ -40,6 +42,8 @@ Please write a script with the following elements:
 -- Thank the listeners for listening.
 
 Make sure to include all the <STORIES> mentioned above.
+
+About people: ${PERSON_MEMBERSHIP_RULE} ${MINORS_VICTIMS_RULE}
 
 Strike a tone that is professional, but less formal than traditional news shows. The podcast should be engaging and easy to follow. Keep sentences short, with 12 words as the maximum length. Also, keep the language simple. In particular, avoid academic terminology.
 

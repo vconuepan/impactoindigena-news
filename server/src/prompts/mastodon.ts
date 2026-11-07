@@ -1,4 +1,4 @@
-import { escapeXml } from './shared.js'
+import { escapeXml, PERSON_MEMBERSHIP_RULE, MINORS_VICTIMS_RULE } from './shared.js'
 
 export interface StoryForMastodonPost {
   id: string
@@ -22,6 +22,8 @@ Write a short, informal editorial hook for Mastodon (max ${story.maxChars} chara
 - Max ${story.maxChars} characters (hard limit)
 - No URLs, links, or @mentions (these are added automatically after your text)
 - No clickbait phrases like "You won't believe" or "This changes everything"
+- ${PERSON_MEMBERSHIP_RULE}
+- ${MINORS_VICTIMS_RULE}
 - Do NOT repeat the story title
 - Do NOT restate the article summary — readers see the original article in the link preview
 - DO draw from the "Why it matters" angle: broader implications, who is affected, what could change

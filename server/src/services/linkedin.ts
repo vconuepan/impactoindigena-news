@@ -8,6 +8,7 @@ import { buildLinkedInPostPrompt } from '../prompts/linkedin.js'
 import { withAiLabel } from '../lib/ai-label.js'
 import { buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError } from './storyCarousel.js'
 import { config } from '../config.js'
+import { limpiarPost } from '../lib/personasSensibles.js'
 
 const log = createLogger('linkedin-service')
 
@@ -65,9 +66,12 @@ export async function generateDraft(storyId: string) {
     buildCarouselSlides(story),
   ])
 
-  const rawPostText = result.postText.length > 2900
-    ? result.postText.slice(0, 2897) + '…'
-    : result.postText
+  // Candado de personas antes de recortar. Ver lib/personasSensibles.ts.
+  const candado = limpiarPost(result.postText)
+  if (candado.resumen.hubo) log.warn({ storyId, red: 'linkedin', campos: candado.resumen.campos }, 'candado de personas: post editado antes de guardar')
+  const rawPostText = candado.texto.length > 2900
+    ? candado.texto.slice(0, 2897) + '…'
+    : candado.texto
 
   const post = await prisma.linkedInPost.create({
     data: {

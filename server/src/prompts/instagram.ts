@@ -1,4 +1,4 @@
-import { escapeXml, sanitizeUntrustedContent, UNTRUSTED_CONTENT_GUARD } from './shared.js'
+import { escapeXml, sanitizeUntrustedContent, UNTRUSTED_CONTENT_GUARD, REGLA_PERTENENCIA, REGLA_MENORES_VICTIMAS } from './shared.js'
 import { VOZ_VENANCIO_ADN, VOZ_VENANCIO_EVITAR, REGLAS_FUNDACION } from './voz-venancio.js'
 
 /**
@@ -54,7 +54,9 @@ No escribas «Reporteó», el nombre del medio como firma ni direcciones web: la
 
 <FIDELIDAD>
 - Los hechos, cifras, nombres, cargos, lugares y fechas de la noticia salen del artículo. El reencuadre y el anclaje son tuyos; los hechos, del medio.
-- La identidad indígena no se atribuye desde afuera. No digas que una persona, familia, comunidad u organización es indígena, ni de qué pueblo es, si el artículo no lo dice expresamente. Usa las palabras del artículo: si dice «comunidades locales» o «familias campesinas», escribe eso.
+- La identidad indígena no se atribuye desde afuera. No digas que una familia, comunidad u organización es indígena, ni de qué pueblo es, si el artículo no lo dice expresamente. Usa las palabras del artículo: si dice «comunidades locales» o «familias campesinas», escribe eso.
+- ${REGLA_PERTENENCIA}
+- ${REGLA_MENORES_VICTIMAS}
 - Entre comillas van solo frases copiadas letra por letra del artículo y dichas en español. Lo que alguien dijo en otro idioma va en estilo indirecto y sin comillas.
 </FIDELIDAD>
 

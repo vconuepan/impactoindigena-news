@@ -18,6 +18,7 @@ import {
   type StoryBodyText,
 } from '../lib/storyBodyGuards.js'
 import { seleccionarParaRedactar } from '../lib/storyBodySeleccion.js'
+import { limpiarCampos } from '../lib/personasSensibles.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 
 const log = createLogger('story-body')
@@ -120,7 +121,14 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
   }
   const uso = (raw as { usage_metadata?: { input_tokens?: number; output_tokens?: number } } | null)?.usage_metadata
   const anio = fechaRef.getFullYear()
-  const cuerpo = limpiarCuerpo(parsed as StoryBodyResult, original)
+  // Candado de personas sobre las cinco claves, antes de los demás candados.
+  // Ver lib/personasSensibles.ts.
+  const { registro: cuerpo, resumen: candadoDePersonas } = limpiarCampos(limpiarCuerpo(parsed as StoryBodyResult, original), {
+    texto: ['bajada', 'quePaso', 'porQueImporta', 'contexto', 'queSigue'],
+  })
+  if (candadoDePersonas.hubo) {
+    log.warn({ storyId, campos: candadoDePersonas.campos }, 'candado de personas: cuerpo editado antes de los candados')
+  }
   const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fecha, story.sourceTitle), anio)
   const bloqueantes = avisosBloqueantes(avisos)
 

@@ -9,6 +9,7 @@ import type { StoryForMastodonPost } from '../prompts/index.js'
 import { mastodonPostTextSchema } from '../schemas/mastodon.js'
 import { TTLCache, cached } from '../lib/cache.js'
 import type { AccountStatusesResult } from '../lib/mastodon.js'
+import { limpiarPost } from '../lib/personasSensibles.js'
 
 const log = createLogger('mastodon-service')
 
@@ -134,7 +135,10 @@ export async function generateDraft(storyId: string) {
   const result = await structuredLlm.invoke([new HumanMessage(prompt)])
 
   // Trim LLM output to maxChars if it overshot
-  let blurb = result.postText.trim()
+  // Candado de personas antes de recortar: puede acortar el texto. Ver lib/personasSensibles.ts.
+  const candado = limpiarPost(result.postText.trim())
+  if (candado.resumen.hubo) log.warn({ storyId, red: 'mastodon', campos: candado.resumen.campos }, 'candado de personas: post editado antes de guardar')
+  let blurb = candado.texto
   if (blurb.length > maxChars) {
     log.warn({ storyId, blurbLength: blurb.length, maxChars }, 'LLM blurb exceeded max chars, trimming')
     blurb = blurb.slice(0, maxChars - 1) + '\u2026'

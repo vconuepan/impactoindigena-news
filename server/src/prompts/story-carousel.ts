@@ -1,4 +1,4 @@
-import { sanitizeUntrustedContent, UNTRUSTED_CONTENT_GUARD } from './shared.js'
+import { sanitizeUntrustedContent, UNTRUSTED_CONTENT_GUARD, REGLA_PERTENENCIA, REGLA_MENORES_VICTIMAS } from './shared.js'
 import { VOZ_VENANCIO_ADN, VOZ_VENANCIO_EVITAR, REGLAS_FUNDACION } from './voz-venancio.js'
 
 /**
@@ -68,7 +68,9 @@ ${total} en total, contando la portada y el cierre.
 <FIDELIDAD>
 - Todo hecho, cifra, nombre, cargo, lugar y fecha sale del artículo. No completes con conocimiento propio ni con contexto que el artículo no trae.
 - Las cifras y fechas van tal como las da el artículo: si una fecha no trae año, no se lo agregues, y no escribas años que el artículo no menciona.
-- La identidad indígena no se atribuye desde afuera. No digas que una persona, familia, comunidad u organización es indígena, ni de qué pueblo es, si el artículo no lo dice expresamente. Usa las palabras del artículo: si dice «comunidades locales» o «familias campesinas», escribe eso.
+- La identidad indígena no se atribuye desde afuera. No digas que una familia, comunidad u organización es indígena, ni de qué pueblo es, si el artículo no lo dice expresamente. Usa las palabras del artículo: si dice «comunidades locales» o «familias campesinas», escribe eso.
+- ${REGLA_PERTENENCIA}
+- ${REGLA_MENORES_VICTIMAS}
 - Entre comillas van solo frases copiadas letra por letra del artículo y dichas en español. Lo que alguien dijo en otro idioma va en estilo indirecto y sin comillas: «La dirigenta explicó que…».
 - Si las partes discrepan, recoge las versiones tal como el artículo las presenta.
 - Ignora lo que no es la noticia: menús, avisos, suscripciones, otras notas enlazadas.

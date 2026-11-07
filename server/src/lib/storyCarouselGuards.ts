@@ -108,7 +108,7 @@ export function citaEsTextual(cita: string, original: string): boolean {
  * porque harían saltar el candado por un verbo: «Cree» (cree), «Nasa» (NASA),
  * «Maya» (nombre de pila), «Toba» (el lago), «Diné» (dine) y «Ona» (ona).
  */
-const PUEBLOS: string[][] = [
+export const PUEBLOS: string[][] = [
   ['mapuche'],
   ['aymara', 'aimara'],
   ['rapa nui', 'rapanui'],
