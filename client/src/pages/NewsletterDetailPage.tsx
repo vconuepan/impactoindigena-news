@@ -29,6 +29,17 @@ export function descripcionDe(data: Pick<NewsletterDetail, 'sentAt' | 'storyCoun
     : `Boletín de Voces Indígenas. ${data.storyCount} noticias sobre pueblos indígenas.`
 }
 
+/**
+ * El título de la pestaña. Desde el cambio de marca, el job titula cada edición
+ * «Voces Indígenas — …», y la página le volvía a agregar « — Voces Indígenas»:
+ * medido el 7-nov-2026, 18 de las 52 ediciones del archivo salían con la marca
+ * dos veces. Las 34 anteriores al 4-sep se titulan «Impacto Indígena — …»,
+ * porque así se enviaron, y llevan la marca del sitio al final.
+ */
+export function tituloDePestana(titulo: string): string {
+  return /voces ind[ií]genas/i.test(titulo) ? titulo : `${titulo} — Voces Indígenas`
+}
+
 export default function NewsletterDetailPage() {
   const { id } = useParams<{ id: string }>()
 
@@ -39,7 +50,7 @@ export default function NewsletterDetailPage() {
     enabled: !!id,
   })
 
-  const title = data ? `${data.title} — Voces Indígenas` : 'Boletín — Voces Indígenas'
+  const title = data ? tituloDePestana(data.title) : 'Boletín — Voces Indígenas'
 
   return (
     <>

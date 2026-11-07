@@ -14,6 +14,7 @@ import {
   generateContent,
   generateHtmlContent,
   sendLive,
+  refrescarEnviosRecientes,
 } from '../services/newsletter.js'
 
 const log = createLogger('send_weekly_newsletter')
@@ -99,6 +100,16 @@ export async function runSendWeeklyNewsletter(): Promise<void> {
     where: { id: newsletter.id },
     data: { status: 'published' },
   })
+
+  // Al terminar, la edición nueva pone al día a las anteriores: estado `sent`
+  // con la hora de Brevo, y aperturas y clics. Si Brevo falla, el envío ya está
+  // hecho: no se marca el job como fallido por esto.
+  try {
+    const refresco = await refrescarEnviosRecientes()
+    log.info(refresco, 'métricas de envíos recientes al día')
+  } catch (err) {
+    log.warn({ err }, 'no se pudieron refrescar las métricas de los envíos recientes')
+  }
 
   log.info({ title }, 'weekly newsletter job complete')
 }

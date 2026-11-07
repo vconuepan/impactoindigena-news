@@ -69,7 +69,10 @@ describe('Brevo API client', () => {
       expect(mockAxiosInstance.put).not.toHaveBeenCalled()
     })
 
-    it('schedules send when scheduledFor is provided', async () => {
+    it('schedules send when scheduledFor is provided, and does NOT send now', async () => {
+      // Hasta el 7-nov-2026 este test exigía llamar a sendNow después de
+      // programar. Según Brevo, sendNow «programa la campaña para la hora
+      // actual»: lo programado salía en el acto.
       mockAxiosInstance.put.mockResolvedValue({ data: {} })
       mockAxiosInstance.post.mockResolvedValue({ data: {} })
       await sendCampaign('campaign-1', '2025-01-15T10:00:00Z')
@@ -77,7 +80,7 @@ describe('Brevo API client', () => {
         '/emailCampaigns/campaign-1',
         { scheduledAt: '2025-01-15T10:00:00Z' },
       )
-      expect(mockAxiosInstance.post).toHaveBeenCalledWith('/emailCampaigns/campaign-1/sendNow')
+      expect(mockAxiosInstance.post).not.toHaveBeenCalledWith('/emailCampaigns/campaign-1/sendNow')
     })
   })
 

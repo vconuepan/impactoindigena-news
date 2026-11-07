@@ -155,7 +155,10 @@ rule SendLive {
 -- status, every live send stayed `sending`, and the public archive,
 -- which required `sent`, showed all 52 editions without a date.
 rule RefreshSendStats {
-    when: AdminRefreshesStats(send)
+    -- Since 2026-11-07 the send jobs (send_newsletter, send_weekly_newsletter)
+    -- also trigger it when they finish, for every live send created in the
+    -- last 45 days (RefreshRecentSends). Before, only the panel button did.
+    when: AdminRefreshesStats(send) or RefreshRecentSends(send)
     requires: send.plunk_campaign_id != null
 
     let campaign = get_campaign(send.plunk_campaign_id)   -- one call: stats, status, sent_date
@@ -177,11 +180,24 @@ rule ArchiveDate {
     ensures: archive_date(newsletter) = send.sent_at ?? null
 }
 
--- Known, latent (2026-11-02): SendLive with scheduled_for sets the
--- campaign's scheduledAt and then calls Brevo's sendNow, which the
--- provider documents as "scheduling it for the current time": a
--- scheduled send would go out at once. Neither the panel nor the jobs
--- pass scheduled_for today.
+rule RefreshRecentSends {
+    -- A send job, after its own send, brings earlier editions up to date.
+    -- Bounded by creation date: older sends may carry a Plunk campaign id
+    -- the current provider does not know, and asking for them would fail
+    -- on every run. One failed refresh does not stop the others nor fail
+    -- the job: the edition is already sent.
+    when: SendJobFinished(job)
+    for send in sends where not is_test and plunk_campaign_id != null
+                        and created_at >= now - 45 days:
+        triggers: RefreshSendStats(send)
+}
+
+-- Scheduling (fixed 2026-11-07): with scheduled_for, SendLive only sets
+-- the campaign's scheduledAt and does NOT call sendNow. Per the provider's
+-- specification, sendNow "sends immediately by scheduling it for the
+-- current time"; until that day both were called and a scheduled send went
+-- out at once. The panel does not offer scheduling; the send-live route
+-- accepts it.
 
 -- ─── Carousel ────────────────────────────────────────────────────
 -- Generates social media carousel images (1200x675px per story),

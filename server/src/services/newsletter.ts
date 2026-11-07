@@ -855,3 +855,35 @@ export async function refreshSendStats(sendId: string) {
     },
   })
 }
+
+/**
+ * Pide a Brevo el estado y las métricas de los envíos reales de las últimas
+ * semanas. Hasta el 7-nov-2026 eso solo pasaba si alguien apretaba «Refresh
+ * stats» en el panel: los envíos quedaban en `sending` y sin aperturas ni
+ * clics. Lo llaman los jobs de envío al terminar, así que cada edición nueva
+ * pone al día a las anteriores.
+ *
+ * Acotado a `diasAtras` por creación: los envíos viejos pueden ser de cuando el
+ * proveedor era Plunk (`plunkCampaignId`) y Brevo no los conoce; pedirlos en
+ * cada corrida sería un 404 seguro, dos veces por semana, para siempre. Un fallo
+ * de uno no corta a los demás ni al job.
+ */
+export async function refrescarEnviosRecientes(
+  { diasAtras = 45 }: { diasAtras?: number } = {},
+): Promise<{ revisados: number; fallidos: number }> {
+  const desde = new Date(Date.now() - diasAtras * 24 * 60 * 60 * 1000)
+  const envios = await prisma.newsletterSend.findMany({
+    where: { isTest: false, plunkCampaignId: { not: null }, createdAt: { gte: desde } },
+    select: { id: true },
+  })
+  let fallidos = 0
+  for (const { id } of envios) {
+    try {
+      await refreshSendStats(id)
+    } catch (err) {
+      fallidos++
+      log.warn({ err, sendId: id }, 'no se pudieron refrescar las métricas de un envío')
+    }
+  }
+  return { revisados: envios.length, fallidos }
+}

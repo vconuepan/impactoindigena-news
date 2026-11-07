@@ -139,13 +139,24 @@ export async function updateCampaign(id: string, opts: Partial<CreateCampaignOpt
   )
 }
 
+/**
+ * Envía la campaña ya, o la programa. Una cosa o la otra, nunca las dos.
+ *
+ * Según la especificación de Brevo (swagger v3, leída el 7-nov-2026),
+ * `scheduledAt` es «la fecha y hora UTC en que la campaña tiene que salir», y
+ * `sendNow` «envía la campaña de inmediato programándola para la hora actual».
+ * Hasta ese día, con fecha se fijaba `scheduledAt` y después se llamaba igual a
+ * `sendNow`, que la pisaba con «ahora»: lo programado salía en el acto. El panel
+ * no ofrece programar, pero la ruta `send-live` acepta `scheduledFor`.
+ */
 export async function sendCampaign(id: string, scheduledFor?: string): Promise<void> {
   return withRetry(
     async () => {
       log.info({ campaignId: id, scheduledFor }, 'sending campaign')
       if (scheduledFor) {
-        // Schedule for future — Brevo uses scheduledAt in ISO format
         await client.put(`/emailCampaigns/${id}`, { scheduledAt: scheduledFor })
+        log.info({ campaignId: id, scheduledFor }, 'campaign scheduled')
+        return
       }
       await client.post(`/emailCampaigns/${id}/sendNow`)
       log.info({ campaignId: id }, 'campaign send triggered')
