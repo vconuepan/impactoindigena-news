@@ -1,6 +1,8 @@
 {
   "brand": {
-    "descriptor": "Indigenous news from around the world, selected by AI"
+    "descriptor": "Indigenous news from around the world, selected by AI",
+    "claim": "News that matters to Indigenous peoples.",
+    "claimSupport": "Curated with care by AI."
   },
   "nav": {
     "skipToContent": "Skip to content",
@@ -15,8 +17,7 @@
     "mobileNav": "Mobile navigation",
     "searchPlaceholder": "Search stories...",
     "searchHint": "Semantic search, not just keywords.",
-    "searchLabel": "Search stories",
-    "support": "Support us"
+    "searchLabel": "Search stories"
   },
   "verticals": {
     "label": "Geographic navigation",
@@ -69,7 +70,6 @@
     "vocesAria": "Indigenous Voices, weekly editorial",
     "contact": "Contact",
     "rssFeed": "RSS Feed",
-    "support": "Support us",
     "imprint": "Imprint",
     "privacy": "Privacy",
     "terms": "Terms & conditions",
@@ -208,11 +208,7 @@
     "error": "Something went wrong. Please try again."
   },
   "support": {
-    "eyebrow": "Independent indigenous news outlet",
-    "heading": "Building bridges between indigenous peoples and society.",
-    "message": "Free. Independent. Ad-free.\nA program of Fundación KM.",
-    "button": "Support us on Ko-fi",
-    "opensInNewTab": "(opens in new tab)"
+    "message": "Free. Independent. Ad-free.\nA program of Fundación KM."
   },
   "mission": {
     "eyebrow": "Our mission",
@@ -268,5 +264,13 @@
   },
   "story": {
     "olderStory": "Older story"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous",
+    "next": "Next",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "page": "Page {{page}}"
   }
 }

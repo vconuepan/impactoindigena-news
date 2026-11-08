@@ -45,3 +45,33 @@ export function CommonOgTags({
     ...(description ? [<meta key="twitter:description" name="twitter:description" content={description.slice(0, 200)} />] : []),
   ]
 }
+
+/**
+ * El juego completo de una página fija: título y descripción para las
+ * tarjetas, `og:url` y canónica a la ruta, y las etiquetas comunes.
+ *
+ * Desde el 8-nov-2026 `index.html` no trae etiquetas sociales fijas (llevaban
+ * a «/» y ganaban por ir primero; ver el comentario allí). Una página que no
+ * pone las suyas sale sin tarjeta propia, y `etiquetas-sociales.test.ts` falla.
+ * Se llama dentro de `<Helmet>` como `CommonOgTags`: Helmet solo lee sus hijos
+ * directos, así que esto devuelve un arreglo y no un componente.
+ */
+export function etiquetasDePagina({
+  titulo,
+  descripcion,
+  ruta,
+}: {
+  titulo: string
+  descripcion: string
+  ruta: string
+}): ReactNode {
+  const url = `${SEO.siteUrl}${ruta}`
+  return [
+    <meta key="og:title" property="og:title" content={titulo} />,
+    <meta key="og:description" property="og:description" content={descripcion} />,
+    <meta key="og:type" property="og:type" content="website" />,
+    <meta key="og:url" property="og:url" content={url} />,
+    <link key="canonical" rel="canonical" href={url} />,
+    ...(CommonOgTags({ title: titulo, description: descripcion }) as ReactNode[]),
+  ]
+}

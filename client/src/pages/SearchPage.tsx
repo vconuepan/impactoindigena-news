@@ -62,7 +62,9 @@ export default function SearchPage() {
         <title>{q ? t('search.title', { q }) : t('search.label')} - {SEO.siteName}</title>
         <meta name="description" content={q ? t('search.pageTitle', { q }) : t('search.defaultTitle')} />
         <meta property="og:title" content={q ? `${t('search.title', { q })} - ${SEO.siteName}` : `${t('search.label')} - ${SEO.siteName}`} />
+        <meta property="og:description" content={q ? t('search.pageTitle', { q }) : t('search.defaultTitle')} />
         <meta property="og:type" content="website" />
+        <meta property="og:url" content={`${SEO.siteUrl}/search`} />
         <link rel="canonical" href={`${SEO.siteUrl}/search`} />
         <meta name="robots" content="noindex, follow" />
         {CommonOgTags({})}

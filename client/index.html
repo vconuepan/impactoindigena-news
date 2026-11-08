@@ -23,18 +23,14 @@
          (profile, search) override this with their own noindex robots meta. -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <title>Voces Indígenas - Noticias que importan a los pueblos indígenas</title>
-    <!-- Open Graph / Social sharing (fallback - overridden by Helmet on each page) -->
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Voces Indígenas" />
-    <meta property="og:title" content="Voces Indígenas - Noticias que importan a los pueblos indígenas" />
-    <meta property="og:description" content="Noticias sobre pueblos indígenas que transforman el mundo. Voces Indígenas usa inteligencia artificial para monitorear fuentes especializadas y presentar las noticias más relevantes para los pueblos indígenas del mundo." />
-    <meta property="og:url" content="https://vocesindigenas.org/" />
-    <meta property="og:image" content="https://vocesindigenas.org/images/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <!-- Sin Open Graph ni Twitter fijos: cada página pone los suyos con Helmet.
+         Medido el 8-nov-2026: con estos fijos, las 35 rutas prerenderizadas
+         llevaban DOS juegos (cinco, solo este), y el fijo iba primero, con el
+         título de la portada y og:url a «/». LinkedIn toma la primera
+         aparición (ver server/src/routes/og.ts), así que compartir cualquier
+         página mostraba la tarjeta de la portada. Lo fija
+         src/lib/etiquetas-sociales.test.ts. -->
     <meta property="article:author" content="Venancio Coñuepan Mesías" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://vocesindigenas.org/images/og-image.png" />
     <!-- Schema.org Organization -->
     <script type="application/ld+json">
     {

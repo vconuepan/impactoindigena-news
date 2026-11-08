@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useTranslation } from 'react-i18next'
-import { BRAND } from '../config'
 import { publicApi, ApiError } from '../lib/api'
 import { leerEnlaceConfirmacion } from '../lib/enlaceConfirmacion'
 
@@ -13,7 +12,9 @@ import { leerEnlaceConfirmacion } from '../lib/enlaceConfirmacion'
  * cambiaba de idioma a la mitad: `BRAND.claim` y `BRAND.claimSupport` estan en
  * español y la linea de en medio decia «Weekly to your inbox.». Es el ultimo
  * paso del embudo —el momento en que alguien acaba de decir que si— y es
- * tambien la primera pagina que ve como suscriptor.
+ * tambien la primera pagina que ve como suscriptor. El arreglo del 11-sep
+ * tradujo la linea del medio; las otras dos siguieron en español hasta el
+ * 8-nov-2026, cuando la frase de marca paso a `brand.claim` en las traducciones.
  *
  * LA CONFIRMACION ES UN BOTON, NO UN ENLACE (13-oct-2026). El enlace del correo
  * pasa por GET /api/subscribe/confirm, que NO confirma: redirige aca con el
@@ -186,9 +187,9 @@ export default function SubscribedPage() {
           {t('subscribed.successTitle')}
         </h1>
         <p className="text-neutral-600 mb-4 max-w-md mx-auto">
-          {BRAND.claim}<br className="sm:hidden" />
+          {t('brand.claim')}<br className="sm:hidden" />
           {t('subscribed.weekly')}<br />
-          {BRAND.claimSupport}
+          {t('brand.claimSupport')}
         </p>
         <p className="text-neutral-600 mb-8 max-w-md mx-auto">
           {t('subscribed.confirmed')}

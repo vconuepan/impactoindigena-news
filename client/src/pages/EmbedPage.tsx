@@ -91,7 +91,7 @@ export default function EmbedPage() {
                 )}
                 <span className={`text-[12px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                   {story.feed?.displayTitle || story.feed?.title}
-                  {story.datePublished && ` \u00b7 ${formatRelativeTime(story.datePublished)}`}
+                  {story.datePublished && ` \u00b7 ${formatRelativeTime(story.datePublished, undefined, 'en')}`}
                 </span>
               </Link>
             </li>

@@ -9,8 +9,9 @@ import { communityDotColor } from '../lib/category-colors'
 import { publicApi, memberAuth } from '../lib/api'
 import type { PublicStory } from '@shared/types'
 import { scrollBehavior } from '../lib/scroll'
-import NoIndex from '../components/NoIndex'
+import NoIndex, { TituloDeEstado } from '../components/NoIndex'
 import { esNoEncontrado } from '../lib/noEncontrado'
+import { recortarEnPalabra } from '@shared/utils/tituloMeta'
 
 const PAGE_SIZE = 20
 
@@ -435,6 +436,7 @@ export default function CommunityPage() {
     return (
       <div className="page-section text-center">
         {esNoEncontrado(communityErrorObj, community) && <NoIndex />}
+        <TituloDeEstado texto="Comunidad no encontrada" />
         <h1 className="page-title">Comunidad no encontrada</h1>
         <p className="text-neutral-500 mb-6">Esta comunidad no existe o fue eliminada.</p>
         <Link to="/comunidades" className="text-brand-800 hover:text-brand-700 font-normal focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1">
@@ -453,9 +455,9 @@ export default function CommunityPage() {
       {community && (
         <Helmet>
           <title>{ogTitle}</title>
-          <meta name="description" content={ogDesc.slice(0, 160)} />
+          <meta name="description" content={recortarEnPalabra(ogDesc, 160)} />
           <meta property="og:title" content={ogTitle} />
-          <meta property="og:description" content={ogDesc.slice(0, 200)} />
+          <meta property="og:description" content={recortarEnPalabra(ogDesc, 200)} />
           <meta property="og:type" content="website" />
           <meta property="og:url" content={`${SEO.siteUrl}/comunidad/${slug}`} />
           <link rel="canonical" href={`${SEO.siteUrl}/comunidad/${slug}`} />

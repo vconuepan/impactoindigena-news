@@ -2,8 +2,9 @@ import { useParams, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import { useBrandStory } from '../hooks/useCommunities'
 import { SEO, CommonOgTags } from '../lib/seo'
-import NoIndex from '../components/NoIndex'
+import NoIndex, { TituloDeEstado } from '../components/NoIndex'
 import { esNoEncontrado } from '../lib/noEncontrado'
+import { recortarEnPalabra } from '@shared/utils/tituloMeta'
 
 /**
  * Ficha de una nota que entró a una vertical por la marca (D5, entrega 2).
@@ -28,6 +29,7 @@ export default function BrandStoryPage() {
     return (
       <div className="page-section text-center">
         {esNoEncontrado(error, nota) && <NoIndex />}
+        <TituloDeEstado texto="Nota no encontrada" />
         <h1 className="text-2xl font-bold mb-2">Nota no encontrada</h1>
         <p className="text-neutral-500 mb-6">Esta nota ya no está disponible en la vertical.</p>
         <Link to={`/comunidad/${slug}`} className="text-brand-800 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1">
@@ -45,9 +47,9 @@ export default function BrandStoryPage() {
     <>
       <Helmet>
         <title>{`${titulo} — ${nota.community.name}`}</title>
-        <meta name="description" content={(nota.summary ?? '').slice(0, 160)} />
+        <meta name="description" content={recortarEnPalabra(nota.summary ?? '', 160)} />
         <meta property="og:title" content={titulo} />
-        <meta property="og:description" content={(nota.summary ?? '').slice(0, 200)} />
+        <meta property="og:description" content={recortarEnPalabra(nota.summary ?? '', 200)} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={url} />
         <link rel="canonical" href={url} />

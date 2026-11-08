@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Helmet } from "react-helmet-async";
+import { SEO, etiquetasDePagina } from "../lib/seo";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { publicApi } from "../lib/api";
@@ -14,6 +15,8 @@ function BookmarkEmptyIcon() {
     </svg>
   )
 }
+
+const DESCRIPCION = "Tus noticias guardadas en Voces Indígenas.";
 
 export default function SavedPage() {
   const [savedSlugs, setSavedSlugs] = useState<string[]>([]);
@@ -56,11 +59,9 @@ export default function SavedPage() {
   return (
     <>
       <Helmet>
-        <title>Guardados - Voces Indígenas</title>
-        <meta
-          name="description"
-          content="Tus noticias guardadas en Voces Indígenas."
-        />
+        <title>{`Guardados - ${SEO.siteName}`}</title>
+        <meta name="description" content={DESCRIPCION} />
+        {etiquetasDePagina({ titulo: `Guardados - ${SEO.siteName}`, descripcion: DESCRIPCION, ruta: '/saved' })}
       </Helmet>
       <div className="page-section-wide">
         <header className="mb-8 border-b border-neutral-100 pb-6">

@@ -36,4 +36,21 @@ i18n
     },
   })
 
+/**
+ * `<html lang>` sigue al idioma de la interfaz.
+ *
+ * `index.html` lo trae fijo en «es», que es lo correcto para lo que se hornea
+ * (el prerender corre sin `ii_lng`, en español). Pero quien elige inglés en el
+ * selector seguía con `lang="es"` (medido el 12-oct-2026): el lector de
+ * pantalla pronunciaba el inglés con reglas del español, y el traductor del
+ * navegador ofrecía traducir del español una página ya en inglés.
+ */
+export function fijarIdiomaDelDocumento(idioma: string | undefined): void {
+  if (typeof document === 'undefined') return
+  document.documentElement.lang = idioma?.startsWith('en') ? 'en' : 'es'
+}
+
+i18n.on('languageChanged', fijarIdiomaDelDocumento)
+fijarIdiomaDelDocumento(i18n.resolvedLanguage)
+
 export default i18n

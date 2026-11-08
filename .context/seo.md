@@ -136,7 +136,23 @@ The fallback HTML still carries the homepage's `canonical` and content for non-J
 
 `client/index.html` no longer carries a fixed `<meta name="description">`. With it, all 37 prerendered routes had **two** descriptions (the fixed one first), and Google usually takes the first: the same text on the whole site. Every prerendered route sets its own with Helmet, measured on all 37. Story pages are unaffected: `og.ts` strips every description from the shell and injects the story's.
 
-**Still open:** the fixed `og:title`, `og:description`, `og:image` and `og:url` in `index.html` are duplicated the same way on 30 to 32 of the 37 routes, but five routes set none of their own (`/alertas`, `/archivo`, `/casos`, `/fuentes`, `/saved`) and depend on the fixed ones. Removing them needs those five to set their own first.
+## One social card per page (8-nov-2026)
+
+`client/index.html` no longer carries fixed Open Graph or Twitter tags either. Measured live on 8-nov: 30 of the 35 static prerendered routes (plus every topic and community page) had **two** sets, the fixed one first, with the homepage title and `og:url` pointing to `/`; LinkedIn takes the first occurrence. The other five (`/alertas`, `/archivo`, `/casos`, `/fuentes`, `/saved`) set none and showed only the homepage card. Sharing almost any page showed the homepage.
+
+- Every page sets its own: `etiquetasDePagina({ titulo, descripcion, ruta })` from `lib/seo.tsx` inside `<Helmet>` gives og:title, og:description, og:type, og:url, canonical and the common image/Twitter tags. Older pages write the tags by hand plus `CommonOgTags`.
+- `client/src/lib/etiquetas-sociales.test.ts` fails if `index.html` brings any of them back, or if a route in `routes.ts` has a page without its own og:title, og:description, og:url and image. It reads the source; the prerender only runs in the build.
+- Routes that are not prerendered get the fallback (the prerendered homepage), so a crawler that does not run JavaScript sees the homepage card there, as before.
+
+## Story title and description outside the page (8-nov-2026)
+
+The headline label is lowercase (23 of 25 published stories on 8-nov: «artesanía indígena») because on the page it is a small-caps kicker. Prefixed to the headline it opened the tab title and the social card in lowercase, and the description was cut at exactly 200 characters, mid-word. `tituloConEtiqueta` and `recortarEnPalabra` (`server/src/lib/tituloMeta.ts`, twin of `shared/utils/tituloMeta.ts`; a server test fails if the two diverge) capitalize the label and cut on a word with «…»: 160 characters for the meta description, 200 for the cards. Used by both `og.ts` routes and by `StoryPage`. The label stays in the title on purpose: the plan that split it from the headline kept the full title in the metadata.
+
+The bot-only route (`/og/stories/:slug`) also stripped only title and og/twitter tags from the shell, so a bot got the story with the homepage description and `canonical` to `/` (measured live). It now strips and injects description and canonical like `/story-html`.
+
+## Not-found states have their own title (8-nov-2026)
+
+`TituloDeEstado` (`components/NoIndex.tsx`) sets the tab title of a «not found» or «service unavailable» state to the same text as its heading. Before, those states kept the homepage title from the prerendered HTML.
 
 ## Google News sitemap (`sitemap-news.xml`)
 

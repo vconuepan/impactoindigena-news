@@ -17,8 +17,9 @@ import DailySnippet from '../components/DailySnippet'
 import { positivityToEmotionTags } from '../lib/mix-stories'
 import type { PublicStory } from '@shared/types'
 import { scrollBehavior } from '../lib/scroll'
-import NoIndex from '../components/NoIndex'
+import NoIndex, { TituloDeEstado } from '../components/NoIndex'
 import { esNoEncontrado } from '../lib/noEncontrado'
+import { recortarEnPalabra } from '@shared/utils/tituloMeta'
 
 // ---------------------------------------------------------------------------
 // Story group with a specific layout variant
@@ -151,6 +152,7 @@ export default function IssuePage() {
     return (
       <div className="page-section text-center">
         {esNoEncontrado(error, issue) && <NoIndex />}
+        <TituloDeEstado texto={t('issuePage.notFound')} />
         <h1 className="page-title">{t('issuePage.notFound')}</h1>
         <p className="text-neutral-500 mb-6">{t('issuePage.notFoundDesc')}</p>
         <Link
@@ -184,9 +186,9 @@ export default function IssuePage() {
     <>
       <Helmet>
         <title>{issue.name} - {SEO.siteName}</title>
-        <meta name="description" content={(issue.intro || issue.description).slice(0, 160)} />
+        <meta name="description" content={recortarEnPalabra(issue.intro || issue.description, 160)} />
         <meta property="og:title" content={`${issue.name} - ${SEO.siteName}`} />
-        <meta property="og:description" content={(issue.intro || issue.description).slice(0, 200)} />
+        <meta property="og:description" content={recortarEnPalabra(issue.intro || issue.description, 200)} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/issues/${slug}`} />
         <link rel="canonical" href={`${SEO.siteUrl}/issues/${slug}`} />

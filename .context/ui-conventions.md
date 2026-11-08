@@ -10,6 +10,10 @@ Each page should:
 - [ ] Have unique, descriptive title
 - [ ] Have unique meta description (150-160 chars)
 - [ ] Be listed in `client/src/routes.ts` for prerendering
+- [ ] Set its own social card: `etiquetasDePagina({ titulo, descripcion, ruta })` inside `<Helmet>` (og:title, og:description, og:url, canonical, image). `index.html` carries none; `lib/etiquetas-sociales.test.ts` checks every prerendered route
+- [ ] A «not found» state renders `<TituloDeEstado texto={…} />`, and `<NoIndex />` only when `esNoEncontrado()` says so (see `.context/seo.md`)
+- [ ] Visible text goes through `t()`, including pagination and the brand claim (`brand.claim`); `BRAND.claim` in `config.ts` is only for the Spanish meta description
+- [ ] Admin dates use the formatters in `lib/constants.ts` (es-CL), not `toLocaleDateString('en-US')`
 - [ ] No hardcoded counts (source count, story count, language count) -- use `useSources()` hook or omit. These values change as feeds are added/removed.
 
 ## CSS Utility Classes

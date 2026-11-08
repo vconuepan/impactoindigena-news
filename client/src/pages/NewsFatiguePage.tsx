@@ -150,6 +150,7 @@ export default function NewsFatiguePage() {
         <meta property="og:description" content={META.description} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={META.url} />
+        <link rel="canonical" href={META.url} />
         {CommonOgTags({})}
       </Helmet>
       <StructuredData data={[pageSchema, breadcrumb]} />

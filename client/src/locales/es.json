@@ -1,6 +1,8 @@
 {
   "brand": {
-    "descriptor": "Noticias indígenas del mundo, seleccionadas por IA"
+    "descriptor": "Noticias indígenas del mundo, seleccionadas por IA",
+    "claim": "Noticias que importan a los pueblos indígenas.",
+    "claimSupport": "Curado con cuidado por IA."
   },
   "nav": {
     "skipToContent": "Ir al contenido",
@@ -15,8 +17,7 @@
     "mobileNav": "Navegación móvil",
     "searchPlaceholder": "Buscar noticias...",
     "searchHint": "Búsqueda por significado, no solo por palabras clave.",
-    "searchLabel": "Buscar noticias",
-    "support": "Apóyanos"
+    "searchLabel": "Buscar noticias"
   },
   "verticals": {
     "label": "Navegación geográfica",
@@ -69,7 +70,6 @@
     "vocesAria": "Voces Indígenas, editorial semanal",
     "contact": "Contacto",
     "rssFeed": "RSS Feed",
-    "support": "Apóyanos",
     "imprint": "Aviso legal",
     "privacy": "Privacidad",
     "terms": "Términos y condiciones",
@@ -208,11 +208,7 @@
     "error": "Algo salió mal. Intenta de nuevo."
   },
   "support": {
-    "eyebrow": "Medio indígena independiente",
-    "heading": "Tendemos puentes entre el mundo indígena y la sociedad.",
-    "message": "Gratuito. Independiente. Sin publicidad.\nUn programa de la Fundación KM.",
-    "button": "Apóyanos en Ko-fi",
-    "opensInNewTab": "(abre en nueva pestaña)"
+    "message": "Gratuito. Independiente. Sin publicidad.\nUn programa de la Fundación KM."
   },
   "mission": {
     "eyebrow": "Nuestra misión",
@@ -268,5 +264,13 @@
   },
   "story": {
     "olderStory": "Noticia antigua"
+  },
+  "pagination": {
+    "label": "Paginación",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "previousPage": "Página anterior",
+    "nextPage": "Página siguiente",
+    "page": "Página {{page}}"
   }
 }

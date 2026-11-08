@@ -2,6 +2,7 @@
  * /casos — list of ongoing editorial cases
  */
 import { Helmet } from 'react-helmet-async'
+import { SEO, etiquetasDePagina } from '../lib/seo'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { publicApi } from '../lib/api'
@@ -70,6 +71,9 @@ function SkeletonCard() {
   )
 }
 
+const DESCRIPCION =
+  'Seguimiento editorial de conflictos y situaciones de largo aliento que afectan a pueblos indígenas: litio, Wallmapu, consulta previa y más.'
+
 export default function CasesPage() {
   const { data, isLoading, isError } = useQuery<CaseListItem[]>({
     queryKey: ['cases'],
@@ -80,11 +84,9 @@ export default function CasesPage() {
   return (
     <>
       <Helmet>
-        <title>Casos en curso — Voces Indígenas</title>
-        <meta
-          name="description"
-          content="Seguimiento editorial de conflictos y situaciones de largo aliento que afectan a pueblos indígenas: litio, Wallmapu, consulta previa y más."
-        />
+        <title>{`Casos en curso — ${SEO.siteName}`}</title>
+        <meta name="description" content={DESCRIPCION} />
+        {etiquetasDePagina({ titulo: `Casos en curso — ${SEO.siteName}`, descripcion: DESCRIPCION, ruta: '/casos' })}
       </Helmet>
 
       <div className="max-w-5xl mx-auto px-4 py-12">

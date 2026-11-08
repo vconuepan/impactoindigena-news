@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async'
+import { SEO } from '../lib/seo'
 
 /**
  * Le pide a Google que no indexe la página. Para los estados «no encontrado».
@@ -16,6 +17,21 @@ export default function NoIndex() {
   return (
     <Helmet>
       <meta name="robots" content="noindex" />
+    </Helmet>
+  )
+}
+
+/**
+ * El título de pestaña de un estado sin página: «no encontrado» o «servicio no
+ * disponible». Sin esto, esos estados conservaban el título de la portada que
+ * trae el HTML prerenderizado (medido el 2-nov-2026 en tema, comunidad y
+ * noticia), y la pestaña y el historial decían «Voces Indígenas - Noticias que
+ * importan…» sobre una página de error. Va con el mismo texto del encabezado.
+ */
+export function TituloDeEstado({ texto }: { texto: string }) {
+  return (
+    <Helmet>
+      <title>{`${texto} - ${SEO.siteName}`}</title>
     </Helmet>
   )
 }

@@ -295,6 +295,73 @@ describe('vaciarRoot — el cuerpo de la portada no viaja en la ficha', () => {
     expect(body).not.toContain('fetchpriority="high"')
     expect(body).toContain('<div id="root"></div>')
     expect(res.text).toContain('src="/assets/index-abc123.js"')
-    expect(res.text).toContain('<title>news: A Real Story - Voces Indígenas</title>')
+    expect(res.text).toContain('<title>News: A Real Story - Voces Indígenas</title>')
   })
+})
+
+// Medido en vivo el 8-nov-2026: la etiqueta del titular viene en minúscula
+// («artesanía indígena») y abría el título de pestaña y de tarjeta; la
+// descripción se cortaba a mitad de palabra («…estas trad»). Y la ruta para
+// bots (/stories/:slug) dejaba la descripción y la canónica de la portada.
+describe('el título y la descripción de una noticia fuera de su página', () => {
+  const RESUMEN =
+    'El Ministerio de las Culturas celebró el Día Nacional de la Artesanía con actividades que incluyeron artesanas y comunidades indígenas, resaltando la nueva Ley 21.788 que protege y promueve estas tradiciones.'
+  const nota = {
+    ...published,
+    slug: 'ley-21-788',
+    title: 'Ley 21.788 impulsa reconocimiento de artesanía indígena en Chile',
+    titleLabel: 'artesanía indígena',
+    summary: RESUMEN,
+  }
+  // Como el shell real: la portada prerenderizada trae su descripción y su
+  // canónica escritas por Helmet.
+  const SHELL_CON_META = '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
+    '<meta name="description" content="Noticias que importan a los pueblos indígenas." data-rh="true">' +
+    '<link rel="canonical" href="https://vocesindigenas.org/" data-rh="true">' +
+    '<script type="module" src="/assets/index-abc123.js"></script></head>' +
+    '<body><div id="root"></div></body></html>'
+
+  async function appFresco() {
+    vi.resetModules()
+    const { default: router } = await import('./og.js')
+    const a = express()
+    a.use('/api/og', router)
+    return a
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma.story.findUnique.mockResolvedValue(nota)
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, text: async () => SHELL_CON_META })) as any)
+  })
+
+  const contar = (html: string, patron: RegExp) => (html.match(patron) ?? []).length
+
+  for (const [ruta, pedir] of [
+    ['/story-html (lectores y la mayoría de los bots)', (a: express.Express) => request(a).get('/api/og/story-html?slug=ley-21-788')],
+    ['/stories/:slug (bots)', (a: express.Express) => request(a).get('/api/og/stories/ley-21-788').set('User-Agent', 'LinkedInBot/1.0')],
+  ] as const) {
+    describe(ruta, () => {
+      it('el título abre con la etiqueta en mayúscula', async () => {
+        const res = await pedir(await appFresco())
+        expect(res.text).toContain('<title>Artesanía indígena: Ley 21.788 impulsa reconocimiento de artesanía indígena en Chile - Voces Indígenas</title>')
+        expect(res.text).toContain('property="og:title" content="Artesanía indígena: Ley 21.788')
+        expect(res.text).not.toContain('content="artesanía indígena:')
+      })
+
+      it('la descripción no se corta a mitad de palabra', async () => {
+        const res = await pedir(await appFresco())
+        expect(res.text).not.toMatch(/estas trad"/)
+        expect(res.text).toMatch(/property="og:description" content="[^"]*estas…"/)
+      })
+
+      it('una sola descripción y una sola canónica, las de la noticia', async () => {
+        const res = await pedir(await appFresco())
+        expect(contar(res.text, /<meta[^>]+name="description"/g)).toBe(1)
+        expect(contar(res.text, /<link[^>]+rel="canonical"/g)).toBe(1)
+        expect(res.text).toContain('<link rel="canonical" href="https://vocesindigenas.org/stories/ley-21-788"')
+        expect(res.text).not.toContain('Noticias que importan a los pueblos indígenas.')
+      })
+    })
+  }
 })

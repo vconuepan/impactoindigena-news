@@ -2,6 +2,7 @@
  * /archivo — public archive of published weekly newsletters
  */
 import { Helmet } from 'react-helmet-async'
+import { SEO, etiquetasDePagina } from '../lib/seo'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { publicApi } from '../lib/api'
@@ -58,6 +59,9 @@ function SkeletonRow() {
   )
 }
 
+const DESCRIPCION =
+  'Todos los boletines semanales de Voces Indígenas. Noticias sobre pueblos indígenas, territorios y derechos.'
+
 export default function NewsletterArchivePage() {
   const { data, isLoading, isError } = useQuery<NewsletterListItem[]>({
     queryKey: ['newsletter-archive'],
@@ -68,11 +72,9 @@ export default function NewsletterArchivePage() {
   return (
     <>
       <Helmet>
-        <title>Archivo de boletines — Voces Indígenas</title>
-        <meta
-          name="description"
-          content="Todos los boletines semanales de Voces Indígenas. Noticias sobre pueblos indígenas, territorios y derechos."
-        />
+        <title>{`Archivo de boletines — ${SEO.siteName}`}</title>
+        <meta name="description" content={DESCRIPCION} />
+        {etiquetasDePagina({ titulo: `Archivo de boletines — ${SEO.siteName}`, descripcion: DESCRIPCION, ruta: '/archivo' })}
       </Helmet>
 
       <div className="max-w-2xl mx-auto px-4 py-12">

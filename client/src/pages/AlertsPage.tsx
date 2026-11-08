@@ -3,6 +3,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
+import { SEO, etiquetasDePagina } from '../lib/seo'
 import { useSearchParams, Link } from 'react-router-dom'
 import { publicApi, ApiError } from '../lib/api'
 import { leerEnlaceConfirmacion } from '../lib/enlaceConfirmacion'
@@ -36,6 +37,9 @@ const TEXTO_ALTA = 'Recibirás un correo al día cuando haya noticias nuevas sob
  * cuatro son finales.
  */
 type Confirmacion = 'idle' | 'enviando' | 'confirmed' | 'changed' | 'expired' | 'invalid' | 'error'
+
+const DESCRIPCION =
+  'Suscríbete a alertas diarias sobre pueblos o temas específicos: Mapuche, litio, Amazonia, consulta previa y más.'
 
 export default function AlertsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -146,11 +150,9 @@ export default function AlertsPage() {
   return (
     <>
       <Helmet>
-        <title>Alertas de territorio — Voces Indígenas</title>
-        <meta
-          name="description"
-          content="Suscríbete a alertas diarias sobre pueblos o temas específicos: Mapuche, litio, Amazonia, consulta previa y más."
-        />
+        <title>{`Alertas de territorio — ${SEO.siteName}`}</title>
+        <meta name="description" content={DESCRIPCION} />
+        {etiquetasDePagina({ titulo: `Alertas de territorio — ${SEO.siteName}`, descripcion: DESCRIPCION, ruta: '/alertas' })}
         {enlace.estado !== 'ausente' && <meta name="robots" content="noindex" />}
       </Helmet>
 

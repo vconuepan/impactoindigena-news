@@ -2,6 +2,7 @@ import { Router } from 'express'
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { srcsetDeUrl } from '../lib/imagen-variantes.js'
+import { tituloConEtiqueta, recortarEnPalabra } from '../lib/tituloMeta.js'
 
 const router = Router()
 const log = createLogger('og-proxy')
@@ -259,10 +260,13 @@ router.get('/story-html', async (req, res) => {
       return
     }
 
-    const title = escapeHtml(story.title || story.slug || '')
-    const titleLabel = story.titleLabel ? escapeHtml(story.titleLabel) : null
-    const fullTitle = titleLabel ? `${titleLabel}: ${title}` : title
-    const description = escapeHtml(story.summary?.slice(0, 200) || fullTitle)
+    // Etiqueta en mayúscula inicial y descripción cortada en palabra: ver
+    // lib/tituloMeta.ts. 160 caracteres para el buscador, 200 para las tarjetas.
+    const tituloPlano = tituloConEtiqueta(story.titleLabel, story.title || story.slug || '')
+    const fullTitle = escapeHtml(tituloPlano)
+    const resumen = story.summary?.trim() || tituloPlano
+    const description = escapeHtml(recortarEnPalabra(resumen, 200))
+    const metaDescription = escapeHtml(recortarEnPalabra(resumen, 160))
     const image = escapeAttrUrl(story.imageUrl || FALLBACK_IMAGE)
     const storyUrl = `${SITE_URL}/stories/${story.slug}`
 
@@ -270,7 +274,7 @@ router.get('/story-html', async (req, res) => {
       '@context': 'https://schema.org',
       '@type': 'NewsArticle',
       headline: story.title || story.slug,
-      description: story.summary?.slice(0, 200) || undefined,
+      description: story.summary ? recortarEnPalabra(story.summary, 200) : undefined,
       image: story.imageUrl ? [story.imageUrl] : undefined,
       datePublished: story.datePublished?.toISOString(),
       mainEntityOfPage: storyUrl,
@@ -283,7 +287,7 @@ router.get('/story-html', async (req, res) => {
 
     const headTags = `
   <title>${fullTitle} - Voces Indígenas</title>
-  <meta name="description" content="${description}" />
+  <meta name="description" content="${metaDescription}" />
   <link rel="canonical" href="${storyUrl}" />
   <meta property="og:title" content="${fullTitle}" />
   <meta property="og:description" content="${description}" />
@@ -350,10 +354,12 @@ router.get('/stories/:slug', async (req, res) => {
       return
     }
 
-    const title = escapeHtml(story.title || story.slug || '')
-    const titleLabel = story.titleLabel ? escapeHtml(story.titleLabel) : null
-    const fullTitle = titleLabel ? `${titleLabel}: ${title}` : title
-    const description = escapeHtml(story.summary?.slice(0, 200) || fullTitle)
+    // Etiqueta en mayúscula inicial y descripción cortada en palabra: ver
+    // lib/tituloMeta.ts.
+    const tituloPlano = tituloConEtiqueta(story.titleLabel, story.title || story.slug || '')
+    const fullTitle = escapeHtml(tituloPlano)
+    const description = escapeHtml(recortarEnPalabra(story.summary?.trim() || tituloPlano, 200))
+    const metaDescription = escapeHtml(recortarEnPalabra(story.summary?.trim() || tituloPlano, 160))
     const image = escapeAttrUrl(story.imageUrl || FALLBACK_IMAGE)
     const url = storyUrl
 
@@ -370,6 +376,8 @@ router.get('/stories/:slug', async (req, res) => {
       // Inject story OG tags right after <head> — LinkedIn uses first occurrence
       const ogTags = `
   <title>${fullTitle} - Voces Indígenas</title>
+  <meta name="description" content="${metaDescription}" />
+  <link rel="canonical" href="${url}" />
   <meta property="og:title" content="${fullTitle}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${image}" />
@@ -384,9 +392,14 @@ router.get('/stories/:slug', async (req, res) => {
       // Strip pre-existing title and OG/twitter tags from the shell so we don't
       // end up with two sets of meta tags. LinkedIn (and other parsers) get confused
       // by duplicate og:image tags even when the correct one appears first.
+      // También la descripción y la canónica: hasta el 8-nov-2026 esta ruta
+      // las dejaba, y un bot recibía la noticia con la descripción de la
+      // portada y `canonical` a «/» (medido en vivo). /story-html ya las quitaba.
       const cleanShell = vaciarRoot(quitarPreloadsDePortada(shell))
         .replace(/<title>[^<]*<\/title>/gi, '')
         .replace(/<meta[^>]+(property=["']og:[^"']*["']|name=["']twitter:[^"']*["'])[^>]*\/?>/gi, '')
+        .replace(/<meta[^>]+name=["']description["'][^>]*\/?>/gi, '')
+        .replace(/<link[^>]+rel=["']canonical["'][^>]*\/?>/gi, '')
 
       // Inject story OG tags right after <head>; the prerendered root is already
       // empty (avoids React hydration mismatch when shell was prerendered as homepage)

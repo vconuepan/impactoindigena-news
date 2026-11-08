@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import i18n from '../i18n'
 import { publicApi } from '../lib/api'
-import { BRAND } from '../config'
 
 interface SubscribeFormProps {
   onSuccess?: () => void
@@ -86,7 +85,7 @@ export default function SubscribeForm({
             {t('subscribe.heading')}
           </h2>
           <p className="text-neutral-500 text-sm">
-            {BRAND.claim} {BRAND.claimSupport}
+            {t('brand.claim')} {t('brand.claimSupport')}
           </p>
         </div>
       )}

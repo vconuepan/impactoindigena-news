@@ -88,6 +88,25 @@ describe('SubscribedPage', () => {
     expect(screen.queryByText(/Weekly to your inbox/)).not.toBeInTheDocument()
   })
 
+  it('en ingles, la frase de marca tambien va en ingles', async () => {
+    // Hasta el 8-nov-2026 `BRAND.claim` y `BRAND.claimSupport` se pintaban
+    // fijos, en español, a los dos lados de la linea traducida.
+    vi.resetModules()
+    renderCon(en as Record<string, unknown>)
+    const { default: Pagina } = await import('./SubscribedPage')
+
+    render(
+      <HelmetProvider>
+        <MemoryRouter initialEntries={['/subscribed']}>
+          <Pagina />
+        </MemoryRouter>
+      </HelmetProvider>,
+    )
+
+    expect(screen.getByText(new RegExp((en as any).brand.claim))).toBeInTheDocument()
+    expect(screen.queryByText(/Noticias que importan|Curado con cuidado/)).not.toBeInTheDocument()
+  })
+
   it('muestra el aviso de enlace expirado, no la bienvenida', async () => {
     vi.resetModules()
     renderCon(es as Record<string, unknown>)

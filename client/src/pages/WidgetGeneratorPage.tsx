@@ -64,6 +64,7 @@ export default function WidgetGeneratorPage() {
         <meta property="og:description" content="Add AI-curated relevant news to your website with embeddable widgets. Easy to set up, customizable, and always up to date." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/widgets`} />
+        <link rel="canonical" href={`${SEO.siteUrl}/widgets`} />
         {CommonOgTags({})}
       </Helmet>
 

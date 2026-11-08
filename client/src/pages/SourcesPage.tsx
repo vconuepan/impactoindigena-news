@@ -9,6 +9,7 @@
  * appear at the bottom.
  */
 import { Helmet } from 'react-helmet-async'
+import { etiquetasDePagina } from '../lib/seo'
 import { useQuery } from '@tanstack/react-query'
 import { publicApi, type SourceProfile } from '../lib/api'
 import { getCategoryColor } from '../lib/category-colors'
@@ -130,6 +131,9 @@ export default function SourcesPage() {
 
   const title = lang === 'es' ? 'Nuestras fuentes — Voces Indígenas' : 'Our sources — Voces Indígenas'
   const heading = lang === 'es' ? 'Nuestras fuentes' : 'Our sources'
+  const descripcion = lang === 'es'
+    ? 'Conoce los medios y organismos que Voces Indígenas monitorea: relevancia editorial, cobertura temática y actividad reciente.'
+    : 'Explore the media outlets and organizations monitored by Voces Indígenas: editorial relevance, thematic coverage, and recent activity.'
   const subtitle = lang === 'es'
     ? 'Indexamos medios especializados y organismos internacionales que cubren derechos, territorios y culturas indígenas. La relevancia promedio refleja qué tan frecuente y pertinentemente cubre cada fuente estos temas.'
     : 'We index specialized media and international bodies covering indigenous rights, territories, and cultures. The average relevance reflects how frequently and relevantly each source covers these topics.'
@@ -138,12 +142,8 @@ export default function SourcesPage() {
     <>
       <Helmet>
         <title>{title}</title>
-        <meta
-          name="description"
-          content={lang === 'es'
-            ? 'Conoce los medios y organismos que Voces Indígenas monitorea: relevancia editorial, cobertura temática y actividad reciente.'
-            : 'Explore the media outlets and organizations monitored by Voces Indígenas: editorial relevance, thematic coverage, and recent activity.'}
-        />
+        <meta name="description" content={descripcion} />
+        {etiquetasDePagina({ titulo: title, descripcion, ruta: '/fuentes' })}
       </Helmet>
 
       <div className="max-w-5xl mx-auto px-4 py-12">

@@ -7,6 +7,14 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 
+// La sección se llama como el sitio: el título va sin sufijo, la marca ya está.
+// Hasta el 8-nov-2026 la pestaña decía «Voces Indígenas con Venancio Coñuepan
+// — Voces Indígenas» y la tarjeta «Voces Indígenas — Voces Indígenas», sin
+// descripción propia.
+const TITULO = 'Voces Indígenas con Venancio Coñuepan'
+const DESCRIPCION =
+  'Editorial semanal de Venancio Coñuepan — mapuche, abogado de derechos territoriales, editor de Voces Indígenas. Análisis de la intersección entre pueblos indígenas, territorios y la transición energética global.'
+
 export default function VocesIndigenasPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['public-editorials'],
@@ -18,16 +26,14 @@ export default function VocesIndigenasPage() {
   return (
     <>
       <Helmet>
-        <title>Voces Indígenas con Venancio Coñuepan — {SEO.siteName}</title>
-        <meta
-          name="description"
-          content="Editorial semanal de Venancio Coñuepan — mapuche, abogado de derechos territoriales, editor de Voces Indígenas. Análisis de la intersección entre pueblos indígenas, territorios y la transición energética global."
-        />
-        <meta property="og:title" content={`Voces Indígenas — ${SEO.siteName}`} />
+        <title>{TITULO}</title>
+        <meta name="description" content={DESCRIPCION} />
+        <meta property="og:title" content={TITULO} />
+        <meta property="og:description" content={DESCRIPCION} />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/voces-indigenas`} />
         <link rel="canonical" href={`${SEO.siteUrl}/voces-indigenas`} />
-        {CommonOgTags({})}
+        {CommonOgTags({ title: TITULO, description: DESCRIPCION })}
       </Helmet>
       <StructuredData
         data={[

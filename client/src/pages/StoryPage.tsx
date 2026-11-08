@@ -25,8 +25,9 @@ import { SEO, CommonOgTags } from '../lib/seo'
 import { buildArticleSchema, buildBreadcrumbSchema } from '../lib/structured-data'
 import { ECOSYSTEM_AI_URL } from '../config'
 import { publisherFromUrl } from '@shared/utils/publisher'
-import NoIndex from '../components/NoIndex'
+import NoIndex, { TituloDeEstado } from '../components/NoIndex'
 import { esNoEncontrado } from '../lib/noEncontrado'
+import { tituloConEtiqueta, recortarEnPalabra } from '@shared/utils/tituloMeta'
 
 // ---------------------------------------------------------------------------
 // Guide links shown below related stories for specific issue areas
@@ -164,6 +165,7 @@ export default function StoryPage() {
     return (
       <div className="page-section text-center max-w-lg mx-auto">
         {is404 && <NoIndex />}
+        <TituloDeEstado texto={is404 ? t('storyPage.notFound') : t('storyPage.apiError')} />
         <h1 className="page-title">
           {is404 ? t('storyPage.notFound') : t('storyPage.apiError')}
         </h1>
@@ -197,7 +199,8 @@ export default function StoryPage() {
 
   const titleLabel = getTitleLabel(localizedStory)
   const headline = getHeadline(localizedStory)
-  const displayTitle = titleLabel ? `${titleLabel}: ${headline}` : headline
+  // Etiqueta en mayúscula inicial: ver shared/utils/tituloMeta.ts.
+  const displayTitle = tituloConEtiqueta(titleLabel, headline)
   const ageMonths = story.sourceDatePublished ? storyAgeMonths(story.sourceDatePublished) : 0
   const isOld = ageMonths >= 3
   // Show the original article date first; fall back to platform publication date
@@ -218,10 +221,10 @@ export default function StoryPage() {
     <>
       <Helmet>
         <title>{displayTitle} - {SEO.siteName}</title>
-        <meta name="description" content={description.slice(0, 160)} />
+        <meta name="description" content={recortarEnPalabra(description, 160)} />
         <meta name="author" content="Voces Indígenas" />
         <meta property="og:title" content={displayTitle} />
-        <meta property="og:description" content={description.slice(0, 200)} />
+        <meta property="og:description" content={recortarEnPalabra(description, 200)} />
         <meta property="og:type" content="article" />
         <meta property="og:url" content={`${SEO.siteUrl}/stories/${story.slug}`} />
         <link rel="canonical" href={`${SEO.siteUrl}/stories/${story.slug}`} />
@@ -229,7 +232,7 @@ export default function StoryPage() {
         {story.datePublished && (
           <meta property="article:published_time" content={story.datePublished} />
         )}
-        {CommonOgTags({ image: story.imageUrl || SEO.ogImage, title: displayTitle, description: description.slice(0, 200) })}
+        {CommonOgTags({ image: story.imageUrl || SEO.ogImage, title: displayTitle, description: recortarEnPalabra(description, 200) })}
         <script type="application/ld+json">
           {JSON.stringify(buildArticleSchema(story))}
         </script>

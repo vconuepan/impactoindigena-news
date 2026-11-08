@@ -85,13 +85,20 @@ export function formatStatus(status: string): string {
 
 const currentYear = new Date().getFullYear()
 
+/**
+ * Las fechas del panel van en español de Chile: «8 nov», no «Nov 8». El panel
+ * está en español (la cola dice «Noticias», «Sin noticias») y hasta el
+ * 8-nov-2026 sus fechas salían en inglés de EE. UU.
+ */
+const LOCALE_PANEL = 'es-CL'
+
 /** Date only, no time. Omits year if current year. */
 export function formatShortDate(dateStr: string | null, timeZone = 'America/Santiago'): string {
   if (!dateStr) return '—'
   const date = new Date(dateStr)
   const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', timeZone }
   if (date.getFullYear() !== currentYear) opts.year = 'numeric'
-  return date.toLocaleDateString('en-US', opts)
+  return date.toLocaleDateString(LOCALE_PANEL, opts)
 }
 
 /** Date with time. Omits year if current year. */
@@ -106,14 +113,14 @@ export function formatDateWithTime(dateStr: string | null, timeZone = 'America/S
     timeZone,
   }
   if (date.getFullYear() !== currentYear) opts.year = 'numeric'
-  return date.toLocaleDateString('en-US', opts)
+  return date.toLocaleDateString(LOCALE_PANEL, opts)
 }
 
 /** Full date with time and year. For edit views. */
 export function formatDate(dateStr: string | null, timeZone = 'America/Santiago'): string {
   if (!dateStr) return '—'
   const date = new Date(dateStr)
-  return date.toLocaleDateString('en-US', {
+  return date.toLocaleDateString(LOCALE_PANEL, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -123,16 +130,24 @@ export function formatDate(dateStr: string | null, timeZone = 'America/Santiago'
   })
 }
 
-/** Relative time string, e.g. "5m ago", "2h ago", "3d ago". */
-export function formatRelativeTime(dateStr: string | null, timeZone = 'America/Santiago'): string {
+/**
+ * Tiempo relativo: «hace 5 min», «hace 2 h», «hace 3 d». En inglés («5m ago»)
+ * solo para el widget embebible, que está entero en inglés.
+ */
+export function formatRelativeTime(
+  dateStr: string | null,
+  timeZone = 'America/Santiago',
+  idioma: 'es' | 'en' = 'es',
+): string {
   if (!dateStr) return '—'
+  const es = idioma === 'es'
   const diffMs = Date.now() - new Date(dateStr).getTime()
   const diffMin = Math.floor(diffMs / 60_000)
-  if (diffMin < 1) return 'just now'
-  if (diffMin < 60) return `${diffMin}m ago`
+  if (diffMin < 1) return es ? 'recién' : 'just now'
+  if (diffMin < 60) return es ? `hace ${diffMin} min` : `${diffMin}m ago`
   const diffHours = Math.floor(diffMin / 60)
-  if (diffHours < 24) return `${diffHours}h ago`
+  if (diffHours < 24) return es ? `hace ${diffHours} h` : `${diffHours}h ago`
   const diffDays = Math.floor(diffHours / 24)
-  if (diffDays < 30) return `${diffDays}d ago`
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone })
+  if (diffDays < 30) return es ? `hace ${diffDays} d` : `${diffDays}d ago`
+  return new Date(dateStr).toLocaleDateString(es ? LOCALE_PANEL : 'en-US', { month: 'short', day: 'numeric', timeZone })
 }
