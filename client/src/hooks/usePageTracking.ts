@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { estaPrerenderizando } from '../lib/prerender'
 
 /**
  * Classifies the acquisition source of a visit from its referrer. Pure and
@@ -48,6 +49,11 @@ export function usePageTracking() {
   useEffect(() => {
     // Don't track admin routes
     if (pathname.startsWith('/admin')) return
+    // Ni el horneado del build. No es una visita, y el servidor ya la descartaba
+    // por el User-Agent (HeadlessChrome), pero cada una gastaba cupo del
+    // limitador publico: 85 de las 204 consultas de un build eran estas, y desde
+    // la 101 las paginas salian en esqueleto (B23, 10-nov-2026).
+    if (estaPrerenderizando()) return
 
     let source = ''
     if (isFirstHit) {

@@ -243,6 +243,13 @@ export const config = {
     expensiveMax: parseInt(process.env.RATE_LIMIT_EXPENSIVE_MAX || "1000", 10),
     searchWindowMs: parseInt(process.env.RATE_LIMIT_SEARCH_WINDOW_MS || String(15 * 60 * 1000), 10),
     searchMax: parseInt(process.env.RATE_LIMIT_SEARCH_MAX || "20", 10),
+    // El build del frontend se salta `apiLimiter` si manda este secreto en el
+    // encabezado `x-prerender-token`. Vacio (el valor por defecto) = nadie se lo
+    // salta. Con menos de 32 caracteres tambien se ignora. Por que existe: un
+    // build hace mas de 100 consultas en dos minutos desde una sola IP, y desde
+    // la 101 el prerender horneaba paginas en esqueleto (B23, medido el
+    // 10-nov-2026). Ver lib/prerenderBypass.ts.
+    prerenderBypassToken: (process.env.PRERENDER_BYPASS_TOKEN || "").trim(),
   },
   proxy: {
     // Cuantas entradas desde la DERECHA de X-Forwarded-For hay que contar para

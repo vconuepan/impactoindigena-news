@@ -1,13 +1,48 @@
 import rateLimit from 'express-rate-limit'
+import type { Request } from 'express'
 import { config } from '../config.js'
+import { createLogger } from '../lib/logger.js'
+import { ENCABEZADO_PRERENDER, LARGO_MINIMO, esPrerenderAutorizado } from '../lib/prerenderBypass.js'
+
+const log = createLogger('rate-limit')
+
+if (config.rateLimit.prerenderBypassToken && config.rateLimit.prerenderBypassToken.length < LARGO_MINIMO) {
+  // Sin el valor: solo su largo, que es lo que hay que corregir.
+  log.warn(
+    { largo: config.rateLimit.prerenderBypassToken.length, minimo: LARGO_MINIMO },
+    'PRERENDER_BYPASS_TOKEN es demasiado corto: se ignora y el build sigue contando contra el limite',
+  )
+}
+
+/**
+ * ¿La peticion es del build del frontend, autorizada a saltarse `apiLimiter`?
+ * Lee la configuracion en cada llamada, no al cargar el modulo, para que las
+ * pruebas puedan cambiarla. Ver lib/prerenderBypass.ts.
+ *
+ * Solo lecturas (GET y HEAD): el build no escribe nada desde que el prerender
+ * dejo de mandar visitas. Asi, si el secreto se filtrara, tampoco serviria para
+ * saltarse el limite de las rutas publicas que escriben, como unirse y salir de
+ * una comunidad, que manda un correo por Brevo en cada vuelta (revision del
+ * 10-nov-2026).
+ */
+export function esDelBuildAutorizado(req: Request): boolean {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return false
+  return esPrerenderAutorizado(req.headers[ENCABEZADO_PRERENDER], config.rateLimit.prerenderBypassToken)
+}
 
 /**
  * General API rate limiter.
  * Applied to public endpoints to prevent abuse.
+ *
+ * El build del frontend se lo salta con su secreto (B23): sin eso, desde la
+ * consulta 101 el prerender horneaba paginas vacias. Una peticion saltada no
+ * suma al contador ni lleva los encabezados RateLimit-*, que es como el build
+ * comprueba que el salto funciono.
  */
 export const apiLimiter = rateLimit({
   windowMs: config.rateLimit.publicWindowMs,
   max: config.rateLimit.publicMax,
+  skip: (req) => esDelBuildAutorizado(req),
   standardHeaders: true,
   legacyHeaders: false,
   message: {

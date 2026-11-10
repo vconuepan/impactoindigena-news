@@ -1,5 +1,33 @@
-import { describe, it, expect } from 'vitest'
-import { classifyReferrer } from './usePageTracking'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { renderHook } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import { createElement, type ReactNode } from 'react'
+import { classifyReferrer, usePageTracking } from './usePageTracking'
+
+describe('usePageTracking y el horneado del build (B23)', () => {
+  const conRuta = ({ children }: { children: ReactNode }) =>
+    createElement(MemoryRouter, { initialEntries: ['/comunidad/aymara'] }, children)
+
+  afterEach(() => {
+    delete (window as unknown as { __PRERENDER_INJECTED?: unknown }).__PRERENDER_INJECTED
+    vi.unstubAllGlobals()
+  })
+
+  it('un lector manda su visita', () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}'))
+    vi.stubGlobal('fetch', fetchMock)
+    renderHook(() => usePageTracking(), { wrapper: conRuta })
+    expect(fetchMock).toHaveBeenCalledWith('/api/track', expect.objectContaining({ method: 'POST' }))
+  })
+
+  it('el prerender NO manda visita: no lo es, y gastaba el cupo del limitador', () => {
+    ;(window as unknown as { __PRERENDER_INJECTED?: unknown }).__PRERENDER_INJECTED = { prerender: true }
+    const fetchMock = vi.fn().mockResolvedValue(new Response('{}'))
+    vi.stubGlobal('fetch', fetchMock)
+    renderHook(() => usePageTracking(), { wrapper: conRuta })
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
 
 const HOST = 'vocesindigenas.org'
 

@@ -236,7 +236,10 @@ export const logger = pino(
     level: process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug'),
     timestamp: pino.stdTimeFunctions.isoTime,
     redact: {
-      paths: ['req.headers.authorization', 'req.headers.cookie'],
+      // `x-prerender-token` es el secreto con que el build se salta el limitador
+      // publico (lib/prerenderBypass.ts). Hoy ningun log escribe encabezados;
+      // esto es por si alguno empieza a hacerlo.
+      paths: ['req.headers.authorization', 'req.headers.cookie', 'req.headers["x-prerender-token"]'],
       censor: '[REDACTED]',
     },
     serializers: {

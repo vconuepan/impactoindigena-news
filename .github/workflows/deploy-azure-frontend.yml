@@ -58,6 +58,15 @@ jobs:
         env:
           VITE_API_URL: ""
           PRERENDER_API_URL: "https://calm-pebble-039bfb80f.7.azurestaticapps.net"
+          # El secreto con que el prerender se salta el limitador publico de la
+          # API (B23, 10-nov-2026): un build hacia 204 consultas en dos minutos
+          # contra un limite de 100 cada 15 minutos por IP, y desde la 101 las
+          # paginas se horneaban en esqueleto. Tiene que ser IGUAL al app setting
+          # PRERENDER_BYPASS_TOKEN del App Service. Si falta, el build cuenta
+          # contra el limite como cualquiera y, si lo agota, el candado de
+          # vite.config.ts lo detiene antes de desplegar. Solo lo lee Node: no
+          # es VITE_*, asi que no entra al bundle.
+          PRERENDER_BYPASS_TOKEN: ${{ secrets.PRERENDER_BYPASS_TOKEN }}
           # El bucket publico de R2, de donde el cliente lee el snapshot de la
           # portada en vez de pedirlo al backend. Es publico por definicion —ya
           # sirve todas las imagenes del sitio— asi que no es un secreto.
