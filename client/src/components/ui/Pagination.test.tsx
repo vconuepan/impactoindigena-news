@@ -13,35 +13,35 @@ describe('Pagination', () => {
 
   it('renders page buttons for multiple pages', () => {
     render(<Pagination page={1} totalPages={3} onPageChange={vi.fn()} />)
-    expect(screen.getByRole('navigation', { name: 'Pagination' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '3' })).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Paginación' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Página 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Página 2' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Página 3' })).toBeInTheDocument()
   })
 
   it('highlights the current page', () => {
     render(<Pagination page={2} totalPages={3} onPageChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: '2' })).toHaveAttribute('aria-current', 'page')
-    expect(screen.getByRole('button', { name: '1' })).not.toHaveAttribute('aria-current')
+    expect(screen.getByRole('button', { name: 'Página 2' })).toHaveAttribute('aria-current', 'page')
+    expect(screen.getByRole('button', { name: 'Página 1' })).not.toHaveAttribute('aria-current')
   })
 
-  it('disables Previous on first page', () => {
+  it('disables «Anterior» on first page', () => {
     render(<Pagination page={1} totalPages={3} onPageChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Next' })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Página anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Página siguiente' })).not.toBeDisabled()
   })
 
-  it('disables Next on last page', () => {
+  it('disables «Siguiente» on last page', () => {
     render(<Pagination page={3} totalPages={3} onPageChange={vi.fn()} />)
-    expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Previous' })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Página siguiente' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Página anterior' })).not.toBeDisabled()
   })
 
   it('calls onPageChange when a page button is clicked', async () => {
     const user = userEvent.setup()
     const onPageChange = vi.fn()
     render(<Pagination page={1} totalPages={3} onPageChange={onPageChange} />)
-    await user.click(screen.getByRole('button', { name: '2' }))
+    await user.click(screen.getByRole('button', { name: 'Página 2' }))
     expect(onPageChange).toHaveBeenCalledWith(2)
   })
 
@@ -49,7 +49,7 @@ describe('Pagination', () => {
     const user = userEvent.setup()
     const onPageChange = vi.fn()
     render(<Pagination page={2} totalPages={3} onPageChange={onPageChange} />)
-    await user.click(screen.getByRole('button', { name: 'Previous' }))
+    await user.click(screen.getByRole('button', { name: 'Página anterior' }))
     expect(onPageChange).toHaveBeenCalledWith(1)
   })
 
@@ -57,7 +57,7 @@ describe('Pagination', () => {
     const user = userEvent.setup()
     const onPageChange = vi.fn()
     render(<Pagination page={2} totalPages={3} onPageChange={onPageChange} />)
-    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Página siguiente' }))
     expect(onPageChange).toHaveBeenCalledWith(3)
   })
 
@@ -66,8 +66,27 @@ describe('Pagination', () => {
     const ellipses = screen.getAllByText('...')
     expect(ellipses.length).toBeGreaterThanOrEqual(1)
     // First and last pages always shown
-    expect(screen.getByRole('button', { name: '1' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '10' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Página 1' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Página 10' })).toBeInTheDocument()
+  })
+
+  describe('en español, como el resto del panel (11-nov-2026)', () => {
+    it('los botones dicen «Anterior» y «Siguiente» y nombran la página para el lector de pantalla', () => {
+      render(<Pagination page={2} totalPages={3} onPageChange={vi.fn()} />)
+      const anterior = screen.getByRole('button', { name: 'Página anterior' })
+      const siguiente = screen.getByRole('button', { name: 'Página siguiente' })
+      expect(anterior).toHaveTextContent('Anterior')
+      expect(siguiente).toHaveTextContent('Siguiente')
+      expect(screen.getByRole('button', { name: 'Página 2' })).toHaveTextContent('2')
+    })
+
+    it('no queda texto en inglés', () => {
+      const { container } = render(
+        <Pagination page={2} totalPages={3} onPageChange={vi.fn()} pageSize={25} onPageSizeChange={vi.fn()} />,
+      )
+      expect(container.textContent).not.toMatch(/Previous|Next|Show/)
+      expect(container.innerHTML).not.toMatch(/aria-label="Pagination"/)
+    })
   })
 
   describe('page size selector', () => {
@@ -81,13 +100,13 @@ describe('Pagination', () => {
           onPageSizeChange={vi.fn()}
         />,
       )
-      expect(screen.getByLabelText('Show')).toBeInTheDocument()
+      expect(screen.getByLabelText('Mostrar')).toBeInTheDocument()
       expect(screen.getByRole('combobox')).toHaveValue('25')
     })
 
     it('does not render page size selector when onPageSizeChange is not provided', () => {
       render(<Pagination page={1} totalPages={3} onPageChange={vi.fn()} />)
-      expect(screen.queryByLabelText('Show')).not.toBeInTheDocument()
+      expect(screen.queryByLabelText('Mostrar')).not.toBeInTheDocument()
     })
 
     it('renders all page size options', () => {
@@ -131,10 +150,10 @@ describe('Pagination', () => {
           onPageSizeChange={vi.fn()}
         />,
       )
-      expect(screen.getByLabelText('Show')).toBeInTheDocument()
+      expect(screen.getByLabelText('Mostrar')).toBeInTheDocument()
       expect(screen.getByRole('combobox')).toHaveValue('100')
       // Page buttons should not be shown
-      expect(screen.queryByRole('button', { name: 'Previous' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Página anterior' })).not.toBeInTheDocument()
     })
   })
 })

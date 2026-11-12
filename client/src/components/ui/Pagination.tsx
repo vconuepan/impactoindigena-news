@@ -1,5 +1,19 @@
 import { Button } from './Button'
 
+// El paginador del PANEL. Hasta el 11-nov-2026 decia «Previous / Next» y «Show»
+// en un panel que ya fecha en es-CL (LOCALE_PANEL, ecdaa34). El panel no pasa
+// por i18next: los textos van fijos en español. El de las paginas publicas,
+// traducido, es components/Pagination.tsx; los nombres accesibles son los mismos.
+const TEXTOS = {
+  navegacion: 'Paginación',
+  mostrar: 'Mostrar',
+  anterior: 'Anterior',
+  siguiente: 'Siguiente',
+  paginaAnterior: 'Página anterior',
+  paginaSiguiente: 'Página siguiente',
+  pagina: (n: number) => `Página ${n}`,
+}
+
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100]
 
 interface PaginationProps {
@@ -16,10 +30,10 @@ export function Pagination({ page, totalPages, onPageChange, pageSize, onPageSiz
   const pages = getPageNumbers(page, totalPages)
 
   return (
-    <nav className="flex items-center justify-center gap-2 mt-4" aria-label="Pagination">
+    <nav className="flex items-center justify-center gap-2 mt-4" aria-label={TEXTOS.navegacion}>
       {onPageSizeChange && (
         <div className="flex items-center gap-1.5 mr-4">
-          <label htmlFor="page-size" className="text-sm text-neutral-500">Show</label>
+          <label htmlFor="page-size" className="text-sm text-neutral-500">{TEXTOS.mostrar}</label>
           <select
             id="page-size"
             value={pageSize}
@@ -40,8 +54,9 @@ export function Pagination({ page, totalPages, onPageChange, pageSize, onPageSiz
             size="sm"
             onClick={() => onPageChange(page - 1)}
             disabled={page <= 1}
+            aria-label={TEXTOS.paginaAnterior}
           >
-            Previous
+            {TEXTOS.anterior}
           </Button>
 
           {pages.map((p, i) =>
@@ -56,6 +71,7 @@ export function Pagination({ page, totalPages, onPageChange, pageSize, onPageSiz
                 size="sm"
                 onClick={() => onPageChange(p as number)}
                 aria-current={p === page ? 'page' : undefined}
+                aria-label={TEXTOS.pagina(p as number)}
               >
                 {p}
               </Button>
@@ -67,8 +83,9 @@ export function Pagination({ page, totalPages, onPageChange, pageSize, onPageSiz
             size="sm"
             onClick={() => onPageChange(page + 1)}
             disabled={page >= totalPages}
+            aria-label={TEXTOS.paginaSiguiente}
           >
-            Next
+            {TEXTOS.siguiente}
           </Button>
         </>
       )}
