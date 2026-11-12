@@ -78,8 +78,8 @@ export function isSourceTooOld(
  * Dos reglas, la mas estricta gana:
  *  - el techo editorial de 18 meses (`maxSourceAgeMonths`, decision del 17-ago-2026),
  *    que vale para todo;
- *  - una ventana propia del descubrimiento (`maxDiscoverAgeDays`), en 0 hasta
- *    que el director fije N (B3, 11-nov-2026). Con 0 no se aplica.
+ *  - la ventana del descubrimiento (`maxDiscoverAgeDays`), 60 dias como el RSS
+ *    por decision del director del 11-nov-2026 (B3). Con 0 no se aplica.
  * Sin fecha no hay evidencia de antiguedad: no se descarta.
  */
 export function esViejaParaElDescubrimiento(fecha: string | Date | null | undefined, ahora: Date = new Date()): boolean {

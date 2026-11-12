@@ -80,12 +80,16 @@ export const config = {
     maxArticleAgeDays: parseInt(process.env.MAX_ARTICLE_AGE_DAYS || "60", 10),
     /**
      * Ventana propia del descubrimiento por busqueda (Google News / Bing), en
-     * dias. 0 = no hay ventana propia y rige solo el techo de 18 meses, que es
-     * lo decidido el 17-ago-2026. Queda en 0 hasta que el director fije N: la
-     * nota de Pagina/12 del B3 (11-nov-2026) declara en su pagina 2025-10-26 y
-     * entro el 6-oct-2026, a ~11 meses, por debajo del techo.
+     * dias: lo de mas de 60 dias no entra como novedad. Decision del director
+     * del 11-nov-2026 («60 dias, como el RSS»), la misma que `maxArticleAgeDays`.
+     *
+     * Hasta ese dia el descubrimiento solo tenia el techo de 18 meses (decision
+     * del 17-ago-2026, que dejaba pasar «un fallo o un informe del año pasado»),
+     * y por ahi entro como novedad una nota de Pagina/12 que su propia pagina
+     * fecha el 26-oct-2025, a ~11 meses (B3 del traspaso de otras-voces). El
+     * techo de 18 meses sigue valiendo para todos los caminos. 0 = sin ventana.
      */
-    maxDiscoverAgeDays: parseInt(process.env.MAX_DISCOVER_AGE_DAYS || "0", 10),
+    maxDiscoverAgeDays: parseInt(process.env.MAX_DISCOVER_AGE_DAYS || "60", 10),
     /**
      * Techo absoluto de antiguedad para CUALQUIER historia, en meses. Decision
      * editorial del 17-ago-2026: no se publica material de mas de 18 meses.

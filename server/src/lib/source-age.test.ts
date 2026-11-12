@@ -106,3 +106,15 @@ describe('esViejaParaElDescubrimiento · los dos casos del B3 (11-nov-2026)', ()
     })
   })
 })
+
+describe('la ventana del descubrimiento vale 60 dias por defecto (decision del 11-nov-2026)', () => {
+  it('config.ts trae 60 en MAX_DISCOVER_AGE_DAYS, igual que la del RSS', async () => {
+    // Este archivo mockea config; se lee el fuente para fijar el valor por
+    // defecto que decidio el director («60 dias, como el RSS»).
+    const { readFileSync } = await import('node:fs')
+    const path = await import('node:path')
+    const fuente = readFileSync(path.resolve(__dirname, '../config.ts'), 'utf8')
+    expect(fuente).toMatch(/maxDiscoverAgeDays: parseInt\(process\.env\.MAX_DISCOVER_AGE_DAYS \|\| "60", 10\)/)
+    expect(fuente).toMatch(/maxArticleAgeDays: parseInt\(process\.env\.MAX_ARTICLE_AGE_DAYS \|\| "60", 10\)/)
+  })
+})
