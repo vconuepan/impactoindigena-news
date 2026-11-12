@@ -71,3 +71,24 @@ export function isSourceTooOld(
 ): boolean {
   return checkSourceAge(sourceDatePublished, now).tooOld
 }
+
+/**
+ * ¿Demasiado vieja para entrar como novedad por el descubrimiento?
+ *
+ * Dos reglas, la mas estricta gana:
+ *  - el techo editorial de 18 meses (`maxSourceAgeMonths`, decision del 17-ago-2026),
+ *    que vale para todo;
+ *  - una ventana propia del descubrimiento (`maxDiscoverAgeDays`), en 0 hasta
+ *    que el director fije N (B3, 11-nov-2026). Con 0 no se aplica.
+ * Sin fecha no hay evidencia de antiguedad: no se descarta.
+ */
+export function esViejaParaElDescubrimiento(fecha: string | Date | null | undefined, ahora: Date = new Date()): boolean {
+  if (!fecha) return false
+  if (checkSourceAge(fecha, ahora).tooOld) return true
+  const dias = config.crawl.maxDiscoverAgeDays
+  if (dias > 0) {
+    const ms = ahora.getTime() - new Date(fecha).getTime()
+    if (!isNaN(ms) && ms > dias * 24 * 60 * 60 * 1000) return true
+  }
+  return false
+}

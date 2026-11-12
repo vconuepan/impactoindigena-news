@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { config } from '../config.js'
 
 const mockParseFeed = vi.hoisted(() => vi.fn())
@@ -597,5 +597,62 @@ describe('crawlUrl', () => {
         crawlMethod: 'readability',
       })
     )
+  })
+})
+
+describe('la fecha de la PAGINA manda sobre la del feed (B3, 11-nov-2026)', () => {
+  // Los dos casos del traspaso de otras-voces, por el camino del crawler RSS
+  // (ventana de 60 dias). La fecha del feed es la del dia en que entraron.
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers({ toFake: ['Date'] })
+  })
+  afterEach(() => { vi.useRealTimers() })
+
+  it('Pagina/12: el feed la fecha nueva, la pagina declara 2025-10-26 → no entra', async () => {
+    vi.setSystemTime(new Date('2026-10-06T19:00:05Z'))
+    mockGetFeedById.mockResolvedValue(sampleFeed)
+    mockParseFeed.mockResolvedValue(rssResult([
+      { url: 'https://www.pagina12.com.ar/787279-crece', title: 'Crece el conflicto', datePublished: '2026-10-06T10:00:00Z', description: null },
+    ]))
+    mockGetExistingUrls.mockResolvedValue(new Set())
+    mockExtractContent.mockResolvedValue({ title: 'T', content: 'Contenido', datePublished: '2025-10-26T22:29:21.376Z', method: 'readability' })
+
+    const result = await crawlFeed('feed-1')
+
+    expect(config.crawl.maxArticleAgeDays).toBe(60)
+    expect(mockCreateStory).not.toHaveBeenCalled()
+    expect(result.skipped).toBe(1)
+  })
+
+  it('Kaos en la Red: la pagina declara el mismo dia → entra, con la fecha de la pagina', async () => {
+    vi.setSystemTime(new Date('2026-10-10T11:00:32Z'))
+    mockGetFeedById.mockResolvedValue(sampleFeed)
+    mockParseFeed.mockResolvedValue(rssResult([
+      { url: 'https://kaosenlared.net/argentina-de-aca-me-sacan-muerto', title: 'De acá me sacan muerto', datePublished: '2026-10-10T08:00:00Z', description: null },
+    ]))
+    mockGetExistingUrls.mockResolvedValue(new Set())
+    mockExtractContent.mockResolvedValue({ title: 'T', content: 'Contenido', datePublished: '2026-10-10T05:02:11.000Z', method: 'readability' })
+    mockCreateStory.mockResolvedValue({ id: 'story-1' })
+
+    const result = await crawlFeed('feed-1')
+
+    expect(result.newStories).toBe(1)
+    expect(mockCreateStory).toHaveBeenCalledWith(expect.objectContaining({ sourceDatePublished: '2026-10-10T05:02:11.000Z' }))
+  })
+
+  it('sin fecha en la pagina, se usa la del feed como antes', async () => {
+    vi.setSystemTime(new Date('2026-10-10T11:00:32Z'))
+    mockGetFeedById.mockResolvedValue(sampleFeed)
+    mockParseFeed.mockResolvedValue(rssResult([
+      { url: 'https://example.com/sin-fecha', title: 'X', datePublished: '2026-10-09T08:00:00Z', description: null },
+    ]))
+    mockGetExistingUrls.mockResolvedValue(new Set())
+    mockExtractContent.mockResolvedValue({ title: 'T', content: 'Contenido', datePublished: null, method: 'selector' })
+    mockCreateStory.mockResolvedValue({ id: 'story-2' })
+
+    await crawlFeed('feed-1')
+
+    expect(mockCreateStory).toHaveBeenCalledWith(expect.objectContaining({ sourceDatePublished: '2026-10-09T08:00:00Z' }))
   })
 })

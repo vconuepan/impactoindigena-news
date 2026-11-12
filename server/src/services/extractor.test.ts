@@ -508,3 +508,44 @@ describe('ApiThrottle', () => {
     await throttle.run(async () => {})
   })
 })
+
+describe('la fecha que declara la pagina (B3, 11-nov-2026)', () => {
+  // Hasta ese dia los dos metodos locales devolvian `datePublished: null` y la
+  // unica fecha era la del feed o del buscador.
+  beforeEach(() => {
+    vi.clearAllMocks()
+    delete process.env.PIPFEED_API_KEY
+    delete process.env.DIFFBOT_TOKEN
+    _resetApiState()
+  })
+
+  it('readability: devuelve la del JSON-LD del articulo', async () => {
+    const html = `<html><head><script type="application/ld+json">{"@type":"NewsArticle","datePublished":"2025-10-26T22:29:21.376Z"}</script></head><body><p>x</p></body></html>`
+    mockAxiosGet.mockResolvedValue({ data: html })
+    mockReadabilityParse.mockReturnValue({ title: 'T', textContent: LONG_TEXT })
+
+    const result = await extractContent('https://example.com/nota')
+
+    expect(result!.method).toBe('readability')
+    expect(result!.datePublished).toBe('2025-10-26T22:29:21.376Z')
+  })
+
+  it('selector: devuelve la de article:published_time', async () => {
+    const html = `<html><head><meta property="article:published_time" content="2026-10-10T07:02:11+02:00"/></head><body><div class="nota">${LONG_TEXT}</div></body></html>`
+    mockAxiosGet.mockResolvedValue({ data: html })
+
+    const result = await extractContent('https://example.com/nota', { htmlSelector: '.nota' })
+
+    expect(result!.method).toBe('selector')
+    expect(result!.datePublished).toBe('2026-10-10T05:02:11.000Z')
+  })
+
+  it('sin fecha declarada sigue siendo null', async () => {
+    mockAxiosGet.mockResolvedValue({ data: '<html><body><p>x</p></body></html>' })
+    mockReadabilityParse.mockReturnValue({ title: 'T', textContent: LONG_TEXT })
+
+    const result = await extractContent('https://example.com/nota')
+
+    expect(result!.datePublished).toBeNull()
+  })
+})

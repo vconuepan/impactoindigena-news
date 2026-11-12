@@ -25,6 +25,15 @@ Editorial rule: this is a news outlet and it does not publish material older tha
 
 **A null date is not "old".** Absence of evidence is not evidence of age, and discarding on suspicion would lose legitimate coverage — outlets that publish no date exist. That case passes through deliberately.
 
+### Which date counts: the page's, not the feed's (11-nov-2026)
+
+Until 11-nov the two local extraction tiers (selector and Readability, which run almost always: there is no `DIFFBOT_TOKEN`) returned `datePublished: null`, and the crawler took `item.datePublished || extracted.datePublished`. So the only date ever used was the feed's or the search engine's, and a search engine sometimes dates an item by when it re-indexed it, not when it was published. A Página/12 story whose page declares 2025-10-26 (and shows «03 de diciembre de 2024» on screen) entered on 2026-10-06 through `googleNewsDiscover` with the date the search result carried, passed both ceilings and was published on 10-oct as news.
+
+- `lib/fechaDeLaPagina.ts` reads the date **the page declares**: JSON-LD of an article-type object (also inside `@graph`), then `article:published_time`, then `itemprop="datePublished"`, then common publisher metas. Publication only, never modification. Unparseable dates, dates before 1995 or more than two days in the future are skipped.
+- **The page's date wins** over the feed's and the search engine's (`fechaDelArticulo`), in `crawler.ts` and in `googleNewsDiscover`, which now re-checks age after extraction with that date. Without a page date, the feed's is used as before.
+- The discovery job can have its own window, `maxDiscoverAgeDays` (`MAX_DISCOVER_AGE_DAYS`), on top of the 18-month ceiling. It is **0 (off)** until the director sets N: with only the 18-month ceiling, the Página/12 story still enters, because its page says October 2025 (~11 months).
+- The other case in the handoff (Kaos en la Red, «De acá me sacan muerto…») was **not** old: its page declares and shows 10-oct-2026 and reports an operation on Thursday 8 October. The 2023 in it is the origin of the lawsuit. Tests carry both cases (`fechaDeLaPagina.test.ts`, `source-age.test.ts`, `crawler.test.ts`).
+
 **The diagnosis this corrected, which matters more than the fix.** Headlines like *"CORFO lanzó fondo para empresas indígenas con crédito largo en 2020"* looked like the model inventing years, since the source headline had none. It was false: Bing News **does** return `pubDate`, and that article **is** from 3 September 2020. The model was dating the event *correctly* — flagging, with the only tool it had, that the news was old. The defect was never in the headline; it was in publishing archive. Blaming the model would have buried the cause.
 
 Cleanup for what already shipped: `npm run migration:unpublish-old --prefix server` (simulation by default; moves affected stories to `rejected`, never deletes).

@@ -12,6 +12,7 @@ import { isAllowedByRobots } from '../lib/robots.js'
 import { withRetry, isRetryableError } from '../lib/retry.js'
 import { crawlLimiter } from '../lib/crawlLimiter.js'
 import { ogImageFromHtml } from '../lib/extract-og-image.js'
+import { fechaDeclaradaEnLaPagina } from '../lib/fechaDeLaPagina.js'
 import { extraerFotosDelCuerpo, depurarFotos } from '../lib/fotosDelArticulo.js'
 
 const log = createLogger('extractor')
@@ -165,7 +166,9 @@ function extractBySelector(html: string, selector: string, url: string): Extract
       title: $('title').text().trim() || null,
       content: text,
       author: extractAuthorFromHtml(html),
-      datePublished: null,
+      // La fecha que declara la pagina (B3, 11-nov-2026). Antes era null y la
+      // unica fecha era la del feed o del buscador. Ver lib/fechaDeLaPagina.ts.
+      datePublished: fechaDeclaradaEnLaPagina(html),
       method: 'selector',
       imageUrls: extraerFotosDelCuerpo(container.html() ?? '', url, [ogImageFromHtml(html)]),
     }
@@ -188,7 +191,8 @@ function extractByReadability(html: string, url: string): ExtractionResult | nul
       // Readability expone `byline` cuando lo detecta; si no, se cae a las
       // meta tags del HTML, que es de donde sale en la mayoria de los medios.
       author: normalizeAuthor(article.byline) ?? extractAuthorFromHtml(html),
-      datePublished: null,
+      // Readability no la entrega: se lee de las metas y del JSON-LD (B3).
+      datePublished: fechaDeclaradaEnLaPagina(html),
       method: 'readability',
       // `content` es el HTML limpio del articulo: ahi estan las <img> del
       // cuerpo, que `textContent` pierde. Readability ya resolvio las rutas

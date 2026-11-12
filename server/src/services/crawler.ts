@@ -5,6 +5,7 @@ import { getFeedById, getDueFeeds, updateCrawlStatus, updateFeedCacheHeaders } f
 import { createLogger } from '../lib/logger.js'
 import { Semaphore } from '../lib/semaphore.js'
 import { config } from '../config.js'
+import { fechaDelArticulo } from '../lib/fechaDeLaPagina.js'
 import { normalizeUrl } from '../utils/urlNormalization.js'
 
 const log = createLogger('crawler')
@@ -140,7 +141,15 @@ export async function crawlFeed(feedId: string): Promise<CrawlResult> {
 
         // Reject articles with a publication date older than the configured max age.
         // Google News frequently resurfaces articles from months or years ago.
-        const pubDateStr = item.datePublished || extracted.datePublished
+        //
+        // La fecha de la PAGINA manda sobre la del feed (B3, 11-nov-2026). Era al
+        // reves (`item.datePublished || extracted...`), y ademas los extractores
+        // locales devolvian null: un feed que republica o reindexa una nota vieja
+        // con fecha nueva la hacia pasar como novedad. Ver lib/fechaDeLaPagina.ts.
+        const pubDateStr = fechaDelArticulo(extracted.datePublished, item.datePublished)
+        if (extracted.datePublished && item.datePublished && extracted.datePublished !== item.datePublished) {
+          log.debug({ url: item.url, pagina: extracted.datePublished, feed: item.datePublished }, 'la pagina y el feed declaran fechas distintas: manda la pagina')
+        }
         if (pubDateStr && config.crawl.maxArticleAgeDays > 0) {
           const pubDate = new Date(pubDateStr)
           const ageDays = (Date.now() - pubDate.getTime()) / (1000 * 60 * 60 * 24)

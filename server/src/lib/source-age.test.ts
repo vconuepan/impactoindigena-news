@@ -4,7 +4,8 @@ vi.mock('../config.js', () => ({
   config: { crawl: { maxSourceAgeMonths: 18 } },
 }))
 
-const { checkSourceAge, isSourceTooOld } = await import('./source-age.js')
+const { checkSourceAge, isSourceTooOld, esViejaParaElDescubrimiento } = await import('./source-age.js')
+const { config } = await import('../config.js')
 
 const AHORA = new Date('2026-08-17T12:00:00Z')
 const meses = (n: number) => new Date(AHORA.getTime() - n * 30.44 * 24 * 60 * 60 * 1000)
@@ -69,5 +70,39 @@ describe('con el techo desactivado', () => {
     const mod = await import('./source-age.js')
     expect(mod.isSourceTooOld('1990-01-01', AHORA)).toBe(false)
     vi.doUnmock('../config.js')
+  })
+})
+
+describe('esViejaParaElDescubrimiento · los dos casos del B3 (11-nov-2026)', () => {
+  // La nota de Pagina/12 entro el 6-oct-2026. Su pagina declara 2025-10-26
+  // (JSON-LD) y muestra a la vista el 3-dic-2024. La de Kaos en la Red declara
+  // el 10-oct-2026 y es de ese dia.
+  const ENTRO = new Date('2026-10-06T19:00:05Z')
+  const conVentana = (dias: number, fn: () => void) => {
+    const antes = (config.crawl as { maxDiscoverAgeDays?: number }).maxDiscoverAgeDays
+    ;(config.crawl as { maxDiscoverAgeDays?: number }).maxDiscoverAgeDays = dias
+    try { fn() } finally { (config.crawl as { maxDiscoverAgeDays?: number }).maxDiscoverAgeDays = antes }
+  }
+
+  it('sin ventana propia (lo decidido el 17-ago) rige solo el techo de 18 meses: la de Pagina/12, con la fecha que declara su pagina, entra', () => {
+    conVentana(0, () => {
+      expect(esViejaParaElDescubrimiento('2025-10-26T22:29:21.376Z', ENTRO)).toBe(false)
+      // con la fecha que muestra a la vista habria quedado fuera (22 meses)
+      expect(esViejaParaElDescubrimiento('2024-12-03', ENTRO)).toBe(true)
+    })
+  })
+
+  it('con una ventana de 60 dias, como la del crawler RSS, la de Pagina/12 queda fuera y la de Kaos entra', () => {
+    conVentana(60, () => {
+      expect(esViejaParaElDescubrimiento('2025-10-26T22:29:21.376Z', ENTRO)).toBe(true)
+      expect(esViejaParaElDescubrimiento('2026-10-10T05:02:11.000Z', new Date('2026-10-10T11:00:32Z'))).toBe(false)
+    })
+  })
+
+  it('sin fecha no hay evidencia de antiguedad: no se descarta', () => {
+    conVentana(60, () => {
+      expect(esViejaParaElDescubrimiento(null, ENTRO)).toBe(false)
+      expect(esViejaParaElDescubrimiento(undefined, ENTRO)).toBe(false)
+    })
   })
 })

@@ -19,7 +19,8 @@ import { extractContent } from '../services/extractor.js'
 import { getExistingUrls, guardarFotosDelArticulo } from '../services/story.js'
 import { normalizeUrl } from '../utils/urlNormalization.js'
 import { withRetry } from '../lib/retry.js'
-import { checkSourceAge } from '../lib/source-age.js'
+import { checkSourceAge, esViejaParaElDescubrimiento } from '../lib/source-age.js'
+import { fechaDelArticulo } from '../lib/fechaDeLaPagina.js'
 import { config } from '../config.js'
 
 const log = createLogger('google_news_discover')
@@ -206,10 +207,11 @@ export async function runGoogleNewsDiscover(): Promise<void> {
       const fresh: typeof normalized = []
       let tooOldCount = 0
       for (const item of normalized) {
-        const { tooOld, ageMonths } = checkSourceAge(item.fechaPublicacion)
-        if (tooOld) {
+        // Misma regla que despues de extraer (techo de 18 meses + la ventana N
+        // del descubrimiento, si el director la fija), con la fecha del buscador.
+        if (esViejaParaElDescubrimiento(item.fechaPublicacion)) {
           tooOldCount++
-          log.debug({ url: item.url, ageMonths, query }, 'artículo más viejo que el techo, descartado')
+          log.debug({ url: item.url, ageMonths: checkSourceAge(item.fechaPublicacion).ageMonths, query }, 'artículo más viejo que el techo, descartado')
           continue
         }
         fresh.push(item)
@@ -241,13 +243,26 @@ export async function runGoogleNewsDiscover(): Promise<void> {
             continue
           }
 
+          // Segunda vuelta de la antiguedad, ahora con la fecha que declara la
+          // PAGINA (B3, 11-nov-2026). La primera, arriba, solo tiene la del
+          // buscador, y el buscador fecha a veces cuando volvio a indexar, no
+          // cuando se publico: una nota de Pagina/12 fechada en 2025 por su
+          // propia pagina entro el 6-oct-2026 como novedad. La pagina manda.
+          const fecha = fechaDelArticulo(extracted.datePublished, item.fechaPublicacion)
+          if (esViejaParaElDescubrimiento(fecha)) {
+            log.info({ url: item.url, pagina: extracted.datePublished, buscador: item.fechaPublicacion, query }, 'la pagina declara una fecha mas vieja que el techo, descartado')
+            totalTooOld++
+            continue
+          }
+
           const creada = await prisma.story.create({
             data: {
               sourceUrl: item.url,
               sourceTitle: extracted.title || item.titulo,
               sourceContent: extracted.content,
               feedId: feed.id,
-              sourceDatePublished: item.fechaPublicacion ?? null,
+              // La de la pagina si la declara; si no, la del buscador (B3).
+              sourceDatePublished: fecha,
               // El PR #49 agregó la atribución de autor en `createStory`, pero
               // este job escribe con `prisma.story.create` directo y se quedaba
               // sin ella. El art. 71 B pide mencionar fuente, título y autor.

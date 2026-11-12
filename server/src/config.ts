@@ -79,6 +79,14 @@ export const config = {
     /** Reject articles whose RSS pubDate is older than this many days (Google News resurfacing). 0 = no limit. */
     maxArticleAgeDays: parseInt(process.env.MAX_ARTICLE_AGE_DAYS || "60", 10),
     /**
+     * Ventana propia del descubrimiento por busqueda (Google News / Bing), en
+     * dias. 0 = no hay ventana propia y rige solo el techo de 18 meses, que es
+     * lo decidido el 17-ago-2026. Queda en 0 hasta que el director fije N: la
+     * nota de Pagina/12 del B3 (11-nov-2026) declara en su pagina 2025-10-26 y
+     * entro el 6-oct-2026, a ~11 meses, por debajo del techo.
+     */
+    maxDiscoverAgeDays: parseInt(process.env.MAX_DISCOVER_AGE_DAYS || "0", 10),
+    /**
      * Techo absoluto de antiguedad para CUALQUIER historia, en meses. Decision
      * editorial del 17-ago-2026: no se publica material de mas de 18 meses.
      *
