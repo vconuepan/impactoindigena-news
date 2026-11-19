@@ -13,6 +13,7 @@ import { buildInstagramCaptionPrompt } from '../prompts/instagram.js'
 import { withAiLabel, AI_LABEL } from '../lib/ai-label.js'
 import { config } from '../config.js'
 import { limpiarPost } from '../lib/personasSensibles.js'
+import { firmaDelOriginal } from '../lib/firmaDelOriginal.js'
 const log = createLogger('instagram-service')
 
 const instagramCaptionSchema = z.object({
@@ -119,8 +120,9 @@ async function rechazar(postId: string, storyId: string, motivo: string): Promis
  * la ficha. Si no cabe junto a la línea de IA que se agrega al publicar, se
  * acorta el texto del modelo, nunca la atribución ni el enlace.
  */
-export function pieConAtribucion(texto: string, medio: string, storyUrl: string): string {
-  const cola = `\n\nReporteó: ${medio}\n${storyUrl}`
+export function pieConAtribucion(texto: string, medio: string, storyUrl: string, comunicadoDe: string | null = null): string {
+  // B4 · 19-11-2026: la misma firma que las láminas, sin la fecha (ver `lib/firmaDelOriginal.ts`).
+  const cola = `\n\n${firmaDelOriginal({ medio, comunicadoDe }, false)}\n${storyUrl}`
   const espacio = TOPE_PIE - cola.length - AI_LABEL.length - 2
   const cuerpo = texto.trim()
   if (cuerpo.length <= espacio) return cuerpo + cola
@@ -185,7 +187,7 @@ async function runGeneration(postId: string, story: any): Promise<void> {
   if (avisosDelPie.length > 0) {
     return rechazar(postId, storyId, `Pie: ${avisosEnTexto(avisosDelPie)}`)
   }
-  const caption = pieConAtribucion(candado.texto, carrusel.atribucion.medio, storyUrl)
+  const caption = pieConAtribucion(candado.texto, carrusel.atribucion.medio, storyUrl, carrusel.atribucion.comunicadoDe ?? null)
 
   // 3. Recién ahora se sube: un rechazo no deja láminas sueltas en R2.
   const imageUrls = await subirCarrusel(storyId, carrusel.imagenes)

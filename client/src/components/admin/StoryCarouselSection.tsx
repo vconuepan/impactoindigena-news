@@ -77,7 +77,9 @@ export function StoryCarouselSection({ story }: Props) {
   useEffect(() => { guardarBorrador(story.id, draft) }, [story.id, draft])
 
   const cuerpo = useMemo(
-    () => (draft ? { laminas: draft.laminas, lectura: draft.lectura } : null),
+    // B4 · 19-11-2026: el emisor del comunicado vuelve con el pedido para que la firma diga
+    // «Comunicado de …»; el servidor lo respalda otra vez contra el artículo.
+    () => (draft ? { laminas: draft.laminas, lectura: draft.lectura, comunicadoDe: draft.atribucion.comunicadoDe ?? null } : null),
     [draft],
   )
   const claveActual = cuerpo ? JSON.stringify(cuerpo) : null
@@ -193,7 +195,17 @@ export function StoryCarouselSection({ story }: Props) {
       {draft && a && (
         <div className="space-y-4">
           <p className="text-sm text-neutral-600">
-            Reporteó: <span className="font-medium text-neutral-900">{a.medio}</span>
+            {/* B4 · 19-11-2026: la misma firma que llevan las láminas. */}
+            {a.comunicadoDe ? (
+              <>
+                Comunicado de <span className="font-medium text-neutral-900">{a.comunicadoDe}</span>
+                {a.comunicadoDe !== a.medio && <> · {a.medio}</>}
+              </>
+            ) : (
+              <>
+                Reporteó: <span className="font-medium text-neutral-900">{a.medio}</span>
+              </>
+            )}
             {a.autor && <> · {a.autor}</>}
             {a.fecha && <> · {a.fecha}</>}
             {' · '}

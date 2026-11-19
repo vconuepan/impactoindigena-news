@@ -371,11 +371,13 @@ const storyCarouselSlideSchema = z.object({
 
 export const storyCarouselSchema = z.object({
   laminas: z.array(storyCarouselSlideSchema).describe("En orden: portada, desarrollo y cierre"),
+  comunicadoDe: z.string().nullable(),
 });
 
 export const storyCarouselWithReadingSchema = z.object({
   laminas: z.array(storyCarouselSlideSchema).describe("En orden: portada, desarrollo y cierre"),
   lectura: storyCarouselSlideSchema,
+  comunicadoDe: z.string().nullable(),
 });
 
 export type StoryCarouselResult = z.infer<typeof storyCarouselWithReadingSchema>;

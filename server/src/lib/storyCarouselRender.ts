@@ -11,6 +11,7 @@ import { loadRemoteImage } from './loadRemoteImage.js'
 import { FOTO_ANCHO_MINIMO } from './fotoDelMedio.js'
 import { createLogger } from './logger.js'
 import type { CarouselAviso, CarouselSlideText } from './storyCarouselGuards.js'
+import { firmaDelOriginal } from './firmaDelOriginal.js'
 
 /**
  * Las láminas del carrusel de una noticia, con el formato de Voces Indígenas.
@@ -52,6 +53,12 @@ export interface CarouselAttribution {
   tituloOriginal: string
   /** Dominio del artículo original, para la lámina de cierre. */
   dominio: string
+  /**
+   * La organización que emitió el comunicado, si el artículo es uno (B4, 19-11-2026). Ya
+   * respaldada contra el artículo (`emisorRespaldado`). Con ella la firma dice «Comunicado
+   * de …» en vez de «Reporteó: …». Ver `lib/firmaDelOriginal.ts`.
+   */
+  comunicadoDe?: string | null
 }
 
 /** La foto del medio para la portada y el cierre, con a quién acreditarla. */
@@ -194,7 +201,7 @@ async function cargarFoto(foto: FotoDeNoticia | null | undefined): Promise<Image
 }
 
 function reporteo(a: CarouselAttribution): string {
-  return a.fecha ? `Reporteó: ${a.medio} · ${a.fecha}` : `Reporteó: ${a.medio}`
+  return firmaDelOriginal(a)
 }
 
 const ANCHO = RW - M * 2

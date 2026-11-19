@@ -32,6 +32,19 @@ describe('buildStoryCarouselPrompt', () => {
     expect(prompt).toContain('si una fecha no trae año, no se lo agregues')
   })
 
+  it('cada opinión va con quien la dice y los términos de parte nunca en voz propia (B4)', () => {
+    const prompt = buildStoryCarouselPrompt(STORY, false)
+    expect(prompt).toContain('Toda opinión, exigencia, denuncia o evaluación va con quien la dice')
+    expect(prompt).toContain('Todo término de parte va atribuido a quien lo dice y nunca en voz propia')
+  })
+
+  it('pide reconocer un comunicado y nombrar a su organización como la trae el artículo (B4)', () => {
+    const prompt = buildStoryCarouselPrompt(STORY, false)
+    expect(prompt).toContain('<COMUNICADO>')
+    expect(prompt).toContain('comunicadoDe el nombre de esa organización exactamente como aparece en el artículo')
+    expect(prompt).toContain('comunicadoDe va null')
+  })
+
   it('lleva las reglas de la Fundación y no usa el bloque <ROLE>', () => {
     const prompt = buildStoryCarouselPrompt(STORY, false)
     expect(prompt).toContain('<REGLAS_INSTITUCIONALES>')

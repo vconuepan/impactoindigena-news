@@ -373,6 +373,9 @@ describe('pieConAtribucion y cuerpoDelPie', () => {
 
   it('agrega el medio y el enlace al final', () => {
     expect(pieConAtribucion('Texto.', 'Radio Kurruf', 'https://v.org/s/x')).toBe('Texto.\n\nReporteó: Radio Kurruf\nhttps://v.org/s/x')
+    // B4 · 19-11-2026: un comunicado firma con su organización y el medio que lo publicó.
+    expect(pieConAtribucion('Texto.', 'Mapuexpress', 'https://v.org/s/x', 'Asociación Newen'))
+      .toBe('Texto.\n\nComunicado de Asociación Newen · Mapuexpress\nhttps://v.org/s/x')
   })
 
   it('si no cabe, acorta el texto del modelo y nunca la atribución', () => {

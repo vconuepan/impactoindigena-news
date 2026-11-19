@@ -268,6 +268,15 @@ rule RegenerateDraft {
 -- `draft` or `rejected` when the work lands, so the panel returns
 -- immediately and the row reserves the story. The auto-post job waits
 -- for the work and publishes in the same run.
+--
+-- Attribution (B4, 2026-11-19): every opinion, demand, accusation or
+-- evaluation in the slides goes with whoever says it, never in the
+-- carousel's own voice. When the article is a press release or public
+-- statement of an organisation, the slides and the caption are signed
+-- «Comunicado de <organización>» (plus the outlet if it is another
+-- one) instead of «Reporteó: <medio>». The model names the issuer, but
+-- the name is kept only if the article contains it (`emisorRespaldado`);
+-- otherwise the signature stays «Reporteó».
 rule InstagramDraftGeneratesInBackground {
     when: GenerateDraft(story, channel) and channel = Instagram
 

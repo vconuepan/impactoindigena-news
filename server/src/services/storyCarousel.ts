@@ -13,6 +13,7 @@ import { buildStoryCarouselPrompt } from '../prompts/story-carousel.js'
 import { storyCarouselSchema, storyCarouselWithReadingSchema } from '../schemas/llm.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { config } from '../config.js'
+import { emisorRespaldado } from '../lib/firmaDelOriginal.js'
 
 const log = createLogger('story-carousel')
 
@@ -257,7 +258,7 @@ export async function draftStoryCarousel(storyId: string, conLectura: boolean): 
     'carousel text generated',
   )
 
-  const resultado = parsed as { laminas: CarouselSlideText[]; lectura?: CarouselSlideText }
+  const resultado = parsed as { laminas: CarouselSlideText[]; lectura?: CarouselSlideText; comunicadoDe?: string | null }
   const laminas = (resultado.laminas ?? []).map(limpiarLamina).map(sinFirmaDelModelo).map(sinEtiquetasSobrePersonas).filter((l) => l.titulo || l.texto)
   if (laminas.length < 3) {
     throw new StoryCarouselError('El modelo devolvió un carrusel incompleto. Vuelve a intentarlo.')
@@ -267,7 +268,9 @@ export async function draftStoryCarousel(storyId: string, conLectura: boolean): 
   return {
     laminas,
     lectura,
-    atribucion,
+    // B4 · 19-11-2026: si el modelo dice que es un comunicado, la firma lo dice, pero solo
+    // con un emisor que el artículo nombra (ver `lib/firmaDelOriginal.ts`).
+    atribucion: { ...atribucion, comunicadoDe: emisorRespaldado(resultado.comunicadoDe, original) },
     avisos: revisarCarrusel(laminas, lectura, original),
   }
 }
@@ -279,6 +282,8 @@ export async function draftStoryCarousel(storyId: string, conLectura: boolean): 
 export interface RenderRequest {
   laminas: CarouselSlideText[]
   lectura: CarouselSlideText | null
+  /** El emisor del comunicado que trajo el borrador; se vuelve a respaldar acá. */
+  comunicadoDe?: string | null
 }
 
 /**
@@ -288,11 +293,13 @@ export interface RenderRequest {
  */
 export async function renderStoryCarouselImages(storyId: string, req: RenderRequest) {
   const story = await cargarNoticia(storyId)
-  const atribucion = atribucionDe(story)
+  const original = story.sourceContent ?? ''
+  // El emisor llega del panel o del borrador automático: se respalda otra vez contra el
+  // artículo, porque este es el único punto por donde sale el carrusel.
+  const atribucion = { ...atribucionDe(story), comunicadoDe: emisorRespaldado(req.comunicadoDe, original) }
   const laminas = req.laminas.map(limpiarLamina)
   const lectura = req.lectura ? limpiarLamina(req.lectura) : null
 
-  const original = story.sourceContent ?? ''
   const avisosDeTexto = revisarCarrusel(laminas, lectura, original)
   // La foto con que el medio publicó la nota, acreditada a ese medio. Una
   // imagen de IA o la tarjeta compuesta no van (decisión del director, 29-oct).
@@ -342,7 +349,11 @@ export async function buildStoryCarouselForSocial(storyId: string): Promise<Soci
   if (borrador.avisos.length > 0) {
     throw new StoryCarouselError('El texto del carrusel no pasó los candados.', borrador.avisos)
   }
-  const { story, imagenes, avisos } = await renderStoryCarouselImages(storyId, { laminas: borrador.laminas, lectura: null })
+  const { story, imagenes, avisos } = await renderStoryCarouselImages(storyId, {
+    laminas: borrador.laminas,
+    lectura: null,
+    comunicadoDe: borrador.atribucion.comunicadoDe ?? null,
+  })
   if (avisos.length > 0) {
     throw new StoryCarouselError('El carrusel no pasó los candados al dibujarse.', avisos)
   }

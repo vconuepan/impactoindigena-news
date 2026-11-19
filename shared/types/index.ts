@@ -545,6 +545,8 @@ export interface StoryCarouselAttribution {
   fecha: string | null
   tituloOriginal: string
   dominio: string
+  /** La organización, si el artículo es un comunicado suyo (B4, 19-11-2026). */
+  comunicadoDe?: string | null
 }
 
 export interface StoryCarouselDraft {

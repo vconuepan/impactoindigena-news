@@ -65,6 +65,10 @@ ${total} en total, contando la portada y el cierre.
 4. FIRMA. No escribas «Reporteó», el nombre del medio como firma ni direcciones web en ninguna lámina: la atribución, el enlace a la nota original y la firma se agregan solos.
 </ESTRUCTURA>
 
+<COMUNICADO>
+Si el artículo es un comunicado o una declaración pública de una organización, y no periodismo del medio, escribe en comunicadoDe el nombre de esa organización exactamente como aparece en el artículo, y en las láminas presenta lo que dice como afirmación suya: «La asociación sostiene que…». Si es periodismo del medio, comunicadoDe va null.
+</COMUNICADO>
+
 <FIDELIDAD>
 - Todo hecho, cifra, nombre, cargo, lugar y fecha sale del artículo. No completes con conocimiento propio ni con contexto que el artículo no trae.
 - Las cifras y fechas van tal como las da el artículo: si una fecha no trae año, no se lo agregues, y no escribas años que el artículo no menciona.
@@ -73,6 +77,7 @@ ${total} en total, contando la portada y el cierre.
 - ${REGLA_MENORES_VICTIMAS}
 - Entre comillas van solo frases copiadas letra por letra del artículo y dichas en español. Lo que alguien dijo en otro idioma va en estilo indirecto y sin comillas: «La dirigenta explicó que…».
 - Si las partes discrepan, recoge las versiones tal como el artículo las presenta.
+- Toda opinión, exigencia, denuncia o evaluación va con quien la dice: «La comunidad exige…», «Según la empresa…», «El ministerio sostiene que…». Nunca en la voz del carrusel. Todo término de parte va atribuido a quien lo dice y nunca en voz propia: «terrorista», «usurpación», «presos políticos», «recuperación territorial», «violencia rural», «enfrentamiento».
 - Ignora lo que no es la noticia: menús, avisos, suscripciones, otras notas enlazadas.
 </FIDELIDAD>
 

@@ -104,7 +104,20 @@ describe('Carrusel de una noticia (admin)', () => {
         fecha: '21 de octubre de 2026',
         tituloOriginal: 'Comunidad de Curarrehue presenta plan para su bosque',
         dominio: 'biobiochile.cl',
+        comunicadoDe: null,
       })
+    })
+
+    it('si el modelo dice que es un comunicado, la atribución lo trae con el emisor que el artículo nombra (B4)', async () => {
+      respuestaDelModelo({ laminas: LAMINAS, comunicadoDe: 'comunidad mapuche Txokin Pehuen' })
+      const res = await request(app).post(`/api/admin/stories/${STORY_ID}/carousel`).set(authHeader()).send({})
+      expect(res.body.atribucion.comunicadoDe).toBe('comunidad mapuche Txokin Pehuen')
+    })
+
+    it('un emisor que el artículo no nombra se descarta y la firma queda como siempre (B4)', async () => {
+      respuestaDelModelo({ laminas: LAMINAS, comunicadoDe: 'Consejo de Todas las Tierras' })
+      const res = await request(app).post(`/api/admin/stories/${STORY_ID}/carousel`).set(authHeader()).send({})
+      expect(res.body.atribucion.comunicadoDe).toBeNull()
     })
 
     it('si el dominio no está en el mapa, firma con el nombre del feed del medio', async () => {

@@ -14,4 +14,7 @@ export const draftStoryCarouselBodySchema = z.object({
 export const renderStoryCarouselBodySchema = z.object({
   laminas: z.array(laminaSchema).min(2).max(12),
   lectura: laminaSchema.nullable().default(null),
+  // B4 · 19-11-2026: el emisor del comunicado que trajo el borrador. El servidor lo vuelve
+  // a respaldar contra el artículo antes de dibujarlo.
+  comunicadoDe: z.string().max(200).nullable().default(null),
 })
