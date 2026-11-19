@@ -271,7 +271,7 @@ export async function draftStoryCarousel(storyId: string, conLectura: boolean): 
     // B4 · 19-11-2026: si el modelo dice que es un comunicado, la firma lo dice, pero solo
     // con un emisor que el artículo nombra (ver `lib/firmaDelOriginal.ts`).
     atribucion: { ...atribucion, comunicadoDe: emisorRespaldado(resultado.comunicadoDe, original) },
-    avisos: revisarCarrusel(laminas, lectura, original),
+    avisos: revisarCarrusel(laminas, lectura, original, atribucion.fecha),
   }
 }
 
@@ -300,7 +300,7 @@ export async function renderStoryCarouselImages(storyId: string, req: RenderRequ
   const laminas = req.laminas.map(limpiarLamina)
   const lectura = req.lectura ? limpiarLamina(req.lectura) : null
 
-  const avisosDeTexto = revisarCarrusel(laminas, lectura, original)
+  const avisosDeTexto = revisarCarrusel(laminas, lectura, original, atribucion.fecha)
   // La foto con que el medio publicó la nota, acreditada a ese medio. Una
   // imagen de IA o la tarjeta compuesta no van (decisión del director, 29-oct).
   const fotoUrl = await fotoDePortada(story)

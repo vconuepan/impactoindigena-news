@@ -250,6 +250,28 @@ export function cifrasSinRespaldo(texto: string, original: string): string[] {
   return [...faltan]
 }
 
+/**
+ * Quita de la lámina la fecha de publicación del original, escrita entera.
+ *
+ * El prompt le da al modelo esa fecha («Fecha: 16 de noviembre de 2026») y le
+ * pide que la portada diga «cuándo», pero la fecha no está en el cuerpo del
+ * artículo, que es lo único que mira el candado de cifras. Resultado: el
+ * 19-nov-2026, 12 de los 19 carruseles rechazados de Instagram lo fueron por
+ * «2026». La fecha viene de nuestros datos y la firma la imprime igual, así que
+ * no es una cifra inventada.
+ *
+ * Solo la fecha completa («16 de noviembre de 2026», o «16 de noviembre» sin el
+ * año): un «2026» o un «16» sueltos siguen pasando por el candado, porque un
+ * año agregado a otro hecho es justo el error que el candado existe para frenar.
+ */
+function sinFechaDePublicacion(texto: string, fecha: string | null | undefined): string {
+  const m = fecha?.trim().match(/^(\d{1,2}) de (\p{L}+) de (\d{4})$/u)
+  if (!m) return texto
+  const [, dia, mes, anio] = m
+  const patron = new RegExp(`\\b${dia}\\s+de\\s+${mes}(?:\\s+(?:de\\s+|del\\s+)?${anio})?\\b`, 'giu')
+  return texto.replace(patron, ' ')
+}
+
 // ---------------------------------------------------------------------------
 // Revisión de un carrusel completo
 // ---------------------------------------------------------------------------
@@ -258,6 +280,7 @@ function revisarLamina(
   lamina: CarouselSlideText,
   indice: number | 'lectura',
   original: string,
+  fechaPublicacion?: string | null,
 ): CarouselAviso[] {
   const avisos: CarouselAviso[] = []
   const texto = `${lamina.titulo}\n${lamina.texto}`
@@ -281,7 +304,7 @@ function revisarLamina(
   }
 
   if (indice !== 'lectura') {
-    for (const cifra of cifrasSinRespaldo(texto, original)) {
+    for (const cifra of cifrasSinRespaldo(sinFechaDePublicacion(texto, fechaPublicacion), original)) {
       avisos.push({
         lamina: indice,
         tipo: 'cifra',
@@ -301,14 +324,18 @@ function revisarLamina(
   return avisos
 }
 
-/** Todos los avisos de un carrusel contra el texto del artículo original. */
+/**
+ * Todos los avisos de un carrusel contra el texto del artículo original.
+ * `fechaPublicacion` es la misma fecha que recibe el prompt (`fechaDelOriginal`).
+ */
 export function revisarCarrusel(
   laminas: CarouselSlideText[],
   lectura: CarouselSlideText | null,
   original: string,
+  fechaPublicacion?: string | null,
 ): CarouselAviso[] {
-  const avisos = laminas.flatMap((l, i) => revisarLamina(l, i, original))
-  if (lectura) avisos.push(...revisarLamina(lectura, 'lectura', original))
+  const avisos = laminas.flatMap((l, i) => revisarLamina(l, i, original, fechaPublicacion))
+  if (lectura) avisos.push(...revisarLamina(lectura, 'lectura', original, fechaPublicacion))
   return avisos
 }
 

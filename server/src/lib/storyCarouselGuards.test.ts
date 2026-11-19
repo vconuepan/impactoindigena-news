@@ -182,3 +182,35 @@ describe('revisarPie (el pie de Instagram, en la voz de Venancio)', () => {
     expect(avisos.map((a) => a.tipo)).toEqual(['cita'])
   })
 })
+
+describe('revisarCarrusel con la fecha de publicación (19-nov-2026: 12 de 19 rechazos eran «2026»)', () => {
+  const ORIGINAL = 'La comunidad denunció la invasión de su territorio ante la fiscalía.'
+  const portada = (texto: string) => [
+    { titulo: 'Comunidad denuncia invasión', texto },
+    { titulo: 'Qué pasó', texto: 'La comunidad acudió a la fiscalía.' },
+    { titulo: 'Cierre', texto: 'La denuncia sigue en curso.' },
+  ]
+  const cifras = (texto: string, fecha: string | null) =>
+    revisarCarrusel(portada(texto), null, ORIGINAL, fecha).filter((a) => a.tipo === 'cifra').map((a) => a.mensaje)
+
+  it('la fecha de publicación completa no se rechaza', () => {
+    expect(cifras('El 16 de noviembre de 2026, la comunidad denunció la invasión.', '16 de noviembre de 2026')).toEqual([])
+  })
+
+  it('tampoco sin el año, ni con «del»', () => {
+    expect(cifras('El 16 de noviembre, la comunidad denunció.', '16 de noviembre de 2026')).toEqual([])
+    expect(cifras('El 16 de noviembre del 2026, la comunidad denunció.', '16 de noviembre de 2026')).toEqual([])
+  })
+
+  it('un año suelto sigue rechazándose, aunque sea el de la publicación', () => {
+    expect(cifras('En 2026 la comunidad denunció la invasión.', '16 de noviembre de 2026')).toHaveLength(1)
+  })
+
+  it('otra fecha sigue rechazándose', () => {
+    expect(cifras('El 10 de noviembre de 2026 la comunidad denunció.', '16 de noviembre de 2026')).toHaveLength(2)
+  })
+
+  it('sin fecha conocida, todo como antes', () => {
+    expect(cifras('El 16 de noviembre de 2026, la comunidad denunció.', null)).toHaveLength(2)
+  })
+})

@@ -116,7 +116,7 @@ salida.
 | `cita` | Lo que va entre comillas está letra por letra en el original. Una traducción va en estilo indirecto | todas |
 | `identidad` | «indígena» solo si el original lo dice o nombra a un pueblo | todas |
 | `pueblo` | Un pueblo nombrado en la lámina está nombrado en el original (grafías y plural normalizados) | todas |
-| `cifra` | Todo grupo de dígitos de la lámina está en el original | láminas informativas, no la lectura |
+| `cifra` | Todo grupo de dígitos de la lámina está en el original. La fecha de publicación que recibe el prompt pasa si va **entera** («16 de noviembre de 2026» o «16 de noviembre»); un año suelto no | láminas informativas, no la lectura |
 | `espacio` | El texto cabe en la lámina; nunca se recorta en silencio | todas (lo detecta el dibujo) |
 
 La píldora de la portada lleva el tema de Voces (`issue.name`), que asigna la IA del
