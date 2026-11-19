@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useQuery } from '@tanstack/react-query'
 import { adminApi } from '../../lib/admin-api'
+import { countryName } from '../../lib/countryName'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -18,17 +19,6 @@ function formatPath(path: string) {
   if (path.startsWith('/issues/')) return path.replace('/issues/', '🏷 ')
   if (path.startsWith('/comunidad/')) return path.replace('/comunidad/', '🌎 ')
   return path
-}
-
-const COUNTRY_NAMES: Record<string, string> = {
-  CL: 'Chile', US: 'Estados Unidos', MX: 'México', AR: 'Argentina', PE: 'Perú',
-  CO: 'Colombia', BR: 'Brasil', ES: 'España', EC: 'Ecuador', BO: 'Bolivia',
-  VE: 'Venezuela', GT: 'Guatemala', CA: 'Canadá', FR: 'Francia', DE: 'Alemania',
-  GB: 'Reino Unido', PY: 'Paraguay', UY: 'Uruguay', CR: 'Costa Rica', PA: 'Panamá',
-  XX: 'Desconocido',
-}
-function countryName(code: string) {
-  return COUNTRY_NAMES[code] ?? code
 }
 
 const DEVICE_LABELS: Record<string, string> = {
