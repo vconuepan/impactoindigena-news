@@ -1,0 +1,108 @@
+name: Vigilancia del despliegue
+
+# Avisa por correo cuando el sitio o el servidor de Voces dejan de publicarse.
+#
+# ── Por qué existe (19-11-2026) ─────────────────────────────────────────────────
+# Desde el 10-11 el despliegue del sitio fallaba en cada push (faltaba el secreto
+# PRERENDER_BYPASS_TOKEN, B23) y nadie se enteró en nueve días: lo último publicado
+# seguía siendo del 09-11. El candado del prerender hizo bien su trabajo —no publicó
+# páginas a medias—, pero un despliegue detenido que nadie ve es lo mismo que uno roto.
+#
+# ── Qué vigila ──────────────────────────────────────────────────────────────────
+# 1. Cada vez que termina un despliegue (workflow_run): si no salió en verde, avisa.
+# 2. Una vez al día (schedule): si el último despliegue de cualquiera de los dos no
+#    está en verde, avisa de nuevo. Eso cubre los casos que no disparan el punto 1,
+#    como una corrida que ni siquiera arranca, y recuerda lo que sigue roto.
+# 3. A mano (workflow_dispatch con «prueba»): manda un correo de prueba.
+#
+# El correo sale por Brevo, el mismo servicio de los boletines. Necesita tres
+# secretos del repositorio: BREVO_API_KEY y BREVO_FROM_EMAIL (los mismos valores
+# del App Service) y ALERTA_CORREO, el destinatario. El destinatario vive en un
+# secreto y no en este archivo, para no publicar un correo personal en el código.
+# Si falta alguno, la corrida falla en rojo: una alerta que no puede avisar no
+# puede quedar en verde.
+
+on:
+  workflow_run:
+    workflows: ["Deploy Frontend to Azure Static Web Apps", "Deploy Backend to Azure"]
+    types: [completed]
+  schedule:
+    - cron: "0 12 * * *" # todos los días, 09:00 de Chile en horario de verano
+  workflow_dispatch:
+    inputs:
+      prueba:
+        description: "Mandar un correo de prueba"
+        type: boolean
+        default: true
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  vigilar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Revisar los despliegues
+        id: revisar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENTO: ${{ github.event_name }}
+          NOMBRE: ${{ github.event.workflow_run.name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          URL: ${{ github.event.workflow_run.html_url }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          PRUEBA: ${{ inputs.prueba }}
+        run: |
+          set -euo pipefail
+          aviso=""
+          if [ "$EVENTO" = "workflow_run" ]; then
+            if [ "$CONCLUSION" != "success" ]; then
+              aviso="El despliegue «$NOMBRE» terminó en «$CONCLUSION» (commit ${SHA:0:7}).\nLo que estaba publicado sigue igual hasta que se arregle.\n\n$URL"
+            fi
+          elif [ "$EVENTO" = "workflow_dispatch" ] && [ "$PRUEBA" = "true" ]; then
+            aviso="Correo de prueba de la vigilancia del despliegue de Voces Indígenas. Si llegó, las alertas funcionan."
+          else
+            for flujo in "Deploy Frontend to Azure Static Web Apps" "Deploy Backend to Azure"; do
+              linea=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow "$flujo" --branch main --limit 1 \
+                --json conclusion,status,createdAt,url --jq '.[0] | [.status, (.conclusion // ""), .createdAt, .url] | @tsv')
+              estado=$(printf '%s' "$linea" | cut -f1); fin=$(printf '%s' "$linea" | cut -f2)
+              fecha=$(printf '%s' "$linea" | cut -f3); enlace=$(printf '%s' "$linea" | cut -f4)
+              if [ "$estado" = "completed" ] && [ "$fin" != "success" ]; then
+                aviso="${aviso}«$flujo» sigue sin publicar: su último intento (${fecha:0:10}) terminó en «$fin».\n$enlace\n\n"
+              fi
+            done
+          fi
+          if [ -z "$aviso" ]; then
+            echo "Todo en verde: no hay nada que avisar."
+            echo "avisar=no" >> "$GITHUB_OUTPUT"
+          else
+            printf '%b' "$aviso"
+            echo "avisar=si" >> "$GITHUB_OUTPUT"
+            { echo "texto<<FIN_AVISO"; printf '%b\n' "$aviso"; echo "FIN_AVISO"; } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Mandar el correo
+        if: steps.revisar.outputs.avisar == 'si'
+        env:
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          BREVO_FROM_EMAIL: ${{ secrets.BREVO_FROM_EMAIL }}
+          ALERTA_CORREO: ${{ secrets.ALERTA_CORREO }}
+          TEXTO: ${{ steps.revisar.outputs.texto }}
+        run: |
+          set -euo pipefail
+          for v in BREVO_API_KEY BREVO_FROM_EMAIL ALERTA_CORREO; do
+            if [ -z "${!v}" ]; then echo "::error::Falta el secreto $v: la alerta no puede salir."; exit 1; fi
+          done
+          cuerpo=$(jq -n --arg de "$BREVO_FROM_EMAIL" --arg para "$ALERTA_CORREO" --arg texto "$TEXTO" '{
+            sender: { email: $de, name: "Voces Indígenas · vigilancia" },
+            to: [ { email: $para } ],
+            subject: "Voces Indígenas: un despliegue no se publicó",
+            textContent: $texto
+          }')
+          codigo=$(curl -sS -o respuesta.json -w '%{http_code}' -X POST https://api.brevo.com/v3/smtp/email \
+            -H "api-key: $BREVO_API_KEY" -H 'content-type: application/json' -d "$cuerpo")
+          if [ "$codigo" -ge 300 ]; then
+            echo "::error::Brevo respondió $codigo"; cat respuesta.json; exit 1
+          fi
+          echo "Correo enviado (Brevo $codigo)."
