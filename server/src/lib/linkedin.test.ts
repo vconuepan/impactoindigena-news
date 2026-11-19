@@ -12,6 +12,9 @@ vi.mock('./socialToken.js', () => mockToken)
 // salto), no con fetch: `fetch` queda solo para la API de LinkedIn.
 const mockDownload = vi.hoisted(() => vi.fn())
 vi.mock('./imageStorage.js', () => ({ downloadExternalImage: mockDownload }))
+// El PDF real lo prueba storyCarouselRender; acá basta con que exista.
+const mockPdf = vi.hoisted(() => vi.fn(async () => Buffer.from('%PDF-1.3')))
+vi.mock('./storyCarouselRender.js', () => ({ carruselEnPdf: mockPdf }))
 vi.mock('./logger.js', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }))
@@ -25,6 +28,8 @@ vi.mock('../config.js', () => ({
       redirectUri: 'https://impactoindigena.news/api/linkedin/oauth/callback',
       scopes: ['w_member_social'],
       tokenCheck: { thresholdDays: 7, lifetimeDays: 60 },
+      apiVersion: '202611',
+      document: { waitMs: 0, pollMs: 0 },
     },
   },
 }))
@@ -37,6 +42,7 @@ const {
   createUgcPost,
   getOrgPostMetrics,
   LinkedInAuthError,
+  aLittleText,
 } = await import('./linkedin.js')
 
 const EXPIRED_401 = JSON.stringify({
@@ -334,5 +340,109 @@ describe('getOrgPostMetrics with a dead token', () => {
 
     await expect(getOrgPostMetrics('urn:li:share:1', 'urn:li:person:abc')).resolves.toBeNull()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('el carrusel sale como documento PDF, sin el recorte de la galería', () => {
+  const LAMINAS = ['https://cdn/1.jpg', 'https://cdn/2.jpg', 'https://cdn/3.jpg']
+
+  function restResponse(body: unknown, status = 200, headers: Record<string, string> = {}) {
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      text: async () => (typeof body === 'string' ? body : JSON.stringify(body)),
+      json: async () => body,
+      headers: { get: (k: string) => headers[k.toLowerCase()] ?? null },
+    } as unknown as Response
+  }
+
+  function linkedinDocumento(opciones: { post?: number; estado?: string } = {}) {
+    return vi.fn(async (url: string, init?: RequestInit) => {
+      const u = String(url)
+      if (u.includes('/rest/documents?action=initializeUpload')) {
+        return restResponse({ value: { uploadUrl: 'https://www.linkedin.com/dms-uploads/x', document: 'urn:li:document:D1' } })
+      }
+      if (u.startsWith('https://www.linkedin.com/dms-uploads/')) return restResponse('', 201)
+      if (u.includes('/rest/documents/')) return restResponse({ status: opciones.estado ?? 'AVAILABLE' })
+      if (u.endsWith('/rest/posts')) {
+        return restResponse('', opciones.post ?? 201, { 'x-restli-id': 'urn:li:share:777' })
+      }
+      if (u.includes('registerUpload')) {
+        return restResponse({ value: { uploadMechanism: { 'com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest': { uploadUrl: 'https://up/x' } }, asset: 'urn:li:digitalmediaAsset:A' } })
+      }
+      if (u === 'https://up/x') return restResponse('', 201)
+      if (u.endsWith('/v2/ugcPosts')) return restResponse({ id: 'urn:li:ugcPost:888' }, 201)
+      throw new Error(`fetch inesperado: ${u} ${init?.method}`)
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockToken.getStoredToken.mockResolvedValue(null)
+    mockDownload.mockResolvedValue({ buffer: Buffer.from('jpg'), contentType: 'image/jpeg', ext: 'jpg' })
+  })
+
+  it('arma el PDF con las láminas en orden y publica el documento', async () => {
+    const fetchMock = linkedinDocumento()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await createUgcPost('Hola (IA) #Mapuche', 'https://vocesindigenas.org/stories/x', 'Título', 'R', LAMINAS)
+
+    expect(result).toEqual({ id: 'urn:li:share:777', permalink: 'https://www.linkedin.com/feed/update/urn:li:share:777/' })
+    expect(mockDownload.mock.calls.map(([u]) => u)).toEqual(LAMINAS)
+    expect(mockPdf).toHaveBeenCalledTimes(1)
+    const postCall = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/rest/posts'))!
+    const body = JSON.parse(postCall[1]!.body as string)
+    expect(body.content.media).toEqual({ title: 'Título', id: 'urn:li:document:D1' })
+    expect(body.commentary).toBe('Hola \\(IA\\) #Mapuche\n\nhttps://vocesindigenas.org/stories/x')
+    expect((postCall[1]!.headers as Record<string, string>)['LinkedIn-Version']).toBe('202611')
+    // Nada de galería: ni registerUpload ni ugcPosts.
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('registerUpload'))).toBe(false)
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/v2/ugcPosts'))).toBe(false)
+  })
+
+  it('si LinkedIn rechaza el documento (403), sale como galería, como antes', async () => {
+    const fetchMock = linkedinDocumento({ post: 403 })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await createUgcPost('texto', 'https://x/y', 'T', 'R', LAMINAS)
+
+    expect(result.id).toBe('urn:li:ugcPost:888')
+    const ugc = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/v2/ugcPosts'))!
+    const share = JSON.parse(ugc[1]!.body as string).specificContent['com.linkedin.ugc.ShareContent']
+    expect(share.shareMediaCategory).toBe('IMAGE')
+    expect(share.media).toHaveLength(3)
+  })
+
+  it('si LinkedIn no puede procesar el PDF, no crea el post del documento', async () => {
+    const fetchMock = linkedinDocumento({ estado: 'PROCESSING_FAILED' })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await createUgcPost('texto', 'https://x/y', 'T', 'R', LAMINAS)
+
+    expect(fetchMock.mock.calls.some(([u]) => String(u).endsWith('/rest/posts'))).toBe(false)
+    expect(result.id).toBe('urn:li:ugcPost:888')
+  })
+
+  it('una sola imagen no es carrusel: va como foto, sin documento', async () => {
+    const fetchMock = linkedinDocumento()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createUgcPost('texto', 'https://x/y', 'T', 'R', ['https://cdn/1.jpg'])
+
+    expect(mockPdf).not.toHaveBeenCalled()
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes('/rest/'))).toBe(false)
+  })
+})
+
+describe('aLittleText', () => {
+  it('escapa los reservados y deja los hashtags', () => {
+    expect(aLittleText('#PueblosIndígenas (IA) a_b *x* [1] {y} @z <w> ~ | \\')).toBe(
+      '#PueblosIndígenas \\(IA\\) a\\_b \\*x\\* \\[1\\] \\{y\\} \\@z \\<w\\> \\~ \\| \\\\',
+    )
+  })
+
+  it('un # que no abre palabra se escapa', () => {
+    expect(aLittleText('nota#1 y # suelto')).toBe('nota\\#1 y \\# suelto')
   })
 })

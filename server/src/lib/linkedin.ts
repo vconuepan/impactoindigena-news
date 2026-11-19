@@ -2,6 +2,7 @@ import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { getStoredToken, saveToken, recordTokenError } from './socialToken.js'
 import { downloadExternalImage } from './imageStorage.js'
+import { carruselEnPdf } from './storyCarouselRender.js'
 
 const log = createLogger('linkedin')
 
@@ -352,6 +353,166 @@ async function uploadImageAsset(imageUrl: string): Promise<string | null> {
 }
 
 // ---------------------------------------------------------------------------
+// Carrusel como documento (PDF)
+//
+// Por qué: una galería de fotos en LinkedIn se muestra como grilla — una foto
+// grande a la izquierda y tres chicas con «+N» — y LinkedIn RECORTA cada mosaico
+// a su forma. Las láminas son 1080×1350 (4:5) y la grande sale más angosta: se
+// pierde el borde izquierdo de la portada, que es donde va el logo, y el comienzo
+// de cada línea del titular. Lo vio el director el 19-nov-2026.
+//
+// Un documento PDF es el carrusel nativo de LinkedIn: se desliza lámina por
+// lámina, entera, sin recorte. Si cualquier paso falla (permiso, versión de la
+// API vencida, procesamiento), se devuelve null y el post sale como galería,
+// que es lo que había antes. Solo el 401 corta, como en el resto del archivo.
+// ---------------------------------------------------------------------------
+
+function restHeaders(accessToken: string): Record<string, string> {
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json',
+    'LinkedIn-Version': config.linkedin.apiVersion,
+    'X-Restli-Protocol-Version': '2.0.0',
+  }
+}
+
+/**
+ * El texto del post en formato «little», que exige la API REST de posts: los
+ * caracteres reservados van con barra invertida o LinkedIn corta el texto desde
+ * ahí (un paréntesis sin escapar se come el resto del post). Un `#Palabra` al
+ * comienzo de una palabra se deja tal cual: es un hashtag.
+ */
+export function aLittleText(texto: string): string {
+  return texto.replace(/[\\|{}@[\]()<>#*_~]/g, (c, i: number, s: string) => {
+    if (c === '#') {
+      const antes = i === 0 ? '' : s[i - 1]
+      const despues = s[i + 1] ?? ''
+      if ((antes === '' || /\s/.test(antes)) && /[\p{L}\p{N}]/u.test(despues)) return c
+    }
+    return `\\${c}`
+  })
+}
+
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+async function subirDocumento(pdf: Buffer, accessToken: string): Promise<string | null> {
+  const initRes = await fetch('https://api.linkedin.com/rest/documents?action=initializeUpload', {
+    method: 'POST',
+    headers: restHeaders(accessToken),
+    body: JSON.stringify({ initializeUploadRequest: { owner: config.linkedin.authorUrn } }),
+  })
+  if (!initRes.ok) {
+    const errText = await initRes.text()
+    log.warn({ status: initRes.status, body: errText }, 'LinkedIn document initializeUpload failed')
+    if (initRes.status === 401) throwLinkedInError('LinkedIn document initializeUpload failed', 401, errText)
+    return null
+  }
+  const { value } = (await initRes.json()) as { value: { uploadUrl: string; document: string } }
+
+  const upRes = await fetch(value.uploadUrl, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/pdf' },
+    body: new Uint8Array(pdf),
+  })
+  if (!upRes.ok) {
+    log.warn({ status: upRes.status }, 'LinkedIn document upload PUT failed')
+    if (upRes.status === 401) throwLinkedInError('LinkedIn document upload failed', 401, '')
+    return null
+  }
+
+  // El post se crea cuando el documento está procesado. Si no llega a tiempo se
+  // intenta igual: LinkedIn suele aceptarlo en PROCESSING y lo termina solo.
+  const { waitMs, pollMs } = config.linkedin.document
+  const hasta = Date.now() + waitMs
+  for (;;) {
+    const res = await fetch(
+      `https://api.linkedin.com/rest/documents/${encodeURIComponent(value.document)}`,
+      { headers: restHeaders(accessToken) },
+    )
+    if (res.ok) {
+      const { status } = (await res.json()) as { status?: string }
+      if (status === 'AVAILABLE') break
+      if (status === 'PROCESSING_FAILED') {
+        log.warn({ document: value.document }, 'LinkedIn could not process the carousel PDF')
+        return null
+      }
+    } else if (res.status === 401) {
+      throwLinkedInError('LinkedIn document status failed', 401, await res.text())
+    }
+    if (Date.now() + pollMs > hasta) {
+      log.warn({ document: value.document }, 'LinkedIn document still processing — posting anyway')
+      break
+    }
+    await esperar(pollMs)
+  }
+
+  return value.document
+}
+
+/**
+ * Publica el carrusel como documento. Devuelve null ante cualquier fallo que no
+ * sea de token, para que `createUgcPost` siga con la galería de fotos.
+ */
+async function publicarComoDocumento(
+  text: string,
+  articleUrl: string,
+  articleTitle: string,
+  imageUrls: string[],
+): Promise<{ id: string; permalink: string } | null> {
+  try {
+    // Las láminas primero: si alguna no baja, no se deja un documento huérfano.
+    const laminas: Buffer[] = []
+    for (const url of imageUrls) {
+      const dl = await downloadExternalImage(url)
+      if (!dl) {
+        log.warn({ url }, 'carousel slide did not download — LinkedIn post goes as a gallery')
+        return null
+      }
+      laminas.push(dl.buffer)
+    }
+    const pdf = await carruselEnPdf(laminas)
+
+    const accessToken = await getAccessToken()
+    const documentUrn = await subirDocumento(pdf, accessToken)
+    if (!documentUrn) return null
+
+    const commentary = text.includes(articleUrl) ? text : `${text}\n\n${articleUrl}`
+    const res = await fetch('https://api.linkedin.com/rest/posts', {
+      method: 'POST',
+      headers: restHeaders(accessToken),
+      body: JSON.stringify({
+        author: config.linkedin.authorUrn,
+        commentary: aLittleText(commentary),
+        visibility: 'PUBLIC',
+        distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] },
+        // El título es la cabecera del visor del documento.
+        content: { media: { title: articleTitle.slice(0, 200), id: documentUrn } },
+        lifecycleState: 'PUBLISHED',
+        isReshareDisabledByAuthor: false,
+      }),
+    })
+    if (!res.ok) {
+      const errText = await res.text()
+      log.warn({ status: res.status, body: errText }, 'LinkedIn document post failed — falling back to gallery')
+      if (res.status === 401) throwLinkedInError('LinkedIn document post failed', 401, errText)
+      return null
+    }
+    const id = res.headers.get('x-restli-id') || res.headers.get('x-linkedin-id')
+    if (!id) {
+      // Creado pero sin id: NO se reintenta como galería, o saldría dos veces.
+      log.error('LinkedIn document post created without an id header')
+      return { id: '', permalink: '' }
+    }
+    log.info({ id, laminas: laminas.length }, 'LinkedIn carousel published as a document')
+    return { id, permalink: `https://www.linkedin.com/feed/update/${id}/` }
+  } catch (err) {
+    if (err instanceof LinkedInAuthError) throw err
+    log.warn({ err }, 'LinkedIn document carousel failed — falling back to gallery')
+    return null
+  }
+}
+
+// ---------------------------------------------------------------------------
 // UGC post creation
 // ---------------------------------------------------------------------------
 
@@ -444,7 +605,15 @@ export async function createUgcPost(
 ): Promise<{ id: string; permalink: string }> {
   // Normalize to an array. Upload each image; LinkedIn renders multiple
   // images in one UGC post as a swipeable multi-image gallery (up to 9).
-  const urls = (Array.isArray(imageUrls) ? imageUrls : imageUrls ? [imageUrls] : []).slice(0, 9)
+  const todas = Array.isArray(imageUrls) ? imageUrls : imageUrls ? [imageUrls] : []
+
+  // Un carrusel (más de una lámina) va primero como documento: sin recorte.
+  if (todas.length > 1) {
+    const doc = await publicarComoDocumento(text, articleUrl, articleTitle, todas)
+    if (doc) return doc
+  }
+
+  const urls = todas.slice(0, 9)
   const assetUrns: string[] = []
   for (const url of urls) {
     const urn = await uploadImageAsset(url)

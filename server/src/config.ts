@@ -601,6 +601,16 @@ export const config = {
     // Importa además porque pedir un scope que la app no tenga aprobado hace
     // fallar la autorización completa, no solo esa parte.
     scopes: (process.env.LINKEDIN_OAUTH_SCOPES || 'w_member_social').split(' '),
+    // Versión de la API REST (`/rest/documents`, `/rest/posts`), la que publica el
+    // carrusel como documento. LinkedIn retira cada versión ~12 meses después de
+    // salir: 202611 vive hasta ~nov-2027. Al vencer, la publicación cae sola a la
+    // galería de fotos (ver `publicarComoDocumento`); subirla acá o en Azure.
+    apiVersion: process.env.LINKEDIN_API_VERSION || '202611',
+    document: {
+      // Cuánto se espera a que LinkedIn procese el PDF antes de crear el post.
+      waitMs: parseInt(process.env.LINKEDIN_DOCUMENT_WAIT_MS || '30000', 10),
+      pollMs: parseInt(process.env.LINKEDIN_DOCUMENT_POLL_MS || '2000', 10),
+    },
   },
   podcast: {
     autoGenerate: {

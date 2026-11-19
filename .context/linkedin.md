@@ -4,8 +4,9 @@ Spec counterpart: `.specs/social-posting.allium` (authoritative for posting beha
 
 ## Overview
 
-Full channel: LLM-generated draft → admin review → publish → metrics. Posts go
-out as a multi-image gallery — the carousel built from the original article
+Full channel: LLM-generated draft → admin review → publish → metrics. A
+carousel (two or more slides) goes out first as a **PDF document post** — see
+«Carousel as a document» below — and only if that fails as a multi-image gallery — the carousel built from the original article
 (`story-carousel.md`), reused from Instagram when it exists, built otherwise —
 falling back to a single image and then to an ARTICLE link card. If the carousel
 does not pass the guards, or a draft holds slides from the previous generator
@@ -15,6 +16,30 @@ Key files: `server/src/lib/linkedin.ts` (API + auth), `server/src/services/linke
 (drafts, publishing, metrics), `server/src/routes/admin/linkedin.ts`,
 `server/src/routes/linkedinOAuth.ts` (public callback),
 `server/src/jobs/linkedinCheckToken.ts`, `client/src/pages/admin/LinkedInPage.tsx`.
+
+## Carousel as a document (19-nov-2026)
+
+A multi-image gallery is shown as a grid — one big tile on the left, three small
+ones with «+N» — and LinkedIn **crops every tile**. The slides are 1080×1350 and
+the big tile is narrower, so the cover lost its left edge: the logo and the start
+of every headline line. The director saw it on 19-nov-2026.
+
+`createUgcPost` now builds a PDF from the slides (`carruselEnPdf`, the same one
+the panel download uses) and publishes it through the REST API:
+`/rest/documents?action=initializeUpload` → PUT → poll `/rest/documents/{urn}`
+until `AVAILABLE` → `/rest/posts` with `content.media.id = urn:li:document:…`.
+A document post is LinkedIn's native carousel: whole slides, swiped one by one.
+
+| Detail | Why |
+|---|---|
+| `LINKEDIN_API_VERSION` (default `202611`) | The REST API requires a `LinkedIn-Version` header; each version is sunset ~12 months after release |
+| `commentary` goes through `aLittleText()` | The Posts API parses «little» text: an unescaped `(` truncates the post. `#Word` is left as a hashtag |
+| Any non-401 failure → gallery | Permission, sunset version or processing failure: the post still goes out as before. A 401 stops everything, as elsewhere |
+| One image → never a document | A single photo is not a carousel |
+
+Permission: the Documents and Posts APIs list `w_member_social` for a person
+owner. **Not yet verified against this app in production** — if it lacks the
+product, the log says `LinkedIn document … failed — falling back to gallery`.
 
 ## Authentication
 
