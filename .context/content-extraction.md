@@ -85,6 +85,8 @@ If the feed has an `htmlSelector` configured (e.g., `article.post-content`), the
 
 Uses `@mozilla/readability` with `jsdom` to extract the main article content. Works well for standard news articles. This is the primary extraction method for most feeds.
 
+**CSS that jsdom rejects (since 2026-11-19, B24).** jsdom 27 throws while *constructing* the document when a `<style>` block holds a value its CSS parser (css-tree) does not accept. Measured on elinformadordigital.cl: `height:calc(~100% + 1px)` (LESS syntax left in the published CSS) made `new JSDOM` throw `")" is expected`, so the regional paper lost 10 of 10 stories every crawl. `lib/domTolerante.ts` retries without the `<style>` blocks, and only when the first attempt throws. Readability never reads stylesheets: it decides visibility from inline `style`, `hidden` and `aria-hidden`, and jsdom does not load external sheets. The retry logs `jsdom no acepto el CSS de la pagina`. With no API tier configured in production (no `DIFFBOT_TOKEN`), a Tier 2 failure is final for that article, so this is the difference between the source working and not.
+
 ### Tier 3: External API
 
 Only the configured `config.crawl.extractionApi` (default `diffbot`) is called — there is no fallback to the other API. Requires `DIFFBOT_TOKEN` or `PIPFEED_API_KEY` depending on which API is configured. Skipped if the required key isn't set.

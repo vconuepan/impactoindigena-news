@@ -14,6 +14,7 @@ import { crawlLimiter } from '../lib/crawlLimiter.js'
 import { ogImageFromHtml } from '../lib/extract-og-image.js'
 import { fechaDeclaradaEnLaPagina } from '../lib/fechaDeLaPagina.js'
 import { extraerFotosDelCuerpo, depurarFotos } from '../lib/fotosDelArticulo.js'
+import { crearDomTolerante } from '../lib/domTolerante.js'
 
 const log = createLogger('extractor')
 // Use a browser-compatible User-Agent to avoid 403 blocks from sites that
@@ -181,7 +182,10 @@ function extractBySelector(html: string, selector: string, url: string): Extract
 function extractByReadability(html: string, url: string): ExtractionResult | null {
   let dom: InstanceType<typeof JSDOM> | null = null
   try {
-    dom = new JSDOM(html, { url })
+    // Tolera el CSS que jsdom no entiende (B24, 19-nov-2026): ver lib/domTolerante.ts.
+    const armado = crearDomTolerante(html, url)
+    dom = armado.dom
+    if (armado.sinEstilos) log.info({ url }, 'jsdom no acepto el CSS de la pagina: se extrae sin sus hojas de estilo')
     const article = new Readability(dom.window.document).parse()
     if (!article || !article.textContent || article.textContent.trim().length < config.crawl.minContentLength) return null
 
