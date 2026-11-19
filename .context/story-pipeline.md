@@ -49,7 +49,13 @@ pueblo, año futuro, copia de dieciséis palabras, agencia de la bajada y texto 
 respaldo de cifras (`respaldoConFecha`: 11 de 13 bloqueos eran «cifra:bajada» por esa fecha); la
 ventana de copia pasó de 12 a 16 (un nombre oficial con su artículo tiene quince); y «meta» ya no
 mira «el informe», «el reportaje» ni «la nota», que son la noticia misma. El año futuro **no** se
-quita a mitad de frase (borraría fechas futuras legítimas): una fuente con errata «2027» pierde el cuerpo. **Fallo cerrado:** con un bloqueante no se escribe nada y la ficha sale con el
+quita a mitad de frase (borraría fechas futuras legítimas): una fuente con errata «2027» pierde el cuerpo.
+**Salvo en «Qué sigue» (B22, 19-nov-2026):** ahí un año futuro pasa si el original lo trae y su oración
+no relata en pretérito (`futureYearsWithoutBacking` en `lib/future-year.ts`; los nombres propios a mitad
+de oración no cuentan como verbo, porque «Maró» se leía como «aprobó»). Medido del 6 al 19-nov: 20 de 76
+cuerpos bloqueados, 6 con año futuro; en 3 el año estaba en el original (Mongabay, CNN Brasil, Fiocruz),
+2 eran inventados (RPP, HRW) y 1 no se pudo leer (El País). En los demás campos todo año futuro sigue
+bloqueando. **Fallo cerrado:** con un bloqueante no se escribe nada y la ficha sale con el
 resumen. Se salta sin llamar al modelo: URL de Google News, original bajo `minSourceChars` (1.200),
 `STORY_BODY_ENABLED=false`, tabla ausente (P2021).
 

@@ -102,6 +102,42 @@ export function stripImpossibleHistoricalYear(text: string, referenceYear: numbe
   return salida.join(' ')
 }
 
+/**
+ * Años posteriores al de referencia que el texto dice SIN respaldo: los que el
+ * respaldo (el original, su titular y su fecha) no trae, y los que fechan una
+ * oración que relata en pretérito aunque el original los traiga.
+ *
+ * Para el campo que mira hacia adelante («Qué sigue» de la nota con claves,
+ * B22, 19-nov-2026). Medido del 6 al 19-nov en producción: 6 cuerpos
+ * bloqueados por año futuro; en 3 el año estaba en el original y era
+ * legítimo («la tendencia… se mantendrá en 2027», Mongabay; «prevista para
+ * 2027 no cronograma da Funai», CNN Brasil; «até janeiro de 2027», Fiocruz),
+ * en 2 era inventado (RPP, HRW) y 1 no se pudo leer (El País).
+ *
+ * El pretérito sigue bloqueando aunque el original traiga el año: «la Cámara
+ * aprobó en 2027» es la errata del 25-oct-2026, que venía de la fuente.
+ */
+// `PRETERITO` toma toda palabra terminada en «ó» como verbo en pasado, y un
+// nombre propio también termina así: «Maró» (tierra indígena del Pará) se leía
+// como «aprobó». A mitad de oración, una palabra con mayúscula es un nombre; se
+// quita antes de mirar el tiempo verbal. La primera palabra se conserva, porque
+// ahí la mayúscula no distingue («Aprobó…»).
+function sinNombresPropios(oracion: string): string {
+  return oracion.replace(/(?<=[\s«“"(])\p{Lu}\p{L}*/gu, '')
+}
+
+export function futureYearsWithoutBacking(text: string | null | undefined, referenceYear: number, respaldo: string): number[] {
+  if (!text) return []
+  const found = new Set<number>()
+  for (const oracion of text.split(/(?<=[.!?])\s+/u)) {
+    for (const y of yearsAfter(oracion, referenceYear)) {
+      const enElRespaldo = new RegExp(`(?<!\\d)${y}(?!\\d)`).test(respaldo)
+      if (!enElRespaldo || esRelatoDePasado(sinNombresPropios(oracion))) found.add(y)
+    }
+  }
+  return [...found].sort((a, b) => a - b)
+}
+
 /** Variante tolerante a null, para usar directo sobre campos opcionales. */
 export function stripImpossibleHistoricalYearOrNull(
   text: string | null | undefined,

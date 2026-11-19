@@ -11,7 +11,9 @@
  * respaldados. Tres son propias de un texto largo que se publica como nota:
  *
  * 5. Año futuro: ningún año posterior al de referencia (`future-year.ts`,
- *    el defecto «En 2027, la Cámara aprobó…» del 25-oct-2026).
+ *    el defecto «En 2027, la Cámara aprobó…» del 25-oct-2026). Salvo en «Qué
+ *    sigue», donde se acepta si el original lo trae y la oración no relata en
+ *    pasado (B22, 19-nov-2026).
  * 6. Copia: fuera de la cita, ningún tramo de doce palabras seguidas del
  *    cuerpo está en el original. Chile no tiene excepción de prensa; el
  *    art. 71 B de la Ley 17.336 ampara la cita breve con fuente, título y
@@ -31,7 +33,7 @@ import {
   normalizar,
   pueblosSinRespaldo,
 } from './storyCarouselGuards.js'
-import { yearsAfter } from './future-year.js'
+import { futureYearsWithoutBacking, yearsAfter } from './future-year.js'
 
 /**
  * Lo que el candado de cifras acepta además del artículo: la fecha que el
@@ -226,11 +228,19 @@ function revisarCampo(campo: CampoCuerpo, texto: string, original: string, anioR
     })
   }
 
-  for (const anio of yearsAfter(texto, anioReferencia)) {
+  // «Qué sigue» mira hacia adelante: ahí un año futuro que el original trae, en
+  // una oración que no relata en pasado, es legítimo (B22, 19-nov-2026; ver
+  // `futureYearsWithoutBacking`). En los demás campos, todo año futuro bloquea.
+  const aniosFuturos = campo === 'queSigue'
+    ? futureYearsWithoutBacking(texto, anioReferencia, original)
+    : yearsAfter(texto, anioReferencia)
+  for (const anio of aniosFuturos) {
     avisos.push({
       campo,
       tipo: 'anio',
-      mensaje: `Fecha en el futuro: «${anio}» es posterior a ${anioReferencia}.`,
+      mensaje: campo === 'queSigue'
+        ? `Fecha en el futuro: «${anio}» es posterior a ${anioReferencia} y el original no la respalda (o la relata en pasado).`
+        : `Fecha en el futuro: «${anio}» es posterior a ${anioReferencia}.`,
     })
   }
 

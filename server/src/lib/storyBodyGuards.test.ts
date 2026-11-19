@@ -139,6 +139,40 @@ describe('respaldoConFecha y sinAnioImposible', () => {
     expect(con.map((a) => a.tipo)).not.toContain('cifra')
   })
 
+  // B22, 19-nov-2026: del 6 al 19-nov, 3 de 6 bloqueos por año futuro frenaban
+  // un año que el original sí traía, casi siempre en «Qué sigue».
+  describe('año futuro en «Qué sigue» (B22)', () => {
+    const anios = (queSigue: string, fuente: string) =>
+      revisarCuerpo(cuerpo({ queSigue }), fuente, 2026).filter((a) => a.tipo === 'anio')
+
+    it('lo acepta si el original lo trae y la oración mira hacia adelante (Mongabay)', () => {
+      const fuente = `${ORIGINAL} Todo indica que la tendencia a la caída del presupuesto ambiental se mantendrá en 2027.`
+      expect(anios('El recorte del presupuesto ambiental se mantendrá en 2027, según el Ministerio de Economía.', fuente)).toEqual([])
+    })
+
+    it('lo acepta con un participio, sin verbo en pasado (CNN Brasil)', () => {
+      const fuente = `${ORIGINAL} Já Maró e Cobra Grande aguardam essa fase, prevista para 2027 no cronograma da Funai.`
+      expect(anios('La demarcación física de Maró y Cobra Grande está prevista para 2027 en el cronograma de la Funai.', fuente)).toEqual([])
+    })
+
+    it('lo bloquea si el original no lo trae (RPP, HRW)', () => {
+      const avisos = anios('La comisión se reunirá en 2027 para revisar los casos.', ORIGINAL)
+      expect(avisos).toHaveLength(1)
+      expect(avisos[0].mensaje).toContain('no la respalda')
+    })
+
+    it('un nombre propio no esconde el verbo en pasado: sigue bloqueando aunque el original traiga el año', () => {
+      const fuente = `${ORIGINAL} Lula firmó el decreto en 2027.`
+      expect(anios('Lula firmó el decreto de demarcación en 2027 junto a las comunidades.', fuente)).toHaveLength(1)
+    })
+
+    it('fuera de «Qué sigue» todo año futuro bloquea igual, aunque el original lo traiga', () => {
+      const fuente = `${ORIGINAL} El presupuesto se mantendrá en 2027.`
+      const avisos = revisarCuerpo(cuerpo({ contexto: 'El presupuesto se mantendrá en 2027, según el ministerio.' }), fuente, 2026)
+      expect(avisos.filter((a) => a.tipo === 'anio' && a.campo === 'contexto')).toHaveLength(1)
+    })
+  })
+
   it('un año imposible copiado de la errata de la fuente sigue bloqueando, aunque la fuente lo traiga', () => {
     const avisos = revisarCuerpo(cuerpo({ queSigue: 'Las comunidades presentaron la denuncia en octubre de 2027.' }), ORIGINAL + ' 2 de noviembre de 2027', 2026)
     expect(avisos.filter((a) => a.tipo === 'anio')).toHaveLength(1)
