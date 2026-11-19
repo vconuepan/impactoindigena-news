@@ -74,6 +74,7 @@ The unified `socialAutoPost` job runs on a schedule and posts to all enabled cha
 2. `findAutoPostCandidates()` finds recently published stories not yet posted to Instagram
 3. `pickBestStoryForSocial()` uses LLM to select the best story
 4. `generateDraft(storyId, { esperar: true })` waits for the draft, then `publishPost(postId)` runs in the same run. A `rejected` draft is not published. (Until 25-oct-2026 the job did not wait: it tried to publish a record still in `generating`, failed with «Can only publish draft posts», and the draft went out on a later run only if the model picked the same story again.)
+   **Next candidate after a rejection (B21, 19-nov-2026).** A `rejected` draft no longer costs the slot: the channel asks `pickBestStoryForSocial()` again among the candidates it has not published, rejected or tried in this run, and drafts that one, through the same guards (no rule is relaxed). At most `SOCIAL_AUTOPOST_TRIES_PER_CHANNEL` drafts per run (default 3; `1` restores the old behaviour). Only the rejecting channel moves on; the other channels keep the shared pick. Measured before the change: 9 of 27 Instagram slots lost between 6 and 19-nov, with 48 to 86 candidates per run, and 6 of the 9 rejections were the `cifra` guard on «2026». Each extra try costs one carousel (US$0.002) plus one medium-tier pick.
 5. A 2-second delay separates channel posts to avoid rate limit spikes
 
 ### Metrics Polling (`instagram_update_metrics`)
@@ -157,6 +158,7 @@ All routes require admin or editor role (`requireAuth, requireRole('admin', 'edi
 | `INSTAGRAM_ACCESS_TOKEN` | Yes (for Instagram) | `''` | Long-lived Graph API user token |
 | `INSTAGRAM_USER_ID` | Yes (for Instagram) | `''` | Numeric Instagram user ID |
 | `INSTAGRAM_AUTO_POST_ENABLED` | No | `false` | Enable cron auto-posting |
+| `SOCIAL_AUTOPOST_TRIES_PER_CHANNEL` | No | `3` | Drafts per channel per auto-post run when the guards reject one (B21) |
 | `INSTAGRAM_METRICS_MAX_AGE_DAYS` | No | `30` | Days of posts to include in metrics polling |
 | `INSTAGRAM_TOKEN_REFRESH_THRESHOLD_DAYS` | No | `15` | Refresh the token when fewer than this many days remain |
 | `INSTAGRAM_TOKEN_LIFETIME_DAYS` | No | `60` | Assumed token lifetime when the API omits `expires_in` |

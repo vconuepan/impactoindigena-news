@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 // Every channel flag starts off; each test turns on only what it needs.
 const mockConfig = vi.hoisted(() => ({
@@ -9,7 +9,7 @@ const mockConfig = vi.hoisted(() => ({
     instagram: { autoPost: { enabled: false } },
     linkedin: { autoPost: { enabled: false } },
     facebook: { autoPost: { enabled: false } },
-    socialAutoPost: { lookbackHours: 25 },
+    socialAutoPost: { lookbackHours: 25, intentosPorCanal: 3 },
   },
 }))
 
@@ -215,6 +215,111 @@ describe('runSocialAutoPost', () => {
       await runSocialAutoPost()
 
       expect(mockChannels.instagram.publishPost).not.toHaveBeenCalled()
+    })
+
+    // B21, 19-nov-2026: del 6 al 19-nov Instagram perdió 9 de 27 franjas porque
+    // un rechazo dejaba al canal sin publicar. Ahora prueba con la siguiente.
+    describe('siguiente candidata tras un rechazo (B21)', () => {
+      beforeEach(() => {
+        mockConfig.config.socialAutoPost.intentosPorCanal = 3
+        mockSocial.findAutoPostCandidates.mockResolvedValue(['story-1', 'story-2', 'story-3', 'story-4'])
+      })
+
+      // `clearAllMocks` no vacía las respuestas en cola (`mockResolvedValueOnce`):
+      // una que sobre se colaría en el test siguiente. Los `beforeEach` de arriba
+      // vuelven a poner los valores por defecto.
+      afterEach(() => {
+        mockSocial.pickBestStoryForSocial.mockReset()
+        mockChannels.instagram.generateDraft.mockReset()
+        mockChannels.linkedin.generateDraft.mockReset()
+        mockPrisma.instagramPost.findMany.mockReset()
+      })
+
+      it('publica la siguiente mejor cuando la elegida se rechaza', async () => {
+        mockSocial.pickBestStoryForSocial
+          .mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })
+          .mockResolvedValueOnce({ storyId: 'story-2', reasoning: 'next' })
+        mockChannels.instagram.generateDraft
+          .mockResolvedValueOnce({ id: 'ig-1', status: 'rejected' })
+          .mockResolvedValueOnce({ id: 'ig-2', status: 'draft' })
+
+        await runSocialAutoPost()
+
+        expect(mockChannels.instagram.generateDraft).toHaveBeenNthCalledWith(2, 'story-2', { esperar: true })
+        expect(mockChannels.instagram.publishPost).toHaveBeenCalledTimes(1)
+        expect(mockChannels.instagram.publishPost).toHaveBeenCalledWith('ig-2')
+        // Comprueba antes de publicar que la nueva siga visible, igual que con la primera.
+        expect(mockWithheld).toHaveBeenCalledWith(['story-2'])
+      })
+
+      it('la siguiente sale de las que quedan: ni la ya probada ni las que el canal ya resolvió', async () => {
+        mockSocial.pickBestStoryForSocial
+          .mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })
+          .mockResolvedValueOnce({ storyId: 'story-4', reasoning: 'next' })
+        // story-1 sin fila al empezar; tras su rechazo, el canal ya tiene story-1 y story-3 resueltas.
+        mockPrisma.instagramPost.findMany
+          .mockResolvedValueOnce([])
+          .mockResolvedValueOnce([{ storyId: 'story-1' }, { storyId: 'story-3' }])
+        mockChannels.instagram.generateDraft
+          .mockResolvedValueOnce({ id: 'ig-1', status: 'rejected' })
+          .mockResolvedValueOnce({ id: 'ig-4', status: 'draft' })
+
+        await runSocialAutoPost()
+
+        expect(mockSocial.pickBestStoryForSocial).toHaveBeenNthCalledWith(2, ['story-2', 'story-4'])
+        expect(mockChannels.instagram.publishPost).toHaveBeenCalledWith('ig-4')
+      })
+
+      it('respeta el tope de intentos y no publica nada si todos se rechazan', async () => {
+        mockSocial.pickBestStoryForSocial
+          .mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })
+          .mockResolvedValueOnce({ storyId: 'story-2', reasoning: 'next' })
+          .mockResolvedValueOnce({ storyId: 'story-3', reasoning: 'next' })
+        mockChannels.instagram.generateDraft.mockResolvedValue({ id: 'ig-x', status: 'rejected' })
+
+        await runSocialAutoPost()
+
+        expect(mockChannels.instagram.generateDraft).toHaveBeenCalledTimes(3)
+        expect(mockChannels.instagram.publishPost).not.toHaveBeenCalled()
+      })
+
+      it('con tope 1 se comporta como antes: un rechazo y el canal no publica', async () => {
+        mockConfig.config.socialAutoPost.intentosPorCanal = 1
+        mockSocial.pickBestStoryForSocial.mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })
+        mockChannels.instagram.generateDraft.mockResolvedValue({ id: 'ig-1', status: 'rejected' })
+
+        await runSocialAutoPost()
+
+        expect(mockChannels.instagram.generateDraft).toHaveBeenCalledTimes(1)
+        expect(mockSocial.pickBestStoryForSocial).toHaveBeenCalledTimes(1)
+      })
+
+      it('sin más candidatas para el canal, se detiene sin otra elección del modelo', async () => {
+        mockSocial.findAutoPostCandidates.mockResolvedValue(['story-1'])
+        mockSocial.pickBestStoryForSocial.mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })
+        mockChannels.instagram.generateDraft.mockResolvedValue({ id: 'ig-1', status: 'rejected' })
+
+        await runSocialAutoPost()
+
+        expect(mockSocial.pickBestStoryForSocial).toHaveBeenCalledTimes(1)
+        expect(mockChannels.instagram.generateDraft).toHaveBeenCalledTimes(1)
+      })
+
+      it('los demás canales publican la elegida, no la de reemplazo', async () => {
+        mockConfig.config.linkedin.autoPost.enabled = true
+        mockSocial.pickBestStoryForSocial
+          .mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })
+          .mockResolvedValueOnce({ storyId: 'story-2', reasoning: 'next' })
+        mockChannels.instagram.generateDraft
+          .mockResolvedValueOnce({ id: 'ig-1', status: 'rejected' })
+          .mockResolvedValueOnce({ id: 'ig-2', status: 'draft' })
+        mockChannels.linkedin.generateDraft.mockResolvedValue({ id: 'li-1' })
+
+        await runSocialAutoPost()
+
+        expect(mockChannels.linkedin.generateDraft).toHaveBeenCalledWith('story-1')
+        expect(mockChannels.instagram.publishPost).toHaveBeenCalledWith('ig-2')
+      })
     })
 
     // Si no, el job volvería a elegir la misma noticia en cada corrida.

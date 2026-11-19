@@ -456,6 +456,12 @@ export const config = {
   socialAutoPost: {
     lookbackHours: parseInt(process.env.SOCIAL_LOOKBACK_HOURS || process.env.BLUESKY_LOOKBACK_HOURS || '25', 10),
     pickModelTier: 'medium' as const,
+    // B21 (19-nov-2026): si los candados rechazan el borrador de la elegida, el
+    // canal prueba con la siguiente mejor candidata, hasta este total de
+    // intentos por corrida. Cada intento extra cuesta un carrusel (US$0,002,
+    // medido el 24-oct) mas una eleccion del modelo (tier medium, sin medir).
+    // 1 = el comportamiento anterior: el canal pierde la franja.
+    intentosPorCanal: parseInt(process.env.SOCIAL_AUTOPOST_TRIES_PER_CHANNEL || '3', 10),
   },
   twitter: {
     apiKey: process.env.TWITTER_API_KEY || '',

@@ -161,40 +161,84 @@ export async function runSocialAutoPost(): Promise<void> {
 
   for (const channel of channels) {
     try {
-      const alreadyPosted = await channel.publishedStoryIds([storyId])
-      if (alreadyPosted.has(storyId)) {
-        log.info({ channel: channel.name, storyId }, 'story already posted (or rejected) on channel, skipping')
-        continue
-      }
-
-      log.info({ channel: channel.name, storyId }, 'generating draft')
-      const draft = await channel.generateDraft(storyId)
-
-      // El carrusel o el pie no pasó los candados: no se publica, y el motivo
-      // queda en el post para verlo en el panel.
-      if (draft.status === 'rejected') {
-        log.warn({ channel: channel.name, storyId, postId: draft.id }, 'draft rejected by the carousel guards; not published')
-        continue
-      }
-
-      // Candidates were filtered minutes ago (LLM pick, drafts, 2 s between
-      // channels): a vertical in enforce may have withheld the story since.
-      // Check again right before each publish, which cannot be undone.
-      if ((await withheldInEnforcedVerticals([storyId])).has(storyId)) {
-        log.warn({ channel: channel.name, storyId }, 'story withheld by a vertical in enforce during the run; auto-post stopped')
-        break
-      }
-
-      log.info({ channel: channel.name, postId: draft.id }, 'publishing')
-      await channel.publishPost(draft.id)
-
-      log.info({ channel: channel.name, storyId }, 'auto-post published successfully')
-
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      const resultado = await publicarEnCanal(channel, storyId, candidates)
+      // La elegida es la misma para todos los canales: si una vertical en
+      // enforce la retuvo durante la corrida, no sale en ninguno.
+      if (resultado.estado === 'retenida' && resultado.storyId === storyId) break
+      if (resultado.estado === 'publicada') await new Promise((resolve) => setTimeout(resolve, 2000))
     } catch (err) {
       log.error({ err, channel: channel.name, storyId }, 'auto-post failed for channel')
     }
   }
 
   log.info('social auto-post job complete')
+}
+
+type ResultadoCanal = {
+  estado: 'publicada' | 'omitida' | 'rechazada' | 'retenida'
+  storyId: string
+}
+
+/**
+ * Publica en un canal la elegida y, si los candados rechazan su borrador,
+ * prueba con la siguiente mejor candidata (B21, 19-nov-2026).
+ *
+ * Antes un rechazo dejaba al canal sin publicar en esa franja: del 6 al 19-nov
+ * Instagram perdio 9 de 27 franjas (33 %) con 48 a 86 candidatas por corrida.
+ * Ninguna regla cambia: el siguiente borrador pasa por los mismos candados. La
+ * siguiente la elige el mismo criterio editorial (`pickBestStoryForSocial`)
+ * entre las candidatas que este canal no publico, no rechazo y no probo en esta
+ * corrida. Tope: `config.socialAutoPost.intentosPorCanal` intentos en total.
+ * Los demas canales no cambian de noticia.
+ */
+async function publicarEnCanal(channel: ChannelConfig, primera: string, candidates: string[]): Promise<ResultadoCanal> {
+  const configurado = config.socialAutoPost.intentosPorCanal
+  const tope = Number.isFinite(configurado) && configurado >= 1 ? configurado : 1
+  const probadas = new Set<string>()
+  let storyId = primera
+
+  for (let intento = 1; ; intento++) {
+    if (intento === 1 && (await channel.publishedStoryIds([storyId])).has(storyId)) {
+      log.info({ channel: channel.name, storyId }, 'story already posted (or rejected) on channel, skipping')
+      return { estado: 'omitida', storyId }
+    }
+    probadas.add(storyId)
+
+    log.info({ channel: channel.name, storyId, intento }, 'generating draft')
+    const draft = await channel.generateDraft(storyId)
+
+    if (draft.status !== 'rejected') {
+      // Candidates were filtered minutes ago (LLM pick, drafts, 2 s between
+      // channels): a vertical in enforce may have withheld the story since.
+      // Check again right before each publish, which cannot be undone.
+      if ((await withheldInEnforcedVerticals([storyId])).has(storyId)) {
+        log.warn({ channel: channel.name, storyId }, 'story withheld by a vertical in enforce during the run; auto-post stopped')
+        return { estado: 'retenida', storyId }
+      }
+
+      log.info({ channel: channel.name, postId: draft.id }, 'publishing')
+      await channel.publishPost(draft.id)
+      log.info({ channel: channel.name, storyId, intento }, 'auto-post published successfully')
+      return { estado: 'publicada', storyId }
+    }
+
+    // El carrusel o el pie no pasó los candados: no se publica, y el motivo
+    // queda en el post para verlo en el panel.
+    log.warn({ channel: channel.name, storyId, postId: draft.id, intento }, 'draft rejected by the carousel guards; not published')
+    if (intento >= tope) {
+      log.warn({ channel: channel.name, intentos: intento }, 'tope de intentos alcanzado: el canal no publica en esta corrida')
+      return { estado: 'rechazada', storyId }
+    }
+
+    const resueltas = await channel.publishedStoryIds(candidates)
+    const quedan = candidates.filter((id) => !probadas.has(id) && !resueltas.has(id))
+    if (quedan.length === 0) {
+      log.info({ channel: channel.name }, 'no quedan candidatas para este canal: no publica en esta corrida')
+      return { estado: 'rechazada', storyId }
+    }
+
+    const siguiente = await pickBestStoryForSocial(quedan)
+    log.info({ channel: channel.name, storyId: siguiente.storyId, reasoning: siguiente.reasoning, intento: intento + 1 }, 'siguiente candidata tras el rechazo')
+    storyId = siguiente.storyId
+  }
 }

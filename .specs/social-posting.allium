@@ -199,6 +199,27 @@ rule PickBestStory {
     -- Per-channel failure is logged and never aborts the others.
 }
 
+rule NextCandidateAfterRejection {
+    -- B21 (2026-11-19). Before, a rejected draft left the channel without a
+    -- post for that slot: Instagram lost 9 of 27 slots between 6 and 19-nov
+    -- while every run had 48 to 86 candidates.
+    when: SocialPost.status becomes rejected
+        during SocialAutoPostJobRuns for channel
+    requires: attempts(channel, this run) < config.tries_per_channel  -- default 3
+    let remaining = candidates
+        where not tried(channel, this run)
+        and not exists SocialPost where story = this
+            and channel = channel.name and status in done_statuses(channel)
+    requires: remaining.count > 0
+    -- Same editorial criteria as the first pick, and the same guards: no rule
+    -- is relaxed. Only this channel moves to the next story; the other
+    -- channels keep the shared pick.
+    let next = LLM.pick_best_for_social(remaining)
+    ensures: GenerateDraft(next, channel)
+    -- The enforce-vertical check runs again before publishing `next`.
+    -- tries_per_channel = 1 restores the previous behaviour.
+}
+
 -- ─── Draft Generation ──────────────────────────────────────────────
 
 rule GenerateDraft {
