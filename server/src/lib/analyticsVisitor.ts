@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import geoip from 'fast-geoip'
+import { clientIpFromForwardedFor } from './clientIp.js'
 
 /**
  * Privacy-preserving, aggregate visitor signals derived server-side from the
@@ -96,29 +97,31 @@ export function dailyVisitorHash(ip: string, ua: string | undefined | null, dayS
 }
 
 /**
- * Best client IP for ANALYTICS purposes. Behind the Azure Static Web App
- * linked-backend proxy, req.ip resolves to the proxy's egress (West Europe →
- * every visitor geolocated "NL", observed in production 23-jul-2026). The
- * original client is the FIRST entry of X-Forwarded-For, which the SWA proxy
- * appends as "ip" or "ip:port". Spoofable by a direct caller, which is fine
- * here: this feeds aggregate analytics only. (Rate limiting no longer depends on
- * req.ip being the proxy: middleware/clientIp.ts resolves the reader from the
- * RIGHT of X-Forwarded-For, which a caller cannot forge.)
+ * La IP del lector para la ANALITICA: la misma que usan los limitadores.
+ *
+ * EL DEFECTO QUE ESTO CORRIGE (20-nov-2026). Hasta hoy se tomaba la PRIMERA
+ * entrada de X-Forwarded-For, con el argumento de que era «solo analitica». Pero
+ * esa es la entrada que escribe el cliente: un robot que manda su propio
+ * `X-Forwarded-For` con una IP distinta en cada beacon fabricaba un visitante
+ * nuevo -y un pais inventado- por peticion. `lib/clientIp.ts` ya documentaba el
+ * problema y por eso los limitadores cuentan desde la DERECHA, donde estan las
+ * entradas que agregan nuestros propios saltos. La analitica se habia quedado
+ * fuera. Diagnostico en docs/propuesta-analytics-bots.md (fase 1, punto 2).
+ *
+ * Por que no basta `req.ip`: detras del proxy de Static Web Apps, si la cadena no
+ * tiene la forma esperada, `req.ip` es la salida del proxy (Europa Occidental →
+ * todos los visitantes «NL», medido el 23-jul-2026). En ese caso se usa igual
+ * como respaldo, que es lo mismo que hacen los limitadores.
+ *
+ * IPv6 sale agrupada al /64 (`canonicalLimitIp`): un lector rota direcciones
+ * dentro de su bloque, y sin agrupar contaria como varios visitantes por dia.
  */
 export function clientIpForAnalytics(
   xff: string | string[] | undefined,
   fallback: string | undefined,
+  fromRight: number,
 ): string | undefined {
-  const raw = Array.isArray(xff) ? xff[0] : xff
-  const first = raw?.split(',')[0]?.trim()
-  if (!first) return fallback
-  // "[2001:db8::1]:443" → "2001:db8::1"
-  const bracketed = first.match(/^\[([^\]]+)\]/)
-  if (bracketed) return bracketed[1]
-  // "203.0.113.7:51840" → "203.0.113.7" (lone colon = IPv4:port; multiple = bare IPv6)
-  const colons = (first.match(/:/g) || []).length
-  if (colons === 1) return first.split(':')[0]
-  return first
+  return clientIpFromForwardedFor(xff, fromRight) ?? fallback
 }
 
 /** 2-letter country code from an IP (aggregate geo). 'XX' when unknown/private. */

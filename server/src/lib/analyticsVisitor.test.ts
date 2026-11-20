@@ -80,25 +80,49 @@ describe('isBot', () => {
 })
 
 describe('clientIpForAnalytics', () => {
-  // Regression: behind the SWA linked-backend proxy, req.ip was the proxy's
-  // West Europe egress → every visitor recorded as country NL (prod, 23-jul).
-  it('takes the first X-Forwarded-For entry (original client)', () => {
-    expect(clientIpForAnalytics('190.20.30.40, 10.0.0.1', '10.0.0.1')).toBe('190.20.30.40')
+  // La cadena real detras de Static Web Apps: «lector[:puerto], salida-del-proxy».
+  // El lector es la penultima entrada (CLIENT_IP_FROM_RIGHT = 2, el valor de produccion).
+  const DESDE_LA_DERECHA = 2
+
+  // Regresion del 23-jul: con req.ip a secas todos los visitantes salian «NL».
+  it('toma al lector, no la salida del proxy', () => {
+    expect(clientIpForAnalytics('190.20.30.40, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)).toBe('190.20.30.40')
   })
-  it('strips an IPv4 port suffix (Azure SWA sends ip:port)', () => {
-    expect(clientIpForAnalytics('190.20.30.40:51840', '10.0.0.1')).toBe('190.20.30.40')
+
+  // EL DEFECTO DEL 20-NOV: un robot que antepone su propio X-Forwarded-For
+  // fabricaba un visitante y un pais nuevos por peticion.
+  it('ignora lo que el cliente antepone en X-Forwarded-For', () => {
+    expect(clientIpForAnalytics('8.8.8.8, 190.20.30.40, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)).toBe('190.20.30.40')
+    expect(clientIpForAnalytics('1.1.1.1, 9.9.9.9, 190.20.30.40, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)).toBe('190.20.30.40')
   })
-  it('handles bracketed IPv6 with port', () => {
-    expect(clientIpForAnalytics('[2001:db8::1]:443', '10.0.0.1')).toBe('2001:db8::1')
+  it('dos IP inventadas distintas dan el mismo lector (el mismo hash del dia)', () => {
+    const a = clientIpForAnalytics('5.5.5.5, 190.20.30.40, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)!
+    const b = clientIpForAnalytics('6.6.6.6, 190.20.30.40, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)!
+    expect(dailyVisitorHash(a, 'Mozilla/5.0', '2026-11-20')).toBe(dailyVisitorHash(b, 'Mozilla/5.0', '2026-11-20'))
   })
-  it('keeps a bare IPv6 address intact', () => {
-    expect(clientIpForAnalytics('2001:db8::1', '10.0.0.1')).toBe('2001:db8::1')
+  it('quita el puerto que agrega Static Web Apps (ip:puerto)', () => {
+    expect(clientIpForAnalytics('190.20.30.40:51840, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)).toBe('190.20.30.40')
   })
-  it('falls back to req.ip when the header is missing or empty', () => {
-    expect(clientIpForAnalytics(undefined, '10.0.0.9')).toBe('10.0.0.9')
-    expect(clientIpForAnalytics('', '10.0.0.9')).toBe('10.0.0.9')
+  it('IPv6 entre corchetes con puerto, agrupada al /64', () => {
+    expect(clientIpForAnalytics('[2001:db8:aaaa:1::7]:443, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)).toBe('2001:db8:aaaa:1::')
   })
-  it('accepts the array form of the header', () => {
-    expect(clientIpForAnalytics(['190.20.30.40, 10.0.0.1'], '10.0.0.1')).toBe('190.20.30.40')
+  it('dos IPv6 del mismo /64 cuentan como el mismo lector', () => {
+    const a = clientIpForAnalytics('2001:db8:aaaa:1::7, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)
+    const b = clientIpForAnalytics('2001:db8:aaaa:1:ffff::9, 10.0.0.1', '10.0.0.1', DESDE_LA_DERECHA)
+    expect(a).toBe(b)
+  })
+  it('vuelve a req.ip si la cadena es mas corta de lo esperado o falta', () => {
+    expect(clientIpForAnalytics('190.20.30.40', '10.0.0.9', DESDE_LA_DERECHA)).toBe('10.0.0.9')
+    expect(clientIpForAnalytics(undefined, '10.0.0.9', DESDE_LA_DERECHA)).toBe('10.0.0.9')
+    expect(clientIpForAnalytics('', '10.0.0.9', DESDE_LA_DERECHA)).toBe('10.0.0.9')
+  })
+  it('vuelve a req.ip si la entrada elegida no es una IP', () => {
+    expect(clientIpForAnalytics('basura, 10.0.0.1', '10.0.0.9', DESDE_LA_DERECHA)).toBe('10.0.0.9')
+  })
+  it('con CLIENT_IP_FROM_RIGHT=0 (apagado) usa req.ip, igual que los limitadores', () => {
+    expect(clientIpForAnalytics('190.20.30.40, 10.0.0.1', '10.0.0.9', 0)).toBe('10.0.0.9')
+  })
+  it('acepta la cabecera en forma de arreglo', () => {
+    expect(clientIpForAnalytics(['190.20.30.40, 10.0.0.1'], '10.0.0.1', DESDE_LA_DERECHA)).toBe('190.20.30.40')
   })
 })

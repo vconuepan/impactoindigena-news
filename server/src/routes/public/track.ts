@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
+import { config } from '../../config.js'
 import { deviceType, dailyVisitorHash, lookupCountry, clientIpForAnalytics, isBot } from '../../lib/analyticsVisitor.js'
 
 const router = Router()
@@ -57,7 +58,7 @@ router.post('/', async (req, res) => {
     // first hit of the day also captures the visitor's country + device. ON
     // CONFLICT DO NOTHING keeps it to one row per visitor per day. Fails silently
     // if the table isn't migrated yet (deploy-before-migrate is safe).
-    const ip = clientIpForAnalytics(req.headers['x-forwarded-for'], req.ip)
+    const ip = clientIpForAnalytics(req.headers['x-forwarded-for'], req.ip, config.proxy.clientIpFromRight)
     if (ip) {
       const ua = req.headers['user-agent']
       const dayStr = today.toISOString().slice(0, 10)
