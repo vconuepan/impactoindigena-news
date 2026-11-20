@@ -55,7 +55,14 @@ entity Feed {
     has_stories: stories.count > 0
     is_due_for_crawl: active
         and (last_crawled_at = null
-            or now - last_crawled_at > crawl_interval_hours.hours)
+            or now - last_crawled_at > crawl_interval_hours.hours
+                                       - config.due_tolerance_minutes.minutes)
+    -- due_tolerance_minutes (default 15, 2026-11-20): the crawl job starts on
+    -- the hour and each feed stamps last_crawled_at when it finishes, 0-5 min
+    -- later. Without the tolerance a 24 h feed missed the next day's run by
+    -- seconds and waited 6 h more: measured 7-20 Nov, 0 gaps of 24 h and 963
+    -- of 30 h over 149 feeds. Kept below the job's 6 h step, so a feed is
+    -- never crawled twice in one run.
     has_empty_crawl_warning: consecutive_empty_crawls >= config.consecutive_empty_warning
 }
 

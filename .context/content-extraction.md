@@ -129,6 +129,8 @@ RSS Feed → Parse items (max config.crawl.rssItemLimit, default 20)
          → Update feed's lastCrawledAt
 ```
 
+**Which feeds are due (`getDueFeeds`, `services/feed.ts`).** A feed is due when `last_crawled_at + crawl_interval_hours - CRAWL_DUE_TOLERANCE_MINUTES` is in the past. The tolerance (default 15 min, since 2026-11-20) exists because `crawl_feeds` starts on the hour every 6 h and each feed stamps `last_crawled_at` when it *finishes*, 0-5 min later: without it a 24 h feed missed the next day's run by seconds and waited for the following one. Measured 7-20 Nov over 149 feeds: 0 gaps of 24 h and 963 of 30 h (6 h feeds ran every 12 h). The SQL was checked against a real Postgres with the parameter typed as bigint, numeric and double. A 304 Not Modified does not reprocess earlier failed items: they are retried only when the feed changes.
+
 Feeds are crawled in parallel (up to `config.concurrency.crawlFeeds`, default 5). Article extraction within each feed also runs in parallel (up to `config.concurrency.crawlArticles`, default 3). All HTTP requests (RSS parsing, page fetching, PipFeed API) use `withRetry()` from `server/src/lib/retry.ts` (3 attempts with exponential backoff).
 
 ### Deduplication

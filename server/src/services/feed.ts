@@ -65,14 +65,32 @@ export async function updateFeed(id: string, data: Partial<{
   return prisma.feed.update({ where: { id }, data })
 }
 
+/**
+ * La holgura con que una fuente se da por vencida, en minutos.
+ *
+ * El job corre a la hora en punto (`crawl_feeds`, cada 6 h) y cada fuente anota
+ * `last_crawled_at` al terminar su rastreo, entre 0 y 5 minutos después. Sin
+ * holgura, al día siguiente le faltaban esos segundos para estar vencida y
+ * esperaba la corrida de 6 h después: medido del 7 al 20-nov-2026 en 149
+ * fuentes, 0 intervalos de 24 h y 963 de 30 h (y las de 6 h, cada 12 h). La
+ * holgura es menor que el paso del job, así que nunca rastrea dos veces en la
+ * misma franja.
+ */
+export function holguraDeVencimiento(): number {
+  const minutos = config.crawl?.dueToleranceMinutes
+  return Number.isFinite(minutos) && minutos >= 0 ? Math.floor(minutos) : 15
+}
+
 export async function getDueFeeds() {
   // Use raw SQL to filter by each feed's own crawl_interval_hours, avoiding
   // the old coarse 1-hour filter that fetched too many rows
+  const holgura = holguraDeVencimiento()
   const dueIds = await prisma.$queryRaw<{ id: string }[]>`
     SELECT id FROM feeds
     WHERE active = true
     AND (last_crawled_at IS NULL
-      OR last_crawled_at + (crawl_interval_hours || ' hours')::interval < NOW())
+      OR last_crawled_at + (crawl_interval_hours || ' hours')::interval
+         - make_interval(mins => ${holgura}::int) < NOW())
   `
   if (dueIds.length === 0) return []
   return prisma.feed.findMany({

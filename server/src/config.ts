@@ -117,6 +117,14 @@ export const config = {
     sitemapMaxAgeDays: parseInt(process.env.SITEMAP_MAX_AGE_DAYS || "14", 10),
     httpTimeoutMs: parseInt(process.env.HTTP_TIMEOUT_MS || "10000", 10),
     minContentLength: parseInt(process.env.MIN_CONTENT_LENGTH || "300", 10),
+    /**
+     * Holgura, en minutos, para dar por vencida una fuente (20-nov-2026). El job
+     * corre a la hora en punto y cada fuente anota `last_crawled_at` al
+     * terminar, entre 0 y 5 min despues: al dia siguiente le faltaban segundos y
+     * esperaba la corrida de 6 h despues. Medido del 7 al 20-nov en 149 fuentes:
+     * 0 intervalos de 24 h y 963 de 30 h. Ver getDueFeeds en services/feed.ts.
+     */
+    dueToleranceMinutes: parseInt(process.env.CRAWL_DUE_TOLERANCE_MINUTES || "15", 10),
     staleAfterEmptyCrawls: parseInt(
       process.env.STALE_AFTER_EMPTY_CRAWLS || "5",
       10

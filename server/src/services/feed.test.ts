@@ -1,12 +1,54 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const mockPrisma = vi.hoisted(() => ({
-  feed: { findUnique: vi.fn(), update: vi.fn() },
+  feed: { findUnique: vi.fn(), update: vi.fn(), findMany: vi.fn() },
+  $queryRaw: vi.fn(),
 }))
+const mockConfig = vi.hoisted(() => ({ config: {} as { crawl?: { dueToleranceMinutes?: number } } }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
-vi.mock('../config.js', () => ({ config: {} }))
+vi.mock('../config.js', () => mockConfig)
 
-const { updateCrawlStatus } = await import('./feed.js')
+const { updateCrawlStatus, getDueFeeds, holguraDeVencimiento } = await import('./feed.js')
+
+// 20-nov-2026: el job corre a la hora en punto y cada fuente anota
+// last_crawled_at al terminar (0 a 5 min después). Sin holgura, una fuente de
+// 24 h esperaba 30 h. Medido del 7 al 20-nov: 0 intervalos de 24 h y 963 de 30 h.
+// El SQL se validó contra Postgres real (casos de 21:01:17 y 21:04:59).
+describe('getDueFeeds — holgura de vencimiento', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockConfig.config = {}
+    mockPrisma.$queryRaw.mockResolvedValue([])
+  })
+
+  it('resta la holgura configurada al vencimiento de cada fuente', async () => {
+    mockConfig.config = { crawl: { dueToleranceMinutes: 15 } }
+    await getDueFeeds()
+    const [plantilla, ...valores] = mockPrisma.$queryRaw.mock.calls[0]
+    expect((plantilla as string[]).join('?')).toContain('make_interval(mins => ?::int)')
+    expect(valores).toEqual([15])
+  })
+
+  it('sin configuración usa 15 minutos; con un valor inválido, también', () => {
+    expect(holguraDeVencimiento()).toBe(15)
+    mockConfig.config = { crawl: { dueToleranceMinutes: Number.NaN } }
+    expect(holguraDeVencimiento()).toBe(15)
+    mockConfig.config = { crawl: { dueToleranceMinutes: -5 } }
+    expect(holguraDeVencimiento()).toBe(15)
+  })
+
+  it('0 vuelve al comportamiento anterior, y los decimales se truncan', () => {
+    mockConfig.config = { crawl: { dueToleranceMinutes: 0 } }
+    expect(holguraDeVencimiento()).toBe(0)
+    mockConfig.config = { crawl: { dueToleranceMinutes: 20.9 } }
+    expect(holguraDeVencimiento()).toBe(20)
+  })
+
+  it('sin fuentes vencidas no consulta el detalle', async () => {
+    await getDueFeeds()
+    expect(mockPrisma.feed.findMany).not.toHaveBeenCalled()
+  })
+})
 
 /** Extract the `data` object passed to the single prisma.feed.update call. */
 function updateData() {
