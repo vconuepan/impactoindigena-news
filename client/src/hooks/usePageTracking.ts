@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
 import { estaPrerenderizando } from '../lib/prerender'
+import { vigilarInteraccion } from '../lib/engagement'
 
 /**
  * Classifies the acquisition source of a visit from its referrer. Pure and
@@ -32,6 +33,10 @@ export function classifyReferrer(referrer: string, currentHost: string): string 
 // SPA route changes are internal navigation. Module-level so it persists across
 // route changes within one load and resets on a real reload.
 let isFirstHit = true
+
+// El aviso de interaccion humana se vigila UNA vez por carga completa: al
+// servidor le basta un «si» por visitante y dia (lib/engagement.ts).
+let vigilandoInteraccion = false
 
 /**
  * Fires a lightweight page view hit on every route change.
@@ -75,5 +80,22 @@ export function usePageTracking() {
     }).catch(() => {
       // Silently ignore — analytics should never affect UX
     })
+
+    if (!vigilandoInteraccion) {
+      vigilandoInteraccion = true
+      vigilarInteraccion({
+        alInteractuar: () => {
+          // La ruta de ESE momento: el lector pudo haber navegado dentro del sitio.
+          const ruta = window.location.pathname
+          if (ruta.startsWith('/admin')) return
+          fetch('/api/track/engaged', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: ruta }),
+            keepalive: true,
+          }).catch(() => {})
+        },
+      })
+    }
   }, [pathname, search])
 }

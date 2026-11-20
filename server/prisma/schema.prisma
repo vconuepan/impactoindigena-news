@@ -506,6 +506,34 @@ model DailyVisitor {
   @@map("daily_visitors")
 }
 
+// Peticiones por familia de User-Agent, por día y superficie (services/uaHits.ts).
+// Agregado: sin IP, sin User-Agent completo, nada por visitante. 20-nov-2026.
+model UaHitDaily {
+  id      String   @id @default(uuid())
+  date    DateTime // midnight UTC
+  surface String   @db.VarChar(16) // 'beacon' | 'ficha_html'
+  family  String   @db.VarChar(24) // ver lib/uaFamily.ts
+  agent   String   @default("") @db.VarChar(64)
+  count   Int      @default(1)
+
+  @@unique([date, surface, family, agent])
+  @@index([date])
+  @@map("ua_hits_daily")
+}
+
+// Señales por visitante y día, con el mismo hash diario de daily_visitors.
+// Hoy solo `interacted` (routes/public/track.ts, /engaged). 20-nov-2026.
+model VisitorDaySignal {
+  id          String   @id @default(uuid())
+  date        DateTime // midnight UTC
+  visitorHash String   @map("visitor_hash") @db.VarChar(64)
+  interacted  Boolean  @default(false)
+
+  @@unique([date, visitorHash])
+  @@index([date])
+  @@map("visitor_day_signals")
+}
+
 // --- Subscription Tables ---
 
 model PendingSubscription {

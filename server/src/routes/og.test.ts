@@ -4,6 +4,8 @@ import express from 'express'
 
 const mockPrisma = vi.hoisted(() => ({
   story: { findUnique: vi.fn() },
+  // story-html cuenta cada carga por familia de User-Agent (services/uaHits.ts).
+  $executeRaw: vi.fn(async () => 1),
 }))
 
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))

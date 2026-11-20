@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.4 · vigente desde el 12 de octubre de 2026.
+            Versión 3.5 · vigente desde el 20 de noviembre de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
             <li><strong>Acceso de miembros:</strong> tu correo, si inicias sesión con enlace mágico.</li>
             <li><strong>Membresía a comunidades:</strong> la(s) comunidad(es) a la(s) que te unes y tus preferencias de recepción del boletín de comunidad (digest).</li>
             <li><strong>Feedback:</strong> tu mensaje y, opcionalmente, tu correo; de la IP solo guardamos un hash no reversible.</li>
-            <li><strong>Métricas de uso:</strong> páginas vistas, fuente de tráfico, país y tipo de dispositivo (móvil/escritorio), de forma agregada y sin identificación personal, mediante analítica propia sin cookies (un contador en nuestra propia base de datos, sin proveedores de terceros). Para estimar visitantes únicos por día y el país, procesamos tu dirección IP y tu navegador <strong>en el momento y de forma transitoria</strong>: no los almacenamos. Solo guardamos el país, la categoría de dispositivo y un identificador diario no reversible que cambia cada día, de modo que no permite seguirte entre días ni identificarte.</li>
+            <li><strong>Métricas de uso:</strong> páginas vistas, fuente de tráfico, país y tipo de dispositivo (móvil/escritorio), de forma agregada y sin identificación personal, mediante analítica propia sin cookies (un contador en nuestra propia base de datos, sin proveedores de terceros). Para estimar visitantes únicos por día y el país, procesamos tu dirección IP y tu navegador <strong>en el momento y de forma transitoria</strong>: no los almacenamos. Solo guardamos el país, la categoría de dispositivo, un identificador diario no reversible que cambia cada día, de modo que no permite seguirte entre días ni identificarte, y un sí o un no: si interactuaste con la página (desplazarte, tocar, usar el teclado o mover el mouse con la página visible al menos 5 segundos). No registramos qué hiciste ni dónde; ese sí o no nos sirve para distinguir lectores de programas automáticos. Del tráfico automatizado (buscadores, vistas previas de enlaces, rastreadores) contamos cuántas peticiones hace cada tipo por día, sin guardar su dirección IP. Cuando un programa dice ser el rastreador de Google o de Bing, comprobamos en el momento, consultando el DNS de su dirección IP, si lo es: esa dirección tampoco se guarda.</li>
             <li><strong>Búsqueda:</strong> el texto que escribes se procesa con nuestro proveedor de IA para la búsqueda semántica; no se asocia a tu identidad ni se usa para entrenar modelos.</li>
           </ul>
           <p className="mt-3">
@@ -278,7 +278,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-6 space-y-1 mt-2">
             <li>Suscriptores del boletín o alertas: mientras la suscripción esté activa. Al darte de baja dejas de recibir correos de inmediato, y tu registro se elimina de nuestra base dentro de las 24 horas siguientes.</li>
             <li>Registros del servidor: hasta 14 días, luego se eliminan automáticamente.</li>
-            <li>Métricas de audiencia: el registro diario de visitantes (país, categoría de dispositivo e identificador diario no reversible) se conserva hasta <strong>12 meses</strong> y luego se suprime automáticamente, para poder comparar la audiencia año contra año. El conteo de páginas vistas se conserva como estadística histórica: es un dato agregado, sin identificación de personas.</li>
+            <li>Métricas de audiencia: el registro diario de visitantes (país, categoría de dispositivo, identificador diario no reversible y si hubo interacción) se conserva hasta <strong>12 meses</strong> y luego se suprime automáticamente, para poder comparar la audiencia año contra año. El conteo de páginas vistas se conserva como estadística histórica: es un dato agregado, sin identificación de personas.</li>
             <li>Registro de actividad sobre datos personales: las operaciones de borrado y exportación que describimos en Seguridad se registran con la fecha, la acción y el identificador interno de quien la realizó, y ese registro se conserva hasta <strong>12 meses</strong> y luego se suprime automáticamente. Cuando eres tú quien ejercita el derecho —descargar tus datos o eliminar tu cuenta— el registro <strong>no guarda tu correo</strong>, solo el identificador interno de la operación.</li>
             <li>Tokens de sesión y enlaces mágicos: se purgan automáticamente al expirar.</li>
             <li>Feedback: hasta su procesamiento y por el plazo legal aplicable.</li>

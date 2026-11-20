@@ -823,6 +823,19 @@ export const adminApi = {
         topPages: Array<{ path: string; count: number }>
         topStories: Array<{ path: string; count: number }>
         bySource: Array<{ source: string; count: number }>
+        // Desde el 20-nov-2026 (server/src/routes/admin/analytics.ts). `desde`
+        // null = la tabla aun no tiene datos o su SQL no se aplico.
+        automated?: {
+          desde: string | null
+          filas: Array<{ surface: string; family: string; agent: string; count: number }>
+          fichasConJs: number
+        }
+        interaction?: {
+          desde: string | null
+          visitantes: number
+          interactuaron: number
+          porPais: Array<{ country: string; visitantes: number; interactuaron: number }>
+        }
       }>(`/analytics?days=${days}`),
   },
 

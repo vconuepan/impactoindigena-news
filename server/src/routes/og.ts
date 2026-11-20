@@ -3,6 +3,9 @@ import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { srcsetDeUrl } from '../lib/imagen-variantes.js'
 import { tituloConEtiqueta, recortarEnPalabra } from '../lib/tituloMeta.js'
+import { config } from '../config.js'
+import { clientIpForAnalytics } from '../lib/analyticsVisitor.js'
+import { registrarVisitaPorFamilia } from '../services/uaHits.js'
 
 const router = Router()
 const log = createLogger('og-proxy')
@@ -214,6 +217,18 @@ function slugFromRequest(req: import('express').Request): string | null {
 }
 
 router.get('/story-html', async (req, res) => {
+  // Contar quien pide la ficha, por familia de User-Agent y sin IP (ver
+  // services/uaHits.ts). Aqui llegan TODAS las cargas de /stories/*, ejecuten
+  // JavaScript o no; el beacon del panel solo ve las que si. Sin `await`: no
+  // demora la respuesta, y nunca lanza. HEAD no cuenta: no es una lectura.
+  if (req.method === 'GET') {
+    void registrarVisitaPorFamilia(
+      'ficha_html',
+      req.headers['user-agent'],
+      clientIpForAnalytics(req.headers['x-forwarded-for'], req.ip, config.proxy.clientIpFromRight),
+    )
+  }
+
   const slug = slugFromRequest(req)
   const shell = await getShell()
 

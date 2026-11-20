@@ -6,6 +6,136 @@ import { countryName } from '../../lib/countryName'
 import { PageHeader } from '../../components/ui/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { ETIQUETA_FAMILIA, resumenPorFamilia, agentesPrincipales, cargasSinJs, porcentaje } from './analyticsSenales'
+
+type Overview = Awaited<ReturnType<typeof adminApi.analytics.overview>>
+
+function fechaCorta(iso: string) {
+  const [y, m, d] = iso.split('-')
+  return `${d}-${m}-${y}`
+}
+
+function SinDatosAun() {
+  return (
+    <p className="text-sm text-neutral-500 py-2">
+      Sin datos aún. Empieza a medir cuando se aplica el SQL de la migración
+      <code className="mx-1 text-xs">20261120000000_analytics_robots_interaccion</code>
+      y el código está desplegado.
+    </p>
+  )
+}
+
+/** Robots que el filtro descarta y cargas de fichas que nunca ejecutaron JavaScript. */
+function TraficoAutomatizado({ automated }: { automated: Overview['automated'] }) {
+  if (!automated?.desde) {
+    return <Card title="Tráfico automatizado (no entra en las cifras de arriba)"><SinDatosAun /></Card>
+  }
+  const familias = resumenPorFamilia(automated.filas)
+  const agentes = agentesPrincipales(automated.filas)
+  const sinJs = cargasSinJs(automated.filas, automated.fichasConJs)
+  return (
+    <Card title={`Tráfico automatizado (no entra en las cifras de arriba) · desde el ${fechaCorta(automated.desde)}`}>
+      <div className="space-y-5">
+        <div>
+          <p className="text-sm text-neutral-700">
+            Fichas cargadas por algo que dice ser un navegador:{' '}
+            <strong className="tabular-nums">{sinJs.conCaraDeNavegador.toLocaleString('es-CL')}</strong>. De esas,{' '}
+            <strong className="tabular-nums">{sinJs.conJs.toLocaleString('es-CL')}</strong> ejecutaron JavaScript y
+            llegaron al panel, y <strong className="tabular-nums">{sinJs.sinJs.toLocaleString('es-CL')} ({sinJs.pctSinJs} %)</strong>{' '}
+            nunca lo hicieron.
+          </p>
+          <p className="text-xs text-neutral-500 mt-1">
+            Las que no ejecutan JavaScript son, casi siempre, robots disfrazados de navegador. Una parte pueden ser
+            lectores con JavaScript bloqueado: el panel no los ve. Es una estimación, no un conteo de personas.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-xs text-neutral-500 border-b border-neutral-200">
+                <th className="py-1.5 font-medium">Familia</th>
+                <th className="py-1.5 font-medium text-right" title="Robots que ejecutaron JavaScript y mandaron el aviso de vista; antes se descartaban sin contarse">Avisos de vista descartados</th>
+                <th className="py-1.5 font-medium text-right" title="Cargas de fichas servidas por el servidor, ejecuten JavaScript o no">Cargas de fichas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {familias.map((f) => (
+                <tr key={f.family} className="border-b border-neutral-100">
+                  <td className="py-1.5 text-neutral-700">{f.etiqueta}</td>
+                  <td className="py-1.5 text-right tabular-nums text-neutral-600">{f.beacons.toLocaleString('es-CL')}</td>
+                  <td className="py-1.5 text-right tabular-nums text-neutral-600">{f.fichas.toLocaleString('es-CL')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {agentes.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Agentes con más peticiones</p>
+            <ul className="space-y-1">
+              {agentes.map((a) => (
+                <li key={`${a.family}|${a.agent}`} className="flex justify-between gap-3 text-sm">
+                  <span className="text-neutral-700 truncate">
+                    {a.agent} <span className="text-neutral-500">· {ETIQUETA_FAMILIA[a.family] ?? a.family}</span>
+                  </span>
+                  <span className="tabular-nums text-neutral-600">{a.count.toLocaleString('es-CL')}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-neutral-500 mt-2">
+              «Googlebot (falso)»: dice ser Google y la comprobación por DNS dice que no lo es.
+            </p>
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
+/** Cuántos visitantes del panel interactuaron de verdad con la página. */
+function InteraccionHumana({ interaction }: { interaction: Overview['interaction'] }) {
+  if (!interaction?.desde) {
+    return <Card title="Interacción humana"><SinDatosAun /></Card>
+  }
+  const pct = porcentaje(interaction.interactuaron, interaction.visitantes)
+  return (
+    <Card title={`Interacción humana · desde el ${fechaCorta(interaction.desde)}`}>
+      <p className="text-sm text-neutral-700">
+        De <strong className="tabular-nums">{interaction.visitantes.toLocaleString('es-CL')}</strong> visitantes-día,{' '}
+        <strong className="tabular-nums">{interaction.interactuaron.toLocaleString('es-CL')} ({pct} %)</strong> hicieron
+        scroll, tocaron, usaron el teclado o movieron el mouse con la página visible al menos 5 segundos.
+      </p>
+      <p className="text-xs text-neutral-500 mt-1 mb-3">
+        Señal fuerte de lector, pero no prueba: un lector que abre y se va en 3 segundos no cuenta, y un robot sofisticado
+        podría imitarla. Es una estimación.
+      </p>
+      {interaction.porPais.length > 0 && (
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-neutral-500 border-b border-neutral-200">
+              <th className="py-1.5 font-medium">País</th>
+              <th className="py-1.5 font-medium text-right">Visitantes-día</th>
+              <th className="py-1.5 font-medium text-right">Interactuaron</th>
+              <th className="py-1.5 font-medium text-right">%</th>
+            </tr>
+          </thead>
+          <tbody>
+            {interaction.porPais.map((p) => (
+              <tr key={p.country} className="border-b border-neutral-100">
+                <td className="py-1.5 text-neutral-700">{countryName(p.country)}</td>
+                <td className="py-1.5 text-right tabular-nums text-neutral-600">{p.visitantes.toLocaleString('es-CL')}</td>
+                <td className="py-1.5 text-right tabular-nums text-neutral-600">{p.interactuaron.toLocaleString('es-CL')}</td>
+                <td className="py-1.5 text-right tabular-nums text-neutral-600">{porcentaje(p.interactuaron, p.visitantes)} %</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </Card>
+  )
+}
 
 const PERIOD_OPTIONS = [
   { value: 7, label: '7 días' },
@@ -157,6 +287,12 @@ export default function AnalyticsPage() {
             <p className="text-xs text-neutral-400 mt-3">
               Cada visitante se cuenta una vez por día, sin cookies. La suma del período no equivale a personas distintas del mes.
             </p>
+          </div>
+
+          {/* Desde el 20-nov-2026: lo que el panel no veía (docs/propuesta-analytics-bots.md) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <InteraccionHumana interaction={data.interaction} />
+            <TraficoAutomatizado automated={data.automated} />
           </div>
 
           {/* Daily chart */}

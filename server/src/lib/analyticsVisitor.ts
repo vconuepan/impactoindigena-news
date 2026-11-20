@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import geoip from 'fast-geoip'
 import { clientIpFromForwardedFor } from './clientIp.js'
+import { classifyUserAgent } from './uaFamily.js'
 
 /**
  * Privacy-preserving, aggregate visitor signals derived server-side from the
@@ -17,27 +18,9 @@ import { clientIpFromForwardedFor } from './clientIp.js'
 // is the same first line of defense Plausible/Fathom use: trust the UA token that
 // well-behaved bots publish. Bots that lie are not detectable here, and that is
 // an accepted limit — aggregate analytics, not security.
-const BOT_TOKENS = [
-  // Generic self-identification
-  'bot', 'crawler', 'spider', 'crawling', 'slurp',
-  // Search engines / SEO suites
-  'googlebot', 'adsbot', 'mediapartners', 'apis-google', 'feedfetcher',
-  'google-inspectiontool', 'storebot-google', 'bingpreview', 'yandex',
-  'baiduspider', 'applebot', 'semrush', 'ahrefs', 'mj12', 'dotbot', 'petal',
-  'dataforseo', 'screaming frog', 'sitebulb', 'serpstat',
-  // AI / LLM fetchers
-  'gptbot', 'chatgpt-user', 'oai-searchbot', 'claudebot', 'claude-web',
-  'anthropic-ai', 'perplexity', 'ccbot', 'bytespider', 'amazonbot',
-  'meta-externalagent', 'applebot-extended',
-  // Link-preview unfurlers (chat/social)
-  'facebookexternalhit', 'facebot', 'twitterbot', 'slackbot', 'discordbot',
-  'telegrambot', 'whatsapp', 'linkedinbot', 'embedly', 'redditbot', 'skypeuripreview',
-  // Headless browsers, monitoring, scripted HTTP clients
-  'headlesschrome', 'phantomjs', 'puppeteer', 'playwright', 'chrome-lighthouse',
-  'pagespeed', 'gtmetrix', 'pingdom', 'uptimerobot', 'python-requests', 'scrapy',
-  'curl/', 'wget', 'go-http-client', 'okhttp', 'java/', 'node-fetch', 'axios/',
-  'libwww-perl', 'httpclient', 'guzzle',
-]
+//
+// Desde el 20-nov-2026 la lista vive en `uaFamily.ts`, agrupada por familia,
+// para que lo descartado se pueda contar aparte (`services/uaHits.ts`).
 
 /**
  * True when the User-Agent self-identifies as an automated client. Used to skip
@@ -45,9 +28,7 @@ const BOT_TOKENS = [
  * A missing UA also counts as a bot: every real browser sends one.
  */
 export function isBot(ua: string | undefined | null): boolean {
-  if (!ua) return true
-  const s = ua.toLowerCase()
-  return BOT_TOKENS.some((t) => s.includes(t))
+  return classifyUserAgent(ua).family !== 'navegador'
 }
 
 /** Coarse device category from a User-Agent. Kept deliberately coarse (no fine

@@ -31,5 +31,19 @@ export async function runCleanupAnalytics(): Promise<void> {
     DELETE FROM daily_visitors WHERE date < ${cutoff}
   `
 
-  log.info({ deleted, cutoff: cutoff.toISOString().slice(0, 10) }, 'complete')
+  // `visitor_day_signals` (si hubo interaccion humana, desde el 20-nov-2026)
+  // lleva el mismo hash diario que daily_visitors, asi que se borra con el mismo
+  // plazo. Aparte y tolerante: si su SQL aun no se aplico, la limpieza de
+  // daily_visitors ya quedo hecha. `ua_hits_daily` no se poda: es un contador
+  // por familia de robot, sin sujeto, como page_views.
+  let deletedSignals: number | null = null
+  try {
+    deletedSignals = await prisma.$executeRaw`
+      DELETE FROM visitor_day_signals WHERE date < ${cutoff}
+    `
+  } catch (err) {
+    log.warn({ err }, 'visitor_day_signals no se pudo podar (¿falta aplicar su SQL?)')
+  }
+
+  log.info({ deleted, deletedSignals, cutoff: cutoff.toISOString().slice(0, 10) }, 'complete')
 }
