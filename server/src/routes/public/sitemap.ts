@@ -41,7 +41,9 @@ const STATIC_ROUTES: { path: string; priority: number; changefreq: ChangeFreq }[
   { path: '/cookies', priority: 0.5, changefreq: 'yearly' },
   { path: '/incidencia-internacional', priority: 0.9, changefreq: 'daily' },
   { path: '/voces-indigenas', priority: 0.9, changefreq: 'weekly' },
-  { path: '/search', priority: 0.3, changefreq: 'daily' },
+  // /search NO se declara: se prerenderiza pero pide `noindex` (en el cliente
+  // lleva `noindex: true`). Estar aqui ayudaba a que los robots la recorrieran;
+  // medido el 20-nov-2026, ver docs/propuesta-analytics-bots.md.
   { path: '/saved', priority: 0.3, changefreq: 'daily' },
   // /subscribed no se declara: no se prerenderiza (ver client/src/routes.ts).
   { path: '/thank-you', priority: 0.2, changefreq: 'yearly' },

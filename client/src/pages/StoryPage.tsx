@@ -549,9 +549,13 @@ export default function StoryPage() {
             </div>
           )}
 
-          {/* Find similar — below related stories */}
+          {/* Find similar — below related stories. `nofollow`: cada ficha generaba
+              una URL de búsqueda distinta y los robots las recorrían todas; el
+              20-nov-2026 el 98,6 % de las búsquedas eran este enlace (ver
+              docs/propuesta-analytics-bots.md). Para el lector no cambia nada. */}
           <div className="text-center mt-6">
             <Link
+              rel="nofollow"
               to={`/search?q=${encodeURIComponent(headline)}`}
               className="text-sm text-brand-800 hover:text-brand-700 font-normal focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-1"
             >

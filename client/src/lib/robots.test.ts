@@ -79,6 +79,16 @@ describe('robots.txt: bloquea el entrenamiento, nunca la busqueda', () => {
     }
   })
 
+  // 20-nov-2026: /search?q=… era una trampa para rastreadores (ver
+  // docs/propuesta-analytics-bots.md). Se cierran los resultados, no el sitio.
+  it('cierra los resultados de busqueda y nada mas', () => {
+    const bloque = ROBOTS.split(/\n(?=User-agent:)/).find((b) => /^User-agent:\s*\*\s*$/m.test(b)) ?? ''
+    const disallows = [...bloque.matchAll(/^Disallow:\s*(\S*)\s*$/gm)].map((m) => m[1])
+    expect(disallows, 'el bloque * debe cerrar /search?').toContain('/search?')
+    // Ni la pagina /search sola (debe poder leerse su noindex) ni otra ruta.
+    expect(disallows.filter((d) => d !== '/search?'), 'el bloque * solo cierra /search?').toEqual([])
+  })
+
   it('declara la señal de contenido: busqueda si, entrenamiento no', () => {
     expect(ROBOTS).toContain('Content-Signal: search=yes,ai-train=no,use=reference')
   })

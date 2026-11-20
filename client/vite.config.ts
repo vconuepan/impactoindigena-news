@@ -5,6 +5,7 @@ import prerender from '@prerenderer/rollup-plugin'
 import { routePaths } from './src/routes'
 import { rutasDeSecciones, type IssueConSubsecciones } from './src/lib/issue-routes'
 import { BRAND } from './src/config'
+import { unaSolaMetaRobots } from './src/lib/robots-meta'
 import {
   problemasDelHorneado,
   mensajeDelCandado,
@@ -288,6 +289,11 @@ export default defineConfig(async () => {
           if (!renderedRoute.html.startsWith('<!DOCTYPE')) {
             renderedRoute.html = '<!DOCTYPE html>' + renderedRoute.html
           }
+
+          // Una sola metaetiqueta robots: si la pagina fijo la suya con Helmet
+          // (`noindex` en /search), se borra la generica de index.html. Antes
+          // salian las dos, contradiciendose (medido en vivo el 20-nov-2026).
+          renderedRoute.html = unaSolaMetaRobots(renderedRoute.html)
 
           // Preload de los datos de la portada, para romper la cadena
           // HTML → JS → API.

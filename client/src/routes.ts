@@ -15,6 +15,13 @@ export interface RouteConfig {
   path: string
   priority: number
   changefreq: ChangeFreq
+  /**
+   * La pagina se prerenderiza pero pide `noindex`, asi que NO va al sitemap:
+   * declararle a Google una URL que la propia pagina le prohibe indexar es una
+   * contradiccion. El sitemap del servidor (`server/.../sitemap.ts`) la omite y
+   * `sitemap-sincronia.test.ts` lo exige.
+   */
+  noindex?: true
 }
 
 export const routes: RouteConfig[] = [
@@ -30,7 +37,14 @@ export const routes: RouteConfig[] = [
   { path: '/privacy', priority: 0.5, changefreq: 'yearly' },
   { path: '/terminos', priority: 0.5, changefreq: 'yearly' },
   { path: '/cookies', priority: 0.5, changefreq: 'yearly' },
-  { path: '/search', priority: 0.3, changefreq: 'daily' },
+  // /search se prerenderiza (si no, Static Web Apps devolveria la portada) pero
+  // sale del sitemap: la pagina pide `noindex`, y estar en el sitemap ayudaba a
+  // que los robots la recorrieran. El 20-nov-2026 se midio que /search era la
+  // pagina mas vista del panel por robots, no por lectores: de 1.994 vistas en
+  // 90 dias, 1.987 entraron directo y 7 desde un clic dentro del sitio, y el
+  // 98,6 % de las busquedas eran un titular completo, el enlace «Buscar
+  // similares» de cada ficha. Ver docs/propuesta-analytics-bots.md.
+  { path: '/search', priority: 0.3, changefreq: 'daily', noindex: true },
   { path: '/saved', priority: 0.3, changefreq: 'daily' },
   // /subscribed NO se prerenderiza: lo que muestra depende del token de la URL
   // (pide confirmar, o celebra, o avisa de un enlace invalido), y el HTML horneado

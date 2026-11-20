@@ -275,6 +275,7 @@ export default function MapWidget() {
                   </a>
                 ) : (
                   <a
+                    rel="nofollow"
                     href={`/search?q=${encodeURIComponent(pueblo.nombre)}`}
                     style={{ fontSize: 11, fontWeight: 600, color: '#6366f1', textDecoration: 'none' }}
                   >

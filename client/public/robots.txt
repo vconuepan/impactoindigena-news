@@ -35,6 +35,12 @@
 User-agent: *
 Content-Signal: search=yes,ai-train=no,use=reference
 Allow: /
+# Los resultados de búsqueda (/search?q=…) no son contenido: cada ficha enlazaba
+# una URL de búsqueda distinta y los robots las recorrían todas. Medido el
+# 20-nov-2026: el 98,6 % de las búsquedas eran un titular completo. La página
+# /search sola sigue abierta para que se lea su `noindex`; la regla más larga
+# gana, así que esta línea manda sobre `Allow: /`.
+Disallow: /search?
 
 # --- Entrenamiento de modelos: no ---
 

@@ -106,14 +106,16 @@ async function main() {
     changefreq: 'monthly' as const,
   }))
 
-  const allRoutes = [...routes, ...issueRoutes, ...communityRoutes, ...storyRoutes]
+  // Las paginas `noindex` se prerenderizan pero no se declaran (ver routes.ts).
+  const indexables = routes.filter((r) => !r.noindex)
+  const allRoutes = [...indexables, ...issueRoutes, ...communityRoutes, ...storyRoutes]
   const sitemap = generateSitemapXml(allRoutes, BASE_URL)
   const outputPath = resolve(__dirname, '../public/sitemap.xml')
 
   writeFileSync(outputPath, sitemap, 'utf-8')
   console.log(
     `Generated sitemap.xml with ${allRoutes.length} URLs ` +
-    `(${routes.length} static + ${issueRoutes.length} issues + ${communityRoutes.length} communities + ${storyRoutes.length} stories)`
+    `(${indexables.length} static +${issueRoutes.length} issues + ${communityRoutes.length} communities + ${storyRoutes.length} stories)`
   )
 }
 

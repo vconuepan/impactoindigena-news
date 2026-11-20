@@ -24,7 +24,7 @@ import path from 'node:path'
 const CLIENTE = readFileSync(path.resolve(__dirname, '../../../../client/src/routes.ts'), 'utf8')
 const SERVIDOR = readFileSync(path.resolve(__dirname, 'sitemap.ts'), 'utf8')
 
-interface Ruta { priority: string; changefreq: string }
+interface Ruta { priority: string; changefreq: string; noindex: boolean }
 
 /** Extrae las rutas del array que empieza en `marca`. */
 function rutasDe(fuente: string, marca: string): Map<string, Ruta> {
@@ -32,14 +32,32 @@ function rutasDe(fuente: string, marca: string): Map<string, Ruta> {
   if (i === -1) throw new Error(`no se encontro «${marca}»: el array se renombro o se movio`)
   const bloque = fuente.slice(i, i + fuente.slice(i).indexOf('\n]'))
   const out = new Map<string, Ruta>()
-  for (const m of bloque.matchAll(/\{ path: '([^']+)', priority: ([\d.]+), changefreq: '(\w+)' \}/g)) {
-    out.set(m[1], { priority: m[2], changefreq: m[3] })
+  for (const m of bloque.matchAll(/\{ path: '([^']+)', priority: ([\d.]+), changefreq: '(\w+)'(, noindex: true)? \}/g)) {
+    out.set(m[1], { priority: m[2], changefreq: m[3], noindex: Boolean(m[4]) })
   }
   return out
 }
 
-const cliente = rutasDe(CLIENTE, 'export const routes')
+const todasCliente = rutasDe(CLIENTE, 'export const routes')
 const servidor = rutasDe(SERVIDOR, 'const STATIC_ROUTES')
+// Las `noindex: true` se prerenderizan pero, a proposito, no van al sitemap.
+const cliente = new Map([...todasCliente].filter(([, r]) => !r.noindex))
+const noindexCliente = [...todasCliente].filter(([, r]) => r.noindex).map(([p]) => p)
+
+describe('las paginas noindex se prerenderizan pero no se declaran', () => {
+  it('/search esta marcada noindex en el cliente', () => {
+    // Si alguien quita la marca, /search volveria al sitemap por el test de abajo.
+    expect(noindexCliente).toContain('/search')
+  })
+
+  it('ninguna pagina noindex aparece en el sitemap', () => {
+    const declaradas = noindexCliente.filter((p) => servidor.has(p))
+    expect(
+      declaradas,
+      `estas paginas piden noindex y el sitemap igual se las declara a Google: ${declaradas.join(', ')}`,
+    ).toEqual([])
+  })
+})
 
 describe('el sitemap y el prerender declaran las mismas rutas', () => {
   it('las dos listas se leyeron y no estan vacias', () => {
@@ -89,7 +107,7 @@ describe('el sitemap y el prerender declaran las mismas rutas', () => {
  */
 describe('las paginas que dependen de la URL no se prerenderizan ni se declaran', () => {
   it.each(['/subscribed'])('%s no esta en ninguna de las dos listas', (ruta) => {
-    expect(cliente.has(ruta), `${ruta} esta en client/src/routes.ts: se prerenderiza y su HTML horneado miente`).toBe(false)
+    expect(todasCliente.has(ruta), `${ruta} esta en client/src/routes.ts: se prerenderiza y su HTML horneado miente`).toBe(false)
     expect(servidor.has(ruta), `${ruta} esta en el sitemap: se declara a Google una pagina de un solo uso`).toBe(false)
   })
 })
