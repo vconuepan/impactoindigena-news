@@ -1,4 +1,5 @@
 import { ChatOpenAI, AzureChatOpenAI } from '@langchain/openai'
+import { ChatAnthropic } from '@langchain/anthropic'
 import { config } from '../config.js'
 
 let nextAvailableTime = 0
@@ -19,6 +20,7 @@ export async function rateLimitDelay(): Promise<void> {
  * - provider=openai (default): OPENAI_API_KEY, supports reasoning effort.
  * - provider=openrouter: OPENROUTER_API_KEY + OpenRouter base URL.
  *   Set model names via OPENAI_MODEL_* env vars to OpenRouter IDs.
+ * - provider=anthropic: Claude API (ANTHROPIC_API_KEY), models from ANTHROPIC_MODEL_*.
  * - provider=azure: Azure OpenAI Service.
  *   Requires AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY.
  *   Uses AZURE_OPENAI_DEPLOYMENT_{SMALL,MEDIUM,LARGE} for deployment names.
@@ -37,6 +39,20 @@ function createLLM(tier: 'small' | 'medium' | 'large'): ChatOpenAI {
       maxRetries: 3,
       // Note: reasoning effort is not used — Azure deployments have their own
       // reasoning settings configured in Azure AI Studio.
+    }) as unknown as ChatOpenAI
+  }
+
+  // ── Claude (Anthropic) ───────────────────────────────────────────────────
+  // Same contract as the others for the callers: `.invoke()` and
+  // `.withStructuredOutput(schema, { method: 'functionCalling' })`, which
+  // ChatAnthropic serves through tool use. If the key is missing it falls
+  // through to the default, same as OpenRouter does.
+  if (config.llm.provider === 'anthropic' && config.llm.anthropic.apiKey) {
+    return new ChatAnthropic({
+      model: config.llm.anthropic.models[tier],
+      apiKey: config.llm.anthropic.apiKey,
+      maxRetries: 3,
+      maxTokens: 8192,
     }) as unknown as ChatOpenAI
   }
 

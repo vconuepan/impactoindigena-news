@@ -6,8 +6,24 @@ export const config = {
     //   openai (default) — uses OPENAI_API_KEY directly
     //   openrouter      — uses OPENROUTER_API_KEY with OpenRouter base URL
     //   azure           — uses Azure OpenAI (AZURE_OPENAI_* vars); no OPENAI_API_KEY needed
-    provider: (process.env.LLM_PROVIDER || 'openai') as 'openai' | 'openrouter' | 'azure',
+    //   anthropic       — uses the Claude API (ANTHROPIC_API_KEY). Only the chat models move:
+    //                     embeddings, images and TTS stay on Azure (Anthropic has none of them).
+    provider: (process.env.LLM_PROVIDER || 'openai') as 'openai' | 'openrouter' | 'azure' | 'anthropic',
     openrouterApiKey: process.env.OPENROUTER_API_KEY || '',
+    /**
+     * Claude (LLM_PROVIDER=anthropic). Decisión del director, 21-nov-2026: usar los créditos de API
+     * de Claude para la IA del .news y ahorrar créditos de Azure. Haiku 5.5 cuesta USD 0,10/0,50
+     * por millón de tokens de entrada/salida contra 0,40/1,60 de gpt-4.1-mini (página oficial de
+     * precios, leída ese día). El tier grande va a Sonnet 5.5, de precio parecido a gpt-4o.
+     */
+    anthropic: {
+      apiKey: process.env.ANTHROPIC_API_KEY || '',
+      models: {
+        small:  process.env.ANTHROPIC_MODEL_SMALL  || 'claude-haiku-5-5',
+        medium: process.env.ANTHROPIC_MODEL_MEDIUM || 'claude-haiku-5-5',
+        large:  process.env.ANTHROPIC_MODEL_LARGE  || 'claude-sonnet-5-5',
+      },
+    },
     azure: {
       endpoint: process.env.AZURE_OPENAI_ENDPOINT || '',       // e.g. https://my-resource.openai.azure.com
       apiKey: process.env.AZURE_OPENAI_API_KEY || '',
