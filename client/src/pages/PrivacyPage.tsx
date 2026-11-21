@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.6 · vigente desde el 21 de noviembre de 2026.
+            Versión 3.7 · vigente desde el 21 de noviembre de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -206,8 +206,14 @@ export default function PrivacyPage() {
                   <td className="align-top py-2">Las páginas del sitio y, en tránsito entre tu navegador y el servidor en Chile, todo lo que envías y recibes: entre otros, tu correo al suscribirte al boletín o a alertas o al iniciar sesión, tus membresías a comunidades, tus comentarios y búsquedas, y la descarga o eliminación de tus datos. Como en toda conexión por internet, también tu dirección IP</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
+                  <td className="align-top py-2 pr-4">Anthropic (API de Claude)</td>
+                  <td className="align-top py-2 pr-4">Clasificación, resumen y traducción con IA</td>
+                  <td className="align-top py-2 pr-4">EE.&nbsp;UU.</td>
+                  <td className="align-top py-2">Contenido editorial de noticias de fuentes públicas —incluidos nombres, cargos y citas de terceros y, cuando la fuente lo divulga, el pueblo indígena al que pertenecen—</td>
+                </tr>
+                <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Microsoft Azure OpenAI</td>
-                  <td className="align-top py-2 pr-4">Clasificación, resumen y traducción con IA; búsqueda semántica</td>
+                  <td className="align-top py-2 pr-4">Búsqueda semántica</td>
                   <td className="align-top py-2 pr-4">Recurso en EE.&nbsp;UU.; cada petición puede procesarse en cualquier región de Azure</td>
                   <td className="align-top py-2">Contenido editorial de noticias de fuentes públicas —incluidos nombres, cargos y citas de terceros y, cuando la fuente lo divulga, el pueblo indígena al que pertenecen— y, por separado, las consultas del buscador, que no se asocian a tu identidad</td>
                 </tr>
@@ -253,11 +259,12 @@ export default function PrivacyPage() {
             tu correo y tu nombre para enviarte el boletín y procesa el contenido
             de cada correo que te enviamos; si perteneces a una comunidad de tipo{" "}
             <em>pueblo</em>, ese contenido nombra la comunidad. Están en{" "}
-            <strong>EE.&nbsp;UU.</strong> el recurso de Azure OpenAI que procesa
-            el texto de las noticias y las consultas del buscador, y en Suecia el
-            que genera las imágenes; ambos usan el tipo de despliegue «Global
-            Standard» de Microsoft, que puede procesar cada petición en cualquier
-            región de Azure. Las
+            <strong>EE.&nbsp;UU.</strong> Anthropic, que clasifica, resume y
+            traduce el texto de las noticias, y el recurso de Azure OpenAI que
+            calcula la búsqueda semántica sobre las noticias y las consultas del
+            buscador; en Suecia está el que genera las imágenes. Los dos recursos
+            de Azure usan el tipo de despliegue «Global Standard» de Microsoft,
+            que puede procesar cada petición en cualquier región de Azure. Las
             imágenes (Cloudflare) y el mapa (OpenStreetMap, Reino Unido) los
             pide directamente tu navegador, que así les expone tu dirección IP.
           </p>

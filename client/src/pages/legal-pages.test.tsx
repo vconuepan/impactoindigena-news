@@ -225,3 +225,16 @@ describe('la Politica no promete lo que no hace ni cita lo que la ley no dice', 
     expect(fuente).not.toMatch(/membresía conforme a la Ley 21\.719/)
   })
 })
+
+describe('el proveedor de IA que procesa las noticias esta declarado', () => {
+  it('la Politica de Privacidad nombra a Anthropic, no solo a Azure OpenAI, para clasificar, resumir y traducir', () => {
+    // El 21-nov-2026 el chat del .news paso de Azure OpenAI a la API de Claude
+    // (LLM_PROVIDER=anthropic, server/src/services/llm.ts). La politica siguio
+    // diciendo que Azure OpenAI hacia la clasificacion, el resumen y la
+    // traduccion. Si algun dia el .news vuelve a Azure, este test se cambia a
+    // conciencia junto con la tabla de encargados.
+    const fuente = readFileSync(path.resolve(__dirname, 'PrivacyPage.tsx'), 'utf8')
+    expect(fuente).toMatch(/Anthropic \(API de Claude\)/)
+    expect(fuente).not.toMatch(/Azure OpenAI<\/td>\s*<td[^>]*>Clasificación/)
+  })
+})
