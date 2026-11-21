@@ -82,3 +82,50 @@ export function cargasSinJs(filas: Fila[], fichasConJs: number): CargasSinJs {
 export function porcentaje(parte: number, total: number): number {
   return total > 0 ? Math.round((parte / total) * 100) : 0
 }
+
+// --- Lectores probables (21-nov-2026) ---
+
+export type CategoriaLector = 'lector' | 'dudoso' | 'bot'
+
+export const ETIQUETA_CATEGORIA: Record<CategoriaLector, string> = {
+  lector: 'Lectores probables',
+  dudoso: 'Dudosos',
+  bot: 'Probables bots',
+}
+
+export const ETIQUETA_ORIGEN: Record<string, string> = {
+  direct: 'Directo',
+  search: 'Búsqueda',
+  social: 'Social',
+  referral: 'Referido',
+  newsletter: 'Boletín',
+  internal: 'Interno',
+}
+
+export type Cuenta = { bruto: number; lector: number; dudoso: number; bot: number }
+
+/** Rango «lectores probables»: piso = solo los ≥ 70; techo = más los dudosos. */
+export function rangoLectores(t: Cuenta): { probable: number; piso: number; techo: number } {
+  return { probable: t.lector, piso: t.lector, techo: t.lector + t.dudoso }
+}
+
+/** CSV de las tablas del puntaje, con la advertencia en la primera línea. */
+export function csvLectores(
+  desde: string,
+  tablas: Array<{ titulo: string; filas: Array<{ clave: string } & Cuenta>; nombre?: (clave: string) => string }>,
+): string {
+  const celda = (v: string | number) => {
+    const s = String(v)
+    return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  }
+  const lineas = [
+    `# Estimación por señales, no un conteo de personas. Visitantes-día desde el ${desde}. Puntaje: lector probable >= 70, dudoso 30-69, probable bot < 30.`,
+    'tabla,clave,bruto,lectores_probables,dudosos,probables_bots,pct_lectores',
+  ]
+  for (const t of tablas) {
+    for (const f of t.filas) {
+      lineas.push([t.titulo, t.nombre ? t.nombre(f.clave) : f.clave, f.bruto, f.lector, f.dudoso, f.bot, porcentaje(f.lector, f.bruto)].map(celda).join(','))
+    }
+  }
+  return lineas.join('\n') + '\n'
+}

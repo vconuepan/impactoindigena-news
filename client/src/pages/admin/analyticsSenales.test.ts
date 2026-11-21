@@ -1,5 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { resumenPorFamilia, agentesPrincipales, cargasSinJs, porcentaje, type Fila } from './analyticsSenales'
+import { resumenPorFamilia, agentesPrincipales, cargasSinJs, porcentaje, rangoLectores, csvLectores, type Fila } from './analyticsSenales'
+
+describe('rangoLectores y csvLectores (21-nov-2026)', () => {
+  it('el rango va de los lectores probables a esos más los dudosos', () => {
+    expect(rangoLectores({ bruto: 100, lector: 6, dudoso: 9, bot: 85 })).toEqual({ probable: 6, piso: 6, techo: 15 })
+  })
+
+  it('el CSV abre con la advertencia y escapa las comas de los nombres', () => {
+    const csv = csvLectores('2026-11-22', [
+      { titulo: 'red', filas: [{ clave: 'Alibaba Cloud', bruto: 10, lector: 0, dudoso: 1, bot: 9 }] },
+      { titulo: 'pais', filas: [{ clave: 'CL', bruto: 4, lector: 3, dudoso: 1, bot: 0 }], nombre: () => 'Chile, país' },
+    ])
+    const l = csv.trim().split('\n')
+    expect(l[0]).toMatch(/^# Estimación por señales, no un conteo de personas/)
+    expect(l[2]).toBe('red,Alibaba Cloud,10,0,1,9,0')
+    expect(l[3]).toBe('pais,"Chile, país",4,3,1,0,75')
+  })
+})
 
 const FILAS: Fila[] = [
   { surface: 'ficha_html', family: 'navegador', agent: '', count: 1000 },

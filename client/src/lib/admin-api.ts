@@ -32,6 +32,9 @@ import type {
   StoryBodyVerificacion,
 } from '@shared/types'
 
+/** Visitantes-día por categoría del puntaje «lector probable». */
+export interface CuentaLectores { bruto: number; lector: number; dudoso: number; bot: number }
+
 export interface CommunityRef {
   id: string
   slug: string
@@ -835,6 +838,20 @@ export const adminApi = {
           visitantes: number
           interactuaron: number
           porPais: Array<{ country: string; visitantes: number; interactuaron: number }>
+        }
+        // Desde el 21-nov-2026 (server/src/services/lectoresProbables.ts).
+        readers?: {
+          activo: boolean
+          desde: string | null
+          visitantes: number
+          conSenales: number
+          total: CuentaLectores
+          porPais: Array<{ clave: string } & CuentaLectores>
+          porDispositivo: Array<{ clave: string } & CuentaLectores>
+          porOrigen: Array<{ clave: string } & CuentaLectores>
+          porRed: Array<{ clave: string } & CuentaLectores>
+          motivosEnContra: Array<{ motivo: string; veces: number }>
+          edicionRedes: string
         }
       }>(`/analytics?days=${days}`),
   },

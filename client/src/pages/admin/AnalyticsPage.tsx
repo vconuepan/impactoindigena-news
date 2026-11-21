@@ -7,6 +7,7 @@ import { PageHeader } from '../../components/ui/PageHeader'
 import { Card } from '../../components/ui/Card'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ETIQUETA_FAMILIA, resumenPorFamilia, agentesPrincipales, cargasSinJs, porcentaje } from './analyticsSenales'
+import { EncabezadoLectores, DetalleLectores } from './LectoresProbables'
 
 type Overview = Awaited<ReturnType<typeof adminApi.analytics.overview>>
 
@@ -245,6 +246,9 @@ export default function AnalyticsPage() {
         <div className="text-center py-20 text-neutral-500">Error al cargar analytics</div>
       ) : data ? (
         <div className="space-y-6">
+          {/* Desde el 21-nov-2026: la estimación de lectores, al lado del bruto */}
+          <EncabezadoLectores readers={data.readers} />
+
           {/* Stats cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white rounded-lg border border-neutral-200 p-4">
@@ -294,6 +298,8 @@ export default function AnalyticsPage() {
             <InteraccionHumana interaction={data.interaction} />
             <TraficoAutomatizado automated={data.automated} />
           </div>
+
+          <DetalleLectores readers={data.readers} />
 
           {/* Daily chart */}
           <Card title={`Vistas por día (últimos ${period} días)`}>

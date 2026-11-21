@@ -215,6 +215,11 @@ export const config = {
     // c): conservar solo el tiempo necesario para el fin del tratamiento. Debe
     // coincidir con el plazo declarado en la Política de Privacidad.
     visitorRetentionDays: parseInt(process.env.ANALYTICS_VISITOR_RETENTION_DAYS || "365", 10),
+    // Interruptor del puntaje «lector probable» en el panel (lib/puntajeLector.ts).
+    // Encendido salvo ANALYTICS_BOT_SCORING=off: apagado, el panel muestra solo
+    // las cifras brutas. Las señales se siguen guardando igual, asi que volver a
+    // encenderlo recalcula todo sin perder dias.
+    botScoring: (process.env.ANALYTICS_BOT_SCORING || "on").toLowerCase() !== "off",
   },
   search: {
     // Distancia coseno maxima para que una historia entre en los resultados

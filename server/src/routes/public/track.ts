@@ -3,6 +3,8 @@ import prisma from '../../lib/prisma.js'
 import { config } from '../../config.js'
 import { deviceType, dailyVisitorHash, lookupCountry, clientIpForAnalytics, isBot } from '../../lib/analyticsVisitor.js'
 import { registrarVisitaPorFamilia } from '../../services/uaHits.js'
+import { coherenciaIdioma, tipoDePagina } from '../../lib/senalesVisitante.js'
+import { redDeIp } from '../../lib/redNube.js'
 
 const router = Router()
 
@@ -37,6 +39,51 @@ function hoyUtc(): Date {
   const today = new Date()
   today.setUTCHours(0, 0, 0, 0)
   return today
+}
+
+/**
+ * Las señales del visitante del dia que usa el puntaje de lector probable
+ * (lib/puntajeLector.ts). Todas reducidas antes de guardarse: cuantas paginas
+ * vio y de que tipo (ficha, busqueda, otra), el origen de su PRIMERA vista del
+ * dia, si el idioma del navegador es coherente con el sitio (nunca el codigo de
+ * la lengua: lib/senalesVisitante.ts) y, si la red es de nube, de que proveedor.
+ * La IP se usa en el momento para eso y no se guarda.
+ *
+ * Origen, idioma y red se fijan con la primera vista (`pages = 0`, que tambien
+ * cubre la fila que pudo crear antes el aviso de interaccion). Desde el
+ * 21-nov-2026; aparte y tolerante, para que si su SQL aun no se aplico no se
+ * pierda nada de lo demas.
+ */
+async function registrarSenales(
+  dia: Date,
+  hash: string,
+  ruta: string,
+  origen: string,
+  acceptLanguage: string | undefined,
+  ip: string,
+): Promise<void> {
+  try {
+    const tipo = tipoDePagina(ruta)
+    const idioma = coherenciaIdioma(acceptLanguage)
+    const red = redDeIp(ip)
+    const nube = red.tipo === 'nube' ? red.proveedor : ''
+    await prisma.$executeRaw`
+      INSERT INTO visitor_day_signals
+        (id, date, visitor_hash, interacted, pages, saw_story, saw_search, saw_other, source_first, lang, net)
+      VALUES (gen_random_uuid(), ${dia}, ${hash}, false, 1,
+        ${tipo === 'ficha'}, ${tipo === 'busqueda'}, ${tipo === 'otra'}, ${origen}, ${idioma}, ${nube})
+      ON CONFLICT (date, visitor_hash) DO UPDATE SET
+        pages        = visitor_day_signals.pages + 1,
+        saw_story    = visitor_day_signals.saw_story OR EXCLUDED.saw_story,
+        saw_search   = visitor_day_signals.saw_search OR EXCLUDED.saw_search,
+        saw_other    = visitor_day_signals.saw_other OR EXCLUDED.saw_other,
+        source_first = CASE WHEN visitor_day_signals.pages = 0 THEN EXCLUDED.source_first ELSE visitor_day_signals.source_first END,
+        lang         = CASE WHEN visitor_day_signals.pages = 0 THEN EXCLUDED.lang ELSE visitor_day_signals.lang END,
+        net          = CASE WHEN visitor_day_signals.pages = 0 THEN EXCLUDED.net ELSE visitor_day_signals.net END
+    `
+  } catch {
+    // Sin el SQL del 21-nov las columnas no existen: la vista ya quedo contada.
+  }
 }
 
 function ipDelLector(req: Request): string | undefined {
@@ -93,6 +140,7 @@ router.post('/', async (req, res) => {
         VALUES (gen_random_uuid(), ${today}, ${hash}, ${country}, ${device})
         ON CONFLICT (date, visitor_hash) DO NOTHING
       `
+      await registrarSenales(today, hash, cleanPath, cleanSource, req.headers['accept-language'], ip)
     }
   } catch {
     // Silently ignore errors — analytics should never break the app

@@ -528,6 +528,14 @@ model VisitorDaySignal {
   date        DateTime // midnight UTC
   visitorHash String   @map("visitor_hash") @db.VarChar(64)
   interacted  Boolean  @default(false)
+  // Desde el 21-nov-2026 (puntaje «lector probable», lib/puntajeLector.ts).
+  pages       Int      @default(0)
+  sawStory    Boolean  @default(false) @map("saw_story")
+  sawSearch   Boolean  @default(false) @map("saw_search")
+  sawOther    Boolean  @default(false) @map("saw_other")
+  sourceFirst String   @default("") @map("source_first") @db.VarChar(16)
+  lang        String   @default("sin_dato") @db.VarChar(12) // coherente | incoherente | sin_dato. Nunca el código de la lengua.
+  net         String   @default("") @db.VarChar(40) // proveedor de nube, o ''
 
   @@unique([date, visitorHash])
   @@index([date])

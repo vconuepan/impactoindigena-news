@@ -53,17 +53,46 @@ describe('POST /api/track', () => {
   })
 })
 
+describe('POST /api/track · señales del visitante (21-nov-2026)', () => {
+  const senal = () => consultas.filter((c) => c.sql.includes('INTO visitor_day_signals') && c.sql.includes('pages'))
+
+  it('guarda tipo de página, origen, coherencia del idioma y red, todo reducido', async () => {
+    await request(app).post('/api/track')
+      .set('User-Agent', CHROME).set('X-Forwarded-For', XFF).set('Accept-Language', 'qu-PE,es;q=0.9')
+      .send({ path: '/stories/una-nota', source: 'search' })
+    await vi.waitFor(() => expect(senal()).toHaveLength(1))
+    // [dia, hash, ficha, busqueda, otra, origen, idioma, nube]
+    const [, , ficha, busqueda, otra, origen, idioma, nube] = senal()[0].valores
+    expect([ficha, busqueda, otra, origen, idioma, nube]).toEqual([true, false, false, 'search', 'coherente', ''])
+    // La lengua indigena del navegador NO se guarda: solo «coherente».
+    expect(JSON.stringify(senal()[0].valores)).not.toMatch(/qu-PE|\bqu\b/)
+    // Y la IP tampoco.
+    expect(JSON.stringify(senal()[0].valores)).not.toContain('190.20.30.40')
+  })
+
+  it('una IP de nube guarda el proveedor, no la IP', async () => {
+    await request(app).post('/api/track')
+      .set('User-Agent', CHROME).set('X-Forwarded-For', '8.128.5.9, 10.0.0.1').set('Accept-Language', 'zh-CN')
+      .send({ path: '/search', source: '' })
+    await vi.waitFor(() => expect(senal()).toHaveLength(1))
+    const v = senal()[0].valores
+    expect(v.slice(2)).toEqual([false, true, false, '', 'incoherente', 'Alibaba Cloud'])
+    expect(JSON.stringify(v)).not.toContain('8.128.5.9')
+  })
+})
+
 describe('POST /api/track/engaged', () => {
   it('marca la interaccion con el MISMO hash que el visitante del dia', async () => {
     await request(app).post('/api/track').set('User-Agent', CHROME).set('X-Forwarded-For', XFF).send({ path: '/stories/x', source: '' })
     await vi.waitFor(() => expect(tabla('daily_visitors')).toHaveLength(1))
     await request(app).post('/api/track/engaged').set('User-Agent', CHROME).set('X-Forwarded-For', XFF).send({ path: '/stories/x' })
-    await vi.waitFor(() => expect(tabla('visitor_day_signals')).toHaveLength(1))
+    // Desde el 21-nov el beacon tambien escribe señales en esa tabla: aqui se
+    // mira solo la escritura del aviso de interaccion.
+    const avisos = () => tabla('visitor_day_signals').filter((c) => c.sql.includes('DO UPDATE SET interacted = true'))
+    await vi.waitFor(() => expect(avisos()).toHaveLength(1))
 
     const hashVisitante = tabla('daily_visitors')[0].valores[1]
-    const hashSenal = tabla('visitor_day_signals')[0].valores[1]
-    expect(hashSenal).toBe(hashVisitante)
-    expect(tabla('visitor_day_signals')[0].sql).toContain('DO UPDATE SET interacted = true')
+    expect(avisos()[0].valores[1]).toBe(hashVisitante)
   })
 
   it('un robot que manda el aviso no marca nada', async () => {

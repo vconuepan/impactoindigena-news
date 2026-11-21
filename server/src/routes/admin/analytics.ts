@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import prisma from '../../lib/prisma.js'
+import { lectoresProbables } from '../../services/lectoresProbables.js'
 import { Prisma } from '@prisma/client'
 
 const router = Router()
@@ -98,6 +99,7 @@ router.get('/', async (req, res) => {
   // no comparar ventanas distintas. Tolera que el SQL aun no se haya aplicado.
   const automated = await robotsDelPeriodo(since)
   const interaction = await interaccionDelPeriodo(since)
+  const readers = await lectoresProbables(since)
 
   // Fill in missing days with 0
   const dayMap = new Map<string, number>()
@@ -146,6 +148,7 @@ router.get('/', async (req, res) => {
     bySource: sourceBreakdown,
     automated,
     interaction,
+    readers,
   })
 })
 
