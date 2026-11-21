@@ -173,3 +173,48 @@ describe('GET /api/health', () => {
   })
 
 })
+
+/**
+ * Cuerpos que body-parser rechaza. Hasta el 21-nov-2026 un JSON malformado daba
+ * 500 («Internal server error») y un cuerpo comprimido se descomprimia, que es la
+ * puerta del GHSA-27r3-jxmh-p828. Se prueba contra /api/track porque responde
+ * sin autenticacion: el parseo corre antes del enrutado.
+ */
+describe('request bodies rejected by body-parser', () => {
+  it('answers 400, not 500, to malformed JSON', async () => {
+    const res = await request(app)
+      .post('/api/track')
+      .set('Content-Type', 'application/json')
+      .send('{malformado')
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: 'Invalid request body' })
+  })
+
+  it('refuses a compressed body with 415 instead of inflating it', async () => {
+    const { gzipSync } = await import('node:zlib')
+    const res = await request(app)
+      .post('/api/track')
+      .set('Content-Type', 'application/json')
+      .set('Content-Encoding', 'gzip')
+      .send(gzipSync(Buffer.from('{"path":"/"}')))
+    expect(res.status).toBe(415)
+    expect(res.body).toEqual({ error: 'Invalid request body' })
+  })
+
+  it('answers 413 to a body over the 100 KB limit', async () => {
+    const res = await request(app)
+      .post('/api/track')
+      .set('Content-Type', 'application/json')
+      .send(JSON.stringify({ path: '/', relleno: 'x'.repeat(110 * 1024) }))
+    expect(res.status).toBe(413)
+    expect(res.body).toEqual({ error: 'Invalid request body' })
+  })
+
+  it('still accepts a plain JSON body', async () => {
+    const res = await request(app)
+      .post('/api/track')
+      .set('Content-Type', 'application/json')
+      .send({ path: '/' })
+    expect(res.status).toBe(200)
+  })
+})

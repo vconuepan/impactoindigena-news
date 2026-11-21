@@ -92,7 +92,13 @@ app.use((req, res, next) => {
   })(req, res, next)
 })
 
-app.use(express.json({ limit: '100kb' }))
+// `inflate: false`: ningun cliente legitimo manda el cuerpo comprimido (el sitio
+// usa fetch con JSON plano), y descomprimir es la puerta del GHSA-27r3-jxmh-p828
+// de body-parser: un cuerpo comprimido con bytes de sobra tumbaba el proceso
+// antes del enrutado y de los limitadores. Hoy el proxy de Static Web Apps quita
+// `Content-Encoding` (medido el 21-nov-2026), pero esa defensa es del proxy, no
+// de esta app. Un cuerpo comprimido responde 415.
+app.use(express.json({ limit: '100kb', inflate: false }))
 app.use(cookieParser())
 
 // Request ID — inherit from header or generate
@@ -163,6 +169,24 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' })
 })
 
+/**
+ * Errores de body-parser: traen `type` (p. ej. `entity.parse.failed`,
+ * `entity.too.large`, `encoding.unsupported`) y un `status` 4xx. Se exige el
+ * `type` con la forma de body-parser para no tomar por error del cliente
+ * cualquier excepcion que por casualidad traiga un status.
+ */
+export function isBodyParserError(err: unknown): err is { type: string; status: number } {
+  if (!err || typeof err !== 'object') return false
+  const { type, status } = err as { type?: unknown; status?: unknown }
+  return (
+    typeof type === 'string' &&
+    /^(entity|encoding|charset|request)\./.test(type) &&
+    typeof status === 'number' &&
+    status >= 400 &&
+    status < 500
+  )
+}
+
 // Global error handler — must be last middleware (4 parameters required)
 app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   const log = createLogger('http')
@@ -183,6 +207,16 @@ app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
       res.status(400).json({ error: 'Invalid request' })
       return
     }
+  }
+
+  // Cuerpo que body-parser rechaza (JSON malformado 400, demasiado grande 413,
+  // comprimido o con charset no soportado 415): es un error del cliente. Antes
+  // caia al 500 y cada cuerpo roto quedaba como falla del servidor en el log. La
+  // respuesta es generica a proposito: el mensaje de body-parser cita el cuerpo.
+  if (isBodyParserError(err)) {
+    log.warn({ type: err.type, status: err.status, method: req.method, url: redactSensitiveQuery(req.originalUrl) }, 'request body rejected')
+    res.status(err.status).json({ error: 'Invalid request body' })
+    return
   }
 
   // Origen no permitido por CORS: es un rechazo del cliente, no una falla del servidor.
