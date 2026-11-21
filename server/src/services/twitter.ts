@@ -1,7 +1,6 @@
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { createTweet, getTweetMetrics, isTwitterConfigured } from '../lib/twitter.js'
-import { generateStoryImage } from '../lib/imageGen.js'
 
 const log = createLogger('twitter-service')
 
@@ -39,18 +38,14 @@ export async function generateDraft(storyId: string) {
     ? baseText.slice(0, 235) + '…\n\n' + storyUrl
     : textWithLink
 
-  // Generar imagen con DALL-E
-  let imageUrl: string | null = null
-  try {
-    imageUrl = await generateStoryImage(
-      storyId,
-      story.title,
-      story.summary || story.marketingBlurb || '',
-    )
-    log.info({ storyId, imageUrl }, 'image generated for Twitter post')
-  } catch (err) {
-    log.warn({ err, storyId }, 'failed to generate image, posting without image')
-  }
+  // La imagen es la que la historia ya tiene (su hero propio o el og:image de la
+  // fuente, re-hospedado en R2 al publicar): no se genera una nueva con IA.
+  // Hasta el 21-nov-2026 cada borrador pedía una imagen a gpt-image-2, dos veces
+  // al día con social_auto_post, y era el gasto diario de imágenes de la
+  // suscripción de la Fundación (~USD 9,7 al mes). Decisión del director, para
+  // ahorrar créditos de Azure: «Sin imágenes IA en redes». Sin imagen, el post
+  // sale sin imagen, igual que cuando la generación fallaba.
+  const imageUrl: string | null = story.imageUrl ?? null
 
   const post = await prisma.twitterPost.create({
     data: {
