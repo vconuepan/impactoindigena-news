@@ -1,5 +1,6 @@
 import OpenAI, { AzureOpenAI } from 'openai'
 import { config } from '../config.js'
+import { usarAzureOpenAI } from './azureOpenAI.js'
 import { createLogger } from './logger.js'
 import { uploadImageToR2 } from './imageStorage.js'
 import { normalizar } from './imagen-normalizar.js'
@@ -12,7 +13,7 @@ const log = createLogger('image-gen')
  *
  * Prioridad:
  *   1. AZURE_IMAGE_ENDPOINT + AZURE_IMAGE_API_KEY  →  recurso imagen dedicado (Sweden Central)
- *   2. LLM_PROVIDER=azure                          →  recurso LLM principal (fallback)
+ *   2. usarAzureOpenAI() (LLM_PROVIDER=azure, o anthropic con Azure configurado) → recurso LLM principal
  *   3. Cualquier otro                              →  OpenAI directo (OPENAI_API_KEY)
  */
 function getImageClient(): { client: OpenAI | AzureOpenAI; model: string; isGptImage: boolean } {
@@ -27,7 +28,7 @@ function getImageClient(): { client: OpenAI | AzureOpenAI; model: string; isGptI
     return { client, model: config.imageGen.deployment, isGptImage }
   }
 
-  if (config.llm.provider === 'azure') {
+  if (usarAzureOpenAI()) {
     const client = new AzureOpenAI({
       endpoint:   config.llm.azure.endpoint,
       apiKey:     config.llm.azure.apiKey,

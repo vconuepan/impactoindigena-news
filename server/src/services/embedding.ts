@@ -3,6 +3,7 @@ import OpenAI, { AzureOpenAI } from 'openai'
 import { withRetry } from '../lib/retry.js'
 import { createLogger } from '../lib/logger.js'
 import { config } from '../config.js'
+import { usarAzureOpenAI } from '../lib/azureOpenAI.js'
 import {
   fetchStoryForEmbedding,
   fetchStoriesForEmbedding,
@@ -19,7 +20,7 @@ let _openai: OpenAI | null = null
 // cuando OPENAI_API_KEY no está seteada (p. ej. en CI).
 function getOpenAI(): OpenAI {
   if (_openai) return _openai
-  _openai = config.llm.provider === 'azure'
+  _openai = usarAzureOpenAI()
     ? new AzureOpenAI({
         endpoint: config.llm.azure.endpoint,
         apiKey: config.llm.azure.apiKey,

@@ -3,6 +3,7 @@ import { createLogger } from '../lib/logger.js'
 import { uploadImageToR2 } from '../lib/imageStorage.js'
 import OpenAI, { AzureOpenAI } from 'openai'
 import { config } from '../config.js'
+import { usarAzureOpenAI } from '../lib/azureOpenAI.js'
 
 const log = createLogger('podcast-service')
 
@@ -11,7 +12,7 @@ const INTRO = `Bienvenidos a Voces Indígenas, el podcast donde cubrimos las not
 const OUTRO = `Eso es todo por hoy en Voces Indígenas. Si quieres leer estas noticias completas, visita vocesindigenas.org. Gracias por escucharnos y hasta la próxima.`
 
 function createOpenAIClient(): OpenAI {
-  if (config.llm.provider === 'azure') {
+  if (usarAzureOpenAI()) {
     return new AzureOpenAI({
       endpoint: config.llm.azure.endpoint,
       apiKey: config.llm.azure.apiKey,
@@ -23,7 +24,7 @@ function createOpenAIClient(): OpenAI {
 }
 
 function createTTSClient(): OpenAI {
-  if (config.llm.provider === 'azure') {
+  if (usarAzureOpenAI()) {
     return new AzureOpenAI({
       endpoint: config.llm.azure.endpoint,
       apiKey: config.llm.azure.apiKey,

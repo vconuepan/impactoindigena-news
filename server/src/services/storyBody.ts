@@ -147,7 +147,12 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
     bajadaEn: null, quePasoEn: null, porQueImportaEn: null, contextoEn: null, queSigueEn: null,
     method: 'ia_sin_revision' as BodyMethod,
     reviewedBy: '',
-    model: config.llm.provider === 'azure' ? config.llm.azure.deployments[tier] : tier,
+    // El modelo que escribió el cuerpo queda registrado por su nombre real (Azure o Claude).
+    model: config.llm.provider === 'azure'
+      ? config.llm.azure.deployments[tier]
+      : config.llm.provider === 'anthropic' && config.llm.anthropic.apiKey
+        ? config.llm.anthropic.models[tier]
+        : tier,
     inputTokens: uso?.input_tokens ?? 0,
     outputTokens: uso?.output_tokens ?? 0,
     sourceChars: original.length,
