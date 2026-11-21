@@ -1,0 +1,12 @@
+# Cloudflare Pages: sitio de Voces Indígenas (vocesindigenas.org).
+# Se publica con `wrangler pages deploy` desde client/ (ver el workflow del frontend).
+name = "vocesindigenas"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-11-01"
+
+[vars]
+# ETAPA DE PRUEBA: se reenvía a Static Web Apps, que sigue siendo el candado de
+# la API (Easy Auth). En el corte pasa a la API directa
+# (https://impactoindigena-news-api.azurewebsites.net) junto con el secreto
+# ORIGIN_SECRET (`wrangler pages secret put ORIGIN_SECRET`).
+ORIGIN = "https://calm-pebble-039bfb80f.7.azurestaticapps.net"
