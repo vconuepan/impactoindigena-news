@@ -1,6 +1,7 @@
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { withRetry } from './retry.js'
+import { safeAxiosGet } from './safeHttp.js'
 
 const log = createLogger('twitter')
 
@@ -21,11 +22,25 @@ export interface CreateTweetResult {
 /**
  * Descarga una imagen desde una URL y retorna el buffer.
  */
-async function fetchImageBuffer(imageUrl: string): Promise<Buffer> {
-  const response = await fetch(imageUrl)
-  if (!response.ok) throw new Error(`Failed to fetch image: ${response.status}`)
-  const arrayBuffer = await response.arrayBuffer()
-  return Buffer.from(arrayBuffer)
+// Tope de imagen de la API de X (5 MB).
+const MAX_TWEET_IMAGE_BYTES = 5_000_000
+
+/**
+ * Descarga la imagen de la noticia con la guardia SSRF en la URL y en cada
+ * redireccion (`safeAxiosGet`). La URL puede ser la og:image de un tercero; antes
+ * era un `fetch` crudo que seguia redirecciones sin revisar. Exportada para
+ * probarla.
+ */
+export async function fetchImageBuffer(imageUrl: string): Promise<Buffer> {
+  const res = await safeAxiosGet(imageUrl, {
+    responseType: 'arraybuffer',
+    timeout: 10_000,
+    maxContentLength: MAX_TWEET_IMAGE_BYTES,
+    maxBodyLength: MAX_TWEET_IMAGE_BYTES,
+  })
+  const contentType = String(res.headers['content-type'] || '').split(';')[0].trim()
+  if (!contentType.startsWith('image/')) throw new Error(`Not an image: ${contentType || 'sin content-type'}`)
+  return Buffer.from(res.data)
 }
 
 /**

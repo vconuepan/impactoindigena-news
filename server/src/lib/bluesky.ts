@@ -2,6 +2,7 @@ import { AtpAgent, RichText } from '@atproto/api'
 import { config } from '../config.js'
 import { createLogger } from './logger.js'
 import { withRetry } from './retry.js'
+import { safeAxiosGet } from './safeHttp.js'
 
 const log = createLogger('bluesky')
 
@@ -121,34 +122,24 @@ export async function createPost(
     if (linkCard.thumbUrl) {
       try {
         const MAX_OG_IMAGE_BYTES = 1_000_000 // Bluesky max blob size
-        const imgResponse = await fetch(linkCard.thumbUrl, { signal: AbortSignal.timeout(10_000) })
-        if (imgResponse.ok) {
-          // Read body in chunks to avoid buffering huge responses
-          const reader = imgResponse.body?.getReader()
-          if (reader) {
-            const chunks: Uint8Array[] = []
-            let totalBytes = 0
-            let oversized = false
-            while (true) {
-              const { done, value } = await reader.read()
-              if (done) break
-              totalBytes += value.byteLength
-              if (totalBytes > MAX_OG_IMAGE_BYTES) {
-                await reader.cancel()
-                oversized = true
-                break
-              }
-              chunks.push(value)
-            }
-            if (oversized) {
-              log.warn({ url: linkCard.thumbUrl }, 'og:image too large, skipping thumbnail')
-            } else if (totalBytes > 0) {
-              const buffer = Buffer.concat(chunks)
-              const contentType = imgResponse.headers.get('content-type') || 'image/jpeg'
-              const uploadResult = await a.uploadBlob(buffer, { encoding: contentType })
-              thumb = uploadResult.data.blob
-            }
-          }
+        // La URL de la miniatura sale de la og:image de un tercero: pasa por la
+        // guardia SSRF en la URL y en cada redireccion (`safeAxiosGet`), igual que
+        // el resto de las descargas del servidor. Antes era un `fetch` crudo que
+        // seguia redirecciones sin revisar, y lo descargado se subia a un post
+        // publico. axios corta la descarga si pasa el tope de tamaño.
+        const imgResponse = await safeAxiosGet(linkCard.thumbUrl, {
+          responseType: 'arraybuffer',
+          timeout: 10_000,
+          maxContentLength: MAX_OG_IMAGE_BYTES,
+          maxBodyLength: MAX_OG_IMAGE_BYTES,
+        })
+        const buffer = Buffer.from(imgResponse.data)
+        const contentType = String(imgResponse.headers['content-type'] || '').split(';')[0].trim()
+        if (!contentType.startsWith('image/')) {
+          log.warn({ url: linkCard.thumbUrl, contentType }, 'og:image is not an image, skipping thumbnail')
+        } else if (buffer.length > 0) {
+          const uploadResult = await a.uploadBlob(buffer, { encoding: contentType })
+          thumb = uploadResult.data.blob
         }
       } catch (err) {
         log.warn({ err, url: linkCard.thumbUrl }, 'failed to fetch og:image for link card')

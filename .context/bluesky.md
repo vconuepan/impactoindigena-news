@@ -31,6 +31,8 @@ Bluesky does **not** auto-fetch og: metadata from URLs. The link card (title, de
 
 **Current behavior:** All posts use the global `/og-image.png`. When per-story og:images are implemented, `publishPost()` must be updated to use the story-specific og:image URL instead. See also `.context/seo.md`.
 
+**SSRF guard (21-nov-2026):** `createPost()` in `server/src/lib/bluesky.ts` downloads `linkCard.thumbUrl` with `safeAxiosGet` (guard on the URL and on every redirect, 1 MB cap, `image/*` only). It used to be a raw `fetch` that followed redirects unchecked, and the bytes went into a public post. `fetchImageBuffer()` in `lib/twitter.ts` got the same treatment (5 MB cap). Tests: `lib/social-image-ssrf.test.ts`. Any new download of a third-party image must go through `safeAxiosGet` or `downloadExternalImage` (`lib/imageStorage.ts`), never a bare `fetch`.
+
 ## Flows
 
 ### Manual: Single Story
