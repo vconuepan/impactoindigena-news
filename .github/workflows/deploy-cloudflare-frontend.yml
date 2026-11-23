@@ -71,6 +71,16 @@ jobs:
           if [ -n "$CF_TOKEN" ]; then echo "hay=true" >> "$GITHUB_OUTPUT"
           else echo "::warning::Faltan CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID: no se publica en Pages"; echo "hay=false" >> "$GITHUB_OUTPUT"; fi
 
+      # Sin claves, el build (que sí tiene PRERENDER_BYPASS_TOKEN) queda como
+      # artefacto para publicarlo a mano con `wrangler pages deploy` desde client/.
+      - name: Guardar el build para publicarlo a mano
+        if: steps.claves.outputs.hay != 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4.6.2
+        with:
+          name: voces-dist
+          path: client/dist
+          retention-days: 7
+
       # Se publica desde client/ para que entren functions/ y wrangler.toml.
       - name: Deploy to Cloudflare Pages
         if: steps.claves.outputs.hay == 'true'
