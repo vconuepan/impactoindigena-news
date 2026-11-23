@@ -1,0 +1,63 @@
+name: Deploy Frontend to Cloudflare Pages
+
+# Reemplaza a deploy-azure-frontend.yml cuando el frontend pase de Azure Static
+# Web Apps a Cloudflare Pages (decisión del director, 21-nov-2026: ahorra los
+# US$8,88/mes del Static Web App en la suscripción FKM).
+#
+# HASTA EL CORTE corre solo a mano (workflow_dispatch). En el corte se le agrega
+# el disparo por push a main y se le quita a deploy-azure-frontend.yml, en el
+# mismo commit, para que nunca publiquen los dos.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Build & Deploy Frontend (Cloudflare Pages)
+    needs: ci
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0 (node24)
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444  # v5.0.0 (node24)
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefix client
+
+      # Igual que en Azure: /api same-origin (lo reenvía client/functions), y el
+      # prerender pide sus datos por el dominio público, con el secreto que lo
+      # deja saltarse el limitador. El reenvío de Pages pasa la cabecera
+      # x-prerender-token tal cual.
+      - name: Build (with prerendering)
+        run: npm run build --prefix client
+        env:
+          VITE_API_URL: ""
+          PRERENDER_API_URL: "https://vocesindigenas.org"
+          PRERENDER_BYPASS_TOKEN: ${{ secrets.PRERENDER_BYPASS_TOKEN }}
+          VITE_R2_PUBLIC_URL: "https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev"
+          VITE_SITE_URL: "https://vocesindigenas.org"
+
+      # Cloudflare sirve `ruta/index.html` en `/ruta/` y redirige `/ruta` → `/ruta/`;
+      # los canonical dicen `/ruta`. El script los deja como `ruta.html`.
+      - name: Pretty URLs sin barra final
+        run: node client/scripts/cloudflare-urls-sin-barra.mjs client/dist
+
+      # Se publica desde client/ para que entren functions/ y wrangler.toml.
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v4  # la misma que usa tierrasindigenas
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: client
+          command: pages deploy dist --project-name vocesindigenas --branch main

@@ -17,6 +17,7 @@ import ogRouter from './routes/og.js'
 import { ogLimiter } from './middleware/rateLimit.js'
 import { getAllowedOrigins } from './lib/allowedOrigins.js'
 import { resolveClientIp } from './middleware/clientIp.js'
+import { exigirSecretoDeOrigen } from './middleware/originSecret.js'
 import { config } from './config.js'
 
 
@@ -30,6 +31,12 @@ const app = express()
 // derecha y debe ir ANTES de los limitadores y del log.
 app.set('trust proxy', 1)
 app.use(resolveClientIp(config.proxy.clientIpFromRight))
+
+// El candado de la API cuando el frontend vive en Cloudflare Pages: sin la
+// cabecera X-Origin-Secret, 403. Inerte mientras ORIGIN_SECRET no esté puesto
+// (ver middleware/originSecret.ts). Va antes de todo lo demás para que una
+// petición que no viene de Cloudflare no gaste limitadores ni log.
+app.use(exigirSecretoDeOrigen())
 
 /**
  * Origen del bucket público de R2, o null si no está configurado o no es una URL.
