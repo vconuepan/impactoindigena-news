@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SystemMessage } from '@langchain/core/messages'
+import { OutputParserException } from '@langchain/core/output_parsers'
 
 // ──── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -206,5 +207,51 @@ describe('isUntranslated', () => {
   it('es verdadero solo cuando el texto es el mismo salvo mayusculas y espacios', () => {
     expect(isUntranslated('Hola  mundo', 'hola mundo ')).toBe(true)
     expect(isUntranslated('Hola mundo', 'Hello world')).toBe(false)
+  })
+})
+
+// 23-nov-2026: con Claude, 3 de 30 traducciones llegaron con etiquetas sueltas
+// dentro del JSON y LangChain lanzó OutputParserException. Antes no había
+// reintento y la noticia quedaba sin inglés.
+describe('translateStory — reintento ante respuesta fuera de esquema', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+  afterEach(() => vi.useRealTimers())
+
+  const jsonRoto = () => new OutputParserException('Failed to parse. Text: "{ \"summaryEn\": \"...</summaryEn>\n<parameter name=\\\"quoteEn\\\">" }"')
+
+  it('reintenta cuando el modelo devuelve un JSON roto y escribe la traducción', async () => {
+    mockPrisma.story.findUnique.mockResolvedValueOnce(STORY)
+    mockInvoke.mockRejectedValueOnce(jsonRoto()).mockResolvedValueOnce(TRADUCIDA)
+
+    const corrida = translateStory('s1')
+    await vi.runAllTimersAsync()
+    await corrida
+
+    expect(mockInvoke).toHaveBeenCalledTimes(2)
+    expect(mockPrisma.story.update).toHaveBeenCalledTimes(1)
+  })
+
+  it('se rinde tras dos reintentos y no escribe nada', async () => {
+    mockPrisma.story.findUnique.mockResolvedValueOnce(STORY)
+    mockInvoke.mockRejectedValue(jsonRoto())
+
+    const corrida = translateStory('s1').catch((e) => e)
+    await vi.runAllTimersAsync()
+    const error = await corrida
+
+    expect(error).toBeInstanceOf(OutputParserException)
+    expect(mockInvoke).toHaveBeenCalledTimes(3)
+    expect(mockPrisma.story.update).not.toHaveBeenCalled()
+  })
+
+  it('un error que no es de red ni de esquema no se reintenta', async () => {
+    mockPrisma.story.findUnique.mockResolvedValueOnce(STORY)
+    mockInvoke.mockRejectedValueOnce(new Error('content filter'))
+
+    await expect(translateStory('s1')).rejects.toThrow('content filter')
+    expect(mockInvoke).toHaveBeenCalledTimes(1)
   })
 })

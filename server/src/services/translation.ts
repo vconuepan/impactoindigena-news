@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { HumanMessage, SystemMessage } from '@langchain/core/messages'
 import { createLogger } from '../lib/logger.js'
+import { withRetry, isRetryableLLMError } from '../lib/retry.js'
 import { getSmallLLM, rateLimitDelay } from './llm.js'
 import prisma from '../lib/prisma.js'
 import { truncateQuote } from '../lib/truncateQuote.js'
@@ -8,6 +9,9 @@ import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/ti
 import { limpiarCampos } from '../lib/personasSensibles.js'
 
 const log = createLogger('translation')
+
+/** Reintentos ante red, 429/5xx o respuesta fuera de esquema (ver `isOutputParsingError`). */
+const TRANSLATION_RETRIES = 2
 
 // Los campos de salida se llaman DISTINTO que los de entrada, a proposito.
 //
@@ -103,7 +107,13 @@ export async function translateStory(storyId: string): Promise<void> {
   await rateLimitDelay()
   log.info({ storyId }, 'translating story to English')
 
-  const result = await structuredLlm.invoke([new SystemMessage(SYSTEM_PROMPT), new HumanMessage(prompt)])
+  // Reintenta también si la respuesta no calza con el esquema: con Claude,
+  // 3 de 30 llegaron con JSON roto el 23-nov-2026 y la noticia quedaba sin
+  // inglés. Dos reintentos como tope: cada uno es otra llamada al modelo.
+  const result = await withRetry(
+    () => structuredLlm.invoke([new SystemMessage(SYSTEM_PROMPT), new HumanMessage(prompt)]),
+    { retries: TRANSLATION_RETRIES, retryOn: isRetryableLLMError },
+  )
 
   // Guardarrail determinista en el punto de escritura: una instruccion al LLM
   // es blanda, y el test unitario simula el modelo, asi que ninguno de los dos
@@ -205,7 +215,10 @@ export async function translateStoryBody(storyId: string): Promise<'translated' 
   const llm = getSmallLLM()
   const structuredLlm = llm.withStructuredOutput(bodyTranslationSchema, { method: 'functionCalling' })
   await rateLimitDelay()
-  const result = await structuredLlm.invoke([new SystemMessage(SYSTEM_PROMPT), new HumanMessage(buildBodyTranslationPrompt(cuerpo))])
+  const result = await withRetry(
+    () => structuredLlm.invoke([new SystemMessage(SYSTEM_PROMPT), new HumanMessage(buildBodyTranslationPrompt(cuerpo))]),
+    { retries: TRANSLATION_RETRIES, retryOn: isRetryableLLMError },
+  )
 
   if (isUntranslated(cuerpo.quePaso, result.quePasoEn)) {
     log.warn({ storyId }, 'story body translation came back identical to the Spanish original, not written')

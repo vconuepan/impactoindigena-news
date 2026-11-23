@@ -1,3 +1,4 @@
+import { OutputParserException } from '@langchain/core/output_parsers'
 import { createLogger } from './logger.js'
 
 const log = createLogger('retry')
@@ -34,6 +35,23 @@ export function isRetryableError(err: unknown): boolean {
     return true
   }
   return false
+}
+
+/**
+ * El modelo respondió, pero lo que devolvió no calza con el esquema: JSON roto
+ * o un campo faltante. Pedirlo de nuevo suele bastar. El 23-nov-2026, con
+ * Claude, 3 de 30 traducciones vinieron con etiquetas sueltas
+ * (`</summaryEn><parameter name="quoteEn">`) dentro del JSON y se perdieron.
+ * No entra en `isRetryableError` a propósito: reintentar cuesta otra llamada
+ * al modelo, y cada llamador decide si la vale.
+ */
+export function isOutputParsingError(err: unknown): boolean {
+  return err instanceof OutputParserException || (err as { lc_error_code?: string } | null)?.lc_error_code === 'OUTPUT_PARSING_FAILURE'
+}
+
+/** Red, límite de tasa o 5xx, y además una respuesta del modelo fuera de esquema. */
+export function isRetryableLLMError(err: unknown): boolean {
+  return isRetryableError(err) || isOutputParsingError(err)
 }
 
 export async function withRetry<T>(
