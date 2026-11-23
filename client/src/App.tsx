@@ -18,6 +18,7 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage = lazy(() => import('./pages/TermsPage'))
 const CookiesPage = lazy(() => import('./pages/CookiesPage'))
 const SearchPage = lazy(() => import('./pages/SearchPage'))
+const NewsDirectoryPage = lazy(() => import('./pages/NewsDirectoryPage'))
 const SubscribedPage = lazy(() => import('./pages/SubscribedPage'))
 const DevelopersPage = lazy(() => import('./pages/DevelopersPage'))
 const EmbedPage = lazy(() => import('./pages/EmbedPage'))
@@ -140,6 +141,7 @@ export default function App() {
         <Route path="/terminos" element={<LazyPage><TermsPage /></LazyPage>} />
         <Route path="/cookies" element={<LazyPage><CookiesPage /></LazyPage>} />
         <Route path="/search" element={<LazyPage><SearchPage /></LazyPage>} />
+        <Route path="/noticias" element={<LazyPage><NewsDirectoryPage /></LazyPage>} />
         <Route path="/subscribed" element={<LazyPage><SubscribedPage /></LazyPage>} />
         {/* DevelopersPage moved outside PublicLayout — Scalar styles clash with site theme */}
         <Route path="/widgets" element={<LazyPage><WidgetGeneratorPage /></LazyPage>} />

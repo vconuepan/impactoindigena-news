@@ -27,6 +27,9 @@ export interface RouteConfig {
 export const routes: RouteConfig[] = [
   { path: '/', priority: 1.0, changefreq: 'daily' },
   { path: '/issues', priority: 0.8, changefreq: 'monthly' },
+  // Directorio del archivo completo. Solo la vista sin filtros se indexa; las
+  // filtradas piden noindex (ver pages/NewsDirectoryPage.tsx).
+  { path: '/noticias', priority: 0.8, changefreq: 'daily' },
   { path: '/comunidades', priority: 0.8, changefreq: 'weekly' },
   { path: '/incidencia-internacional', priority: 0.9, changefreq: 'daily' },
   { path: '/methodology', priority: 0.7, changefreq: 'monthly' },

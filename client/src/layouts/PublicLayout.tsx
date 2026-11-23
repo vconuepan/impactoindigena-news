@@ -119,6 +119,7 @@ export const FOOTER_NAV = [
   { labelKey: "footer.about", href: "/about" },
   { labelKey: "footer.methodology", href: "/methodology" },
   { labelKey: "footer.communities", href: "/comunidades" },
+  { labelKey: "footer.allNews", href: "/noticias" },
   { labelKey: "footer.archive", href: "/archivo" },
   { labelKey: "footer.cases", href: "/casos" },
   { labelKey: "footer.alerts", href: "/alertas" },

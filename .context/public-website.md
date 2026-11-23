@@ -8,7 +8,8 @@ This document covers the public site's routes, components, data flow, and issue 
 |---|---|---|
 | `/` | `HomePage` | Hero + latest stories per issue |
 | `/stories/:slug` | `StoryPage` | Story detail with AI analysis |
-| `/issues/:slug` | `IssuePage` | Issue description + paginated stories + evaluation criteria |
+| `/issues/:slug` | `IssuePage` | Issue description + paginated stories + evaluation criteria. The list follows the positivity slider, so it can hide stories |
+| `/noticias` | `NewsDirectoryPage` | Directory of every published story, newest first, grouped by UTC day (the same day `dateFrom`/`dateTo` filter on). Filters in the URL: `?tema=` (any root issue; it includes its subsections and, for geographies, its countries), `?desde=`, `?hasta=`, `?page=`. Ignores the positivity slider. Only the unfiltered first page is indexable; filtered or paged views add `noindex, follow` with canonical `/noticias` |
 | `/methodology` | `MethodologyPage` | Three-criteria framework explanation |
 | `/about` | `AboutPage` | Mission and approach |
 | `/imprint` | `ImprintPage` | Legal notice |

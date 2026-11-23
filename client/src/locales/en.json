@@ -64,6 +64,7 @@
     "methodology": "Methodology",
     "newsletter": "Newsletter",
     "archive": "Newsletter archive",
+    "allNews": "All stories",
     "cases": "Ongoing cases",
     "alerts": "Territory alerts",
     "voces": "Indigenous Voices",
@@ -264,6 +265,23 @@
   },
   "story": {
     "olderStory": "Older story"
+  },
+  "directory": {
+    "label": "Archive",
+    "title": "All stories",
+    "intro": "Every story in the archive, newest first. Filter by topic, region or dates.",
+    "description": "The full archive of stories about Indigenous peoples, by date, topic and region.",
+    "count_one": "1 story",
+    "count_other": "{{count}} stories",
+    "filters": "Archive filters",
+    "category": "Topic or region",
+    "allCategories": "All topics and regions",
+    "topics": "Topics",
+    "regions": "Regions",
+    "loading": "Loading stories",
+    "error": "The archive could not be loaded. Try again in a few minutes.",
+    "noDate": "No date",
+    "searchHint": "Looking for a word or a name?"
   },
   "pagination": {
     "label": "Pagination",

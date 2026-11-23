@@ -27,6 +27,7 @@ type ChangeFreq = 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly
 const STATIC_ROUTES: { path: string; priority: number; changefreq: ChangeFreq }[] = [
   { path: '/', priority: 1.0, changefreq: 'daily' },
   { path: '/issues', priority: 0.8, changefreq: 'monthly' },
+  { path: '/noticias', priority: 0.8, changefreq: 'daily' },
   { path: '/comunidades', priority: 0.8, changefreq: 'weekly' },
   { path: '/methodology', priority: 0.7, changefreq: 'monthly' },
   { path: '/about', priority: 0.7, changefreq: 'monthly' },

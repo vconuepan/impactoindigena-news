@@ -64,6 +64,7 @@
     "methodology": "Metodología",
     "newsletter": "Boletín",
     "archive": "Archivo de boletines",
+    "allNews": "Todas las noticias",
     "cases": "Casos en curso",
     "alerts": "Alertas por territorio",
     "voces": "Voces Indígenas",
@@ -264,6 +265,23 @@
   },
   "story": {
     "olderStory": "Noticia antigua"
+  },
+  "directory": {
+    "label": "Archivo",
+    "title": "Todas las noticias",
+    "intro": "Cada noticia del archivo, de la más reciente a la más antigua. Filtra por tema, por geografía o por fechas.",
+    "description": "El archivo completo de noticias sobre pueblos indígenas, por fecha, tema y geografía.",
+    "count_one": "1 noticia",
+    "count_other": "{{count}} noticias",
+    "filters": "Filtros del archivo",
+    "category": "Tema o geografía",
+    "allCategories": "Todos los temas y geografías",
+    "topics": "Temas",
+    "regions": "Geografías",
+    "loading": "Cargando noticias",
+    "error": "No se pudo cargar el archivo. Intenta de nuevo en unos minutos.",
+    "noDate": "Sin fecha",
+    "searchHint": "¿Buscas una palabra o un nombre?"
   },
   "pagination": {
     "label": "Paginación",
