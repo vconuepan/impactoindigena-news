@@ -117,19 +117,21 @@ describe('el tercero que recibe la IP del lector esta declarado', () => {
     expect(seccion?.textContent).toMatch(/direcci[oó]n IP/)
   })
 
-  it('la Politica declara que los datos de lectores transitan por Static Web Apps si la API va por su proxy', () => {
+  it('la Politica declara que los datos de lectores transitan por Cloudflare Pages si la API va por su proxy', () => {
     // Hasta la v3.3 la Politica decia que esa entrega «no involucra datos de
     // suscriptores». Pero el despliegue compila el cliente con VITE_API_URL=""
     // (mismo origen), asi que TODA peticion a /api —suscripcion, sesion,
     // membresias, ARCO— cruza el proxy de Static Web Apps antes de llegar a
-    // Chile. Si algun dia la API se llama directo, este test debe reescribirse.
+    // Chile. Desde la v3.8 (24-nov-2026) ese proxy es Cloudflare Pages
+    // (client/functions/_middleware.ts). Si algun dia la API se llama directo,
+    // este test debe reescribirse.
     const workflow = readFileSync(
-      path.resolve(__dirname, '../../../.github/workflows/deploy-azure-frontend.yml'),
+      path.resolve(__dirname, '../../../.github/workflows/deploy-cloudflare-frontend.yml'),
       'utf8',
     )
     if (!/VITE_API_URL:\s*""/.test(workflow)) return
     renderPage(<PrivacyPage />)
-    const celda = screen.getAllByText('Azure Static Web Apps').find((n) => n.tagName === 'TD')
+    const celda = screen.getAllByText('Cloudflare (Pages)').find((n) => n.tagName === 'TD')
     const fila = celda!.closest('tr')
     expect(fila?.textContent).toMatch(/API/)
     expect(fila?.textContent).toMatch(/correo/)

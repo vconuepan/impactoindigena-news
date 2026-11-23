@@ -4,10 +4,18 @@ name: Deploy Frontend to Cloudflare Pages
 # Web Apps a Cloudflare Pages (decisión del director, 21-nov-2026: ahorra los
 # US$8,88/mes del Static Web App en la suscripción FKM).
 #
-# HASTA EL CORTE corre solo a mano (workflow_dispatch). En el corte se le agrega
-# el disparo por push a main y se le quita a deploy-azure-frontend.yml, en el
-# mismo commit, para que nunca publiquen los dos.
+# Corte: 24-nov-2026. Desde aquí este es el único que publica el frontend en
+# push a main; deploy-azure-frontend.yml quedó solo a mano, como vuelta atrás,
+# hasta que se borre el Static Web App.
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'shared/**'
+      - '.github/workflows/deploy-cloudflare-frontend.yml'
+  # Las paginas legales estan prerenderizadas: el 1-dic-2026 (Ley 21.719) hay
+  # que republicar aunque no cambie `client/**`.
   workflow_dispatch: {}
 
 permissions:
@@ -53,8 +61,19 @@ jobs:
       - name: Pretty URLs sin barra final
         run: node client/scripts/cloudflare-urls-sin-barra.mjs client/dist
 
+      # Sin las claves de Cloudflare en el repo no se puede publicar: se avisa
+      # y no se cae el workflow (mientras tanto se publica desde el Mac).
+      - name: Claves de Cloudflare presentes
+        id: claves
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CF_TOKEN" ]; then echo "hay=true" >> "$GITHUB_OUTPUT"
+          else echo "::warning::Faltan CLOUDFLARE_API_TOKEN/CLOUDFLARE_ACCOUNT_ID: no se publica en Pages"; echo "hay=false" >> "$GITHUB_OUTPUT"; fi
+
       # Se publica desde client/ para que entren functions/ y wrangler.toml.
       - name: Deploy to Cloudflare Pages
+        if: steps.claves.outputs.hay == 'true'
         uses: cloudflare/wrangler-action@v4  # la misma que usa tierrasindigenas
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

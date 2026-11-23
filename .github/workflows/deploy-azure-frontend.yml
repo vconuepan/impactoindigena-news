@@ -1,12 +1,8 @@
 name: Deploy Frontend to Azure Static Web Apps
 
+# Desde el corte a Cloudflare Pages (24-nov-2026) ya no corre en push: queda
+# solo a mano, como vuelta atrás, hasta que se borre el Static Web App.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'client/**'
-      - 'shared/**'
-      - '.github/workflows/deploy-azure-frontend.yml'
   # Disparo manual: las paginas legales estan prerenderizadas y el 1-dic-2026
   # (Ley 21.719) hay que republicar el frontend aunque no cambie `client/**`.
   workflow_dispatch: {}

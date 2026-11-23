@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.7 · vigente desde el 21 de noviembre de 2026.
+            Versión 3.8 · vigente desde el 24 de noviembre de 2026.
           </p>
 
           {/* 1. Responsable */}
@@ -200,7 +200,7 @@ export default function PrivacyPage() {
                   <td className="align-top py-2">Toda la base, incluidos correos de suscriptores</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
-                  <td className="align-top py-2 pr-4">Azure Static Web Apps</td>
+                  <td className="align-top py-2 pr-4">Cloudflare (Pages)</td>
                   <td className="align-top py-2 pr-4">Entrega de las páginas del sitio y paso de las peticiones a la API</td>
                   <td className="align-top py-2 pr-4">EE.&nbsp;UU. (red de distribución global)</td>
                   <td className="align-top py-2">Las páginas del sitio y, en tránsito entre tu navegador y el servidor en Chile, todo lo que envías y recibes: entre otros, tu correo al suscribirte al boletín o a alertas o al iniciar sesión, tus membresías a comunidades, tus comentarios y búsquedas, y la descarga o eliminación de tus datos. Como en toda conexión por internet, también tu dirección IP</td>
@@ -253,8 +253,9 @@ export default function PrivacyPage() {
             Central. Para llegar a ese servidor, lo que envías desde el sitio
             (suscripción al boletín o a alertas, inicio de sesión, membresía a
             comunidades, comentarios, búsquedas, descarga o eliminación de tus
-            datos), y lo que el servidor te devuelve, pasa por Azure Static Web
-            Apps, de Microsoft, cuyo recurso está en <strong>EE.&nbsp;UU.</strong>{" "}
+            datos), y lo que el servidor te devuelve, pasa por Cloudflare, una
+            empresa de <strong>EE.&nbsp;UU.</strong> cuya red de distribución es
+            global.{" "}
             <strong>Brevo</strong>, en la <strong>Unión Europea</strong>, guarda
             tu correo y tu nombre para enviarte el boletín y procesa el contenido
             de cada correo que te enviamos; si perteneces a una comunidad de tipo{" "}

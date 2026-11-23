@@ -35,6 +35,10 @@ jobs:
       - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e  # v3.0.0 (node24)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Fijada: la 8.24.3 por defecto marca server/.env.sample pese al
+          # allowlist de .gitleaks.toml; la 8.30.1 da 0 hallazgos en todo el
+          # historial (23-nov-2026). No relaja ninguna regla.
+          GITLEAKS_VERSION: 8.30.1
 
   test-server:
     name: Server tests

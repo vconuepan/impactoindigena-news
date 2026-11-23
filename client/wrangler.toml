@@ -5,8 +5,7 @@ pages_build_output_dir = "dist"
 compatibility_date = "2026-11-01"
 
 [vars]
-# ETAPA DE PRUEBA: se reenvía a Static Web Apps, que sigue siendo el candado de
-# la API (Easy Auth). En el corte pasa a la API directa
-# (https://impactoindigena-news-api.azurewebsites.net) junto con el secreto
-# ORIGIN_SECRET (`wrangler pages secret put ORIGIN_SECRET`).
-ORIGIN = "https://calm-pebble-039bfb80f.7.azurestaticapps.net"
+# Desde el corte (24-nov-2026) se reenvía directo a la API. El candado es el
+# secreto ORIGIN_SECRET (`wrangler pages secret put ORIGIN_SECRET`), el mismo
+# que la API tiene en su App Service (server/src/middleware/originSecret.ts).
+ORIGIN = "https://impactoindigena-news-api.azurewebsites.net"
