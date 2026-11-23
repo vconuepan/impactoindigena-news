@@ -37,4 +37,16 @@ export async function runSelectStories(): Promise<void> {
   const result = await selectStoriesInGroups(ids)
 
   log.info({ selected: result.selected, rejected: result.rejected, errors: result.errors }, 'selection job finished')
+
+  // Un grupo que falla deja sus noticias en `analyzed` y no publica nada. Hasta el 23-nov-2026
+  // este job terminaba «sin error» igual: con el modelo grande rechazando la llamada, el .news
+  // estuvo tres días sin publicar y el panel mostraba todo en verde. El trabajo de los grupos que
+  // sí resultaron ya quedó guardado; el error se lanza al final para que `job_runs.lastError` y el
+  // aviso de fallo lo muestren.
+  if (result.errors > 0) {
+    throw new Error(
+      `select_stories: ${result.errors} grupo(s) fallaron y sus noticias siguen sin seleccionar` +
+      (result.firstError ? `: ${result.firstError}` : ''),
+    )
+  }
 }

@@ -677,7 +677,7 @@ export async function selectStories(storyIds: string[]): Promise<{ selected: str
 export async function selectStoriesInGroups(
   storyIds: string[],
   onProgress?: ProgressCallback,
-): Promise<{ selected: number; rejected: number; errors: number }> {
+): Promise<{ selected: number; rejected: number; errors: number; firstError?: string }> {
   const groups = splitIntoGroups(storyIds, config.selection.maxGroupSize)
   const semaphore = new Semaphore(config.concurrency.select)
 
@@ -686,6 +686,7 @@ export async function selectStoriesInGroups(
   let totalSelected = 0
   let totalRejected = 0
   let errors = 0
+  let firstError: string | undefined
 
   const settled = await Promise.allSettled(
     groups.map((group, i) =>
@@ -710,6 +711,7 @@ export async function selectStoriesInGroups(
     } else {
       errors++
       const msg = result.reason instanceof Error ? result.reason.message : 'Unknown error'
+      firstError ??= msg
       log.error({ err: result.reason }, 'group selection failed')
       const groupIndex = settled.indexOf(result)
       const failedCount = groups[groupIndex]?.length ?? 0
@@ -717,7 +719,7 @@ export async function selectStoriesInGroups(
     }
   }
 
-  return { selected: totalSelected, rejected: totalRejected, errors }
+  return { selected: totalSelected, rejected: totalRejected, errors, firstError }
 }
 
 // --- Bulk wrappers with task progress tracking ---

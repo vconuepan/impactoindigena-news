@@ -36,6 +36,19 @@ describe('runSelectStories', () => {
     expect(mockSelectStoriesInGroups).toHaveBeenCalledWith(['story-1', 'story-2'])
   })
 
+  it('falla a la vista si algún grupo no se pudo seleccionar', async () => {
+    // 21 a 23-nov-2026: el modelo grande rechazaba la llamada, el job terminaba «sin error» y el
+    // .news no publicó en tres días. El error tiene que llegar a job_runs.lastError.
+    mockGetStoryIdsByStatus
+      .mockResolvedValueOnce(['story-1'])
+      .mockResolvedValueOnce(['story-1'])
+    mockSelectStoriesInGroups.mockResolvedValue({
+      selected: 0, rejected: 0, errors: 1, firstError: '400 tool_choice',
+    })
+
+    await expect(runSelectStories()).rejects.toThrow(/1 grupo\(s\) fallaron.*400 tool_choice/)
+  })
+
   it('does nothing when no analyzed stories', async () => {
     mockGetStoryIdsByStatus
       .mockResolvedValueOnce([]) // snapshot: all analyzed (empty)

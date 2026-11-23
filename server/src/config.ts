@@ -14,14 +14,21 @@ export const config = {
      * Claude (LLM_PROVIDER=anthropic). Decisión del director, 21-nov-2026: usar los créditos de API
      * de Claude para la IA del .news y ahorrar créditos de Azure. Haiku 5.5 cuesta USD 0,10/0,50
      * por millón de tokens de entrada/salida contra 0,40/1,60 de gpt-4.1-mini (página oficial de
-     * precios, leída ese día). El tier grande va a Sonnet 5.5, de precio parecido a gpt-4o.
+     * precios, leída ese día).
+     *
+     * El tier grande también va a Haiku 5.5. Hasta el 23-nov-2026 iba a Sonnet 5.5, y Sonnet
+     * rechaza con un 400 (`tool_choice: type "tool"…`) la salida estructurada que usan los jobs
+     * (`withStructuredOutput(..., { method: 'functionCalling' })`, que fuerza la herramienta).
+     * Haiku la acepta. Con Sonnet, `select_stories` falló tres días sin avisar y el .news no
+     * publicó el 21, 22 ni 23 de noviembre. No volver a Sonnet por variable sin probar antes una
+     * selección real contra la API.
      */
     anthropic: {
       apiKey: process.env.ANTHROPIC_API_KEY || '',
       models: {
         small:  process.env.ANTHROPIC_MODEL_SMALL  || 'claude-haiku-5-5',
         medium: process.env.ANTHROPIC_MODEL_MEDIUM || 'claude-haiku-5-5',
-        large:  process.env.ANTHROPIC_MODEL_LARGE  || 'claude-sonnet-5-5',
+        large:  process.env.ANTHROPIC_MODEL_LARGE  || 'claude-haiku-5-5',
       },
     },
     azure: {

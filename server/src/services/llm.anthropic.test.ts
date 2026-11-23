@@ -18,18 +18,18 @@ async function cargar(env: Record<string, string | undefined>) {
 afterEach(() => { vi.unstubAllEnvs() })
 
 describe('services/llm · proveedor Claude', () => {
-  it('con LLM_PROVIDER=anthropic y clave, los tiers usan Haiku 5.5 y el grande Sonnet 5.5', async () => {
+  it('con LLM_PROVIDER=anthropic y clave, los tres tiers usan Haiku 5.5 (Sonnet rechaza el tool_choice forzado)', async () => {
     const { getSmallLLM, getMediumLLM, getLargeLLM } = await cargar({ LLM_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'sk-ant-prueba' })
     const { ChatAnthropic } = await import('@langchain/anthropic')
     expect(getSmallLLM()).toBeInstanceOf(ChatAnthropic)
     expect((getSmallLLM() as unknown as { model: string }).model).toBe('claude-haiku-5-5')
     expect((getMediumLLM() as unknown as { model: string }).model).toBe('claude-haiku-5-5')
-    expect((getLargeLLM() as unknown as { model: string }).model).toBe('claude-sonnet-5-5')
+    expect((getLargeLLM() as unknown as { model: string }).model).toBe('claude-haiku-5-5')
   })
 
   it('los modelos se pueden cambiar por variable sin tocar código', async () => {
-    const { getLargeLLM } = await cargar({ LLM_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'sk-ant-prueba', ANTHROPIC_MODEL_LARGE: 'claude-haiku-5-5' })
-    expect((getLargeLLM() as unknown as { model: string }).model).toBe('claude-haiku-5-5')
+    const { getLargeLLM } = await cargar({ LLM_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'sk-ant-prueba', ANTHROPIC_MODEL_LARGE: 'claude-sonnet-5-5' })
+    expect((getLargeLLM() as unknown as { model: string }).model).toBe('claude-sonnet-5-5')
   })
 
   it('sin clave no se rompe: cae al proveedor por defecto, igual que OpenRouter', async () => {
