@@ -252,6 +252,20 @@ describe('runSocialAutoPost', () => {
         expect(mockWithheld).toHaveBeenCalledWith(['story-2'])
       })
 
+      it('un borrador que falló al generarse no se publica: prueba la siguiente', async () => {
+        mockSocial.pickBestStoryForSocial
+          .mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })
+          .mockResolvedValueOnce({ storyId: 'story-2', reasoning: 'next' })
+        mockChannels.instagram.generateDraft
+          .mockResolvedValueOnce({ id: 'ig-1', status: 'failed' })
+          .mockResolvedValueOnce({ id: 'ig-2', status: 'draft' })
+
+        await runSocialAutoPost()
+
+        expect(mockChannels.instagram.publishPost).toHaveBeenCalledTimes(1)
+        expect(mockChannels.instagram.publishPost).toHaveBeenCalledWith('ig-2')
+      })
+
       it('la siguiente sale de las que quedan: ni la ya probada ni las que el canal ya resolvió', async () => {
         mockSocial.pickBestStoryForSocial
           .mockResolvedValueOnce({ storyId: 'story-1', reasoning: 'best' })

@@ -86,6 +86,17 @@ describe('buildStoryCarouselForSocial (Instagram y LinkedIn, sin editor)', () =>
     expect(prompt).not.toContain('RESUMEN DE VOCES')
   })
 
+  // 23-nov-2026: con `includeRaw`, una respuesta fuera de esquema llega como
+  // `parsed: null` y reventaba con un TypeError sin motivo legible.
+  it('da un error legible cuando el modelo no devuelve el carrusel', async () => {
+    mockLLM.invoke.mockResolvedValue({ raw: { usage_metadata: {} }, parsed: null })
+
+    const error = await buildStoryCarouselForSocial('story-1').catch((e) => e)
+
+    expect(error).toBeInstanceOf(StoryCarouselError)
+    expect(error.message).toContain('no devolvió el carrusel')
+  })
+
   // Sin editor que corrija, un aviso no se muestra: rechaza.
   it('rechaza el carrusel con un año que el original no trae', async () => {
     elModeloDevuelve([

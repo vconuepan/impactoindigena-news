@@ -258,6 +258,13 @@ export async function draftStoryCarousel(storyId: string, conLectura: boolean): 
     'carousel text generated',
   )
 
+  // Con `includeRaw`, si la respuesta no calza con el esquema `parsed` llega
+  // nulo en vez de lanzar. Pasó el 23-nov-2026 y reventaba más abajo con un
+  // TypeError sin motivo legible.
+  if (!parsed) {
+    throw new StoryCarouselError('El modelo no devolvió el carrusel en el formato pedido. Vuelve a intentarlo.')
+  }
+
   const resultado = parsed as { laminas: CarouselSlideText[]; lectura?: CarouselSlideText; comunicadoDe?: string | null }
   const laminas = (resultado.laminas ?? []).map(limpiarLamina).map(sinFirmaDelModelo).map(sinEtiquetasSobrePersonas).filter((l) => l.titulo || l.texto)
   if (laminas.length < 3) {

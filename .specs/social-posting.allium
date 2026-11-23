@@ -203,7 +203,10 @@ rule NextCandidateAfterRejection {
     -- B21 (2026-11-19). Before, a rejected draft left the channel without a
     -- post for that slot: Instagram lost 9 of 27 slots between 6 and 19-nov
     -- while every run had 48 to 86 candidates.
-    when: SocialPost.status becomes rejected
+    -- 2026-11-23: a draft whose generation failed (no slides) takes the same
+    -- path. It is never published, and it is not a done status: a later run
+    -- may draft that story again.
+    when: SocialPost.status becomes rejected or generation_failed
         during SocialAutoPostJobRuns for channel
     requires: attempts(channel, this run) < config.tries_per_channel  -- default 3
     let remaining = candidates

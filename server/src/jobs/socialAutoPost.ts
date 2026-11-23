@@ -207,7 +207,13 @@ async function publicarEnCanal(channel: ChannelConfig, primera: string, candidat
     log.info({ channel: channel.name, storyId, intento }, 'generating draft')
     const draft = await channel.generateDraft(storyId)
 
-    if (draft.status !== 'rejected') {
+    // `failed` aqui es un borrador que no se llego a armar (el modelo no
+    // devolvio el carrusel, fallo el dibujo): no tiene laminas que publicar.
+    // El 23-nov-2026 se mando a publicar uno asi y el canal perdio la franja
+    // con «No images available». Se trata como un rechazo: siguiente candidata.
+    const sinBorrador = draft.status === 'rejected' || draft.status === 'failed'
+
+    if (!sinBorrador) {
       // Candidates were filtered minutes ago (LLM pick, drafts, 2 s between
       // channels): a vertical in enforce may have withheld the story since.
       // Check again right before each publish, which cannot be undone.
@@ -224,7 +230,11 @@ async function publicarEnCanal(channel: ChannelConfig, primera: string, candidat
 
     // El carrusel o el pie no pasó los candados: no se publica, y el motivo
     // queda en el post para verlo en el panel.
-    log.warn({ channel: channel.name, storyId, postId: draft.id, intento }, 'draft rejected by the carousel guards; not published')
+    if (draft.status === 'failed') {
+      log.warn({ channel: channel.name, storyId, postId: draft.id, intento }, 'draft generation failed; not published')
+    } else {
+      log.warn({ channel: channel.name, storyId, postId: draft.id, intento }, 'draft rejected by the carousel guards; not published')
+    }
     if (intento >= tope) {
       log.warn({ channel: channel.name, intentos: intento }, 'tope de intentos alcanzado: el canal no publica en esta corrida')
       return { estado: 'rechazada', storyId }
