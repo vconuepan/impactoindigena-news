@@ -104,6 +104,8 @@ Preset sizes are chosen to support 2x retina displays:
 
 Story images (hero, cards, story page) are not the `client/public/images/` files above: they are uploaded by the pipeline to the R2 bucket under `social/` and referenced by `Story.imageUrl`. Three upload paths, all in `server/src/lib/`: `imageGen.ts` (AI-generated), `storyCard.ts` (`oghero-*` rehosted source photo, `storycard-*` branded card composed at 2400×1260 for social previews).
 
+**When the AI path runs (`jobs/publishStories.ts`, `generateHeroImages`):** a story with relevance ≥ `AZURE_IMAGE_HERO_MIN_RELEVANCE` (default 8; 99 in production since 2026-11-21, i.e. never) gets an AI hero. Any other story reuses the source og:image. If the source has none, or the SSRF guard rejects it, the story falls back to an AI hero **unless `AZURE_IMAGE_HERO_AI_FALLBACK=off`**. The threshold does not cover that fallback: with it at 99 the fallback still produced ~2 images a day (2026-11-23). With the fallback off, the story keeps no image of its own: cards paint the topic fill (`NoPhotoFill`) and the story page falls back to the site og:image.
+
 **The problem (PageSpeed mobile, 2026-10-06):** cards requested the original to paint it at ~405px. Composed cards weigh 300-500 KB each; ~20 of them on one phone screen were 4.7 MB competing with the LCP image. Lighthouse estimated 2,326 KiB of savings.
 
 **The fix:** next to every original the pipeline stores two JPEG renditions, named by convention:

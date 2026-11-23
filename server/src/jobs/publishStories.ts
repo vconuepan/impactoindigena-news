@@ -115,6 +115,10 @@ export async function generateHeroImages(ids: string[]): Promise<void> {
     // No og:image. For non-featured stories generate an AI hero as a last
     // resort so the story is never imageless. (A featured story already tried
     // AI above; don't retry it here.)
+    if (!isFeatured && !config.imageGen.heroAiFallback) {
+      log.info({ storyId: story.id }, 'sin og:image y con el respaldo IA apagado: la noticia queda sin imagen propia')
+      continue
+    }
     if (!isFeatured) {
       try {
         await generateAiHero(story)

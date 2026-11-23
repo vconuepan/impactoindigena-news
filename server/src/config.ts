@@ -529,6 +529,12 @@ export const config = {
     // este umbral, el mismo del EditorialSeal). El resto reusa el og:image de la
     // fuente (gratis), acotando el costo de imágenes al valor editorial.
     heroAiMinRelevance: parseInt(process.env.AZURE_IMAGE_HERO_MIN_RELEVANCE || '8', 10),
+    // Respaldo IA para la noticia cuyo medio no trae og:image (o la trae y la
+    // guardia SSRF la rechaza). El umbral de arriba no lo cubre: con el umbral
+    // en 99 seguía saliendo ~2 imágenes al día por esta vía (23-nov-2026).
+    // 'off' deja la noticia sin imagen propia: la tarjeta pinta el relleno del
+    // tema (`NoPhotoFill`) y la ficha cae a la og:image del sitio.
+    heroAiFallback: (process.env.AZURE_IMAGE_HERO_AI_FALLBACK || 'on').trim().toLowerCase() !== 'off',
   },
   r2: {
     endpoint: process.env.R2_ENDPOINT || '',

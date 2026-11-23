@@ -24,12 +24,11 @@ vi.mock('../lib/imageStorage.js', () => ({ rehostArticlePhoto: mockRehostFoto })
 const mockAssertUrl = vi.hoisted(() => vi.fn())
 vi.mock('../utils/urlValidation.js', () => ({ assertUrlAllowed: mockAssertUrl }))
 
-vi.mock('../config.js', () => ({
-  config: {
-    r2: { publicUrl: 'https://cdn.r2.example' },
-    imageGen: { heroAiMinRelevance: 8 },
-  },
+const mockConfig = vi.hoisted(() => ({
+  r2: { publicUrl: 'https://cdn.r2.example' },
+  imageGen: { heroAiMinRelevance: 8, heroAiFallback: true },
 }))
+vi.mock('../config.js', () => ({ config: mockConfig }))
 
 vi.mock('../lib/logger.js', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
@@ -57,6 +56,40 @@ describe('generateHeroImages — cost-aware hero strategy', () => {
     mockRehost.mockResolvedValue('https://cdn.r2.example/oghero-id.jpg')
     mockPrisma.story.update.mockResolvedValue({})
     mockAssertUrl.mockResolvedValue(undefined)
+    mockConfig.imageGen.heroAiFallback = true
+  })
+
+  // AZURE_IMAGE_HERO_AI_FALLBACK=off: con el umbral en 99 seguían saliendo imágenes
+  // IA por esta vía. Apagado, la noticia sin og:image queda sin imagen propia.
+  it('with the AI fallback off, a non-featured story with no og:image gets no AI hero', async () => {
+    mockConfig.imageGen.heroAiFallback = false
+    mockPrisma.story.findMany.mockResolvedValue([story({ relevance: 4 })])
+    mockFetchOg.mockResolvedValue(null)
+    await generateHeroImages(['id'])
+    expect(mockFetchOg).toHaveBeenCalledTimes(1)
+    expect(mockGenerateImage).not.toHaveBeenCalled()
+    expect(mockPrisma.story.update).not.toHaveBeenCalled()
+  })
+
+  it('with the AI fallback off, an og:image rejected by the SSRF guard does not trigger AI either', async () => {
+    mockConfig.imageGen.heroAiFallback = false
+    mockPrisma.story.findMany.mockResolvedValue([story({ relevance: 5 })])
+    mockFetchOg.mockResolvedValue('http://169.254.169.254/latest/meta-data')
+    mockRehost.mockResolvedValue(null)
+    mockAssertUrl.mockRejectedValue(new Error('Blocked disallowed URL'))
+    await generateHeroImages(['id'])
+    expect(mockGenerateImage).not.toHaveBeenCalled()
+    expect(mockPrisma.story.update).not.toHaveBeenCalled()
+  })
+
+  it('with the AI fallback off, a non-featured story with og:image still gets it rehosted', async () => {
+    mockConfig.imageGen.heroAiFallback = false
+    mockPrisma.story.findMany.mockResolvedValue([story({ relevance: 6 })])
+    await generateHeroImages(['id'])
+    expect(mockGenerateImage).not.toHaveBeenCalled()
+    expect(mockPrisma.story.update).toHaveBeenCalledWith({
+      where: { id: 'id' }, data: { imageUrl: 'https://cdn.r2.example/oghero-id.jpg' },
+    })
   })
 
   it('featured story (relevance >= 8) gets an AI hero, no og:image lookup', async () => {
