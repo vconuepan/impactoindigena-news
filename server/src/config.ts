@@ -207,6 +207,16 @@ export const config = {
     minRelevance: parseInt(process.env.STORY_BODY_MIN_RELEVANCE || '8', 10),
     maxPerRun: parseInt(process.env.STORY_BODY_MAX_PER_RUN || '4', 10),
   },
+  // Rescate del inglés (23-nov-2026): la traducción solo corría sobre lo
+  // recién publicado, así que una noticia cuya traducción fallaba quedaba en
+  // español para siempre (ese día, la destacada de la portada). Cada corrida
+  // de publish_stories retoma las publicadas de los últimos `catchUpDays` días
+  // que siguen sin título en inglés, hasta `catchUpLimit` por corrida, las de
+  // mayor relevancia primero. 0 en cualquiera de los dos lo apaga.
+  translation: {
+    catchUpDays: parseInt(process.env.TRANSLATION_CATCHUP_DAYS || '3', 10),
+    catchUpLimit: parseInt(process.env.TRANSLATION_CATCHUP_LIMIT || '10', 10),
+  },
   // La editorial firmada (B5, 25-oct-2026): se redacta desde las notas del
   // director con el tier medium. Medido en A1 del mismo plan: el modelo grande
   // costó seis veces más y falló más.

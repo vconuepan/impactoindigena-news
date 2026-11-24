@@ -410,6 +410,24 @@ rule Translate {
     ensures: story.summary_en = translate(story.summary) or story.summary_en = null
 }
 
+rule RetryRecentTranslations {
+    when: PublishStoriesJob ran
+    -- Added 2026-11-23: Translate only ever saw the stories of its own run,
+    -- so a story whose translation failed stayed Spanish-only forever (that
+    -- day, the homepage's featured story). Every run of the publish job, even
+    -- one with nothing new to publish, retries the published stories of the
+    -- last TRANSLATION_CATCHUP_DAYS days (default 3) that still have no
+    -- title_en, highest relevance first, at most TRANSLATION_CATCHUP_LIMIT
+    -- (default 10), excluding the ones this run already tried. Bounded so a
+    -- story that always fails stops costing calls once it leaves the window.
+    -- Non-fatal: a failure here never fails the publish job.
+
+    ensures: forall story: Story
+        story.status = published and story.title_en = null
+        and story.date_published >= now - catch_up_days
+        implies Translate is attempted again (within catch_up_limit)
+}
+
 invariant TranslationIsNotACopy {
     -- A translation identical to the Spanish original is a failed
     -- translation, not a translation. From 2026-05-10 to 2026-10-12 the

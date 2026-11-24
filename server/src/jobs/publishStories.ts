@@ -1,6 +1,6 @@
 import prisma from '../lib/prisma.js'
 import { getStoryIdsByStatus, bulkUpdateStatus } from '../services/story.js'
-import { translateStoriesBatch } from '../services/translation.js'
+import { translateStoriesBatch, translateRecentUntranslated } from '../services/translation.js'
 import { draftStoryBodies } from '../services/storyBody.js'
 import { fetchOgImage } from '../lib/extract-og-image.js'
 import { generateStoryImage } from '../lib/imageGen.js'
@@ -167,12 +167,32 @@ export async function rehostStoryPhotos(ids: string[]): Promise<void> {
   log.info({ stories: ids.length, fotos: fotos.length, subidas }, 'article photos rehosted')
 }
 
+/** El rescate del inglés nunca tumba la publicación: si la consulta falla, se registra y se sigue. */
+async function retomarTraducciones(exclude: string[]): Promise<{ translated: number }> {
+  try {
+    const r = await translateRecentUntranslated({
+      days: config.translation.catchUpDays,
+      limit: config.translation.catchUpLimit,
+      exclude,
+    })
+    if (r.pending > 0) log.info(r, 'traducciones retomadas')
+    return { translated: r.translated }
+  } catch (err) {
+    log.warn({ err }, 'no se pudieron retomar las traducciones pendientes')
+    return { translated: 0 }
+  }
+}
+
 export async function runPublishStories(): Promise<void> {
   log.info('starting publish job')
 
   const ids = await getStoryIdsByStatus('selected')
   if (ids.length === 0) {
     log.info('no selected stories to publish')
+    // Aun sin noticias nuevas, las de días anteriores que quedaron sin inglés
+    // se retoman; si alguna se tradujo, la portada cacheada se rehace.
+    const rescate = await retomarTraducciones([])
+    if (rescate.translated > 0) await publishHomepageSnapshot()
     return
   }
 
@@ -195,6 +215,10 @@ export async function runPublishStories(): Promise<void> {
     log.info({ count: publishedIds.length }, 'translating published stories to English')
     const { translated, failed } = await translateStoriesBatch(publishedIds)
     log.info({ translated, failed }, 'translation complete')
+
+    // Las de días anteriores que siguen sin inglés (las de esta corrida ya se
+    // intentaron arriba). Antes de la portada, que muestra los títulos en inglés.
+    await retomarTraducciones(publishedIds)
 
     log.info({ count: publishedIds.length }, 'generating AI hero images')
     await generateHeroImages(publishedIds)

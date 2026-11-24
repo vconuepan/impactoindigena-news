@@ -7,6 +7,7 @@ import { OutputParserException } from '@langchain/core/output_parsers'
 const mockPrisma = vi.hoisted(() => ({
   story: {
     findUnique: vi.fn(),
+    findMany: vi.fn(),
     update: vi.fn(),
   },
 }))
@@ -23,7 +24,7 @@ vi.mock('../lib/logger.js', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }))
 
-const { translateStory, translateStoriesBatch, isUntranslated, TranslationUnchangedError } =
+const { translateStory, translateStoriesBatch, translateRecentUntranslated, isUntranslated, TranslationUnchangedError } =
   await import('./translation.js')
 
 const STORY = {
@@ -253,5 +254,51 @@ describe('translateStory — reintento ante respuesta fuera de esquema', () => {
 
     await expect(translateStory('s1')).rejects.toThrow('content filter')
     expect(mockInvoke).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('translateRecentUntranslated — rescate de las que quedaron sin inglés', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('busca publicadas recientes sin titleEn, excluye las indicadas, ordena por relevancia y respeta el tope', async () => {
+    mockPrisma.story.findMany.mockResolvedValueOnce([{ id: 's1' }])
+    mockPrisma.story.findUnique.mockResolvedValueOnce(STORY)
+    mockInvoke.mockResolvedValueOnce(TRADUCIDA)
+    const antes = Date.now()
+
+    const r = await translateRecentUntranslated({ days: 3, limit: 10, exclude: ['nueva'] })
+
+    const q = mockPrisma.story.findMany.mock.calls[0][0]
+    expect(q.where.status).toBe('published')
+    expect(q.where.titleEn).toBeNull()
+    expect(q.where.id).toEqual({ notIn: ['nueva'] })
+    const desde = q.where.datePublished.gte.getTime()
+    expect(antes - desde).toBeGreaterThanOrEqual(3 * 86400000 - 1000)
+    expect(antes - desde).toBeLessThanOrEqual(3 * 86400000 + 1000)
+    expect(q.take).toBe(10)
+    expect(q.orderBy[0]).toEqual({ relevance: { sort: 'desc', nulls: 'last' } })
+    expect(r).toEqual({ pending: 1, translated: 1, failed: 0 })
+    expect(mockPrisma.story.update.mock.calls[0][0].data.titleEn).toBe('Canada advanced land claims')
+  })
+
+  it('una que vuelve a fallar se cuenta y no corta el resto', async () => {
+    mockPrisma.story.findMany.mockResolvedValueOnce([{ id: 'a' }, { id: 'b' }])
+    mockPrisma.story.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce(STORY)
+    mockInvoke.mockResolvedValueOnce(TRADUCIDA)
+    const r = await translateRecentUntranslated({ days: 3, limit: 10 })
+    expect(r).toEqual({ pending: 2, translated: 1, failed: 1 })
+  })
+
+  it('con días o tope en 0 está apagado y no consulta la base', async () => {
+    expect(await translateRecentUntranslated({ days: 0, limit: 10 })).toEqual({ pending: 0, translated: 0, failed: 0 })
+    expect(await translateRecentUntranslated({ days: 3, limit: 0 })).toEqual({ pending: 0, translated: 0, failed: 0 })
+    expect(mockPrisma.story.findMany).not.toHaveBeenCalled()
+  })
+
+  it('sin pendientes no llama al modelo', async () => {
+    mockPrisma.story.findMany.mockResolvedValueOnce([])
+    const r = await translateRecentUntranslated({ days: 3, limit: 10 })
+    expect(r).toEqual({ pending: 0, translated: 0, failed: 0 })
+    expect(mockInvoke).not.toHaveBeenCalled()
   })
 })

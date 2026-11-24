@@ -238,6 +238,45 @@ export async function translateStoryBody(storyId: string): Promise<'translated' 
   return 'translated'
 }
 
+/**
+ * Retoma las noticias publicadas hace poco que siguen sin título en inglés.
+ *
+ * `translateStoriesBatch` solo corre sobre lo que se acaba de publicar: si la
+ * traducción fallaba (3 de 30 el 23-nov-2026, entre ellas la destacada de la
+ * portada), nada volvía a intentarla y la noticia quedaba en español con el
+ * sitio en inglés. Acotado en días y en cantidad para que una noticia que falla
+ * siempre no gaste llamadas sin fin: deja de intentarse cuando sale de la
+ * ventana. Solo mira `titleEn` vacío; las copias del español las sigue
+ * cubriendo `scripts/backfill-translations.ts`.
+ */
+export async function translateRecentUntranslated(opts: {
+  days: number
+  limit: number
+  exclude?: string[]
+}): Promise<{ pending: number; translated: number; failed: number }> {
+  if (opts.days <= 0 || opts.limit <= 0) return { pending: 0, translated: 0, failed: 0 }
+
+  const since = new Date(Date.now() - opts.days * 24 * 60 * 60 * 1000)
+  const pendientes = await prisma.story.findMany({
+    where: {
+      status: 'published',
+      titleEn: null,
+      datePublished: { gte: since },
+      OR: [{ title: { not: null } }, { summary: { not: null } }],
+      ...(opts.exclude && opts.exclude.length > 0 ? { id: { notIn: opts.exclude } } : {}),
+    },
+    select: { id: true },
+    orderBy: [{ relevance: { sort: 'desc', nulls: 'last' } }, { datePublished: 'desc' }],
+    take: opts.limit,
+  })
+
+  if (pendientes.length === 0) return { pending: 0, translated: 0, failed: 0 }
+
+  log.info({ count: pendientes.length, days: opts.days }, 'retomando traducciones pendientes de días anteriores')
+  const { translated, failed } = await translateStoriesBatch(pendientes.map(s => s.id))
+  return { pending: pendientes.length, translated, failed }
+}
+
 export async function translateStoriesBatch(storyIds: string[]): Promise<{ translated: number; failed: number }> {
   let translated = 0
   let failed = 0

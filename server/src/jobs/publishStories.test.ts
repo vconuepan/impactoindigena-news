@@ -27,6 +27,7 @@ vi.mock('../utils/urlValidation.js', () => ({ assertUrlAllowed: mockAssertUrl })
 const mockConfig = vi.hoisted(() => ({
   r2: { publicUrl: 'https://cdn.r2.example' },
   imageGen: { heroAiMinRelevance: 8, heroAiFallback: true },
+  translation: { catchUpDays: 3, catchUpLimit: 10 },
 }))
 vi.mock('../config.js', () => ({ config: mockConfig }))
 
@@ -34,12 +35,16 @@ vi.mock('../lib/logger.js', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), debug: vi.fn(), error: vi.fn() }),
 }))
 
-// story.js / translation.js are imported by the module but unused by generateHeroImages.
-vi.mock('../services/story.js', () => ({ getStoryIdsByStatus: vi.fn(), bulkUpdateStatus: vi.fn() }))
-vi.mock('../services/translation.js', () => ({ translateStoriesBatch: vi.fn() }))
+// story.js / translation.js: generateHeroImages no los usa; runPublishStories sí.
+const mockStory = vi.hoisted(() => ({ getStoryIdsByStatus: vi.fn(), bulkUpdateStatus: vi.fn() }))
+vi.mock('../services/story.js', () => mockStory)
+const mockTranslation = vi.hoisted(() => ({ translateStoriesBatch: vi.fn(), translateRecentUntranslated: vi.fn() }))
+vi.mock('../services/translation.js', () => mockTranslation)
+const mockSnapshot = vi.hoisted(() => vi.fn())
+vi.mock('../lib/homepage-snapshot.js', () => ({ publishHomepageSnapshot: mockSnapshot }))
 vi.mock('../services/storyBody.js', () => ({ draftStoryBodies: vi.fn().mockResolvedValue({ saved: 0, blocked: 0, skipped: 0, failed: 0 }) }))
 
-const { generateHeroImages, rehostStoryPhotos } = await import('./publishStories.js')
+const { generateHeroImages, rehostStoryPhotos, runPublishStories } = await import('./publishStories.js')
 
 const story = (over: Record<string, unknown>) => ({
   id: 'id', title: 'T', sourceTitle: 'ST', summary: 'S',
@@ -226,5 +231,51 @@ describe('rehostStoryPhotos — las fotos del cuerpo del artículo, al publicar'
   it('sin ids no consulta nada', async () => {
     await rehostStoryPhotos([])
     expect(mockPrisma.storyImage.findMany).not.toHaveBeenCalled()
+  })
+})
+
+// ──── Rescate del inglés (23-nov-2026) ───────────────────────────────────────
+// La destacada de la portada quedó en español con el sitio en inglés: su
+// traducción falló al publicarse y nada volvía a intentarla.
+describe('runPublishStories — retoma las traducciones pendientes de días anteriores', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockStory.bulkUpdateStatus.mockResolvedValue({ count: 1 })
+    mockTranslation.translateStoriesBatch.mockResolvedValue({ translated: 1, failed: 0 })
+    mockTranslation.translateRecentUntranslated.mockResolvedValue({ pending: 0, translated: 0, failed: 0 })
+    mockPrisma.story.findMany.mockResolvedValue([])
+    mockPrisma.storyImage.findMany.mockResolvedValue([])
+    mockSnapshot.mockResolvedValue(null)
+  })
+
+  it('tras traducir lo recién publicado, retoma las anteriores sin inglés, excluyendo las de esta corrida', async () => {
+    mockStory.getStoryIdsByStatus.mockResolvedValue(['nueva'])
+    await runPublishStories()
+    expect(mockTranslation.translateRecentUntranslated).toHaveBeenCalledWith({ days: 3, limit: 10, exclude: ['nueva'] })
+    const ordenTraducir = mockTranslation.translateStoriesBatch.mock.invocationCallOrder[0]
+    const ordenRescate = mockTranslation.translateRecentUntranslated.mock.invocationCallOrder[0]
+    const ordenPortada = mockSnapshot.mock.invocationCallOrder[0]
+    expect(ordenTraducir).toBeLessThan(ordenRescate)
+    expect(ordenRescate).toBeLessThan(ordenPortada)
+  })
+
+  it('sin noticias nuevas igual retoma, y rehace la portada solo si tradujo alguna', async () => {
+    mockStory.getStoryIdsByStatus.mockResolvedValue([])
+    mockTranslation.translateRecentUntranslated.mockResolvedValue({ pending: 1, translated: 1, failed: 0 })
+    await runPublishStories()
+    expect(mockTranslation.translateRecentUntranslated).toHaveBeenCalledWith({ days: 3, limit: 10, exclude: [] })
+    expect(mockSnapshot).toHaveBeenCalledTimes(1)
+
+    vi.clearAllMocks()
+    mockTranslation.translateRecentUntranslated.mockResolvedValue({ pending: 0, translated: 0, failed: 0 })
+    await runPublishStories()
+    expect(mockSnapshot).not.toHaveBeenCalled()
+  })
+
+  it('si el rescate falla, la publicación sigue y la portada se rehace igual', async () => {
+    mockStory.getStoryIdsByStatus.mockResolvedValue(['nueva'])
+    mockTranslation.translateRecentUntranslated.mockRejectedValue(new Error('db down'))
+    await expect(runPublishStories()).resolves.toBeUndefined()
+    expect(mockSnapshot).toHaveBeenCalledTimes(1)
   })
 })
