@@ -265,3 +265,24 @@ describe('toponimos e instituciones sumados el 19-ago', () => {
     )
   })
 })
+
+// A23, 24-nov-2026: siglas que la auditoría de los 5.381 títulos publicados
+// encontró escritas como palabra. Los casos son títulos reales.
+describe('fixTitleCapitalization — siglas sumadas tras la auditoría de títulos', () => {
+  it.each([
+    ['Scjn reconoce deuda histórica con pueblos indígenas en México', 'SCJN reconoce deuda histórica con pueblos indígenas en México'],
+    ['Cdmx reconoció cinco nuevos pueblos originarios en 2024', 'CDMX reconoció cinco nuevos pueblos originarios en 2024'],
+    ['Onic alerta fraudes y compra de votos en territorios indígenas', 'ONIC alerta fraudes y compra de votos en territorios indígenas'],
+    ['Pueblos indígenas venezolanos representaron sus intereses en la cop30', 'Pueblos indígenas venezolanos representaron sus intereses en la COP30'],
+    ['MPF e ibram usan satélites contra minería ilegal en la Amazonía', 'MPF e IBRAM usan satélites contra minería ilegal en la Amazonía'],
+    ['Nctr added names to the school memorial', 'NCTR added names to the school memorial'],
+  ])('%s', (antes, ahora) => {
+    expect(fixTitleCapitalization(antes)).toBe(ahora)
+  })
+
+  it('no toca las que quedaron fuera por colisionar o ser muy cortas', () => {
+    expect(fixTitleCapitalization('Comunidad usa mop y agua para limpiar el río')).toBe('Comunidad usa mop y agua para limpiar el río')
+    expect(fixTitleCapitalization('Indi apoya a comunidades en Paraguay')).toBe('Indi apoya a comunidades en Paraguay')
+  })
+})
+

@@ -84,6 +84,8 @@
     "migration:retema:apply": "tsx src/scripts/migrations/retema-historias.ts --apply",
     "migration:fix-title-caps": "tsx src/scripts/migrations/fix-title-capitalization.ts",
     "migration:fix-title-caps:apply": "tsx src/scripts/migrations/fix-title-capitalization.ts --apply",
+    "migration:corregir-titulos": "tsx src/scripts/migrations/corregir-titulos-revisados.ts",
+    "migration:corregir-titulos:apply": "tsx src/scripts/migrations/corregir-titulos-revisados.ts --apply",
     "translations:backfill": "tsx src/scripts/backfill-translations.ts",
     "translations:backfill:apply": "tsx src/scripts/backfill-translations.ts --apply",
     "images:backfill": "tsx src/scripts/backfill-images.ts"

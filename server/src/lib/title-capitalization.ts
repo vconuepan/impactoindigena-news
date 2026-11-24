@@ -51,6 +51,13 @@ const ACRONYMS = [
   'MPF', 'CEDH', 'CNDH', 'FUNAI', 'INCRA', 'IBAMA', 'UFAL',
   'ONG', 'ONGs', 'EE', 'UU', 'GIZ', 'USAID', 'IPBES', 'COP',
   'FILAC', 'SEMARNAT', 'TEPJF', 'CJNG', 'FARC',
+  // 24-nov-2026 (A23): salieron de auditar los 5.381 titulos publicados. Cada
+  // una aparecio escrita como palabra («Scjn reconoce…», «Onic reporto…») y
+  // ninguna es palabra comun en espanol ni en ingles. Quedaron fuera a
+  // proposito MOP, MP, PT, BC e INDI, que si colisionan o son muy cortas.
+  'SCJN', 'CDMX', 'CNTV', 'NCTR', 'ONIC', 'CONAIE', 'CIDOB', 'IIALI', 'IWGIA',
+  'IHS', 'AFN', 'INPA', 'IBRAM', 'IFC', 'INEI', 'UNED', 'JEP', 'CPI', 'RDC',
+  'AFEDES', 'CODHEM', 'IEEM', 'COP16', 'COP29', 'COP30', 'COP31',
 ]
 
 /**
