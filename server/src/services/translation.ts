@@ -246,15 +246,18 @@ export async function translateStoryBody(storyId: string): Promise<'translated' 
  * portada), nada volvía a intentarla y la noticia quedaba en español con el
  * sitio en inglés. Acotado en días y en cantidad para que una noticia que falla
  * siempre no gaste llamadas sin fin: deja de intentarse cuando sale de la
- * ventana. Solo mira `titleEn` vacío; las copias del español las sigue
- * cubriendo `scripts/backfill-translations.ts`.
+ * ventana. Solo mira `titleEn` vacío en noticias que tienen título; las
+ * copias del español y las noticias sin título las sigue cubriendo
+ * `scripts/backfill-translations.ts`.
  */
 export async function translateRecentUntranslated(opts: {
   days: number
   limit: number
   exclude?: string[]
 }): Promise<{ pending: number; translated: number; failed: number }> {
-  if (opts.days <= 0 || opts.limit <= 0) return { pending: 0, translated: 0, failed: 0 }
+  // `!(x > 0)` y no `x <= 0`: un valor mal escrito en la variable de entorno
+  // llega como NaN, y NaN también tiene que apagar el rescate.
+  if (!(opts.days > 0) || !(opts.limit > 0)) return { pending: 0, translated: 0, failed: 0 }
 
   const since = new Date(Date.now() - opts.days * 24 * 60 * 60 * 1000)
   const pendientes = await prisma.story.findMany({
@@ -262,7 +265,11 @@ export async function translateRecentUntranslated(opts: {
       status: 'published',
       titleEn: null,
       datePublished: { gte: since },
-      OR: [{ title: { not: null } }, { summary: { not: null } }],
+      // Solo es pendiente lo que la traducción puede cumplir: sin título en
+      // español nunca habrá `titleEn`, y la noticia se volvería a traducir en
+      // cada corrida de la ventana, contada como traducida (revisión del
+      // 24-nov-2026). Esas se siguen traduciendo una vez, al publicarse.
+      AND: [{ title: { not: null } }, { title: { not: '' } }],
       ...(opts.exclude && opts.exclude.length > 0 ? { id: { notIn: opts.exclude } } : {}),
     },
     select: { id: true },

@@ -424,6 +424,7 @@ rule RetryRecentTranslations {
 
     ensures: forall story: Story
         story.status = published and story.title_en = null
+        and story.title != null and story.title != ""
         and story.date_published >= now - catch_up_days
         implies Translate is attempted again (within catch_up_limit)
 }

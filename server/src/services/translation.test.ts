@@ -271,6 +271,10 @@ describe('translateRecentUntranslated — rescate de las que quedaron sin inglé
     const q = mockPrisma.story.findMany.mock.calls[0][0]
     expect(q.where.status).toBe('published')
     expect(q.where.titleEn).toBeNull()
+    // Una noticia sin título nunca tendrá titleEn: si entrara, se retraduciría
+    // en cada corrida de la ventana y se contaría como traducida.
+    expect(q.where.AND).toEqual([{ title: { not: null } }, { title: { not: '' } }])
+    expect(q.where.OR).toBeUndefined()
     expect(q.where.id).toEqual({ notIn: ['nueva'] })
     const desde = q.where.datePublished.gte.getTime()
     expect(antes - desde).toBeGreaterThanOrEqual(3 * 86400000 - 1000)
@@ -292,6 +296,12 @@ describe('translateRecentUntranslated — rescate de las que quedaron sin inglé
   it('con días o tope en 0 está apagado y no consulta la base', async () => {
     expect(await translateRecentUntranslated({ days: 0, limit: 10 })).toEqual({ pending: 0, translated: 0, failed: 0 })
     expect(await translateRecentUntranslated({ days: 3, limit: 0 })).toEqual({ pending: 0, translated: 0, failed: 0 })
+    expect(mockPrisma.story.findMany).not.toHaveBeenCalled()
+  })
+
+  it('un valor mal escrito en la variable (NaN) también lo apaga, sin consultar la base', async () => {
+    expect(await translateRecentUntranslated({ days: NaN, limit: 10 })).toEqual({ pending: 0, translated: 0, failed: 0 })
+    expect(await translateRecentUntranslated({ days: 3, limit: NaN })).toEqual({ pending: 0, translated: 0, failed: 0 })
     expect(mockPrisma.story.findMany).not.toHaveBeenCalled()
   })
 
