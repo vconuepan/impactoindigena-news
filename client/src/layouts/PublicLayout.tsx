@@ -720,7 +720,7 @@ function PublicLayoutInner() {
                 className="inline-flex items-center gap-1 text-sm font-medium text-neutral-400 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded whitespace-nowrap"
               >
                 impactoindigena.ai ↗
-                <span className="sr-only"> (abre en nueva pestaña)</span>
+                <span className="sr-only"> {t('storyCard.opensInNewTab')}</span>
               </a>
             </div>
           </div>

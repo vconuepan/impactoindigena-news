@@ -66,7 +66,7 @@ function StoryMeta({ story, size = 'sm' }: { story: PublicStory; size?: 'sm' | '
           className="inline-flex items-center min-h-6 text-neutral-500 hover:text-neutral-700 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
         >
           {publisherFromUrl(story.sourceUrl, story.feed.displayTitle || story.feed.title)}
-          <span className="sr-only"> (opens in new tab)</span>
+          <span className="sr-only"> {t('storyCard.opensInNewTab')}</span>
         </a>
         {sourceDate && <> · {sourceDate}</>}
       </span>

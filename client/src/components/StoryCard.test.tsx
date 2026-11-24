@@ -121,3 +121,15 @@ describe('StoryCard — nota que entró a la vertical por la marca (D5)', () => 
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/stories/juneau-inundaciones')
   })
 })
+
+// 23-nov-2026: la tarjeta decía «(opens in new tab)» fijo, también con el sitio
+// en español; un lector de pantalla lo leía en inglés en cada tarjeta.
+describe('StoryCard — el aviso de pestaña nueva para lectores de pantalla', () => {
+  it('sale de las traducciones, no de un texto fijo en inglés', () => {
+    idioma = 'es'
+    const { container } = render(<MemoryRouter><StoryCard story={juneau} /></MemoryRouter>)
+    const ocultos = [...container.querySelectorAll('.sr-only')].map((e) => e.textContent)
+    expect(ocultos.some((x) => x?.includes('storyCard.opensInNewTab'))).toBe(true)
+    expect(container.textContent).not.toContain('opens in new tab')
+  })
+})
