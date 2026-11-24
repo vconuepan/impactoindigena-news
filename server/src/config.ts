@@ -311,11 +311,17 @@ export const config = {
   },
   proxy: {
     // Cuantas entradas desde la DERECHA de X-Forwarded-For hay que contar para
-    // llegar al lector. El borde de Static Web Apps agrega al lector y el App
-    // Service agrega la salida de Static Web Apps, asi que el lector es la
-    // penultima: 2. Si la cadena real fuera mas larga, se sube; con 0 se apaga y
-    // vuelve el `req.ip` de Express. Ver lib/clientIp.ts.
-    clientIpFromRight: parseInt(process.env.CLIENT_IP_FROM_RIGHT || "2", 10),
+    // llegar al lector. Depende de quien este delante de la API:
+    //   - Cloudflare Pages (produccion desde el 23-nov-2026): 3. La cadena llega
+    //     como `lector, direccion-del-Worker, salida-de-Cloudflare`. Con 2 se
+    //     elegia la del Worker, que es LA MISMA PARA TODOS: del 23-nov 19:00Z al
+    //     24-nov 03:10Z el sitio entero compartio un solo cupo de 100/15 min y
+    //     la API respondio 429 a 69-247 peticiones por hora.
+    //   - Static Web Apps (antes): 2, `lector, salida-del-proxy`.
+    // Con 0 se apaga y vuelve el `req.ip` de Express. Cada vez que cambie lo que
+    // hay delante, medir la forma en el log `client-ip` antes de dar el corte por
+    // bueno. Ver lib/clientIp.ts.
+    clientIpFromRight: parseInt(process.env.CLIENT_IP_FROM_RIGHT || "3", 10),
   },
   scheduler: {
     // La zona en que se LEEN las expresiones cron. Hasta el 8-sep-2026 no se

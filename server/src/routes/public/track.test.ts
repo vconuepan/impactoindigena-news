@@ -25,8 +25,10 @@ app.use('/api/track', trackRouter)
 
 const CHROME = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 const HEADLESS = 'Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/126.0.0.0 Safari/537.36'
-// La cadena real detras de Static Web Apps: lector, salida del proxy.
-const XFF = '190.20.30.40:51840, 10.0.0.1'
+// La cadena real detras de Cloudflare Pages (produccion desde el 23-nov-2026):
+// lector, direccion del Worker, salida de Cloudflare.
+const CADENA_CF = ', 2a06:98c0:3600::103, 172.71.10.20:51840'
+const XFF = `190.20.30.40${CADENA_CF}`
 
 const tabla = (t: string) => consultas.filter((c) => c.sql.includes(`INTO ${t}`))
 
@@ -72,7 +74,7 @@ describe('POST /api/track · señales del visitante (21-nov-2026)', () => {
 
   it('una IP de nube guarda el proveedor, no la IP', async () => {
     await request(app).post('/api/track')
-      .set('User-Agent', CHROME).set('X-Forwarded-For', '8.128.5.9, 10.0.0.1').set('Accept-Language', 'zh-CN')
+      .set('User-Agent', CHROME).set('X-Forwarded-For', `8.128.5.9${CADENA_CF}`).set('Accept-Language', 'zh-CN')
       .send({ path: '/search', source: '' })
     await vi.waitFor(() => expect(senal()).toHaveLength(1))
     const v = senal()[0].valores

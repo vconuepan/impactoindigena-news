@@ -96,3 +96,28 @@ describe('canonicalLimitIp', () => {
     expect(canonicalLimitIp('basura')).toBeNull()
   })
 })
+
+// 23-nov-2026, corte a Cloudflare Pages: la cadena pasó a tener TRES entradas
+// (`lector, worker de Cloudflare, salida`) y la API siguió contando 2 desde la
+// derecha. Elegía la dirección del Worker, igual para todos: un solo cupo para
+// el sitio entero durante nueve horas.
+describe('clientIpFromForwardedFor — la cadena detrás de Cloudflare Pages', () => {
+  const WORKER = '2a06:98c0:3600::103'
+  const cadena = (lector: string) => `${lector}, ${WORKER}, 172.71.10.20:44321`
+
+  it('con 3 desde la derecha, cada lector tiene su propia clave', () => {
+    expect(clientIpFromForwardedFor(cadena('190.20.30.40'), 3)).toBe('190.20.30.40')
+    expect(clientIpFromForwardedFor(cadena('181.43.7.9'), 3)).toBe('181.43.7.9')
+  })
+
+  it('con el 2 de Static Web Apps, dos lectores distintos caían en la misma clave (el defecto)', () => {
+    const a = clientIpFromForwardedFor(cadena('190.20.30.40'), 2)
+    const b = clientIpFromForwardedFor(cadena('181.43.7.9'), 2)
+    expect(a).toBe(b)
+    expect(a).not.toBe('190.20.30.40')
+  })
+
+  it('lo que el lector anteponga no mueve la tercera desde la derecha', () => {
+    expect(clientIpFromForwardedFor(`9.9.9.9, ${cadena('190.20.30.40')}`, 3)).toBe('190.20.30.40')
+  })
+})

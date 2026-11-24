@@ -23,10 +23,18 @@ import { expandIpv6 } from '../utils/urlValidation.js'
  * miramos. Por eso no sirve la primera entrada, que es la que escribe el cliente
  * cuando el proxy agrega en vez de reemplazar.
  *
- * El numero de saltos desde la derecha vive en `CLIENT_IP_FROM_RIGHT` (por
- * defecto 2: el lector es la penultima entrada). Si la cadena real fuera mas
- * larga, se sube sin tocar codigo; con 0 se apaga y vuelve el comportamiento de
- * Express.
+ * El numero de saltos desde la derecha vive en `CLIENT_IP_FROM_RIGHT`. Si la
+ * cadena real cambia, se ajusta sin tocar codigo; con 0 se apaga y vuelve el
+ * comportamiento de Express.
+ *
+ * CON CLOUDFLARE PAGES SON TRES (23-nov-2026). El reenvio de Pages
+ * (client/functions/_middleware.ts) pone al lector, Cloudflare agrega la
+ * direccion de su Worker y el App Service agrega la salida de Cloudflare:
+ * `lector, worker, salida`. Medido en el log `client-ip`: `[v4, v6, v4:port]`.
+ * El corte se hizo dejando el 2 de Static Web Apps, que pasaba a elegir la
+ * direccion del Worker, igual para todos los lectores: un solo cupo para el
+ * sitio entero y un solo «visitante» en la analitica durante nueve horas. Por
+ * eso el valor por defecto es 3.
  */
 
 /** "1.2.3.4:5678" -> "1.2.3.4"; "[2001:db8::1]:443" -> "2001:db8::1". */

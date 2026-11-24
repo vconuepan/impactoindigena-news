@@ -15,11 +15,14 @@
  * estático, así el sitio no gasta invocaciones de Functions en cada archivo.
  *
  * LA IP DEL LECTOR. La API cuenta la IP desde la derecha de X-Forwarded-For
- * (`CLIENT_IP_FROM_RIGHT=2`, server/src/lib/clientIp.ts). Con Static Web Apps la
- * cadena llegaba como `lector, salida-del-proxy`. Aquí se reproduce igual: se
- * REEMPLAZA X-Forwarded-For por `CF-Connecting-IP` (la IP que Cloudflare vio, que
- * el lector no puede falsificar) y el App Service agrega a la derecha la salida
- * de Cloudflare. Así el número de saltos no cambia.
+ * (`CLIENT_IP_FROM_RIGHT`, server/src/lib/clientIp.ts). Aquí se REEMPLAZA
+ * X-Forwarded-For por `CF-Connecting-IP` (la IP que Cloudflare vio, que el
+ * lector no puede falsificar). Pero la cadena NO llega igual que con Static Web
+ * Apps: Cloudflare agrega la dirección de su Worker y el App Service agrega la
+ * salida de Cloudflare, así que son TRES entradas (`lector, worker, salida`) y
+ * el lector es la tercera desde la derecha: `CLIENT_IP_FROM_RIGHT=3`. Este
+ * comentario decía «el número de saltos no cambia»; con el 2 de antes, todos
+ * los lectores compartieron un cupo del 23 al 24-nov-2026.
  *
  * EL CANDADO. Si está configurado el secreto `ORIGIN_SECRET`, cada petición lleva
  * `X-Origin-Secret`; la API lo exige cuando Easy Auth deja de ser el candado.
