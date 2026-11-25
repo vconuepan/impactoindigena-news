@@ -122,6 +122,16 @@
     "whyItMatters": "Por qué importa",
     "caveats": "Advertencias",
     "howWeScored": "Cómo la evaluamos",
+    "independence": {
+      "label": "Aviso de independencia",
+      "one_current": "Esta nota menciona a una organización que es cliente de {{verticals}}.",
+      "one_past": "Esta nota menciona a una organización que fue cliente de {{verticals}}.",
+      "many_current": "Esta nota menciona a organizaciones que son o fueron clientes de {{verticals}}.",
+      "many_past": "Esta nota menciona a organizaciones que fueron clientes de {{verticals}}.",
+      "and": " y de ",
+      "rules": "Impacto Indígena News no cobra por publicar, y sus decisiones editoriales no pasan por Impacto Indígena SpA ni por el estudio jurídico Impacto Indígena Legal.",
+      "link": "Nuestras reglas de independencia"
+    },
     "body": {
       "label": "Nota",
       "quePaso": "Qué pasó",

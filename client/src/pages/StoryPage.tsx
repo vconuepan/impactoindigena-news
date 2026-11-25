@@ -6,6 +6,7 @@ import Markdown from 'react-markdown'
 import ArticleInlineCta from '../components/ArticleInlineCta'
 import { esFraseDelArticulo } from '../lib/quote-attribution'
 import StoryBodyClaves from '../components/StoryBodyClaves'
+import { StoryIndependenceNotice } from '../components/StoryIndependenceNotice'
 import { usePublicStory } from '../hooks/usePublicStories'
 import { getCategoryColor, shiftHex } from '../lib/category-colors'
 import { parsePoints } from '../lib/parse-points'
@@ -391,6 +392,10 @@ export default function StoryPage() {
         )}
 
         <div className="page-section !pt-8">
+
+          {/* Regla 2 de la independencia editorial (25-nov-2026): genérico,
+              antes de la nota. Ver components/StoryIndependenceNotice. */}
+          {story.independenceNotice && <StoryIndependenceNotice notice={story.independenceNotice} />}
 
           {/* Summary */}
           {/* La nota con claves reemplaza al resumen cuando existe (B3,

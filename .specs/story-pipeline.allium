@@ -500,6 +500,68 @@ invariant MinorsAndVictimsByRole {
             not names_minor_or_victim(field)
 }
 
+-- ─── Independence notice (rule 2, director 2026-11-25) ─────────────
+-- The outlet's second independence rule, published on the About page: it
+-- tells the reader when a story reports on a client of impactoindigena.ai or
+-- impactoindigena.legal. Source: impactoindigena/docs/
+-- DEFINICION_TRES_VERTICALES_Y_CASA_2026-11-25.md §2 bis. The same day the
+-- director chose a GENERIC notice: it never names the organization (a law
+-- firm's client may be under professional secrecy). Detail:
+-- .context/independencia-editorial.md
+
+entity DisclosureClient {
+    -- An organization (company, community, association, state body), never a
+    -- person. No field records anyone's people or origin.
+    name: String
+    aliases: List<String>                                -- each >= 3 letters once normalized
+    vertical: ai | legal
+    rut: String?                                         -- if present, a legal person's (>= 50,000,000)
+    ended_on: Date?                                      -- null while the relationship is ongoing
+}
+
+entity StoryDisclosureDismissal {
+    -- An admin's ruling that this story does not report on this client
+    -- (a namesake, a passing mention). Deleting it restores the notice.
+    story: Story
+    client: DisclosureClient
+    reason: String
+    dismissed_by: String
+    invariant: unique(story, client)
+}
+
+rule ComputeIndependenceNotice {
+    when: ReaderOpensStoryPage(story)
+    -- Computed on read, not stored: a story becomes published by five paths,
+    -- its body arrives after publishing and is edited later, and the list
+    -- changes. On read it cannot drift, and every story already published is
+    -- covered as soon as a client is added.
+    let text = [story.title, story.source_title, story.summary, story.quote,
+                story.quote_attribution, story.body.*]   -- body even if hidden by C7;
+                                                          -- never source_content
+    let mentioned = DisclosureClient where
+        any(term in [client.name] + client.aliases:
+            whole_word(normalize(term), normalize(text)))
+        and not exists StoryDisclosureDismissal(story, client)
+    ensures: mentioned = [] implies story.independence_notice = null
+    ensures: mentioned != [] implies story.independence_notice = {
+        verticals: distinct(mentioned.vertical),
+        current: any(c in mentioned: c.ended_on = null or c.ended_on > now),
+        plural: count(distinct(mentioned.name)) > 1
+    }
+    -- Never throws: a failure leaves the page without the notice, logged.
+}
+
+invariant IndependenceNoticeIsGeneric {
+    -- The public payload carries no name, id or alias of any client.
+    forall story: Story
+        story.independence_notice has only verticals, current, plural
+}
+
+invariant ClientListIsAdminOnly {
+    -- Reading or changing the list, and dismissing a match, requires the
+    -- admin role; every write lands in audit_log.
+}
+
 -- ─── Retention per vertical (D4, Las Otras Voces) ──────────────────
 -- A story can be published on the main site and held in a vertical.
 -- story.status is never touched by this rule. Detail:

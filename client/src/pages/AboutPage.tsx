@@ -1,11 +1,19 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { GITHUB_REPO_URL } from "../config";
 import { SEO, CommonOgTags } from "../lib/seo";
 import StructuredData from "../components/StructuredData";
 import { buildBreadcrumbSchema } from "../lib/structured-data";
 
 export default function AboutPage() {
+  // El aviso de independencia de cada ficha enlaza a /about#independencia; el
+  // enrutador no baja solo a un ancla, así que se hace aquí.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [hash]);
+
   return (
     <>
       <Helmet>
@@ -180,7 +188,7 @@ export default function AboutPage() {
             lo que se cuenta: las noticias de Chile y el mundo, con los pueblos como protagonistas.
           </p>
 
-          <h3 className="section-heading mt-8">Independencia editorial</h3>
+          <h3 id="independencia" className="section-heading mt-8 scroll-mt-24">Independencia editorial</h3>
           <p>Tres reglas separan lo que publica el medio del resto de Impacto Indígena:</p>
           <ol className="list-decimal pl-6 space-y-1.5 my-4">
             <li>No cobra por publicar.</li>
