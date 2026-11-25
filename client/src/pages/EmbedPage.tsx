@@ -107,7 +107,7 @@ export default function EmbedPage() {
           className={`inline-flex items-center gap-1.5 text-[11px] ${isDark ? 'text-neutral-500 hover:text-neutral-300' : 'text-neutral-500 hover:text-neutral-700'}`}
         >
           <img
-            src="https://vocesindigenas.org/images/logo-no-text-square.png"
+            src="https://impactoindigena.news/images/logo-no-text-square.png"
             alt=""
             className="w-5 h-5 rounded-sm"
             aria-hidden="true"

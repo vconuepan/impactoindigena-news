@@ -24,7 +24,7 @@ import { buildStoryBodyPrompt } from '../prompts/story-body.js'
 import { storyBodySchema, type StoryBodyResult } from '../schemas/llm.js'
 import { CAMPOS, avisosBloqueantes, limpiarCuerpo, palabras, respaldoConFecha, revisarCuerpo, type BodyAviso } from '../lib/storyBodyGuards.js'
 
-const API = process.env.VOCES_API ?? 'https://vocesindigenas.org/api'
+const API = process.env.VOCES_API ?? 'https://impactoindigena.news/api'
 const MAX_CHARS = parseInt(process.env.STORY_BODY_MAX_SOURCE_CHARS || '15000', 10)
 
 const args = process.argv.slice(2)

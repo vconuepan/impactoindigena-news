@@ -148,7 +148,7 @@ export function cuerpoDelPie(caption: string): string {
 // the slides and flips the record to 'draft'. Any guard warning → 'rejected'.
 async function runGeneration(postId: string, story: any): Promise<void> {
   const storyId: string = story.id
-  const storyUrl = `https://vocesindigenas.org/stories/${story.slug}`
+  const storyUrl = `https://impactoindigena.news/stories/${story.slug}`
 
   // Instagram toma las láminas de una dirección pública: sin R2 no hay carrusel.
   const r2Configured = Boolean(

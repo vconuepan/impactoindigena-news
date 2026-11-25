@@ -139,7 +139,7 @@ export default function OpenDataPage() {
   "data": [
     {
       "title": "...",
-      "url": "https://vocesindigenas.org/stories/...",
+      "url": "https://impactoindigena.news/stories/...",
       "sourceUrl": "https://...",
       "publishedAt": "2025-06-01T00:00:00.000Z",
       "summary": "...",

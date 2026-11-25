@@ -15,7 +15,7 @@
 import { readFileSync } from 'node:fs'
 import { limpiarAtribucionDeCita, limpiarTextoSobrePersonas, type Limpieza } from '../lib/personasSensibles.js'
 
-const API = 'https://vocesindigenas.org/api/stories'
+const API = 'https://impactoindigena.news/api/stories'
 const POR_PAGINA = 25
 
 function argumento(nombre: string, defecto: number): number {

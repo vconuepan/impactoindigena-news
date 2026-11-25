@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { ogUrlsDe, problemasDelHorneado, mensajeDelCandado, mensajeSinLista, describirResumen } from './verificar-horneado'
 
-const SITIO = 'https://vocesindigenas.org'
+const SITIO = 'https://impactoindigena.news'
 const pagina = (ogUrl?: string, extra = '') =>
   `<!DOCTYPE html><html lang="es"><head><title>x</title>${
     ogUrl === undefined ? '' : `<meta property="og:url" content="${ogUrl}" data-rh="true">`

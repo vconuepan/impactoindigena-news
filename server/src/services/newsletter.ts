@@ -286,7 +286,7 @@ export async function generateContent(newsletterId: string) {
     const issueSlug = resolved.slug
     const publisher = publisherFromUrl(story.sourceUrl, story.feed?.displayTitle || story.feed?.title) || 'Unknown'
     // ?_r=newsletter enables traffic attribution in the analytics dashboard
-    const relevanceUrl = story.slug ? `https://vocesindigenas.org/stories/${story.slug}?_r=newsletter` : ''
+    const relevanceUrl = story.slug ? `https://impactoindigena.news/stories/${story.slug}?_r=newsletter` : ''
 
     // Add issue section header when the group changes
     if (issueName !== currentIssue) {
@@ -561,7 +561,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
       if (publisherName || originalUrl) {
         const parts: string[] = []
         const faviconHtml = feedId
-          ? `<img src="https://vocesindigenas.org/images/feeds/${feedId}.png" alt="" width="13" height="13" style="display: inline-block; width: 13px; height: 13px; vertical-align: middle; border-radius: 2px; margin-right: 4px;">`
+          ? `<img src="https://impactoindigena.news/images/feeds/${feedId}.png" alt="" width="13" height="13" style="display: inline-block; width: 13px; height: 13px; vertical-align: middle; border-radius: 2px; margin-right: 4px;">`
           : ''
         if (publisherName) parts.push(`${faviconHtml}<span style="vertical-align: middle;">${escapeHtml(publisherName)}</span>`)
         if (originalUrl) parts.push(`<a href="${escapeHtml(originalUrl)}" style="color: #2563eb; text-decoration: none; vertical-align: middle;">artículo original ↗</a>`)
@@ -684,7 +684,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
           <!-- Header: dark green brand bar -->
           <tr>
             <td style="background-color: #1B3A2D; padding: 28px 32px 20px; text-align: center;">
-              <a href="https://vocesindigenas.org" style="text-decoration: none;">
+              <a href="https://impactoindigena.news" style="text-decoration: none;">
                 <img src="${config.siteUrl}/images/logo-horizontal-blanco.png" alt="Voces Ind&iacute;genas" width="220" style="display: inline-block; max-width: 220px; height: auto;" />
               </a>
               <p style="margin: 10px 0 0; font-size: 13px; color: #86efac; letter-spacing: 0.02em;">Noticias de impacto para pueblos ind&iacute;genas</p>
@@ -742,12 +742,12 @@ ${flashSection}
           <tr>
             <td style="padding: 20px 32px 28px; text-align: center; background-color: #1B3A2D; border-radius: 0 0 10px 10px;">
               <p style="margin: 0 0 12px; font-size: 13px; color: #86efac; font-weight: 600;">
-                <a href="https://vocesindigenas.org" style="color: #86efac; text-decoration: none;">vocesindigenas.org</a>
+                <a href="https://impactoindigena.news" style="color: #86efac; text-decoration: none;">vocesindigenas.org</a>
               </p>
               <p style="margin: 0 0 14px; font-size: 12px; color: #6ee7b7;">
                 <a href="https://x.com/impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Twitter / X</a>
                 <a href="https://www.instagram.com/impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Instagram</a>
-                <a href="https://vocesindigenas.org/feedback" style="color: #6ee7b7; text-decoration: none;">Feedback</a>
+                <a href="https://impactoindigena.news/feedback" style="color: #6ee7b7; text-decoration: none;">Feedback</a>
               </p>
               <p style="margin: 0; font-size: 11px; color: #4ade80; opacity: 0.6;">
                 Voces Ind&iacute;genas &bull; un programa de la Fundaci&oacute;n KM &bull; Chile &bull; <a href="{{unsubscribe}}" style="color: #4ade80; text-decoration: underline;">Cancelar suscripci&oacute;n</a>

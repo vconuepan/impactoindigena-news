@@ -1,6 +1,6 @@
 export const config = {
   /** Canonical public URL for the site — used in social media posts, RSS feeds, sitemaps, etc. */
-  siteUrl: process.env.SITE_URL || 'https://vocesindigenas.org',
+  siteUrl: process.env.SITE_URL || 'https://impactoindigena.news',
   llm: {
     // Set LLM_PROVIDER to switch providers:
     //   openai (default) — uses OPENAI_API_KEY directly
@@ -623,12 +623,12 @@ export const config = {
      * Debe coincidir EXACTA con la URL registrada en la app de LinkedIn, o el
      * intercambio del código falla. Pasa por el proxy de Static Web Apps.
      *
-     * SIGUE SIENDO EL DOMINIO VIEJO A PROPÓSITO. Es la única URL del proyecto
-     * que no se mudó a vocesindigenas.org, porque quien la compara es LinkedIn
-     * contra lo que declara el registro de la app: cambiarla acá antes de
-     * agregarla allá deja la reautorización en `redirect_uri_mismatch` y el
-     * token de miembro sin poder renovarse. El 301 del dominio viejo no ayuda
-     * — LinkedIn compara cadenas, no sigue redirecciones.
+     * NUNCA SE MUDÓ, Y DESDE EL 25-NOV-2026 VUELVE A SER EL DOMINIO PRINCIPAL.
+     * Fue la única URL del proyecto que no pasó a vocesindigenas.org, porque
+     * quien la compara es LinkedIn contra lo que declara el registro de la app:
+     * cambiarla acá antes de agregarla allá deja la reautorización en
+     * `redirect_uri_mismatch` y el token de miembro sin poder renovarse.
+     * LinkedIn compara cadenas, no sigue redirecciones.
      *
      * El orden para mudarla está en `.context/linkedin.md`: primero se agrega
      * la URL nueva en el portal de LinkedIn (admite varias), y recién entonces

@@ -9,8 +9,8 @@ import { createLogger, maskEmail } from '../lib/logger.js'
 const router = Router()
 const log = createLogger('auth-public')
 
-const CLIENT_URL = process.env.CLIENT_URL || 'https://vocesindigenas.org'
-const API_URL = process.env.API_URL || 'https://vocesindigenas.org'
+const CLIENT_URL = process.env.CLIENT_URL || 'https://impactoindigena.news'
+const API_URL = process.env.API_URL || 'https://impactoindigena.news'
 const MAGIC_LINK_EXPIRY_MINUTES = 10
 
 /** Cookie options for the httpOnly JWT (not readable by JS) */

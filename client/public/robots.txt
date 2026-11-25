@@ -71,5 +71,5 @@ Disallow: /
 User-agent: meta-externalagent
 Disallow: /
 
-Sitemap: https://vocesindigenas.org/sitemap.xml
-Sitemap: https://vocesindigenas.org/sitemap-news.xml
+Sitemap: https://impactoindigena.news/sitemap.xml
+Sitemap: https://impactoindigena.news/sitemap-news.xml

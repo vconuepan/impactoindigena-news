@@ -15,7 +15,7 @@ function almacen() {
 describe('esFallaDeChunk', () => {
   it('reconoce los mensajes de Chrome, Firefox, Safari y Vite', () => {
     for (const m of [
-      'Failed to fetch dynamically imported module: https://vocesindigenas.org/assets/ReviewsPage-abc.js',
+      'Failed to fetch dynamically imported module: https://impactoindigena.news/assets/ReviewsPage-abc.js',
       'error loading dynamically imported module',
       'Importing a module script failed.',
       'Unable to preload CSS for /assets/AdminLayout-x.css',

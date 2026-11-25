@@ -1,24 +1,26 @@
 /**
  * El dominio publico del sitio, en un solo lugar.
  *
- * POR QUE ES UNA VARIABLE Y NO UNA CONSTANTE. El rebrand a Voces Indigenas
- * quedo escrito en el codigo antes de que `vocesindigenas.org` estuviera
- * sirviendo: al 4-sep-2026 ese dominio devolvia el 403 de HostGator, asi que
- * el default tuvo que seguir siendo el dominio viejo para que un despliegue no
- * publicara canonicas y `og:image` apuntando a un 403 — que es como se pierde
- * el posicionamiento de golpe. El cambio de dominio quedo como variable de
- * entorno del build: `VITE_SITE_URL=https://vocesindigenas.org`.
+ * POR QUE ES UNA VARIABLE Y NO UNA CONSTANTE. El dominio se cambia en el build
+ * con `VITE_SITE_URL`, sin un commit de codigo. Lo que sigue es el historial.
  *
- * POR QUE EL DEFAULT YA NO ES EL VIEJO. Desde el 4-sep-2026 `vocesindigenas.org`
- * sirve el sitio y es el canonico; `impactoindigena.news` solo redirige. Un
- * default que apunta al dominio redirigido es una trampa silenciosa: todo lo
- * que no pase por el build de Azure —un script de este repo, un entorno local,
- * un despliegue que olvide la variable— escribe el dominio muerto sin avisar.
- * Eso ya paso: `og-image.png` se genero con el host viejo pintado encima y se
- * sirvio asi hasta el 17-sep-2026. La variable se conserva, el default cambia.
+ * 4-sep-2026: el sitio se mudo de `impactoindigena.news` a `vocesindigenas.org`.
+ * Hasta ese dia el default siguio en el dominio viejo porque el nuevo devolvia
+ * el 403 de HostGator, y un despliegue habria publicado canonicas rotas.
+ *
+ * 25-nov-2026: decision del director, el medio vuelve a llamarse Impacto
+ * Indigena News y `impactoindigena.news` vuelve a ser el canonico;
+ * `vocesindigenas.org` solo redirige (salvo `/api/`).
+ *
+ * POR QUE EL DEFAULT ES EL CANONICO Y NO EL REDIRIGIDO. Un default que apunta al
+ * dominio que redirige es una trampa silenciosa: todo lo que no pase por el
+ * build —un script de este repo, un entorno local, un despliegue que olvide la
+ * variable— escribe ese dominio sin avisar. Ya paso en septiembre:
+ * `og-image.png` se genero con el host viejo pintado encima y se sirvio asi
+ * hasta el 17-sep-2026. Lo fija `lib/marca-dominio.test.ts`.
  */
 export const SITE_URL: string =
-  (import.meta.env?.VITE_SITE_URL as string | undefined) ?? 'https://vocesindigenas.org'
+  (import.meta.env?.VITE_SITE_URL as string | undefined) ?? 'https://impactoindigena.news'
 
 /** El dominio sin protocolo, para mostrarlo en texto. */
 export const SITE_HOST: string = SITE_URL.replace(/^https?:\/\//, '')

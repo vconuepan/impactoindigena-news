@@ -455,7 +455,7 @@ async function sendWelcomeEmail(
   userName: string,
   community: { id: string; name: string; slug: string; issueIds: string[]; keywords: string[] }
 ): Promise<void> {
-  const SITE_URL = config.siteUrl || 'https://vocesindigenas.org'
+  const SITE_URL = config.siteUrl || 'https://impactoindigena.news'
   const communityUrl = `${SITE_URL}/comunidad/${community.slug}`
 
   // Las 3 notas mas recientes, con el MISMO filtro que la pagina de la vertical

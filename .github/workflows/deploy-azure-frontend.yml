@@ -72,7 +72,7 @@ jobs:
           # a mano en `seo.tsx` apuntando a un dominio que todavia devolvia el 403
           # de HostGator, asi que cualquier despliegue habria publicado canonicas
           # rotas. Cambiar de dominio no deberia exigir un commit de codigo.
-          VITE_SITE_URL: "https://vocesindigenas.org"
+          VITE_SITE_URL: "https://impactoindigena.news"
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@1a947af9992250f3bc2e68ad0754c0b0c11566c9  # v1

@@ -4,7 +4,17 @@ import path from 'node:path'
 import { SITE_URL, SITE_HOST } from '../config'
 
 /**
- * El dominio viejo no vuelve a las superficies publicas.
+ * El dominio que redirige no vuelve a las superficies publicas.
+ *
+ * INVERTIDO EL 25-NOV-2026. Este candado se escribio en septiembre para que
+ * `impactoindigena.news` no volviera despues de la mudanza a
+ * `vocesindigenas.org`. El 25-nov-2026 el director decidio volver: el medio
+ * recupera el nombre Impacto Indigena News y `impactoindigena.news` es otra vez
+ * el canonico, con `vocesindigenas.org` redirigiendo. El candado se invierte, no
+ * se borra: la leccion es la misma en las dos direcciones — el dominio que
+ * redirige no puede aparecer en lo que leen los rastreadores.
+ *
+ * LO QUE SIGUE ES LA HISTORIA DE SEPTIEMBRE, que explica por que existe.
  *
  * QUE ATAJA ESTE TEST. El rebrand a Voces Indigenas se desplego el 4-sep-2026 y
  * el sitio quedo sirviendo `og:url`, canonicas y `og:site_name` correctos. Pero
@@ -26,7 +36,8 @@ import { SITE_URL, SITE_HOST } from '../config'
  * `npm run images:og` produce una imagen correcta.
  */
 
-const DOMINIO_VIEJO = 'impactoindigena.news'
+const DOMINIO_VIEJO = 'vocesindigenas.org'
+const DOMINIO_CANONICO = 'impactoindigena.news'
 const raiz = (...p: string[]) => path.resolve(__dirname, '../..', ...p)
 const leer = (p: string) => readFileSync(raiz(p), 'utf8')
 
@@ -36,17 +47,37 @@ function sinComentarios(src: string): string {
 }
 
 describe('el dominio canonico', () => {
-  it('es vocesindigenas.org aun sin VITE_SITE_URL', () => {
+  it('es impactoindigena.news aun sin VITE_SITE_URL', () => {
     // El default importa mas que el valor configurado: es el que corre cuando
     // alguien se olvida de la variable.
-    expect(SITE_URL).toBe('https://vocesindigenas.org')
-    expect(SITE_HOST).toBe('vocesindigenas.org')
+    expect(SITE_URL).toBe(`https://${DOMINIO_CANONICO}`)
+    expect(SITE_HOST).toBe(DOMINIO_CANONICO)
   })
 
   it('no aparece el dominio viejo en el HTML base', () => {
     // index.html trae los metadatos que lee un rastreador antes de que
     // React monte nada. Si el dominio viejo vuelve aqui, vuelve a todas partes.
     expect(leer('index.html')).not.toContain(DOMINIO_VIEJO)
+  })
+
+  it('robots.txt declara los sitemaps en el dominio canonico', () => {
+    // Las lineas `Sitemap:` son las unicas URLs absolutas del archivo; los
+    // comentarios pueden contar la historia.
+    const sitemaps = leer('public/robots.txt')
+      .split('\n')
+      .filter((l) => l.startsWith('Sitemap:'))
+    expect(sitemaps.length).toBeGreaterThan(0)
+    for (const linea of sitemaps) {
+      expect(linea).toContain(`https://${DOMINIO_CANONICO}/`)
+    }
+  })
+
+  it('el widget que se incrusta en sitios ajenos apunta al canonico', () => {
+    // widget.js vive en paginas de terceros que nadie de aqui vuelve a tocar:
+    // si queda con el dominio viejo, queda asi para siempre.
+    const widget = sinComentarios(leer('public/widget.js'))
+    expect(widget).not.toContain(DOMINIO_VIEJO)
+    expect(widget).toContain(`https://${DOMINIO_CANONICO}`)
   })
 
   it('no aparece la marca anterior en el manifest', () => {

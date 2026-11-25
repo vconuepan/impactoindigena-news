@@ -51,10 +51,10 @@ jobs:
         run: npm run build --prefix client
         env:
           VITE_API_URL: ""
-          PRERENDER_API_URL: "https://vocesindigenas.org"
+          PRERENDER_API_URL: "https://impactoindigena.news"
           PRERENDER_BYPASS_TOKEN: ${{ secrets.PRERENDER_BYPASS_TOKEN }}
           VITE_R2_PUBLIC_URL: "https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev"
-          VITE_SITE_URL: "https://vocesindigenas.org"
+          VITE_SITE_URL: "https://impactoindigena.news"
 
       # Cloudflare sirve `ruta/index.html` en `/ruta/` y redirige `/ruta` → `/ruta/`;
       # los canonical dicen `/ruta`. El script los deja como `ruta.html`.

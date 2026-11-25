@@ -202,11 +202,11 @@ export function getOpenAPIDocument(): any {
         'Use pageSize=100 to page through the archive (~40 requests for ~4,000 stories).',
       contact: {
         name: 'Voces Indígenas',
-        url: 'https://vocesindigenas.org',
+        url: 'https://impactoindigena.news',
       },
     },
     servers: [
-      { url: process.env.API_URL || 'https://vocesindigenas.org', description: 'Production' },
+      { url: process.env.API_URL || 'https://impactoindigena.news', description: 'Production' },
     ],
     paths: {
       '/api/health': {

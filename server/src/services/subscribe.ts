@@ -6,8 +6,8 @@ import { createLogger, maskEmail } from '../lib/logger.js'
 
 const log = createLogger('subscribe')
 
-const CLIENT_URL = process.env.CLIENT_URL || 'https://vocesindigenas.org'
-const API_URL = process.env.API_URL || 'https://vocesindigenas.org'
+const CLIENT_URL = process.env.CLIENT_URL || 'https://impactoindigena.news'
+const API_URL = process.env.API_URL || 'https://impactoindigena.news'
 
 export class EmailValidationError extends Error {
   constructor(message: string) {

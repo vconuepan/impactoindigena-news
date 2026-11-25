@@ -23,7 +23,7 @@ import { getLLMByTier, rateLimitDelay } from '../services/llm.js'
 import { withRetry } from '../lib/retry.js'
 import { sanitizeUntrustedContent, UNTRUSTED_CONTENT_GUARD } from '../prompts/shared.js'
 
-const API = process.env.VOCES_API ?? 'https://vocesindigenas.org/api'
+const API = process.env.VOCES_API ?? 'https://impactoindigena.news/api'
 const MAX_CHARS = parseInt(process.env.STORY_BODY_MAX_SOURCE_CHARS || '15000', 10)
 const CAMPOS = ['bajada', 'quePaso', 'porQueImporta', 'contexto', 'queSigue'] as const
 // Precio global de Azure por millón de tokens, los mismos de medir-nota-claves.ts.

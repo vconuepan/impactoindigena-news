@@ -58,9 +58,9 @@ describe('GET /api/sitemap.xml', () => {
 
     const res = await request(app).get('/api/sitemap.xml')
 
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/stories/ai-breakthrough-2024</loc>')
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/stories/climate-summit-results</loc>')
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/stories/space-mission-launch</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/stories/ai-breakthrough-2024</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/stories/climate-summit-results</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/stories/space-mission-launch</loc>')
     expect(res.text).toContain('<lastmod>2024-06-15</lastmod>')
   })
 
@@ -110,11 +110,11 @@ describe('GET /api/sitemap.xml', () => {
 
     const res = await request(app).get('/api/sitemap.xml')
 
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/issues/chile-indigena</loc>')
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/issues/derechos-indigenas</loc>')
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/comunidad/mapuche</loc>')
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/comunidad/amazonia</loc>')
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/comunidades</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/issues/chile-indigena</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/issues/derechos-indigenas</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/comunidad/mapuche</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/comunidad/amazonia</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/comunidades</loc>')
   })
 
   // El 10-sep-2026 las 18 subsecciones estaban declaradas aca y NO se
@@ -135,8 +135,8 @@ describe('GET /api/sitemap.xml', () => {
 
     const res = await request(app).get('/api/sitemap.xml')
 
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/issues/cultura-arte</loc>')
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/issues/cultura-lenguas</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/issues/cultura-arte</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/issues/cultura-lenguas</loc>')
   })
 
   it('consulta las secciones SIN filtrar por parentId', async () => {
@@ -189,7 +189,7 @@ describe('GET /api/sitemap-news.xml', () => {
 
     const res = await request(app).get('/api/sitemap-news.xml')
 
-    expect(res.text).toContain('<loc>https://vocesindigenas.org/stories/consulta-mapuche</loc>')
+    expect(res.text).toContain('<loc>https://impactoindigena.news/stories/consulta-mapuche</loc>')
     expect(res.text).toContain('<news:publication_date>2026-07-13T09:00:00.000Z</news:publication_date>')
     expect(res.text).toContain('<news:title>Consulta previa en territorio mapuche</news:title>')
   })

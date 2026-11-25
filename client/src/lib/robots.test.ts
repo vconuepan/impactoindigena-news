@@ -95,8 +95,8 @@ describe('robots.txt: bloquea el entrenamiento, nunca la busqueda', () => {
 
   it('sigue declarando los dos sitemaps', () => {
     // Si se pierden, Google deja de tener el indice completo del sitio.
-    expect(ROBOTS).toContain('Sitemap: https://vocesindigenas.org/sitemap.xml')
-    expect(ROBOTS).toContain('Sitemap: https://vocesindigenas.org/sitemap-news.xml')
+    expect(ROBOTS).toContain('Sitemap: https://impactoindigena.news/sitemap.xml')
+    expect(ROBOTS).toContain('Sitemap: https://impactoindigena.news/sitemap-news.xml')
   })
 
   it('`Applebot-Extended` esta bloqueado pero `Applebot` no', () => {

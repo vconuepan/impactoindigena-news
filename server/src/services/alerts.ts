@@ -14,11 +14,11 @@ import { escapeHtml } from '../lib/escapeHtml.js'
 
 const log = createLogger('alerts')
 
-const CLIENT_URL = process.env.CLIENT_URL || 'https://vocesindigenas.org'
+const CLIENT_URL = process.env.CLIENT_URL || 'https://impactoindigena.news'
 // Default points at the Azure SWA domain (the linked-backend proxy serves
 // /api/*). The old default was the decommissioned Render backend — emails
 // built with it linked to a dead host when API_URL wasn't set.
-const API_URL    = process.env.API_URL    || 'https://vocesindigenas.org'
+const API_URL    = process.env.API_URL    || 'https://impactoindigena.news'
 
 // Token expiry: 48 hours
 const TOKEN_EXPIRY_HOURS = 48

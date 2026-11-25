@@ -35,7 +35,7 @@ export const OPENDATA_LICENSE = 'CC-BY-4.0'
 export const OPENDATA_ATTRIBUTION =
   'Datos de Voces Indígenas (vocesindigenas.org), un programa de la Fundación KM. Licencia CC BY 4.0: ' +
   'reutilización libre, también comercial, con atribución. Cite como: Voces Indígenas, Open Data API, ' +
-  'https://vocesindigenas.org/opendata'
+  'https://impactoindigena.news/opendata'
 
 // ─── Rate limiter ─────────────────────────────────────────────────────────────
 

@@ -29,7 +29,7 @@ describe('usePageTracking y el horneado del build (B23)', () => {
   })
 })
 
-const HOST = 'vocesindigenas.org'
+const HOST = 'impactoindigena.news'
 
 describe('classifyReferrer', () => {
   it('empty referrer → direct', () => {
@@ -41,7 +41,7 @@ describe('classifyReferrer', () => {
   })
 
   it('same host → internal', () => {
-    expect(classifyReferrer('https://vocesindigenas.org/stories/x', HOST)).toBe('internal')
+    expect(classifyReferrer('https://impactoindigena.news/stories/x', HOST)).toBe('internal')
   })
 
   it('search engines → search', () => {

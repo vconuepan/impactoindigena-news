@@ -65,7 +65,7 @@ function createLLM(tier: 'small' | 'medium' | 'large'): ChatOpenAI {
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: config.llm.openrouterApiKey,
         defaultHeaders: {
-          'HTTP-Referer': 'https://vocesindigenas.org',
+          'HTTP-Referer': 'https://impactoindigena.news',
           'X-Title': 'Voces Indígenas',
         },
       },

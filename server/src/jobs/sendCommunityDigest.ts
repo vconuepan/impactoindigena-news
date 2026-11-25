@@ -8,7 +8,7 @@ import { itemsDeVitrina, mezclarItems, elegirDestacadas, CANDIDATAS_DESTACADAS, 
 
 const log = createLogger('send_community_digest')
 
-const SITE_URL = config.siteUrl || 'https://vocesindigenas.org'
+const SITE_URL = config.siteUrl || 'https://impactoindigena.news'
 const LOOKBACK_DAYS = 7
 
 interface DigestSection {

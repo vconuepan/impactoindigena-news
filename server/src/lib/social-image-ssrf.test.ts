@@ -39,7 +39,7 @@ const { createPost } = await import('./bluesky.js')
 const { fetchImageBuffer } = await import('./twitter.js')
 
 const THUMB = 'https://medio.example/og.jpg'
-const card = { uri: 'https://vocesindigenas.org/stories/x', title: 'T', description: 'D', thumbUrl: THUMB }
+const card = { uri: 'https://impactoindigena.news/stories/x', title: 'T', description: 'D', thumbUrl: THUMB }
 
 describe('Bluesky link-card thumbnail', () => {
   beforeEach(() => {

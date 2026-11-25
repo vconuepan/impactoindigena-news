@@ -71,7 +71,7 @@ describe('variantesDeUrl / srcsetDeUrl — solo para lo que vive en nuestro buck
 
   it('una imagen externa, que nunca se rehospedo, no tiene variantes', () => {
     expect(variantesDeUrl('https://media.biobiochile.cl/wp-content/foto.jpg')).toBeNull()
-    expect(srcsetDeUrl('https://vocesindigenas.org/images/og-image.png')).toBeNull()
+    expect(srcsetDeUrl('https://impactoindigena.news/images/og-image.png')).toBeNull()
   })
 
   it('un objeto del bucket fuera de social/ o sin extension tampoco', () => {

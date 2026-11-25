@@ -84,7 +84,10 @@ describe('el correo publico del canal', () => {
 
   it('cae en un dominio propio de la Fundacion, no en la marca anterior', async () => {
     const xml = await feed()
-    expect(xml).not.toContain('impactoindigena.news')
+    // 25-nov-2026: impactoindigena.news vuelve a ser el dominio del sitio, asi
+    // que el candado mira al reves: ninguna URL del feed lleva al dominio que
+    // ahora redirige. El correo (@vocesindigenas.org) no cambia con el dominio.
+    expect(xml).not.toContain('https://vocesindigenas.org')
     const m = xml.match(/<itunes:email>([^<]*)<\/itunes:email>/)!
     expect(m[1]).toMatch(/@(vocesindigenas\.org|fundacionkm\.org)$/)
   })

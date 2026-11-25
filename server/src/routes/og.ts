@@ -10,7 +10,7 @@ import { registrarVisitaPorFamilia } from '../services/uaHits.js'
 const router = Router()
 const log = createLogger('og-proxy')
 
-const SITE_URL = 'https://vocesindigenas.org'
+const SITE_URL = 'https://impactoindigena.news'
 const FALLBACK_IMAGE = `${SITE_URL}/images/og-image.png`
 
 const BOT_UA = /bot|crawler|spider|crawling|facebookexternalhit|linkedinbot|twitterbot|slackbot|telegrambot|whatsapp|discordbot|curl|wget|python|java\/|go-http/i

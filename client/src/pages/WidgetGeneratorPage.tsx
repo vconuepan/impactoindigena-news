@@ -12,8 +12,8 @@ const ISSUES = [
   { label: "Chile Intercultural", value: "chile-indigena" },
 ];
 
-const WIDGET_URL = "https://vocesindigenas.org/widget.js";
-const EMBED_URL = "https://vocesindigenas.org/embed";
+const WIDGET_URL = "https://impactoindigena.news/widget.js";
+const EMBED_URL = "https://impactoindigena.news/embed";
 
 export default function WidgetGeneratorPage() {
   const [issue, setIssue] = useState("");

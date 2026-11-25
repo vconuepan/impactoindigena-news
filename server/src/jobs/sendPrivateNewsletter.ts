@@ -190,7 +190,7 @@ Responde SOLO con JSON sin texto adicional:
       const story = storyMap.get(id)
       if (!story) continue
       const publisher = story.feed?.displayTitle || story.feed?.title || 'Fuente'
-      const relevanceUrl = story.slug ? `https://vocesindigenas.org/stories/${story.slug}` : ''
+      const relevanceUrl = story.slug ? `https://impactoindigena.news/stories/${story.slug}` : ''
       content += `## ${story.title || story.sourceTitle}\n`
       content += `${publisher} · [artículo original](${story.sourceUrl})`
       if (relevanceUrl) content += ` · [análisis](${relevanceUrl})`

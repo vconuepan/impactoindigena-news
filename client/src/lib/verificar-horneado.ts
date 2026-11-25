@@ -165,7 +165,7 @@ export function mensajeDelCandado(problemas: string[], resumen: ResumenApi): str
       : deRed + caidas > 0
         ? `Hubo ${caidas} respuestas 5xx y ${deRed} fallas de red: la API no respondio durante el build ` +
           `(por ejemplo, el backend reiniciandose por un despliegue del mismo push). Volver a correr el workflow.`
-        : `No hubo respuestas 429 ni 5xx: mirar la pagina en local (PRERENDER_API_URL=https://vocesindigenas.org npm run build --prefix client).`,
+        : `No hubo respuestas 429 ni 5xx: mirar la pagina en local (PRERENDER_API_URL=https://impactoindigena.news npm run build --prefix client).`,
   ].join('\n')
 }
 

@@ -1,4 +1,4 @@
-# Cloudflare Pages: sitio de Voces Indígenas (vocesindigenas.org).
+# Cloudflare Pages: sitio del medio (impactoindigena.news; vocesindigenas.org redirige).
 # Se publica con `wrangler pages deploy` desde client/ (ver el workflow del frontend).
 name = "vocesindigenas"
 pages_build_output_dir = "dist"

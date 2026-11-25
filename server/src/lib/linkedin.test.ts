@@ -243,7 +243,7 @@ describe('createUgcPost with a dead token', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(
-      createUgcPost('texto', 'https://vocesindigenas.org/stories/x', 'Título', 'Resumen', [
+      createUgcPost('texto', 'https://impactoindigena.news/stories/x', 'Título', 'Resumen', [
         'https://cdn/1.jpg',
         'https://cdn/2.jpg',
         'https://cdn/3.jpg',
@@ -386,7 +386,7 @@ describe('el carrusel sale como documento PDF, sin el recorte de la galería', (
     const fetchMock = linkedinDocumento()
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await createUgcPost('Hola (IA) #Mapuche', 'https://vocesindigenas.org/stories/x', 'Título', 'R', LAMINAS)
+    const result = await createUgcPost('Hola (IA) #Mapuche', 'https://impactoindigena.news/stories/x', 'Título', 'R', LAMINAS)
 
     expect(result).toEqual({ id: 'urn:li:share:777', permalink: 'https://www.linkedin.com/feed/update/urn:li:share:777/' })
     expect(mockDownload.mock.calls.map(([u]) => u)).toEqual(LAMINAS)
@@ -394,7 +394,7 @@ describe('el carrusel sale como documento PDF, sin el recorte de la galería', (
     const postCall = fetchMock.mock.calls.find(([u]) => String(u).endsWith('/rest/posts'))!
     const body = JSON.parse(postCall[1]!.body as string)
     expect(body.content.media).toEqual({ title: 'Título', id: 'urn:li:document:D1' })
-    expect(body.commentary).toBe('Hola \\(IA\\) #Mapuche\n\nhttps://vocesindigenas.org/stories/x')
+    expect(body.commentary).toBe('Hola \\(IA\\) #Mapuche\n\nhttps://impactoindigena.news/stories/x')
     expect((postCall[1]!.headers as Record<string, string>)['LinkedIn-Version']).toBe('202611')
     // Nada de galería: ni registerUpload ni ugcPosts.
     expect(fetchMock.mock.calls.some(([u]) => String(u).includes('registerUpload'))).toBe(false)

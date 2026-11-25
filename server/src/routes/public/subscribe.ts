@@ -77,7 +77,7 @@ const confirmSchema = z.object({
 // el correo. Es el mismo patron que /api/alerts/confirm.
 router.get('/confirm', (req, res) => {
   const { token, email } = req.query as { token?: unknown; email?: unknown }
-  const clientUrl = process.env.CLIENT_URL || 'https://vocesindigenas.org'
+  const clientUrl = process.env.CLIENT_URL || 'https://impactoindigena.news'
 
   if (typeof token !== 'string' || !token || typeof email !== 'string' || !email) {
     res.redirect(303, `${clientUrl}/subscribed?error=invalid`)

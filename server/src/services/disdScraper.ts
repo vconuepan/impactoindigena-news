@@ -36,7 +36,7 @@ export async function scrapeDISD(url: string): Promise<ParseFeedResult> {
           maxRedirects: 3,
           responseType: 'text',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://vocesindigenas.org)',
+            'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://impactoindigena.news)',
             'Accept': 'text/html,application/xhtml+xml,*/*',
             'Accept-Language': 'en,es;q=0.9',
           },

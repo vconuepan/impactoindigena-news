@@ -23,6 +23,18 @@ describe('allowedOrigins', () => {
     expect(origins).toContain('http://localhost:5173')
   })
 
+  it('acepta varios origenes en FRONTEND_URL, separados por coma', () => {
+    process.env.FRONTEND_URL = 'https://impactoindigena.news, https://vocesindigenas.org'
+    expect(getAllowedOrigins()).toEqual(
+      expect.arrayContaining(['https://impactoindigena.news', 'https://vocesindigenas.org']),
+    )
+    expect(isTrustedOrigin(mkReq('POST', { origin: 'https://impactoindigena.news' }))).toBe(true)
+    expect(isTrustedOrigin(mkReq('POST', { origin: 'https://vocesindigenas.org' }))).toBe(true)
+    // Una coma de sobra no abre la puerta a un Origin vacio.
+    process.env.FRONTEND_URL = 'https://impactoindigena.news,'
+    expect(getAllowedOrigins()).not.toContain('')
+  })
+
   it('allows all safe (non-mutating) methods regardless of origin', () => {
     expect(isTrustedOrigin(mkReq('GET'))).toBe(true)
     expect(isTrustedOrigin(mkReq('HEAD', { origin: 'https://evil.com' }))).toBe(true)

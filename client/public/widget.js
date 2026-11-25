@@ -13,8 +13,8 @@
     mood: script.getAttribute('data-mood') === 'uplifting' ? 'uplifting' : '',
   }
 
-  var API_BASE = 'https://vocesindigenas.org/api'
-  var SITE_URL = 'https://vocesindigenas.org'
+  var API_BASE = 'https://impactoindigena.news/api'
+  var SITE_URL = 'https://impactoindigena.news'
 
   // Create container with shadow DOM for style isolation
   var container = document.createElement('div')

@@ -26,7 +26,7 @@ const PORTADA_EN_ROOT =
   '<section><article><h2>Otra nota</h2></article></section></main></div></div>'
 const SHELL = '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
   '<script type="module" crossorigin="" src="/assets/index-abc123.js"></script>' +
-  '<link rel="canonical" href="https://vocesindigenas.org/" data-rh="true"></head>' +
+  '<link rel="canonical" href="https://impactoindigena.news/" data-rh="true"></head>' +
   `<body>${PORTADA_EN_ROOT}</body></html>`
 
 const app = express()
@@ -37,7 +37,7 @@ const published = {
   title: 'A Real Story',
   titleLabel: 'news',
   summary: 'A summary of the story.',
-  imageUrl: 'https://vocesindigenas.org/images/x.png',
+  imageUrl: 'https://impactoindigena.news/images/x.png',
   datePublished: new Date('2026-07-13T00:00:00Z'),
   status: 'published',
 }
@@ -56,7 +56,7 @@ describe('GET /api/og/story-html — SEO status codes', () => {
     const res = await request(app).get('/api/og/story-html?slug=a-real-story')
     expect(res.status).toBe(200)
     expect(res.text).toContain('A Real Story')
-    expect(res.text).toContain('<link rel="canonical" href="https://vocesindigenas.org/stories/a-real-story"')
+    expect(res.text).toContain('<link rel="canonical" href="https://impactoindigena.news/stories/a-real-story"')
   })
 
   it('de-published story (exists but status!=published) → 404, NOT 200 (Soft 404 regression)', async () => {
@@ -207,7 +207,7 @@ describe('GET /api/og/story-html — los preloads que el shell trae de la portad
 
     expect(res.text).not.toContain('oghero-de-la-portada.jpg')
     expect(res.text).toContain(
-      '<link rel="preload" href="https://vocesindigenas.org/images/x.png" as="image" fetchpriority="high" />',
+      '<link rel="preload" href="https://impactoindigena.news/images/x.png" as="image" fetchpriority="high" />',
     )
   })
 
@@ -319,7 +319,7 @@ describe('el título y la descripción de una noticia fuera de su página', () =
   // canónica escritas por Helmet.
   const SHELL_CON_META = '<!DOCTYPE html><html><head><title>Voces Indígenas</title>' +
     '<meta name="description" content="Noticias que importan a los pueblos indígenas." data-rh="true">' +
-    '<link rel="canonical" href="https://vocesindigenas.org/" data-rh="true">' +
+    '<link rel="canonical" href="https://impactoindigena.news/" data-rh="true">' +
     '<script type="module" src="/assets/index-abc123.js"></script></head>' +
     '<body><div id="root"></div></body></html>'
 
@@ -361,7 +361,7 @@ describe('el título y la descripción de una noticia fuera de su página', () =
         const res = await pedir(await appFresco())
         expect(contar(res.text, /<meta[^>]+name="description"/g)).toBe(1)
         expect(contar(res.text, /<link[^>]+rel="canonical"/g)).toBe(1)
-        expect(res.text).toContain('<link rel="canonical" href="https://vocesindigenas.org/stories/ley-21-788"')
+        expect(res.text).toContain('<link rel="canonical" href="https://impactoindigena.news/stories/ley-21-788"')
         expect(res.text).not.toContain('Noticias que importan a los pueblos indígenas.')
       })
     })

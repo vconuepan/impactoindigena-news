@@ -57,7 +57,7 @@ export async function parseFeed(feedUrl: string, cacheHeaders?: FeedCacheHeaders
   try {
     const headers: Record<string, string> = {
       // Mimic a real browser so sites that block generic bots (UN, OHCHR, etc.) respond correctly
-      'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://vocesindigenas.org)',
+      'User-Agent': 'Mozilla/5.0 (compatible; VocesIndigenasCrawler/1.0; +https://impactoindigena.news)',
       'Accept': 'application/rss+xml, application/xml, text/xml, */*',
     }
     if (cacheHeaders?.etag) {

@@ -247,7 +247,7 @@ describe('generateDraft desde el artículo original', () => {
     expect(fin.status).toBe('draft')
     expect(fin.slideUrls).toEqual(LAMINAS_NUEVAS)
     expect(fin.caption).toContain('Reporteó: Radio Kurruf')
-    expect(fin.caption).toContain('https://vocesindigenas.org/stories/mapuches-enfrentan-desalojo')
+    expect(fin.caption).toContain('https://impactoindigena.news/stories/mapuches-enfrentan-desalojo')
   })
 
   // El job publica en la misma corrida: antes recibía un registro en
@@ -334,7 +334,7 @@ describe('publishPost, el único punto de salida', () => {
   function post(extra: Record<string, unknown> = {}) {
     return {
       id: 'p1', status: 'draft', slideUrls: LAMINAS_NUEVAS, imageUrl: LAMINAS_NUEVAS[0],
-      caption: 'El Lof Juan Currin resiste.\n\nReporteó: Radio Kurruf\nhttps://vocesindigenas.org/stories/familias-indigenas-x',
+      caption: 'El Lof Juan Currin resiste.\n\nReporteó: Radio Kurruf\nhttps://impactoindigena.news/stories/familias-indigenas-x',
       story: noticia(),
       ...extra,
     }
@@ -367,7 +367,7 @@ describe('pieConAtribucion y cuerpoDelPie', () => {
   // La dirección de la ficha lleva el titular de Voces, que escribe la IA: los
   // candados revisan el texto del pie, no esa dirección.
   it('los candados leen el pie sin la atribución ni el enlace', () => {
-    const pie = 'Texto.\n\nReporteó: Radio Kurruf\nhttps://vocesindigenas.org/stories/familias-indigenas-de-intag'
+    const pie = 'Texto.\n\nReporteó: Radio Kurruf\nhttps://impactoindigena.news/stories/familias-indigenas-de-intag'
     expect(cuerpoDelPie(pie)).toBe('Texto.\n')
   })
 

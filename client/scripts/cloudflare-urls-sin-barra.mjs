@@ -2,7 +2,7 @@
 /**
  * Cloudflare Pages sirve `ruta/index.html` en `/ruta/` y redirige `/ruta` → `/ruta/`
  * (308). Las páginas prerenderizadas declaran su canonical SIN barra final
- * (`https://vocesindigenas.org/about`), igual que las servía Azure Static Web Apps:
+ * (`https://impactoindigena.news/about`), igual que las servía Azure Static Web Apps:
  * con la redirección, Google vería un canonical que redirige.
  *
  * Arreglo: después del build, cada `dist/<ruta>/index.html` (menos la portada) se

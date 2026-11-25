@@ -4,6 +4,12 @@ import type { Request } from 'express'
  * Origins trusted for authenticated / state-changing requests. Shared by the
  * CORS layer (app.ts) and the CSRF Origin check (middleware/auth.ts) so the two
  * never drift apart.
+ *
+ * FRONTEND_URL admite varios origenes separados por coma. Desde el cambio de
+ * dominio del 25-nov-2026 (vocesindigenas.org -> impactoindigena.news) el App
+ * Service lleva los dos mientras dura el corte: con uno solo, los POST del
+ * dominio que todavia no estaba en la variable fallaban por CSRF hasta que se
+ * cambiara, y el cambio en Azure y la redireccion en Cloudflare no son atomicos.
  */
 export function getAllowedOrigins(): string[] {
   return [
@@ -15,8 +21,8 @@ export function getAllowedOrigins(): string[] {
     'http://localhost:4174',
     'http://127.0.0.1:5174',
     'http://127.0.0.1:4174',
-    process.env.FRONTEND_URL,
-  ].filter(Boolean) as string[]
+    ...(process.env.FRONTEND_URL ?? '').split(','),
+  ].map((o) => o.trim()).filter(Boolean)
 }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
