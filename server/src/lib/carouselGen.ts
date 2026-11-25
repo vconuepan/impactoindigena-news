@@ -149,7 +149,7 @@ export function footerUrl(ctx: any, slideNum: number, total: number): void {
   ctx.textAlign = 'left'
   ctx.fillStyle = C.mute
   ctx.font = `500 ${26 * SCALE}px '${FONT}'`
-  ctx.fillText('vocesindigenas.org', M, RH - M)
+  ctx.fillText('impactoindigena.news', M, RH - M)
   ctx.textAlign = 'right'
   ctx.fillStyle = C.accent
   ctx.font = `700 ${24 * SCALE}px '${FONT}'`

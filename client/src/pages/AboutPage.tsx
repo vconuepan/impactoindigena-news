@@ -12,12 +12,12 @@ export default function AboutPage() {
         <title>Quiénes Somos - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native que sigue la jurisprudencia de la Corte IDH y el Convenio 169 de la OIT."
+          content="Impacto Indígena News nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native que sigue la jurisprudencia de la Corte IDH y el Convenio 169 de la OIT."
         />
         <meta property="og:title" content={`Quiénes Somos - ${SEO.siteName}`} />
         <meta
           property="og:description"
-          content="Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado."
+          content="Impacto Indígena News nace de la historia de un pueblo que nunca fue conquistado."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/about`} />
@@ -31,7 +31,7 @@ export default function AboutPage() {
             "@type": "WebPage",
             name: `Quiénes Somos - ${SEO.siteName}`,
             description:
-              "Voces Indígenas nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native que sigue la jurisprudencia de la Corte IDH y el Convenio 169 de la OIT.",
+              "Impacto Indígena News nace de la historia de un pueblo que nunca fue conquistado. Una plataforma AI-native que sigue la jurisprudencia de la Corte IDH y el Convenio 169 de la OIT.",
             url: `${SEO.siteUrl}/about`,
             isPartOf: {
               "@type": "WebSite",
@@ -79,7 +79,7 @@ export default function AboutPage() {
             más poderoso del mundo a negociar.
           </p>
           <p>
-            Esa resistencia no es solo historia: es el punto de partida de Voces Indígenas.
+            Esa resistencia no es solo historia: es el punto de partida de Impacto Indígena News.
             Los pueblos indígenas no son grupos vulnerables que esperan ser defendidos. Son,
             y han sido siempre, protagonistas de su propio futuro. Al menos una cuarta parte de la
             superficie terrestre del planeta es tierra de propiedad, uso u ocupación tradicional
@@ -118,7 +118,7 @@ export default function AboutPage() {
           </div>
 
           <p>
-            Voces Indígenas sigue de cerca dos marcos internacionales que protegen los derechos
+            Impacto Indígena News sigue de cerca dos marcos internacionales que protegen los derechos
             de los pueblos indígenas y generan obligaciones concretas para los Estados:
           </p>
         </div>
@@ -161,16 +161,38 @@ export default function AboutPage() {
             <strong>Declaración de las Naciones Unidas sobre los Derechos de los Pueblos
             Indígenas (UNDRIP)</strong>, adoptada en 2007, que establece los derechos
             colectivos e individuales de los pueblos indígenas en materia de cultura, identidad,
-            educación, salud, empleo y territorio. Voces Indígenas cubre activamente la
+            educación, salud, empleo y territorio. Impacto Indígena News cubre activamente la
             jurisprudencia que estos marcos generan y su implementación en los países signatarios.
           </p>
 
           <h3 className="section-heading mt-8">Un programa de la Fundación KM</h3>
           <p>
-            Voces Indígenas es un programa de la <strong>Fundación KM</strong> y un bien
+            Impacto Indígena News es un programa de la <strong>Fundación KM</strong> y un bien
             público: gratuito, sin publicidad y con su código abierto. Forma parte de Las Otras
             Voces, el programa editorial de la Fundación, junto a Voces Araucanía y Voces Mapuche.
           </p>
+          {/* Fuente: impactoindigena/docs/DEFINICION_TRES_VERTICALES_Y_CASA_2026-11-25.md,
+              §1 (la frase de la casa) y §2 bis (la frase del medio y su regla editorial,
+              confirmada por el director el 25-nov-2026). */}
+          <p>
+            También es una de las cuatro partes de Impacto Indígena, que existe para que el
+            vínculo entre pueblos indígenas, empresas y Estado sea entre iguales. Al medio le toca
+            lo que se cuenta: las noticias de Chile y el mundo, con los pueblos como protagonistas.
+          </p>
+
+          <h3 className="section-heading mt-8">Independencia editorial</h3>
+          <p>Tres reglas separan lo que publica el medio del resto de Impacto Indígena:</p>
+          <ol className="list-decimal pl-6 space-y-1.5 my-4">
+            <li>No cobra por publicar.</li>
+            <li>
+              Avisa cuando una nota informa sobre un cliente de impactoindigena.ai o de
+              impactoindigena.legal.
+            </li>
+            <li>
+              Sus decisiones editoriales no pasan por Impacto Indígena SpA ni por el estudio
+              jurídico Impacto Indígena Legal.
+            </li>
+          </ol>
           <p>
             La Fundación KM, RUT 65.191.983-5, es una organización sin fines de lucro con sede en
             Temuco, La Araucanía. Es la responsable del tratamiento de datos y la contraparte de
@@ -256,7 +278,7 @@ export default function AboutPage() {
             intencionada, invisibiliza su liderazgo y los excluye de las decisiones que los afectan.
           </p>
           <p>
-            <strong>Voces Indígenas</strong> nace para cambiar esa narrativa. Usamos
+            <strong>Impacto Indígena News</strong> nace para cambiar esa narrativa. Usamos
             inteligencia artificial para monitorear fuentes especializadas en todo el mundo,
             analizar el impacto real de las noticias en los pueblos indígenas y presentar esa
             información de forma clara, accesible y sin publicidad. La elección es concreta:

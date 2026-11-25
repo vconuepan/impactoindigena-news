@@ -175,7 +175,7 @@ const rateLimitedResponse = {
 
 // Shared description for dateFrom and dateTo (regex in server/src/schemas/story.ts; range built by buildPublishedDateRange in server/src/services/story.ts).
 const dateParamDescription =
-  'Filter by datePublished (date the story was published on Voces Indígenas, UTC). ' +
+  'Filter by datePublished (date the story was published on Impacto Indígena News, UTC). ' +
   'dateFrom is inclusive from 00:00Z; dateTo is inclusive through the end of that day. ' +
   'Also applies together with `search`. A malformed value returns 400; ' +
   'a well-formed but impossible date (e.g. month 13) currently returns 500.'
@@ -189,10 +189,10 @@ export function getOpenAPIDocument(): any {
   return createDocument({
     openapi: '3.1.0',
     info: {
-      title: 'Voces Indígenas API',
+      title: 'Impacto Indígena News API',
       version: '0.1.0',
       description:
-        'Stories that matter to indigenous peoples, selected from sources worldwide and analyzed with AI by Voces Indígenas, a program of Fundación KM. ' +
+        'Stories that matter to indigenous peoples, selected from sources worldwide and analyzed with AI by Impacto Indígena News, a program of Fundación KM. ' +
         'Access published stories, issues, homepage data, and RSS feeds. No authentication required.\n\n' +
         'Rate limits: 100 requests per 15-minute window per client (RateLimit-Policy: 100;w=900, draft-6 RateLimit-* headers). ' +
         'Requests with `search` also count against a separate limit of 20 per 15 minutes. ' +
@@ -201,7 +201,7 @@ export function getOpenAPIDocument(): any {
         '(search: {"error":"Too many search requests. Please try again later."}). ' +
         'Use pageSize=100 to page through the archive (~40 requests for ~4,000 stories).',
       contact: {
-        name: 'Voces Indígenas',
+        name: 'Impacto Indígena News',
         url: 'https://impactoindigena.news',
       },
     },

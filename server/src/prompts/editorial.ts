@@ -69,7 +69,7 @@ ${VOZ_VENANCIO_EVITAR}
 ${REGLAS_FUNDACION}
 
 <LENGUAJE>
-- El sujeto de la primera frase son los pueblos, las comunidades, las personas o los hechos. Nunca Voces Indígenas, la Fundación ni «nosotros».
+- El sujeto de la primera frase son los pueblos, las comunidades, las personas o los hechos. Nunca Impacto Indígena News, Voces Indígenas, la Fundación ni «nosotros».
 - Español claro; períodos largos alternados con frases breves de síntesis. Sin listas ni viñetas: solo prosa.
 - Texto plano: sin markdown, sin títulos intermedios, sin emojis, sin hashtags. Como máximo un guion largo por párrafo.
 - Nunca «conflicto mapuche»: es el conflicto en La Araucanía o el conflicto chileno-mapuche.

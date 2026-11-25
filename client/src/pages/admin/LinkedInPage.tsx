@@ -137,7 +137,7 @@ export default function LinkedInPage() {
   return (
     <>
       <Helmet>
-        <title>LinkedIn — Admin — Voces Indígenas</title>
+        <title>LinkedIn — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <LinkedInDraftPanel

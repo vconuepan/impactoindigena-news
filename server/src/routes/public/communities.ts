@@ -521,7 +521,7 @@ async function sendWelcomeEmail(
 
         <tr>
           <td style="background:#2d6a4f;padding:24px 32px;">
-            <a href="${SITE_URL}" style="color:#ffffff;font-family:Georgia,serif;font-size:22px;font-weight:700;text-decoration:none;">Voces Indígenas</a>
+            <a href="${SITE_URL}" style="color:#ffffff;font-family:Georgia,serif;font-size:22px;font-weight:700;text-decoration:none;">Impacto Indígena News</a>
           </td>
         </tr>
 
@@ -576,7 +576,7 @@ async function sendWelcomeEmail(
   // del proveedor de correo. El cuerpo si la nombra.
   await sendTransactional({
     to: email,
-    subject: 'Te damos la bienvenida — Voces Indígenas',
+    subject: 'Te damos la bienvenida — Impacto Indígena News',
     body: html,
   })
 }

@@ -45,7 +45,7 @@ export interface StoryForBody {
 
 export function buildStoryBodyPrompt(story: StoryForBody): string {
   return `<GOAL>
-Escribe la nota de Voces Indígenas sobre la noticia del artículo de abajo, que reporteó ${story.publisher}. La nota cuenta en cuatro claves lo que ese medio reporteó, en palabras propias y con claridad, para una persona que no leyó el artículo y quiere entender qué pasó y por qué les importa a los pueblos indígenas. La nota se publica con el enlace, el título y el autor del artículo original al pie.
+Escribe la nota de Impacto Indígena News sobre la noticia del artículo de abajo, que reporteó ${story.publisher}. La nota cuenta en cuatro claves lo que ese medio reporteó, en palabras propias y con claridad, para una persona que no leyó el artículo y quiere entender qué pasó y por qué les importa a los pueblos indígenas. La nota se publica con el enlace, el título y el autor del artículo original al pie.
 </GOAL>
 
 <ESTRUCTURA>
@@ -73,7 +73,7 @@ Cinco campos, en español, en texto plano (sin markdown, sin títulos, sin viñe
 
 <LENGUAJE>
 - Español claro, frases completas, para una persona de 16 años inteligente. Sin jerga ni siglas sin explicar la primera vez.
-- Nunca Voces Indígenas, la Fundación ni «nosotros» como sujeto. La nota no habla de sí misma ni del medio que la publica.
+- Nunca Impacto Indígena News, la Fundación ni «nosotros» como sujeto. La nota no habla de sí misma ni del medio que la publica.
 - La nota tampoco habla del artículo: no escribas «el artículo muestra», «según la nota», «el texto señala». Cuenta los hechos y atribuye lo que dicen las personas y las instituciones que el artículo cita.
 - Nunca «conflicto mapuche»: es el conflicto en La Araucanía o el conflicto chileno-mapuche.
 - Nombra al pueblo cuando el artículo lo nombra, con la grafía del artículo.

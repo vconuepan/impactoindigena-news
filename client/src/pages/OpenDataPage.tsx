@@ -12,7 +12,7 @@ export default function OpenDataPage() {
         <title>{`Datos abiertos \u2014 ${SEO.siteName}`}</title>
         <meta
           name="description"
-          content="API pública de Voces Indígenas para investigadores, periodistas y ONGs. Acceso libre a datos sobre pueblos indígenas en América Latina."
+          content="API pública de Impacto Indígena News para investigadores, periodistas y ONGs. Acceso libre a datos sobre pueblos indígenas en América Latina."
         />
         <meta property="og:title" content={`Datos abiertos \u2014 ${SEO.siteName}`} />
         <meta
@@ -157,7 +157,7 @@ export default function OpenDataPage() {
     "totalPages": 34
   },
   "license": "CC-BY-4.0",
-  "attribution": "Datos de Voces Indígenas (vocesindigenas.org), un programa de la Fundación KM. ..."
+  "attribution": "Datos de Impacto Indígena News (impactoindigena.news), un programa de la Fundación KM. ..."
 }`}</code>
           </pre>
           <p>
@@ -187,7 +187,7 @@ export default function OpenDataPage() {
             cita como:
           </p>
           <blockquote className="border-l-4 border-brand-800 pl-4 text-neutral-600 italic my-4">
-            Voces Indígenas. <em>Open Data API</em>. {new Date().getFullYear()}.{' '}
+            Impacto Indígena News. <em>Open Data API</em>. {new Date().getFullYear()}.{' '}
             <a href={`${BASE_URL}/opendata`} className="text-brand-800 hover:text-brand-700">
               {`${BASE_URL}/opendata`}
             </a>
@@ -195,7 +195,7 @@ export default function OpenDataPage() {
 
           <h2 className="section-heading mt-10">Licencia y términos</h2>
           <p>
-            Los datos que produce Voces Indígenas (títulos, resúmenes, análisis de relevancia y
+            Los datos que produce Impacto Indígena News (títulos, resúmenes, análisis de relevancia y
             clasificación por tema) se publican bajo licencia{' '}
             <a href="https://creativecommons.org/licenses/by/4.0/deed.es" className="text-brand-800 hover:text-brand-700">
               Creative Commons Atribución 4.0 (CC BY 4.0)

@@ -20,7 +20,7 @@ const pageSchema = {
   url: META.url,
   publisher: {
     '@type': 'Organization',
-    name: 'Voces Indígenas',
+    name: 'Impacto Indígena News',
     url: SEO.siteUrl,
     nonprofitStatus: 'NonprofitType',
   },
@@ -66,7 +66,7 @@ export default function NoAdsNoTrackingPage() {
         <div className="prose max-w-none">
           <p className="text-lg text-neutral-600 leading-relaxed">
             La mayoría de los servicios de noticias gratuitos ganan dinero con tus datos. Así es como
-            Voces Indígenas es diferente.
+            Impacto Indígena News es diferente.
           </p>
 
           {/* Two-column comparison */}
@@ -74,7 +74,7 @@ export default function NoAdsNoTrackingPage() {
             <thead>
               <tr>
                 <th className="text-left py-3 px-4 font-bold bg-brand-50 text-brand-800 border-b border-brand-200 rounded-tl-lg">
-                  Voces Indígenas
+                  Impacto Indígena News
                 </th>
                 <th className="text-left py-3 px-4 font-bold bg-neutral-50 text-neutral-700 border-b border-neutral-300 rounded-tr-lg">
                   Agregador de noticias típico
@@ -197,7 +197,7 @@ export default function NoAdsNoTrackingPage() {
 
         <LandingCta
           heading="Lee las noticias sin ser el producto."
-          description="Visita vocesindigenas.org — o suscríbete al boletín para recibir un resumen limpio y sin publicidad."
+          description="Visita impactoindigena.news — o suscríbete al boletín para recibir un resumen limpio y sin publicidad."
         />
       </div>
     </>

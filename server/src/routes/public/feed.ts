@@ -35,8 +35,8 @@ function buildFeed(options: { title: string; description: string; feedPath: stri
     id: siteUrl,
     link: siteUrl,
     language: 'es',
-    copyright: `© ${new Date().getFullYear()} Voces Indígenas`,
-    author: { name: 'Voces Indígenas', link: siteUrl },
+    copyright: `© ${new Date().getFullYear()} Impacto Indígena News`,
+    author: { name: 'Impacto Indígena News', link: siteUrl },
     feedLinks: {
       rss: `${siteUrl}${options.feedPath}`,
     },
@@ -56,7 +56,7 @@ router.get('/', async (_req, res) => {
       const siteUrl = getSiteUrl()
 
       const feed = buildFeed({
-        title: 'Voces Indígenas',
+        title: 'Impacto Indígena News',
         description: 'Noticias que importan a los pueblos indígenas. Curadas con cuidado por IA.',
         feedPath: '/api/feed',
       })
@@ -69,7 +69,7 @@ router.get('/', async (_req, res) => {
           description: story.summary || undefined,
           date: story.datePublished ? new Date(story.datePublished) : new Date(story.dateCrawled),
           category: [{ name: (story.issue ?? story.feed?.issue)?.name || 'General' }],
-          author: [{ name: 'Voces Indígenas', link: getSiteUrl() }],
+          author: [{ name: 'Impacto Indígena News', link: getSiteUrl() }],
           ...(story.imageUrl ? { image: story.imageUrl } : {}),
         })
       }
@@ -128,8 +128,8 @@ router.get('/comunidad/:slug', async (req, res) => {
 
       const siteUrl = getSiteUrl()
       const feed = buildFeed({
-        title: `Voces Indígenas — ${community.name}`,
-        description: community.description || `Noticias de ${community.name} curadas por Voces Indígenas.`,
+        title: `Impacto Indígena News — ${community.name}`,
+        description: community.description || `Noticias de ${community.name} curadas por Impacto Indígena News.`,
         feedPath: `/api/feed/comunidad/${slug}`,
       })
 
@@ -155,7 +155,7 @@ router.get('/comunidad/:slug', async (req, res) => {
           description: item.summary || undefined,
           date: item.fecha ?? new Date(),
           category: [{ name: item.categoria }],
-          author: [{ name: 'Voces Indígenas', link: getSiteUrl() }],
+          author: [{ name: 'Impacto Indígena News', link: getSiteUrl() }],
         })
       }
 
@@ -189,8 +189,8 @@ router.get('/:issueSlug', async (req, res) => {
       const siteUrl = getSiteUrl()
 
       const feed = buildFeed({
-        title: `Voces Indígenas — ${issue.name}`,
-        description: issue.description || `Noticias sobre ${issue.name} curadas por Voces Indígenas.`,
+        title: `Impacto Indígena News — ${issue.name}`,
+        description: issue.description || `Noticias sobre ${issue.name} curadas por Impacto Indígena News.`,
         feedPath: `/api/feed/${issueSlug}`,
       })
 

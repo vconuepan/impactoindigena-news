@@ -255,7 +255,7 @@ export default function DashboardPage() {
   return (
     <>
       <Helmet>
-        <title>Panel — Admin — Voces Indígenas</title>
+        <title>Panel — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader title="Panel" description="Pipeline editorial y estado del sistema" />

@@ -473,7 +473,7 @@ export default function StoriesPage() {
   return (
     <>
       <Helmet>
-        <title>Stories — Admin — Voces Indígenas</title>
+        <title>Stories — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader

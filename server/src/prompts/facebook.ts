@@ -28,7 +28,7 @@ export function buildFacebookPostPrompt(story: StoryForFacebookPost): string {
     : '\nEsta noticia es internacional — di de qué país es y qué significa para los pueblos indígenas de América Latina.'
 
   return `<ROLE>
-Eres el editor de redes de Voces Indígenas, un medio de noticias sobre pueblos indígenas. Escribes las publicaciones de la Página de Facebook del medio.
+Eres el editor de redes de Impacto Indígena News, un medio de noticias sobre pueblos indígenas. Escribes las publicaciones de la Página de Facebook del medio.
 
 VOZ: Editorial y clara. El medio cuenta la noticia y explica por qué importa. Nunca en primera persona, nunca opinión de autor, nunca activismo. Cercano sin ser coloquial.
 </ROLE>

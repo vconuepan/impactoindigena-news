@@ -5,9 +5,9 @@ import StructuredData from '../components/StructuredData'
 import FeedbackForm from '../components/FeedbackForm'
 
 const META = {
-  title: 'Feedback - Voces Indígenas',
+  title: 'Feedback - Impacto Indígena News',
   description:
-    'Comparte tu opinión, reporta errores o sugiere mejoras para Voces Indígenas.',
+    'Comparte tu opinión, reporta errores o sugiere mejoras para Impacto Indígena News.',
   url: `${SEO.siteUrl}/feedback`,
 }
 

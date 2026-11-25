@@ -76,7 +76,7 @@
     "terms": "Términos y condiciones",
     "cookies": "Cookies",
     "noTracking": "Sin rastreo",
-    "copyright": "© {{year}} Voces Indígenas. Todos los derechos reservados.",
+    "copyright": "© {{year}} Impacto Indígena News. Todos los derechos reservados.",
     "distribute": "Distribuir",
     "widgetForYourSite": "Para tu sitio web",
     "whyItMatters": "¿Por qué importa?",
@@ -118,7 +118,7 @@
     "generatedByAI": "Generado por IA",
     "aiImage": "Ilustración generada con IA",
     "sourceImage": "Imagen: {{publisher}}",
-    "composedImage": "Imagen: {{publisher}} · composición de Voces Indígenas",
+    "composedImage": "Imagen: {{publisher}} · composición de Impacto Indígena News",
     "whyItMatters": "Por qué importa",
     "caveats": "Advertencias",
     "howWeScored": "Cómo la evaluamos",
@@ -131,8 +131,8 @@
       "howWeMadeThis": "¿Cómo hicimos esta nota?",
       "someone": "una persona del equipo",
       "method": {
-        "ia_sin_revision": "Un modelo de lenguaje leyó el artículo completo de {{publisher}} y redactó esta nota con las cuatro claves de Voces Indígenas. Nadie la revisó antes de publicarla: toda cifra, cita y nombre pasó por candados automáticos que exigen que esté en el artículo, pero un error de interpretación puede quedar. Si encuentras uno, escríbenos.",
-        "ia_revisada": "Un modelo de lenguaje leyó el artículo completo de {{publisher}} y redactó esta nota con las cuatro claves de Voces Indígenas. {{reviewer}} la leyó, la corrigió y la aprobó antes de publicarla.",
+        "ia_sin_revision": "Un modelo de lenguaje leyó el artículo completo de {{publisher}} y redactó esta nota con las cuatro claves de Impacto Indígena News. Nadie la revisó antes de publicarla: toda cifra, cita y nombre pasó por candados automáticos que exigen que esté en el artículo, pero un error de interpretación puede quedar. Si encuentras uno, escríbenos.",
+        "ia_revisada": "Un modelo de lenguaje leyó el artículo completo de {{publisher}} y redactó esta nota con las cuatro claves de Impacto Indígena News. {{reviewer}} la leyó, la corrigió y la aprobó antes de publicarla.",
         "humana": "{{reviewer}} escribió esta nota a partir del artículo de {{publisher}}. Un modelo de lenguaje pudo ayudar a ordenar el borrador; el texto es suyo."
       }
     },
@@ -147,8 +147,8 @@
   },
   "search": {
     "title": "Buscar: {{q}}",
-    "pageTitle": "Resultados de búsqueda para \"{{q}}\" en Voces Indígenas",
-    "defaultTitle": "Buscar historias en Voces Indígenas",
+    "pageTitle": "Resultados de búsqueda para \"{{q}}\" en Impacto Indígena News",
+    "defaultTitle": "Buscar historias en Impacto Indígena News",
     "results_one": "1 resultado",
     "results_other": "{{count}} resultados",
     "resultsFor": "Resultados para \"{{q}}\"",
@@ -254,7 +254,7 @@
     "readMethod": "Cómo trabajamos",
     "readSources": "Nuestras fuentes",
     "published": "Publicado desde Chile.",
-    "rights": "© {{year}} Voces Indígenas · un programa de la Fundación KM"
+    "rights": "© {{year}} Impacto Indígena News · un programa de la Fundación KM"
   },
   "curationStats": {
     "ariaLabel": "Estadísticas de curaduría",

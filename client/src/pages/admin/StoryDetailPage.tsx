@@ -18,7 +18,7 @@ export default function StoryDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{story?.title || story?.sourceTitle || 'Noticia'} — Admin — Voces Indígenas</title>
+        <title>{story?.title || story?.sourceTitle || 'Noticia'} — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <div className="mb-4">

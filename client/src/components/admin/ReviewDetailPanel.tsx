@@ -110,7 +110,7 @@ export function ReviewDetailPanel({ item, onClose, onRelease, onHold, onReopen, 
                 rel="noreferrer"
                 className="inline-block text-sm text-brand-700 underline-offset-2 hover:underline"
               >
-                Abrir la nota en Voces Indígenas
+                Abrir la nota en Impacto Indígena News
               </a>
             )}
           </div>

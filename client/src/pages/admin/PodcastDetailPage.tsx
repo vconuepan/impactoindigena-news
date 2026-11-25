@@ -16,7 +16,7 @@ export default function PodcastDetailPage() {
   return (
     <>
       <Helmet>
-        <title>{podcast?.title || 'Podcast'} — Admin — Voces Indígenas</title>
+        <title>{podcast?.title || 'Podcast'} — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <div className="mb-4">

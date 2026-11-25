@@ -50,7 +50,7 @@ async function sendMagicLinkEmail(email: string, token: string, redirectTo?: str
         <table role="presentation" width="500" cellpadding="0" cellspacing="0" style="max-width:500px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;">
           <tr>
             <td style="padding:32px 32px 24px;text-align:center;border-bottom:3px solid #ec268f;">
-              <h1 style="margin:0;font-size:22px;font-weight:800;color:#171717;">Voces Indígenas</h1>
+              <h1 style="margin:0;font-size:22px;font-weight:800;color:#171717;">Impacto Indígena News</h1>
             </td>
           </tr>
           <tr>
@@ -76,7 +76,7 @@ async function sendMagicLinkEmail(email: string, token: string, redirectTo?: str
 
   await brevo.sendTransactional({
     to: email,
-    subject: 'Tu enlace de acceso a Voces Indígenas',
+    subject: 'Tu enlace de acceso a Impacto Indígena News',
     body: html,
   })
 }

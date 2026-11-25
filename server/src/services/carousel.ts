@@ -113,7 +113,11 @@ export function createStoryImage(story: CarouselStory): Buffer {
   // Logo placeholder (bottom-right)
   ctx.fillStyle = '#9ca3af'
   ctx.font = `400 14px '${FONT}'`
-  ctx.fillText('vocesindigenas.org', WIDTH - PADDING / 2 - 160, HEIGHT - PADDING / 2 - 10)
+  // Alineado a la derecha: el desplazamiento fijo de 160 px estaba medido para
+  // «vocesindigenas.org», dos letras más corto que el dominio de hoy.
+  ctx.textAlign = 'right'
+  ctx.fillText('impactoindigena.news', WIDTH - PADDING / 2, HEIGHT - PADDING / 2 - 10)
+  ctx.textAlign = 'left'
 
   return canvas.toBuffer('image/png')
 }

@@ -124,7 +124,7 @@ export default function MastodonPage() {
   return (
     <>
       <Helmet>
-        <title>Mastodon — Admin — Voces Indígenas</title>
+        <title>Mastodon — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader

@@ -133,7 +133,7 @@ Responde SOLO con un JSON con este formato exacto, sin texto adicional:
   }
 
   // Crear newsletter privado
-  const title = `[PRIVADO] Voces Indígenas — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
+  const title = `[PRIVADO] Impacto Indígena News — ${today.toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`
   const newsletter = await prisma.newsletter.create({
     data: {
       title,

@@ -13,7 +13,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 // descripción propia.
 const TITULO = 'Voces Indígenas con Venancio Coñuepan'
 const DESCRIPCION =
-  'Editorial semanal de Venancio Coñuepan — mapuche, abogado de derechos territoriales, editor de Voces Indígenas. Análisis de la intersección entre pueblos indígenas, territorios y la transición energética global.'
+  'Editorial semanal de Venancio Coñuepan — mapuche, abogado de derechos territoriales, editor de Impacto Indígena News. Análisis de la intersección entre pueblos indígenas, territorios y la transición energética global.'
 
 export default function VocesIndigenasPage() {
   const { data, isLoading } = useQuery({
@@ -46,7 +46,7 @@ export default function VocesIndigenasPage() {
             author: {
               '@type': 'Person',
               name: 'Venancio Coñuepan',
-              jobTitle: 'Abogado de derechos territoriales — Editor de Voces Indígenas',
+              jobTitle: 'Abogado de derechos territoriales — Editor de Impacto Indígena News',
             },
           },
           buildBreadcrumbSchema([

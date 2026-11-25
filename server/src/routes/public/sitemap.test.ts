@@ -180,7 +180,7 @@ describe('GET /api/sitemap-news.xml', () => {
     expect(res.status).toBe(200)
     expect(res.headers['content-type']).toMatch(/application\/xml/)
     expect(res.text).toContain('xmlns:news="http://www.google.com/schemas/sitemap-news/0.9"')
-    expect(res.text).toContain('<news:name>Voces Indígenas</news:name>')
+    expect(res.text).toContain('<news:name>Impacto Indígena News</news:name>')
     expect(res.text).toContain('<news:language>es</news:language>')
   })
 

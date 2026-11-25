@@ -270,7 +270,7 @@ async function sendConfirmationEmail(
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="500" cellpadding="0" cellspacing="0" style="max-width:500px;width:100%;background:#fff;border-radius:8px;overflow:hidden;">
         <tr><td style="padding:32px 32px 24px;border-bottom:3px solid #ec268f;">
-          <h1 style="margin:0;font-size:22px;font-weight:800;color:#171717;">Voces Indígenas</h1>
+          <h1 style="margin:0;font-size:22px;font-weight:800;color:#171717;">Impacto Indígena News</h1>
         </td></tr>
         <tr><td style="padding:32px;">
           <h2 style="margin:0 0 16px;font-size:20px;color:#171717;">${cambio ? 'Confirma el cambio de tus alertas' : 'Confirma tus alertas de territorio'}</h2>
@@ -293,7 +293,7 @@ async function sendConfirmationEmail(
 
   await brevo.sendTransactional({
     to:      email,
-    subject: cambio ? 'Confirma el cambio de tus alertas — Voces Indígenas' : 'Confirma tus alertas — Voces Indígenas',
+    subject: cambio ? 'Confirma el cambio de tus alertas — Impacto Indígena News' : 'Confirma tus alertas — Impacto Indígena News',
     body:    html,
   })
 }
@@ -334,7 +334,7 @@ async function sendAlertEmail(email: string, token: string, topics: string[], st
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#fff;border-radius:8px;overflow:hidden;">
         <tr><td style="padding:24px 32px;border-bottom:3px solid #ec268f;">
-          <h1 style="margin:0;font-size:18px;font-weight:800;color:#171717;">Voces Indígenas</h1>
+          <h1 style="margin:0;font-size:18px;font-weight:800;color:#171717;">Impacto Indígena News</h1>
           <p style="margin:4px 0 0;font-size:13px;color:#737373;">Alertas sobre: <strong>${topicList}</strong></p>
         </td></tr>
         <tr><td style="padding:24px 32px;">
@@ -352,7 +352,7 @@ async function sendAlertEmail(email: string, token: string, topics: string[], st
 
   await brevo.sendTransactional({
     to:      email,
-    subject: `Alertas Voces Indígenas — ${stories.length} nueva${stories.length === 1 ? '' : 's'} noticia${stories.length === 1 ? '' : 's'}`,
+    subject: `Alertas Impacto Indígena News — ${stories.length} nueva${stories.length === 1 ? '' : 's'} noticia${stories.length === 1 ? '' : 's'}`,
     body:    html,
   })
 }

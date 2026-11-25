@@ -60,7 +60,7 @@ function SkeletonRow() {
 }
 
 const DESCRIPCION =
-  'Todos los boletines semanales de Voces Indígenas. Noticias sobre pueblos indígenas, territorios y derechos.'
+  'Todos los boletines semanales de Impacto Indígena News. Noticias sobre pueblos indígenas, territorios y derechos.'
 
 export default function NewsletterArchivePage() {
   const { data, isLoading, isError } = useQuery<NewsletterListItem[]>({

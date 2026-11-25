@@ -69,7 +69,7 @@ export async function runAgendaWeeklyDigest(): Promise<void> {
             description:
               'Eventos, convocatorias y oportunidades ante la ONU y el sistema interamericano',
           },
-          'Voces Indígenas',
+          'Impacto Indígena News',
           config.siteUrl,
         ),
     })

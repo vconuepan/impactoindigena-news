@@ -7,7 +7,7 @@ import { buildBreadcrumbSchema } from '../lib/structured-data'
 import { scrollBehavior } from '../lib/scroll'
 
 const META = {
-  title: 'Glosario de términos indígenas | Voces Indígenas',
+  title: 'Glosario de términos indígenas | Impacto Indígena News',
   description:
     'Glosario de términos clave para entender las noticias sobre pueblos indígenas: palabras en mapuzungún, aymara, quechua y conceptos del derecho internacional indígena.',
   url: `${SEO.siteUrl}/glosario`,

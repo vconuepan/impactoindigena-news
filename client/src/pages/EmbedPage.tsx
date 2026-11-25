@@ -53,7 +53,7 @@ export default function EmbedPage() {
       ref={containerRef}
       className={`font-sans text-sm leading-relaxed ${isDark ? 'bg-neutral-900 text-neutral-200' : 'bg-white text-neutral-700'}`}
     >
-      <h1 className="sr-only">Voces Indígenas Stories</h1>
+      <h1 className="sr-only">Impacto Indígena News Stories</h1>
       {isLoading && (
         <div className={`px-4 py-8 text-center text-[13px] ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
           Loading...
@@ -112,7 +112,7 @@ export default function EmbedPage() {
             className="w-5 h-5 rounded-sm"
             aria-hidden="true"
           />
-          Powered by Voces Indígenas
+          Powered by Impacto Indígena News
         </a>
       </div>
     </main>

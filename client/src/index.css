@@ -100,6 +100,15 @@
 }
 
 /* Lora — body text (variable: 400–700, auto-selects correct weight) */
+/* Libre Caslon Display (OFL), solo para el logotipo. 16 KB, latin completo. */
+@font-face {
+  font-family: 'Libre Caslon Display';
+  src: url('/fonts/LibreCaslonDisplay/libre-caslon-display.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: 'Lora';
   src: url('/fonts/Lora/Lora-Regular-LatinExt.woff2') format('woff2');
@@ -412,29 +421,25 @@
    * de otra se leen como una lista. Inclinada, la segunda linea se lee como
    * continuacion de la primera.
    */
-  .brand-voces {
-    font-family: 'Fraunces', 'Fraunces Fallback', Georgia, ui-serif, serif;
-    font-weight: 700;
+  /* Logotipo de Impacto Indigena News: el sistema de marca del grupo (el de
+     impactoindigena.legal). Caslon solo aqui; el resto del sitio sigue en
+     Fraunces, Lora y DM Sans (DESIGN.md, decision del 25-nov-2026). */
+  .brand-nombre {
+    font-family: 'Libre Caslon Display', Georgia, ui-serif, serif;
+    font-weight: 400;
     font-size: 22px;
-    letter-spacing: -0.02em;
-    /* Negro calido de DESIGN.md. Va en hex y no en variable porque el proyecto
-       no define variables CSS de color: la paleta vive en tailwind.config. */
-    color: #1C1917;
+    line-height: 1;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    color: #1C1917; /* negro calido de DESIGN.md */
   }
 
-  .brand-indigenas {
-    font-family: 'Fraunces', 'Fraunces Fallback', Georgia, ui-serif, serif;
-    font-style: italic;
-    font-weight: 600;
-    font-size: 19px;
-    letter-spacing: -0.01em;
-    color: #0D5F3C; /* brand-800, el verde de la marca */
-    margin-top: 2px;
+  .brand-news {
+    color: #0D5F3C; /* brand-800: 7,7:1 sobre el blanco de la cabecera */
   }
 
   @media (min-width: 768px) {
-    .brand-voces { font-size: 27px; }
-    .brand-indigenas { font-size: 23px; }
+    .brand-nombre { font-size: 28px; }
   }
 
   /*

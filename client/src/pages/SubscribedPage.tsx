@@ -107,7 +107,7 @@ export default function SubscribedPage() {
     return (
       <>
         <Helmet>
-          <title>{titulo} - Voces Indígenas</title>
+          <title>{titulo} - Impacto Indígena News</title>
           <meta name="description" content={cuerpo} />
           {enlace.estado !== 'ausente' && <meta name="robots" content="noindex" />}
         </Helmet>
@@ -137,7 +137,7 @@ export default function SubscribedPage() {
     return (
       <>
         <Helmet>
-          <title>{t('subscribed.confirmTitle')} - Voces Indígenas</title>
+          <title>{t('subscribed.confirmTitle')} - Impacto Indígena News</title>
           <meta name="description" content={t('subscribed.confirmIntro')} />
           {/* El enlace lleva un token en la URL: que no quede en un buscador. */}
           <meta name="robots" content="noindex" />
@@ -170,7 +170,7 @@ export default function SubscribedPage() {
   return (
     <>
       <Helmet>
-        <title>{t('subscribed.successTitle')} - Voces Indígenas</title>
+        <title>{t('subscribed.successTitle')} - Impacto Indígena News</title>
         <meta name="description" content={t('subscribed.confirmed')} />
       </Helmet>
       <div className="page-section text-center py-16">

@@ -9,12 +9,12 @@ export default function CookiesPage() {
         <title>Política de Cookies - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Política de cookies de Voces Indígenas, regida por la Ley 19.628 y en adecuación a la Ley 21.719, vigente desde diciembre de 2026. Sin cookies de rastreo ni publicidad; analítica agregada sin cookies."
+          content="Política de cookies de Impacto Indígena News, regida por la Ley 19.628 y en adecuación a la Ley 21.719, vigente desde diciembre de 2026. Sin cookies de rastreo ni publicidad; analítica agregada sin cookies."
         />
         <meta property="og:title" content={`Política de Cookies - ${SEO.siteName}`} />
         <meta
           property="og:description"
-          content="Política de cookies de Voces Indígenas. Sin rastreo ni publicidad."
+          content="Política de cookies de Impacto Indígena News. Sin rastreo ni publicidad."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/cookies`} />
@@ -32,7 +32,7 @@ export default function CookiesPage() {
           <h2 className="section-heading mt-8">Responsable</h2>
           <p>
             <strong>Fundación KM</strong>, RUT 65.191.983-5,
-            organización sin fines de lucro que opera vocesindigenas.org. Contacto:{" "}
+            organización sin fines de lucro que opera impactoindigena.news. Contacto:{" "}
             <a href="mailto:contacto@fundacionkm.org" className="text-brand-800 hover:text-brand-700">
               contacto@fundacionkm.org
             </a>
@@ -41,7 +41,7 @@ export default function CookiesPage() {
 
           <h2 className="section-heading mt-8">Nuestro enfoque</h2>
           <p>
-            Voces Indígenas está diseñado para ser respetuoso de la privacidad.
+            Impacto Indígena News está diseñado para ser respetuoso de la privacidad.
             Para la lectura pública del sitio <strong>no usamos cookies de
             seguimiento, publicidad, fingerprinting ni venta de datos</strong>.
             La analítica es agregada y sin cookies.

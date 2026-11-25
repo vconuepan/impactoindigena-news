@@ -181,7 +181,7 @@ export default function MaintenancePage() {
   return (
     <>
       <Helmet>
-        <title>Mantenimiento — Admin — Voces Indígenas</title>
+        <title>Mantenimiento — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader title="Mantenimiento" description="Trabajos de limpieza y corrección de datos" />

@@ -129,11 +129,11 @@ export default function SourcesPage() {
     staleTime: 2 * 60 * 60 * 1000,
   })
 
-  const title = lang === 'es' ? 'Nuestras fuentes — Voces Indígenas' : 'Our sources — Voces Indígenas'
+  const title = lang === 'es' ? 'Nuestras fuentes — Impacto Indígena News' : 'Our sources — Impacto Indígena News'
   const heading = lang === 'es' ? 'Nuestras fuentes' : 'Our sources'
   const descripcion = lang === 'es'
-    ? 'Conoce los medios y organismos que Voces Indígenas monitorea: relevancia editorial, cobertura temática y actividad reciente.'
-    : 'Explore the media outlets and organizations monitored by Voces Indígenas: editorial relevance, thematic coverage, and recent activity.'
+    ? 'Conoce los medios y organismos que Impacto Indígena News monitorea: relevancia editorial, cobertura temática y actividad reciente.'
+    : 'Explore the media outlets and organizations monitored by Impacto Indígena News: editorial relevance, thematic coverage, and recent activity.'
   const subtitle = lang === 'es'
     ? 'Indexamos medios especializados y organismos internacionales que cubren derechos, territorios y culturas indígenas. La relevancia promedio refleja qué tan frecuente y pertinentemente cubre cada fuente estos temas.'
     : 'We index specialized media and international bodies covering indigenous rights, territories, and cultures. The average relevance reflects how frequently and relevantly each source covers these topics.'

@@ -126,7 +126,7 @@ export default function SubscribersPage() {
   return (
     <>
       <Helmet>
-        <title>Suscriptores — Admin — Voces Indígenas</title>
+        <title>Suscriptores — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader

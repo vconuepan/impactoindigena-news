@@ -742,7 +742,7 @@ ${flashSection}
           <tr>
             <td style="padding: 20px 32px 28px; text-align: center; background-color: #1B3A2D; border-radius: 0 0 10px 10px;">
               <p style="margin: 0 0 12px; font-size: 13px; color: #86efac; font-weight: 600;">
-                <a href="https://impactoindigena.news" style="color: #86efac; text-decoration: none;">vocesindigenas.org</a>
+                <a href="https://impactoindigena.news" style="color: #86efac; text-decoration: none;">impactoindigena.news</a>
               </p>
               <p style="margin: 0 0 14px; font-size: 12px; color: #6ee7b7;">
                 <a href="https://x.com/impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Twitter / X</a>

@@ -9,7 +9,7 @@ const log = createLogger('podcast-service')
 
 const INTRO = `Bienvenidos a Voces Indígenas, el podcast donde cubrimos las noticias más importantes sobre pueblos indígenas alrededor del mundo. Soy tu presentador y hoy te traemos las historias más relevantes del día.`
 
-const OUTRO = `Eso es todo por hoy en Voces Indígenas. Si quieres leer estas noticias completas, visita vocesindigenas.org. Gracias por escucharnos y hasta la próxima.`
+const OUTRO = `Eso es todo por hoy en Voces Indígenas. Si quieres leer estas noticias completas, visita impactoindigena.news. Gracias por escucharnos y hasta la próxima.`
 
 function createOpenAIClient(): OpenAI {
   if (usarAzureOpenAI()) {

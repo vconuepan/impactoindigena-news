@@ -75,10 +75,10 @@ export default function ThankYouPage() {
     <>
       <Helmet>
         <title>Thank You - {SEO.siteName}</title>
-        <meta name="description" content="Credits and acknowledgments for the open-source projects and people behind Voces Indígenas." />
+        <meta name="description" content="Credits and acknowledgments for the open-source projects and people behind Impacto Indígena News." />
         <link rel="canonical" href={`${SEO.siteUrl}/thank-you`} />
         <meta property="og:title" content={`Thank You - ${SEO.siteName}`} />
-        <meta property="og:description" content="Credits and acknowledgments for the open-source projects and people behind Voces Indígenas." />
+        <meta property="og:description" content="Credits and acknowledgments for the open-source projects and people behind Impacto Indígena News." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/thank-you`} />
         {CommonOgTags({})}
@@ -88,7 +88,7 @@ export default function ThankYouPage() {
           '@context': 'https://schema.org',
           '@type': 'WebPage',
           name: `Thank You - ${SEO.siteName}`,
-          description: 'Credits and acknowledgments for the open-source projects and people behind Voces Indígenas.',
+          description: 'Credits and acknowledgments for the open-source projects and people behind Impacto Indígena News.',
           url: `${SEO.siteUrl}/thank-you`,
           isPartOf: { '@type': 'WebSite', name: SEO.siteName, url: SEO.siteUrl },
         },
@@ -101,7 +101,7 @@ export default function ThankYouPage() {
       <div className="page-section">
         <h1 className="page-title">Thank You</h1>
         <p className="page-intro">
-          Voces Indígenas is built on the work of many talented people and open-source communities.
+          Impacto Indígena News is built on the work of many talented people and open-source communities.
           The platform itself is{' '}
           <a
             href={GITHUB_REPO_URL}

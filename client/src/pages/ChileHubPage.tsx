@@ -5,7 +5,7 @@ import StructuredData from '../components/StructuredData'
 import { buildBreadcrumbSchema } from '../lib/structured-data'
 
 const META = {
-  title: 'Chile Intercultural: guía completa | Voces Indígenas',
+  title: 'Chile Intercultural: guía completa | Impacto Indígena News',
   description:
     'Chile reconoce por ley once pueblos indígenas. Conoce quiénes son, dónde viven, cuántos son según el Censo 2024 y cuáles son sus principales demandas: mapuche, aymara, rapa nui, atacameño y más.',
   url: `${SEO.siteUrl}/guia/pueblos-indigenas-chile`,

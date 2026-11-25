@@ -54,7 +54,7 @@ ${VOZ_VENANCIO_EVITAR}
     : ''
 
   return `<GOAL>
-Escribe el texto de un carrusel de Voces Indígenas (láminas verticales para Instagram y LinkedIn) sobre la noticia del artículo de abajo, que reporteó ${story.publisher}. El carrusel cuenta lo que ese medio reporteó, con claridad y sin agregar nada que el artículo no diga: cada lámina se publica con la línea «Reporteó: ${story.publisher}» al pie.
+Escribe el texto de un carrusel de Impacto Indígena News (láminas verticales para Instagram y LinkedIn) sobre la noticia del artículo de abajo, que reporteó ${story.publisher}. El carrusel cuenta lo que ese medio reporteó, con claridad y sin agregar nada que el artículo no diga: cada lámina se publica con la línea «Reporteó: ${story.publisher}» al pie.
 </GOAL>
 
 <ESTRUCTURA>
@@ -82,7 +82,7 @@ Si el artículo es un comunicado o una declaración pública de una organizació
 </FIDELIDAD>
 
 <LENGUAJE>
-- El sujeto de la portada son las comunidades, las personas o los hechos de la noticia. Nunca Voces Indígenas ni la Fundación.
+- El sujeto de la portada son las comunidades, las personas o los hechos de la noticia. Nunca Impacto Indígena News ni la Fundación.
 - Nunca «conflicto mapuche»: es el conflicto en La Araucanía o el conflicto chileno-mapuche.
 - Español claro, frases completas. Texto plano: sin markdown, sin emojis, sin hashtags, sin guiones largos.
 </LENGUAJE>

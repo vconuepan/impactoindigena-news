@@ -25,8 +25,8 @@ function formatDate(iso: string | null) {
 export function descripcionDe(data: Pick<NewsletterDetail, 'sentAt' | 'storyCount'>): string {
   const fecha = formatDate(data.sentAt)
   return fecha
-    ? `Boletín de Voces Indígenas del ${fecha}. ${data.storyCount} noticias sobre pueblos indígenas.`
-    : `Boletín de Voces Indígenas. ${data.storyCount} noticias sobre pueblos indígenas.`
+    ? `Boletín de Impacto Indígena News del ${fecha}. ${data.storyCount} noticias sobre pueblos indígenas.`
+    : `Boletín de Impacto Indígena News. ${data.storyCount} noticias sobre pueblos indígenas.`
 }
 
 /**
@@ -37,7 +37,7 @@ export function descripcionDe(data: Pick<NewsletterDetail, 'sentAt' | 'storyCoun
  * porque así se enviaron, y llevan la marca del sitio al final.
  */
 export function tituloDePestana(titulo: string): string {
-  return /voces ind[ií]genas/i.test(titulo) ? titulo : `${titulo} — Voces Indígenas`
+  return /impacto ind[ií]gena news|voces ind[ií]genas/i.test(titulo) ? titulo : `${titulo} — Impacto Indígena News`
 }
 
 export default function NewsletterDetailPage() {
@@ -50,7 +50,7 @@ export default function NewsletterDetailPage() {
     enabled: !!id,
   })
 
-  const title = data ? tituloDePestana(data.title) : 'Boletín — Voces Indígenas'
+  const title = data ? tituloDePestana(data.title) : 'Boletín — Impacto Indígena News'
 
   return (
     <>

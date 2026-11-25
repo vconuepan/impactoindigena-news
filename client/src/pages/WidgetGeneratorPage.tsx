@@ -43,7 +43,7 @@ export default function WidgetGeneratorPage() {
   if (showSummary) iframeParams.set("summary", "true");
   if (upliftingOnly) iframeParams.set("mood", "uplifting");
   const qs = iframeParams.toString();
-  const iframeCode = `<iframe src="${EMBED_URL}${qs ? "?" + qs : ""}" width="100%" height="${showSummary ? 600 : 400}" frameborder="0" title="Voces Indígenas stories"></iframe>`;
+  const iframeCode = `<iframe src="${EMBED_URL}${qs ? "?" + qs : ""}" width="100%" height="${showSummary ? 600 : 400}" frameborder="0" title="Impacto Indígena News stories"></iframe>`;
 
   function copyToClipboard(text: string, type: "script" | "iframe") {
     navigator.clipboard.writeText(text).then(() => {
@@ -55,12 +55,12 @@ export default function WidgetGeneratorPage() {
   return (
     <>
       <Helmet>
-        <title>For Your Website - Voces Indígenas</title>
+        <title>For Your Website - Impacto Indígena News</title>
         <meta
           name="description"
           content="Add AI-curated relevant news to your website with embeddable widgets. Easy to set up, customizable, and always up to date."
         />
-        <meta property="og:title" content="For Your Website - Voces Indígenas" />
+        <meta property="og:title" content="For Your Website - Impacto Indígena News" />
         <meta property="og:description" content="Add AI-curated relevant news to your website with embeddable widgets. Easy to set up, customizable, and always up to date." />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/widgets`} />

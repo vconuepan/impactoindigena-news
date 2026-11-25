@@ -50,7 +50,7 @@ function weeklyTitle(date: Date): string {
     ? `${fromDay}–${toDay} de ${toMonth} de ${year}`
     : `${fromDay} de ${fromMonth} – ${toDay} de ${toMonth} de ${year}`
 
-  return `Voces Indígenas — Semana N° ${weekNo} (${range})`
+  return `Impacto Indígena News — Semana N° ${weekNo} (${range})`
 }
 
 export async function runSendWeeklyNewsletter(): Promise<void> {

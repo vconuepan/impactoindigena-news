@@ -9,14 +9,14 @@ describe('los estados sin página tienen título propio', () => {
   // Medido el 2-nov-2026: tema, comunidad y noticia inexistentes conservaban el
   // título de la portada que trae el HTML prerenderizado.
   it('TituloDeEstado escribe el título de la pestaña', async () => {
-    document.title = 'Voces Indígenas - Noticias que importan a los pueblos indígenas'
+    document.title = 'Impacto Indígena News - Noticias que importan a los pueblos indígenas'
     render(
       <HelmetProvider>
         <NoIndex />
         <TituloDeEstado texto="Comunidad no encontrada" />
       </HelmetProvider>,
     )
-    await waitFor(() => expect(document.title).toBe('Comunidad no encontrada - Voces Indígenas'))
+    await waitFor(() => expect(document.title).toBe('Comunidad no encontrada - Impacto Indígena News'))
   })
 
   it.each([

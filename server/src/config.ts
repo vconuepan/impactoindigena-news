@@ -350,7 +350,7 @@ export const config = {
   brevo: {
     apiKey: process.env.BREVO_API_KEY || "",
     fromEmail: process.env.BREVO_FROM_EMAIL || "",
-    fromName: process.env.BREVO_FROM_NAME || "Voces Indígenas",
+    fromName: process.env.BREVO_FROM_NAME || "Impacto Indígena News",
     testSegmentId: process.env.BREVO_TEST_SEGMENT_ID || "",
   },
   // Operational alerts when a scheduled job fails (e.g. dead LLM key).

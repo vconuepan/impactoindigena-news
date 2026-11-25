@@ -54,7 +54,7 @@ export default function NewslettersPage() {
   return (
     <>
       <Helmet>
-        <title>Boletines — Admin — Voces Indígenas</title>
+        <title>Boletines — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader

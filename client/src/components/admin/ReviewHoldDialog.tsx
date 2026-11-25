@@ -37,7 +37,7 @@ export function ReviewHoldDialog({ open, count, loading, onClose, onConfirm }: R
             {count === 1 ? 'Retener esta nota' : `Retener ${count} notas`}
           </DialogTitle>
           <Description className="mt-1 text-sm text-neutral-500">
-            Deja de verse en esta marca. En Voces Indígenas no cambia nada.
+            Deja de verse en esta marca. En Impacto Indígena News no cambia nada.
           </Description>
           <div className="mt-4 space-y-3">
             <Select

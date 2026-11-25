@@ -26,7 +26,7 @@ const techArticleSchema = {
   url: META.url,
   author: {
     '@type': 'Organization',
-    name: 'Voces Indigenas',
+    name: 'Impacto Indígena News',
     url: SEO.siteUrl,
   },
   about: [
@@ -295,7 +295,7 @@ export default function MethodologyPage() {
 
           <h2 className="section-heading mt-10">Sobre este proyecto</h2>
           <p>
-            Voces Indígenas es un programa de la <strong>Fundación KM</strong> y un bien público:
+            Impacto Indígena News es un programa de la <strong>Fundación KM</strong> y un bien público:
             gratuito, sin publicidad y con su código abierto. Lo creó{' '}
             <a href="https://www.linkedin.com/in/vconuepan/" target="_blank" rel="noopener noreferrer" className="text-brand-800 hover:text-brand-700">
               Venancio Coñuepan Mesías
@@ -327,7 +327,7 @@ export default function MethodologyPage() {
 
         <LandingCta
           heading="Míralo en acción."
-          description="Visita vocesindigenas.org para leer las noticias curadas de hoy, o suscríbete al boletín semanal."
+          description="Visita impactoindigena.news para leer las noticias curadas de hoy, o suscríbete al boletín semanal."
         />
       </div>
     </>

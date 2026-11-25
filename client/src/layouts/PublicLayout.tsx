@@ -237,45 +237,41 @@ function FooterLinkRow({ label, links }: { label: string; links: readonly Footer
 }
 
 /**
- * El logo: el sello como imagen, el nombre como TEXTO.
+ * El logo: la estrella como imagen, el nombre como TEXTO.
  *
- * Antes era un solo SVG con la palabra vectorizada, heredado de Impacto
- * Indigena: el `alt` decia "Voces Indigenas" y la imagen decia otra cosa, asi
- * que quien usa lector de pantalla oia el nombre nuevo y quien miraba veia el
- * viejo. Y como el texto eran 22 trazos y ni una etiqueta <text>, no se podia
- * corregir editando el archivo.
+ * 25-nov-2026: el medio vuelve a llamarse Impacto Indigena News y toma el
+ * sistema de marca del grupo, el mismo de impactoindigena.legal: la estrella de
+ * Impacto Indigena y el nombre en Libre Caslon Display, con «News» en el verde
+ * del medio (decision del director; el dorado de .legal daba 2,66:1 sobre este
+ * fondo blanco). El sello anterior (`logo-sello.svg`) queda para la caratula del
+ * podcast, que conserva el nombre Voces Indigenas.
  *
- * El sello no se redibujo: es el mismo archivo recortado por `viewBox` de
- * `-8 -8 337 96` a `-8 -8 96 96`. El circulo exterior termina en x=81,6 y la
- * palabra empezaba en x=113, asi que el corte los separa sin tocar un trazo.
- *
- * Separarlos deja el nombre como texto real —seleccionable, leible por
- * lectores de pantalla, nitido a cualquier tamaño— y hace que cambiarlo no
- * exija un archivo nuevo.
+ * El nombre sigue siendo texto y no imagen, por lo mismo que en septiembre:
+ * seleccionable, leible por lectores de pantalla, nitido a cualquier tamaño, y
+ * cambiarlo no exige un archivo nuevo. La estrella la genera
+ * `client/scripts/marca/generar-marca.py`.
  */
 function BrandLogo({ onClick }: { onClick?: () => void }) {
   return (
     <Link
       to="/"
       onClick={onClick}
-      className="flex items-center gap-3 md:gap-3.5 shrink-0 no-underline"
-      aria-label="Voces Indígenas"
+      className="flex items-center gap-2.5 md:gap-3 shrink-0 no-underline"
+      aria-label="Impacto Indígena News"
     >
       <img
-        src="/images/logo-sello.svg"
+        src="/images/logo-estrella.png"
         alt=""
         aria-hidden="true"
         width={96}
         height={96}
-        /* Ancho explicito, no `w-auto`: el sello es cuadrado (viewBox 96x96) y
-           dejarlo en auto obliga al navegador a resolver el ancho despues de
-           cargar el SVG. El header se reajustaba entonces y arrastraba al
-           contenido: 0,0211 del CLS, medido el 5-sep-2026. */
-        className="h-14 w-14 md:h-16 md:w-16 shrink-0"
+        /* Ancho explicito: la estrella es cuadrada y dejarla en auto obliga al
+           navegador a resolver el ancho despues de cargarla, y el header se
+           reajusta y arrastra al contenido (CLS medido el 5-sep-2026). */
+        className="h-11 w-11 md:h-14 md:w-14 shrink-0"
       />
-      <span className="flex flex-col justify-center leading-none">
-        <span className="brand-voces">Voces</span>
-        <span className="brand-indigenas">Indígenas</span>
+      <span className="brand-nombre">
+        Impacto Indígena <span className="brand-news">News</span>
       </span>
     </Link>
   );
@@ -391,7 +387,7 @@ function PublicLayoutInner() {
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
-        <link rel="alternate" type="application/rss+xml" title="Voces Indígenas RSS Feed" href={`${API_BASE}/feed`} />
+        <link rel="alternate" type="application/rss+xml" title="Impacto Indígena News RSS Feed" href={`${API_BASE}/feed`} />
         <link rel="alternate" hrefLang="es" href={`${SEO.siteUrl}${location.pathname}`} />
         <link rel="alternate" hrefLang="x-default" href={`${SEO.siteUrl}${location.pathname}`} />
       </Helmet>
@@ -686,8 +682,12 @@ function PublicLayoutInner() {
         <div className="max-w-5xl mx-auto px-4 py-12">
           {/* Colofon — el medio hablando antes que el indice de enlaces */}
           <div className="max-w-2xl">
-            <Link to="/" className="inline-block mb-4 font-fraunces text-xl font-bold text-white hover:text-brand-300 transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
-              Voces Indígenas
+            <Link to="/" className="inline-flex items-center gap-2.5 mb-4 text-white hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
+              <img src="/images/logo-estrella.png" alt="" aria-hidden="true" width={96} height={96} loading="lazy" className="h-9 w-9 shrink-0" />
+              {/* El logotipo del grupo sobre el pie oscuro: «News» en #A7E3BF, 12:1 sobre #1C1917. */}
+              <span className="brand-nombre text-white" style={{ fontSize: '22px', color: '#FFFFFF' }}>
+                Impacto Indígena <span style={{ color: '#A7E3BF' }}>News</span>
+              </span>
             </Link>
             {/* El guion de "AI‑native" en el locale es U+2011 (no separable):
                 el guion normal es punto de corte y partia la frase en dos lineas. */}

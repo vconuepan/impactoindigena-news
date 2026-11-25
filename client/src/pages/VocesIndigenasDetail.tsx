@@ -120,7 +120,7 @@ export default function VocesIndigenasDetailPage() {
             author: {
               '@type': 'Person',
               name: editorial.authorName || 'Venancio Coñuepan',
-              jobTitle: 'Abogado de derechos territoriales — Editor de Voces Indígenas',
+              jobTitle: 'Abogado de derechos territoriales — Editor de Impacto Indígena News',
             },
             publisher: {
               '@type': 'Organization',

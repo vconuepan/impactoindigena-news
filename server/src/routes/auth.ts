@@ -370,7 +370,7 @@ router.get('/export', requireMember, async (req, res) => {
 
     const exportData = {
       exportedAt: new Date().toISOString(),
-      responsable: 'Fundación KM (vocesindigenas.org)',
+      responsable: 'Fundación KM (impactoindigena.news)',
       profile: user,
       communityMemberships: memberships,
       digestExclusions,

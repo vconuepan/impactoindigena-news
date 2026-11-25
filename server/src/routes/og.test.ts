@@ -297,7 +297,7 @@ describe('vaciarRoot — el cuerpo de la portada no viaja en la ficha', () => {
     expect(body).not.toContain('fetchpriority="high"')
     expect(body).toContain('<div id="root"></div>')
     expect(res.text).toContain('src="/assets/index-abc123.js"')
-    expect(res.text).toContain('<title>News: A Real Story - Voces Indígenas</title>')
+    expect(res.text).toContain('<title>News: A Real Story - Impacto Indígena News</title>')
   })
 })
 
@@ -346,7 +346,7 @@ describe('el título y la descripción de una noticia fuera de su página', () =
     describe(ruta, () => {
       it('el título abre con la etiqueta en mayúscula', async () => {
         const res = await pedir(await appFresco())
-        expect(res.text).toContain('<title>Artesanía indígena: Ley 21.788 impulsa reconocimiento de artesanía indígena en Chile - Voces Indígenas</title>')
+        expect(res.text).toContain('<title>Artesanía indígena: Ley 21.788 impulsa reconocimiento de artesanía indígena en Chile - Impacto Indígena News</title>')
         expect(res.text).toContain('property="og:title" content="Artesanía indígena: Ley 21.788')
         expect(res.text).not.toContain('content="artesanía indígena:')
       })

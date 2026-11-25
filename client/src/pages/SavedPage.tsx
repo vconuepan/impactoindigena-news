@@ -16,7 +16,7 @@ function BookmarkEmptyIcon() {
   )
 }
 
-const DESCRIPCION = "Tus noticias guardadas en Voces Indígenas.";
+const DESCRIPCION = "Tus noticias guardadas en Impacto Indígena News.";
 
 export default function SavedPage() {
   const [savedSlugs, setSavedSlugs] = useState<string[]>([]);

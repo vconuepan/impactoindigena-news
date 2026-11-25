@@ -154,7 +154,7 @@ const USE_CASES = [
   {
     title: 'Enriquecer tu propio pipeline de IA',
     description:
-      'Usa el resultado curado de Voces Indígenas como señal de alta calidad para tus propios sistemas de análisis, resumen o alertas.',
+      'Usa el resultado curado de Impacto Indígena News como señal de alta calidad para tus propios sistemas de análisis, resumen o alertas.',
   },
 ]
 
@@ -187,7 +187,7 @@ export default function FreeApiPage() {
         <div className="prose max-w-none">
           <p className="text-lg text-neutral-600 leading-relaxed">
             La mayoría de las APIs de noticias te dan un flujo masivo: millones de artículos sin
-            procesar que tienes que filtrar tú mismo. Voces Indígenas te da la señal: una
+            procesar que tienes que filtrar tú mismo. Impacto Indígena News te da la señal: una
             selección curada de noticias al día, elegidas por IA según su relevancia real
             desde{sources ? ` ${sources.totalCount}` : ''} fuentes curadas en múltiples idiomas.
           </p>

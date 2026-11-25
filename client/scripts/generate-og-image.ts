@@ -57,7 +57,9 @@ async function generateOgImage() {
   const logoPath = path.join(publicDir, 'images', 'logo-horizontal.png');
 
   // Resize logo large — OG images are displayed small, so fill the space
-  const LOGO_WIDTH = 620;
+  // 25-nov-2026: el logotipo de Impacto Indigena News va en una linea (5,6:1),
+  // mas ancho que el de dos lineas de antes; a 620 px quedaba de 110 de alto.
+  const LOGO_WIDTH = 940;
   const logo = await sharp(logoPath)
     .resize({ width: LOGO_WIDTH })
     .toBuffer();
@@ -67,7 +69,7 @@ async function generateOgImage() {
 
   // Center the logo horizontally, position near top
   const logoLeft = Math.round((WIDTH - LOGO_WIDTH) / 2);
-  const logoTop = 118;
+  const logoTop = 140;
 
   // Taglines positioned below logo with tighter spacing
   const taglineY = logoTop + logoHeight + 88;

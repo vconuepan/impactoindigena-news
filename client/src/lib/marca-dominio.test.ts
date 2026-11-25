@@ -80,15 +80,36 @@ describe('el dominio canonico', () => {
     expect(widget).toContain(`https://${DOMINIO_CANONICO}`)
   })
 
-  it('no aparece la marca anterior en el manifest', () => {
+  it('el manifest lleva el nombre del medio', () => {
     const manifest = JSON.parse(leer('public/site.webmanifest')) as {
       name: string
       short_name: string
     }
     // `short_name` es lo que se escribe bajo el icono al instalar el sitio en
-    // un telefono: decia "Impacto" mientras `name` ya decia Voces Indigenas.
-    expect(manifest.name).toBe('Voces Indígenas')
-    expect(manifest.short_name).toBe('Voces')
+    // un telefono: en septiembre decia "Impacto" mientras `name` ya decia Voces
+    // Indigenas. Desde el 25-nov-2026 los dos vuelven a Impacto Indigena.
+    expect(manifest.name).toBe('Impacto Indígena News')
+    expect(manifest.short_name).toBe('Impacto News')
+  })
+})
+
+describe('el nombre del medio', () => {
+  /*
+   * 25-nov-2026: el medio vuelve a llamarse Impacto Indigena News. «Voces
+   * Indigenas» se queda SOLO como nombre de la columna semanal y del podcast.
+   * Este bloque fija las superficies que leen los buscadores y las apps.
+   */
+  it('el titulo base y el JSON-LD del HTML lo nombran', () => {
+    const html = leer('index.html')
+    expect(html).toContain('<title>Impacto Indígena News')
+    expect(html).toContain('"name": "Impacto Indígena News"')
+    expect(html).not.toContain('Voces Indígenas')
+  })
+
+  it('la cabecera dice Impacto Indigena News y no Voces Indigenas', () => {
+    const layout = sinComentarios(leer('src/layouts/PublicLayout.tsx'))
+    expect(layout).toContain('aria-label="Impacto Indígena News"')
+    expect(layout).not.toContain('Voces Indígenas')
   })
 })
 
@@ -101,7 +122,8 @@ describe('la imagen que se ve al compartir un enlace', () => {
   })
 
   it('usa el logotipo vigente', () => {
-    // logo-horizontal.png es el de Voces Indigenas. Los otros dos logotipos con
+    // logo-horizontal.png es el de Impacto Indigena News desde el 25-nov-2026
+    // (antes, el de Voces Indigenas). Los otros dos logotipos con
     // texto del repo —logo-text-horizontal.png y logo-text-square.jpg— son de
     // "actually relevant", la marca de dos rebrandings atras: el generador
     // apuntaba a uno de ellos.
@@ -135,6 +157,7 @@ describe('los logotipos del repo', () => {
     // logo-no-text-square.png es el emblema vigente y SI se usa (StoryCard,
     // EmbedPage): se parece de nombre a un huerfano y no lo es.
     for (const vivo of [
+      'logo-estrella.png', // la estrella del grupo, en la cabecera desde el 25-nov-2026
       'logo-horizontal.png',
       'logo-horizontal-blanco.png',
       'logo-no-text-square.png',

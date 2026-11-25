@@ -68,7 +68,7 @@ export default function ClustersPage() {
   return (
     <>
       <Helmet>
-        <title>Grupos — Admin — Voces Indígenas</title>
+        <title>Grupos — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader

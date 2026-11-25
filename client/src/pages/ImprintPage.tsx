@@ -10,12 +10,12 @@ export default function ImprintPage() {
         <title>Legal Notice - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Legal notice and contact information for Voces Indígenas."
+          content="Legal notice and contact information for Impacto Indígena News."
         />
         <meta property="og:title" content={`Legal Notice - ${SEO.siteName}`} />
         <meta
           property="og:description"
-          content="Legal notice and contact information for Voces Indígenas."
+          content="Legal notice and contact information for Impacto Indígena News."
         />
         <meta property="og:type" content="website" />
         <meta property="og:url" content={`${SEO.siteUrl}/imprint`} />
@@ -29,7 +29,7 @@ export default function ImprintPage() {
         <div className="prose max-w-none">
           <h2 className="section-heading mt-8">Contact</h2>
           <p className="text-neutral-600 leading-relaxed">
-            Fundación KM — vocesindigenas.org<br />
+            Fundación KM — impactoindigena.news<br />
             <a
               href="mailto:contacto@fundacionkm.org"
               className="text-brand-800 hover:text-brand-700"
@@ -49,7 +49,7 @@ export default function ImprintPage() {
           </p>
 
           <p>
-            Voces Indígenas is a fork of{" "}
+            Impacto Indígena News is a fork of{" "}
             <a
               href="https://actuallyrelevant.news"
               target="_blank"

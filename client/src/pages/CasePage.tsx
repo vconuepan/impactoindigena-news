@@ -81,7 +81,7 @@ export default function CasePage() {
     enabled: !!slug,
   })
 
-  const title = data ? `${data.title} — Voces Indígenas` : 'Caso en curso — Voces Indígenas'
+  const title = data ? `${data.title} — Impacto Indígena News` : 'Caso en curso — Impacto Indígena News'
 
   return (
     <>

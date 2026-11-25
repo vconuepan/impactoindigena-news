@@ -1,11 +1,12 @@
-# Sistema de Diseño — Voces Indígenas
+# Sistema de Diseño — Impacto Indígena News
 
 ## Producto
 
 - **Qué es:** Medio editorial de noticias curadas por IA sobre pueblos indígenas
 - **Para quién:** Lectores interesados en cobertura indígena, principalmente Chile y América Latina
 - **Categoría:** Editorial digital-native
-- **Sitio:** https://vocesindigenas.org
+- **Sitio:** https://impactoindigena.news (desde el 25-nov-2026; antes `vocesindigenas.org`, que redirige)
+- **Nombre:** Impacto Indígena News. «Voces Indígenas» queda como nombre de la columna semanal y del podcast.
 
 ## Dirección estética
 
@@ -13,6 +14,29 @@
 - **Nivel de decoración:** Intencional — watermarks decorativos con opacidad reducida, espacio negativo generoso
 - **Mood:** Autoritario sin frialdad. Serio sin ser clínico. Un medio que elige cubrir voces históricamente marginadas — el diseño debe reflejar esa elección con carácter propio.
 - **Anti-patrones activos:** Sin strips de color en el header, sin gradientes decorativos en botones, sin purple/violet como acento, sin grids de 3 columnas con íconos circulares, sin "todo centrado".
+
+## Logotipo
+
+Desde el 25-nov-2026 el medio usa el sistema de marca del grupo Impacto Indígena, el mismo de
+impactoindigena.legal:
+
+- **Signo:** la estrella de Impacto Indígena, a color. Archivo maestro en
+  `client/scripts/marca/estrella-grupo.png`, recortado de `impactoindigena/public/logo-horizontal.png`.
+- **Nombre:** «Impacto Indígena News» en **Libre Caslon Display** (OFL, autohospedada en
+  `/fonts/LibreCaslonDisplay/`). **Caslon se usa solo en el logotipo**: el resto del sitio sigue en
+  Fraunces, Lora y DM Sans.
+- **«News» en el verde del medio** `#0D5F3C` sobre fondo claro (7,7:1 sobre blanco) y en `#A7E3BF`
+  sobre fondo oscuro (12:1 sobre `#1C1917`, 5,3:1 sobre el verde del boletín). El dorado de .legal
+  (`#C9962B`) se descartó: da 2,66:1 sobre la cabecera blanca.
+- **En la cabecera el nombre es texto**, no imagen (`BrandLogo`, clases `.brand-nombre` / `.brand-news`).
+- Las piezas (`logo-horizontal*.png`, `logo-no-text-square.png`, `logo-estrella.png`, favicons e
+  íconos) salen de `python3 client/scripts/marca/generar-marca.py`; después,
+  `npm run images:og --prefix client`.
+- El sello anterior (`logo-sello.svg`, estrella de ocho puntas en anillo dorado) queda para la
+  carátula del podcast, que conserva el nombre Voces Indígenas.
+- **Pendiente de decisión:** el sello editorial de las fotos (`EditorialSeal`, SVG en línea en
+  `StoryCard.tsx`: círculo y estrella de siete puntas en trazo blanco) conserva la forma de la marca
+  anterior.
 
 ## Tipografía
 
@@ -595,3 +619,4 @@ media.
 | 2026-10-04 | **Escala de grises para fondo oscuro (`.sobre-oscuro`)** | El pie fallaba AA en cada página: los grises de texto estaban calibrados contra el papel. Una clase que remapea `--n-400` y `--n-500` en vez de tocar ~40 enlaces uno por uno. axe sobre el pie: de 8 infracciones a 0, con 43 elementos que pasan. |
 | 2026-10-06 | **Eyebrow de la sección misión al 75%** | Al 45% daba 2,9:1 sobre el verde; PageSpeed lo marcó. Mismo piso que la stats bar: ningún texto de 10-11px sobre `#0D5F3C` baja de `0.75`. |
 | 2026-10-06 | **Imágenes de historia con variantes web (800 / 1200 px)** | Las tarjetas pedían el original de R2 (la compuesta sale a 2400px, 300-500 KB) para pintarlo a 405px: 4,7 MB en una portada móvil. El `og:image` sigue siendo el original; el sitio usa `srcset`. Ver `.context/images.md`. |
+| 2026-11-25 | **Impacto Indígena News: estrella del grupo + Libre Caslon Display, «News» en verde** | Decisión del director: el medio vuelve a su nombre y entra al sistema de marca del grupo (el de .legal). Verde y no dorado porque el dorado da 2,66:1 sobre la cabecera blanca. Caslon solo en el logotipo, aprobado explícitamente como excepción a la tipografía de este documento. |

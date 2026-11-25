@@ -295,13 +295,13 @@ router.get('/story-html', async (req, res) => {
       mainEntityOfPage: storyUrl,
       publisher: {
         '@type': 'Organization',
-        name: 'Voces Indígenas',
+        name: 'Impacto Indígena News',
         url: SITE_URL,
       },
     })
 
     const headTags = `
-  <title>${fullTitle} - Voces Indígenas</title>
+  <title>${fullTitle} - Impacto Indígena News</title>
   <meta name="description" content="${metaDescription}" />
   <link rel="canonical" href="${storyUrl}" />
   <meta property="og:title" content="${fullTitle}" />
@@ -309,7 +309,7 @@ router.get('/story-html', async (req, res) => {
   <meta property="og:image" content="${image}" />
   <meta property="og:url" content="${storyUrl}" />
   <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Voces Indígenas" />
+  <meta property="og:site_name" content="Impacto Indígena News" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
@@ -390,7 +390,7 @@ router.get('/stories/:slug', async (req, res) => {
     if (shell) {
       // Inject story OG tags right after <head> — LinkedIn uses first occurrence
       const ogTags = `
-  <title>${fullTitle} - Voces Indígenas</title>
+  <title>${fullTitle} - Impacto Indígena News</title>
   <meta name="description" content="${metaDescription}" />
   <link rel="canonical" href="${url}" />
   <meta property="og:title" content="${fullTitle}" />
@@ -398,7 +398,7 @@ router.get('/stories/:slug', async (req, res) => {
   <meta property="og:image" content="${image}" />
   <meta property="og:url" content="${url}" />
   <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Voces Indígenas" />
+  <meta property="og:site_name" content="Impacto Indígena News" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${fullTitle}" />
   <meta name="twitter:description" content="${description}" />
@@ -425,13 +425,13 @@ router.get('/stories/:slug', async (req, res) => {
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>${fullTitle} - Voces Indígenas</title>
+  <title>${fullTitle} - Impacto Indígena News</title>
   <meta property="og:title" content="${fullTitle}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:image" content="${image}" />
   <meta property="og:url" content="${url}" />
   <meta property="og:type" content="article" />
-  <meta property="og:site_name" content="Voces Indígenas" />
+  <meta property="og:site_name" content="Impacto Indígena News" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:image" content="${image}" />
   <meta http-equiv="refresh" content="0;url=${url}" />

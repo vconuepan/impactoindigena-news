@@ -154,7 +154,7 @@ export default function FeedbackPage() {
   return (
     <>
       <Helmet>
-        <title>Comentarios — Admin — Voces Indígenas</title>
+        <title>Comentarios — Admin — Impacto Indígena News</title>
       </Helmet>
 
       <PageHeader
