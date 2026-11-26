@@ -102,6 +102,35 @@ describe('preAssessStories', () => {
     })
   })
 
+  it('medio local: suma 1 desde 4 y no toca lo que esta debajo (decision del 26-nov)', async () => {
+    const issue = sampleIssue()
+    const local = (id: string) => ({ ...storyWithRelations({ id }), feed: { ...sampleFeed(), isLocal: true, issue } })
+    mockPrisma.story.findMany.mockResolvedValue([local('story-1'), local('story-2')])
+    mockPrisma.story.update.mockResolvedValue({})
+    mockPrisma.issue.findMany.mockResolvedValue([issue])
+    mockGetMediumLLM.mockReturnValue({
+      withStructuredOutput: () => ({
+        invoke: vi.fn().mockResolvedValue({
+          articles: [
+            { articleId: 'story-1', issueSlug: 'ai-technology', rating: 4, emotionTag: 'calm' },
+            { articleId: 'story-2', issueSlug: 'ai-technology', rating: 3, emotionTag: 'calm' },
+          ],
+        }),
+      }),
+    })
+
+    await preAssessStories(['story-1', 'story-2'])
+
+    expect(mockPrisma.story.update).toHaveBeenCalledWith({
+      where: { id: 'story-1' },
+      data: expect.objectContaining({ relevancePre: 5 }),
+    })
+    expect(mockPrisma.story.update).toHaveBeenCalledWith({
+      where: { id: 'story-2' },
+      data: expect.objectContaining({ relevancePre: 3 }),
+    })
+  })
+
   it('al prompt solo llegan las categorias madre de asunto', async () => {
     // Dos filtros sobre la misma lista, y los dos importan:
     //  - las secciones geograficas se llenan por pais, no por asunto;
@@ -389,6 +418,58 @@ describe('assessStory', () => {
     expect(mockSaveEmbeddingTx).toHaveBeenCalledWith(
       mockPrisma, 'story-1', [0.1, 0.2], 'abc123',
     )
+  })
+
+  describe('bono de medio local (decision del director, 26-nov-2026)', () => {
+    function respuesta(relevanceRating: number) {
+      return {
+        publicationDate: '2026-11-25 00:00:00',
+        quote: 'Cita',
+        quoteAttribution: 'Artículo original',
+        summary: 'Resumen.',
+        factors: ['Factor.'],
+        limitingFactors: ['Limitante.'],
+        relevanceCalculation: ['**Base:** 5'],
+        relevanceRating,
+        relevanceSummary: 'Resumen de relevancia.',
+        titleLabel: 'Tema',
+        relevanceTitle: 'Titulo',
+        marketingBlurb: 'Blurb.',
+      }
+    }
+
+    async function evaluar(isLocal: boolean, rating: number) {
+      mockPrisma.story.findUnique.mockResolvedValue({
+        ...storyWithRelations({ id: 'story-1' }),
+        feed: { ...sampleFeed(), isLocal, issue: sampleIssue() },
+      })
+      mockPrisma.story.update.mockResolvedValue({})
+      mockGenerateEmbeddingForContent.mockResolvedValue({ embedding: [0.1], hash: 'h' })
+      mockSaveEmbeddingTx.mockResolvedValue(undefined)
+      mockGetMediumLLM.mockReturnValue({
+        withStructuredOutput: () => ({ invoke: vi.fn().mockResolvedValue(respuesta(rating)) }),
+      })
+      await assessStory('story-1')
+      return mockPrisma.story.update.mock.calls.at(-1)![0].data
+    }
+
+    it('una fuente local con 5 queda en 6, y el calculo lo dice', async () => {
+      const data = await evaluar(true, 5)
+      expect(data.relevance).toBe(6)
+      expect(data.relevanceCalculation).toMatch(/\*\*Medio local:\*\* \+1/)
+    })
+
+    it('una fuente local con 4 queda en 4: el bono no cruza la REGLA_FUNDAMENTAL', async () => {
+      const data = await evaluar(true, 4)
+      expect(data.relevance).toBe(4)
+      expect(data.relevanceCalculation).not.toMatch(/Medio local/)
+    })
+
+    it('una fuente que no es local no cambia', async () => {
+      const data = await evaluar(false, 5)
+      expect(data.relevance).toBe(5)
+      expect(data.relevanceCalculation).toBe('**Base:** 5')
+    })
   })
 
   it('normaliza siglas y toponimos antes de guardar el titulo', async () => {

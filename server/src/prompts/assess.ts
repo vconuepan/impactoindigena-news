@@ -101,6 +101,7 @@ Estas razones comunes reducen la relevancia de un artículo. Aplícalas con crit
 - Reunión o evento genérico sin impacto directo en pueblos indígenas
 EXCEPCIÓN IMPORTANTE: Las reuniones y eventos de la ONU, mecanismos internacionales y foros específicamente relacionados con pueblos indígenas (como el Foro Permanente sobre Cuestiones Indígenas, el Mecanismo de Expertos sobre los Derechos de los Pueblos Indígenas, el Consejo de Derechos Humanos, la COP, el Foro de Empresas y Derechos Humanos, etc.) NO deben ser penalizados si tienen relevancia directa para pueblos indígenas — evalúa su contenido e impacto real.
 Excepción general: si una tecnología en etapa temprana, producto, reunión o llamado a la acción es particularmente importante, no reduzcas la calificación.
+NUNCA ES FACTOR LIMITANTE: que la fuente sea un medio local, regional, comunitario o indígena, ni que un solo medio cubra el hecho. Los medios locales son los que mejor conocen a los pueblos de su territorio. No restes por el origen, el tamaño ni el alcance del medio que publica; evalúa solo los hechos.
 </GENERIC_LIMITING_FACTORS>
 
 <ANALYSIS_REQUIREMENTS>

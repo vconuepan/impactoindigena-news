@@ -160,3 +160,4 @@ URLs are normalized (HTTPS, no trailing slash, no tracking params, sorted query)
 2. Test the crawl: `POST /api/admin/feeds/:id/crawl`
 3. Check extracted content quality in the stories
 4. If content is noisy or incomplete, set `htmlSelector` on the feed via `PUT /api/admin/feeds/:id`
+5. If the outlet is local or territorial, tick **Local media** (`isLocal`): its stories get the +1 relevance bonus described in `story-pipeline.md`

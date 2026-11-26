@@ -37,6 +37,7 @@ entity Feed {
     crawl_interval_hours: Integer
     html_selector: String?                             -- CSS selector for content extraction
     active: Boolean
+    is_local: Boolean                                  -- medio local: sus noticias reciben el bono de relevancia (story-pipeline.allium)
 
     -- Crawl status
     last_crawled_at: Timestamp?

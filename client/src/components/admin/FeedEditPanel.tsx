@@ -21,7 +21,7 @@ interface FeedEditPanelProps {
   onClose: () => void
 }
 
-function buildFormState(feed: { title: string; rssUrl: string; url: string | null; displayTitle: string | null; issueId: string; language: string; region: string | null; crawlIntervalHours: number; htmlSelector: string | null; active: boolean }) {
+function buildFormState(feed: { title: string; rssUrl: string; url: string | null; displayTitle: string | null; issueId: string; language: string; region: string | null; crawlIntervalHours: number; htmlSelector: string | null; active: boolean; isLocal?: boolean }) {
   return {
     title: feed.title,
     rssUrl: feed.rssUrl,
@@ -33,6 +33,7 @@ function buildFormState(feed: { title: string; rssUrl: string; url: string | nul
     crawlIntervalHours: String(feed.crawlIntervalHours),
     htmlSelector: feed.htmlSelector || '',
     active: feed.active,
+    isLocal: feed.isLocal ?? false,
   }
 }
 
@@ -128,6 +129,7 @@ function FeedEditForm({ feedId, issues, onClose }: { feedId: string; issues: Iss
       crawlIntervalHours: Number(f.crawlIntervalHours),
       htmlSelector: f.htmlSelector || null,
       active: f.active,
+      isLocal: f.isLocal,
     }),
     successMessage: 'Feed updated',
     entityName: 'feed',
@@ -182,6 +184,18 @@ function FeedEditForm({ feedId, issues, onClose }: { feedId: string; issues: Iss
             className="rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
           />
           Active
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.isLocal}
+            onChange={e => set('isLocal', e.target.checked)}
+            className="mt-0.5 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+          />
+          <span>
+            Local media
+            <span className="block text-xs text-neutral-500">Its stories get a +1 relevance bonus. Local outlets know the peoples of their territory best.</span>
+          </span>
         </label>
         <FaviconSection feedId={feedId} />
         <QualityCard feedId={feedId} />

@@ -83,6 +83,27 @@ export const config = {
     fullAssessmentThreshold: 5,
     modelTier: "medium" as const,
   },
+  /**
+   * Bono para los medios locales (`Feed.isLocal`). Decisión del director,
+   * 26-nov-2026: «los medios locales no deben estar castigados, incluso
+   * deberían tener un bono, porque los locales son los que mejor conocen a los
+   * indígenas». Ver lib/local-media-bonus.ts.
+   */
+  localMedia: {
+    bonus: parseInt(process.env.LOCAL_MEDIA_BONUS || "1", 10),
+    /**
+     * Pre-evaluación: el bono se suma desde este puntaje. En el preassess un 3
+     * ya exige mención indígena explícita; el bono decide si entra a la
+     * evaluación completa (umbral 5), no si se publica.
+     */
+    preMinRating: parseInt(process.env.LOCAL_MEDIA_PRE_MIN || "4", 10),
+    /**
+     * Evaluación completa: el bono se suma desde este puntaje. Bajo 5 la
+     * REGLA_FUNDAMENTAL del prompt dice que la nota no trata directamente de
+     * pueblos indígenas, y el bono no la cruza.
+     */
+    fullMinRating: parseInt(process.env.LOCAL_MEDIA_FULL_MIN || "5", 10),
+  },
   selection: {
     maxGroupSize: parseInt(process.env.SELECT_MAX_GROUP_SIZE || "20", 10),
     ratio: parseFloat(process.env.SELECT_RATIO || "0.5"),

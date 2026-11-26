@@ -24,6 +24,7 @@ import { fixCapitalizationOrNull, fixTitleCapitalizationOrNull } from '../lib/ti
 import { parseLlmPublicationDate, stripImpossibleHistoricalYearOrNull, yearsAfter } from '../lib/future-year.js'
 import { detectarClasificacionSospechosa } from '../lib/clasificacion-guardarrail.js'
 import { limpiarCampos } from '../lib/personasSensibles.js'
+import { preRatingWithLocalBonus, relevanceWithLocalBonus, localBonusCalculationLine } from '../lib/local-media-bonus.js'
 
 const log = createLogger('analysis')
 
@@ -53,7 +54,8 @@ interface BatchClassificationOptions<T extends { articleId: string; issueSlug: s
   // y la corrige al parsear (ver schemas/llm.ts). Lo que importa es la salida.
   schema: z.ZodType<{ articles: T[] }, z.ZodTypeDef, unknown>
   buildPrompt: (stories: StoryForPreassess[], issues: IssueForPreassess[]) => string
-  buildUpdate: (item: T, issueId: string | null) => Prisma.StoryUpdateInput
+  /** `feedIsLocal`: la fuente es un medio local (`Feed.isLocal`), para el bono. */
+  buildUpdate: (item: T, issueId: string | null, ctx: { feedIsLocal: boolean }) => Prisma.StoryUpdateInput
   /** Whether to assign feed issue to stories not returned by the LLM. Default true (pre-assess behavior). */
   fallbackToFeedIssue?: boolean
   onProgress?: ProgressCallback
@@ -127,7 +129,7 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
         id: true,
         sourceTitle: true,
         sourceContent: true,
-        feed: { select: { issueId: true } },
+        feed: { select: { issueId: true, isLocal: true } },
       },
     })
 
@@ -186,7 +188,7 @@ async function runBatchClassification<T extends { articleId: string; issueSlug: 
 
       updates.push(prisma.story.update({
         where: { id: story.id },
-        data: buildUpdate(item, issueId),
+        data: buildUpdate(item, issueId, { feedIsLocal: story.feed.isLocal }),
       }))
 
       batchResults.push({
@@ -276,9 +278,11 @@ export async function preAssessStories(
     llm: getMediumLLM(),
     schema: preAssessResultSchema,
     buildPrompt: buildPreassessPrompt,
-    buildUpdate: (item, issueId) => ({
+    buildUpdate: (item, issueId, { feedIsLocal }) => ({
       issueId,
-      relevancePre: Math.max(1, item.rating), // clamp: model may return 0 for very low relevance
+      // clamp: model may return 0 for very low relevance. El bono de medio
+      // local va despues del clamp (lib/local-media-bonus.ts).
+      relevancePre: preRatingWithLocalBonus(Math.max(1, item.rating), feedIsLocal).rating,
       emotionTag: item.emotionTag as EmotionTag,
       narrativeFrame: item.narrativeFrame as NarrativeFrame,
       // El modelo devuelve el nombre del pais; el codigo ISO lo decide
@@ -402,7 +406,10 @@ export async function assessStory(storyId: string): Promise<void> {
     throw new Error(`LLM call failed: ${msg}${detail ? ` [${detail}]` : ''}`)
   }
 
-  log.info({ storyId, rating: parsed.relevanceRating, title: parsed.relevanceTitle?.slice(0, 60) }, 'assessment complete')
+  // Bono de medio local (decision del director, 26-nov-2026): lo suma el
+  // codigo, no el modelo, y queda escrito en el calculo para el panel.
+  const bonoLocal = relevanceWithLocalBonus(parsed.relevanceRating, story.feed.isLocal)
+  log.info({ storyId, rating: parsed.relevanceRating, localBonus: bonoLocal.applied, title: parsed.relevanceTitle?.slice(0, 60) }, 'assessment complete')
 
   // Parse publication date returned by the LLM. The sentinel "1970-01-01" means
   // the LLM couldn't find it — treat as unknown and leave the field untouched.
@@ -437,8 +444,8 @@ export async function assessStory(storyId: string): Promise<void> {
     relevanceSummary: sinAnioImposible('relevanceSummary', parsed.relevanceSummary),
     relevanceReasons: parsed.factors.join('\n'),
     antifactors: parsed.limitingFactors.join('\n'),
-    relevanceCalculation: parsed.relevanceCalculation.join('\n'),
-    relevance: parsed.relevanceRating,
+    relevanceCalculation: [...parsed.relevanceCalculation, ...(bonoLocal.applied ? [localBonusCalculationLine()] : [])].join('\n'),
+    relevance: bonoLocal.rating,
     status: 'analyzed' as const,
     ...(sourceDatePublished !== undefined && { sourceDatePublished }),
   }
@@ -536,7 +543,9 @@ export async function rescoreStory(
   const structuredLlm = llm.withStructuredOutput(assessResultSchema, { method: 'functionCalling' })
   const parsed = await withRetry(() => structuredLlm.invoke([new HumanMessage(prompt)]))
 
-  const newRelevance = parsed.relevanceRating
+  // El mismo bono de medio local que assessStory.
+  const bonoLocal = relevanceWithLocalBonus(parsed.relevanceRating, story.feed.isLocal)
+  const newRelevance = bonoLocal.rating
   const oldRelevance = story.relevance
 
   if (!opts.dryRun) {
@@ -547,7 +556,7 @@ export async function rescoreStory(
       where: { id: storyId },
       data: {
         relevance: newRelevance,
-        relevanceCalculation: parsed.relevanceCalculation.join('\n'),
+        relevanceCalculation: [...parsed.relevanceCalculation, ...(bonoLocal.applied ? [localBonusCalculationLine()] : [])].join('\n'),
         relevanceReasons: parsed.factors.join('\n'),
         antifactors: parsed.limitingFactors.join('\n'),
         relevanceSummary: stripImpossibleHistoricalYearOrNull(parsed.relevanceSummary, referenceYear),

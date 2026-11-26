@@ -32,6 +32,8 @@ export const createFeedSchema = z.object({
   issueId: z.string().min(1, 'Issue ID is required'),
   crawlIntervalHours: z.number().int().positive().optional().default(24),
   htmlSelector: z.string().optional(),
+  /** Medio local: sus noticias reciben el bono de lib/local-media-bonus.ts. */
+  isLocal: z.boolean().optional(),
 })
 
 export const updateFeedSchema = z.object({
@@ -41,8 +43,12 @@ export const updateFeedSchema = z.object({
   displayTitle: z.string().trim().nullable().optional(),
   language: z.string().optional(),
   region: feedRegionSchema.nullable().optional(),
-  issueId: z.string().uuid('Must be a valid issue ID').optional(),
+  // min(1) y no uuid(): tres temas de 2025 tienen ids que no son UUID
+  // (`issue-emp-003`, `issue-clima-001`, `issue-ddhh-002`) y el uuid() impedia
+  // guardar sus fuentes. El servicio igual comprueba que el tema exista.
+  issueId: z.string().min(1, 'Must be a valid issue ID').optional(),
   crawlIntervalHours: z.number().int().positive().optional(),
   htmlSelector: z.string().nullable().optional(),
   active: z.boolean().optional(),
+  isLocal: z.boolean().optional(),
 })

@@ -35,6 +35,7 @@ export async function createFeed(data: {
   issueId: string
   crawlIntervalHours?: number
   htmlSelector?: string
+  isLocal?: boolean
 }): Promise<Feed> {
   // Verify issue exists
   const issue = await prisma.issue.findUnique({ where: { id: data.issueId } })
@@ -55,6 +56,7 @@ export async function updateFeed(id: string, data: Partial<{
   crawlIntervalHours: number
   htmlSelector: string | null
   active: boolean
+  isLocal: boolean
 }>): Promise<Feed> {
   if (data.issueId) {
     const issue = await prisma.issue.findUnique({ where: { id: data.issueId } })

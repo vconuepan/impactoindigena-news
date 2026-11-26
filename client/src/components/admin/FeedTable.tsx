@@ -68,6 +68,14 @@ export function FeedTable({ feeds, issues, qualityMetrics, onEdit, onCrawl, onDe
                   >
                     <ArrowTopRightOnSquareIcon className="h-4 w-4" />
                   </a>
+                  {feed.isLocal && (
+                    <span
+                      title="Local media: its stories get a +1 relevance bonus"
+                      className="shrink-0 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800"
+                    >
+                      Local
+                    </span>
+                  )}
                   {feed.lastCrawlError && (
                     <span
                       title={`${feed.lastCrawlError}${feed.lastCrawlErrorAt ? ` (${formatDateWithTime(feed.lastCrawlErrorAt)})` : ''}`}

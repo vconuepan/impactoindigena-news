@@ -12,7 +12,9 @@ export const createIssueSchema = z.object({
   promptFactors: z.string().optional().default(''),
   promptAntifactors: z.string().optional().default(''),
   promptRatings: z.string().optional().default(''),
-  parentId: z.string().uuid().nullable().optional().default(null),
+  // min(1), no uuid(): tres temas madre tienen ids que no son UUID
+  // (`issue-emp-003`, `issue-clima-001`, `issue-ddhh-002`). Ver schemas/feed.ts.
+  parentId: z.string().min(1).nullable().optional().default(null),
   minPreRating: z.number().int().min(1).max(10).nullable().optional().default(null),
   intro: z.string().optional().default(''),
   evaluationIntro: z.string().optional().default(''),
@@ -27,7 +29,7 @@ export const updateIssueSchema = z.object({
   promptFactors: z.string().optional(),
   promptAntifactors: z.string().optional(),
   promptRatings: z.string().optional(),
-  parentId: z.string().uuid().nullable().optional(),
+  parentId: z.string().min(1).nullable().optional(),
   minPreRating: z.number().int().min(1).max(10).nullable().optional(),
   intro: z.string().optional(),
   evaluationIntro: z.string().optional(),

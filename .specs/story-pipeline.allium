@@ -22,11 +22,15 @@ config {
     selection_relevance_min: Integer = 5
     selection_ratio: Float = 0.5
     selection_max_group_size: Integer = 20
+    -- Bono de medio local (decisión del director, 26-nov-2026)
+    local_media_bonus: Integer = 1
+    local_media_pre_min: Integer = 4     -- pre-evaluación: suma desde aquí
+    local_media_full_min: Integer = 5    -- evaluación completa: suma desde aquí (no cruza la regla fundamental)
 }
 
 -- Feed is owned by feed-management.allium. We depend on its shape
 -- but don't control its lifecycle. Issue is shared across specs.
-external entity Feed { issue: Issue? }       -- see: feed-management.allium
+external entity Feed { issue: Issue?, is_local: Boolean }       -- see: feed-management.allium
 external entity Issue { slug: String, min_pre_rating: Integer? }
 
 entity Story {
@@ -133,7 +137,8 @@ rule PreAssess {
     -- country lost its subject.
     ensures: story.issue = LLM.classify_issue(story, subject_issues) ?? story.feed.issue
     ensures: story.country_focus = normalize_country(LLM.classify_country(story))
-    ensures: story.relevance_pre = LLM.pre_rate(story)
+    ensures: story.relevance_pre = with_local_bonus(LLM.pre_rate(story), story.feed.is_local, config.local_media_pre_min)
+    -- with_local_bonus(r, local, min) = min(10, r + local_media_bonus) si local y r >= min; si no, r
     ensures: story.emotion_tag = LLM.tag_emotion(story)
     ensures: story.status = pre_analyzed
 
@@ -182,7 +187,8 @@ rule Assess {
     ensures: story.title = LLM.generate_title(story)
     ensures: story.title_label = LLM.generate_label(story)
     ensures: story.summary = LLM.generate_summary(story)
-    ensures: story.relevance = LLM.rate(story)
+    ensures: story.relevance = with_local_bonus(LLM.rate(story), story.feed.is_local, config.local_media_full_min)
+    -- El origen local de la fuente nunca resta: el prompt lo prohíbe y el código suma el bono.
     ensures: story.marketing_blurb = LLM.generate_blurb(story)
 
     -- The date the model reads from the body fills source_date_published

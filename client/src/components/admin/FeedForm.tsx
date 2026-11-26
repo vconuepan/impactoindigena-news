@@ -50,6 +50,7 @@ export function FeedCreateForm({ open, onClose, issues }: FeedCreateFormProps) {
     crawlIntervalHours: '6',
     htmlSelector: '',
     active: true,
+    isLocal: false,
   })
 
   const createFeed = useCreateFeed()
@@ -57,7 +58,7 @@ export function FeedCreateForm({ open, onClose, issues }: FeedCreateFormProps) {
 
   useEffect(() => {
     if (open) {
-      setForm({ title: '', rssUrl: '', url: '', displayTitle: '', issueId: '', language: 'en', region: '', crawlIntervalHours: '6', htmlSelector: '', active: true })
+      setForm({ title: '', rssUrl: '', url: '', displayTitle: '', issueId: '', language: 'en', region: '', crawlIntervalHours: '6', htmlSelector: '', active: true, isLocal: false })
     }
   }, [open])
 
@@ -77,6 +78,7 @@ export function FeedCreateForm({ open, onClose, issues }: FeedCreateFormProps) {
         crawlIntervalHours: Number(form.crawlIntervalHours),
         htmlSelector: form.htmlSelector || undefined,
         active: form.active,
+        isLocal: form.isLocal,
       })
       toast('success', 'Feed created')
       onClose()
@@ -128,6 +130,18 @@ export function FeedCreateForm({ open, onClose, issues }: FeedCreateFormProps) {
               />
               Active
             </label>
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.isLocal}
+              onChange={e => set('isLocal', e.target.checked)}
+              className="mt-0.5 rounded border-neutral-300 text-brand-600 focus:ring-brand-500"
+            />
+            <span>
+              Local media
+              <span className="block text-xs text-neutral-500">Its stories get a +1 relevance bonus. Local outlets know the peoples of their territory best.</span>
+            </span>
+          </label>
             <div className="flex justify-end gap-3 pt-2">
               <Button type="button" variant="secondary" onClick={onClose}>Cancel</Button>
               <Button type="submit" loading={createFeed.isPending}>Create</Button>

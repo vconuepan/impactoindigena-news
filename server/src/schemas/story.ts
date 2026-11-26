@@ -32,7 +32,9 @@ export const updateStorySchema = z.object({
   title: z.string().min(1).nullable().optional(),
   titleLabel: z.string().min(1).nullable().optional(),
   slug: z.string().min(1).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be lowercase letters, numbers, and hyphens').optional(),
-  issueId: z.string().uuid().nullable().optional(),
+  // min(1) y no uuid(): ver schemas/feed.ts. Con uuid() el panel no podia
+  // guardar ninguna noticia de Economias Indigenas (`issue-emp-003`).
+  issueId: z.string().min(1).nullable().optional(),
   status: storyStatusEnum.optional(),
   relevancePre: z.number().int().min(0).max(10).nullable().optional(),
   relevance: z.number().int().min(0).max(10).nullable().optional(),
@@ -58,7 +60,7 @@ export const bulkUpdateStatusSchema = z.object({
 
 export const storyQuerySchema = z.object({
   status: z.union([storyStatusEnum, z.literal('all')]).optional(),
-  issueId: z.string().uuid().optional(),
+  issueId: z.string().min(1).optional(), // min(1), no uuid(): ver updateStorySchema
   feedId: z.string().uuid().optional(),
   crawledAfter: z.string().datetime().optional(),
   crawledBefore: z.string().datetime().optional(),

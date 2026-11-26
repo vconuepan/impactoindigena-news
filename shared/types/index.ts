@@ -242,6 +242,8 @@ export interface Feed {
   lastModified: string | null
   lastCrawlResult: string | null
   htmlSelector: string | null
+  /** Medio local: sus noticias reciben un bono de relevancia. */
+  isLocal: boolean
   createdAt: string
   updatedAt: string
 }
