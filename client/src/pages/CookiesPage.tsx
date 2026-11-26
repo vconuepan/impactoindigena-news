@@ -9,7 +9,7 @@ export default function CookiesPage() {
         <title>Política de Cookies - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Política de cookies de Impacto Indígena News, regida por la Ley 19.628 y en adecuación a la Ley 21.719, vigente desde diciembre de 2026. Sin cookies de rastreo ni publicidad; analítica agregada sin cookies."
+          content="Política de cookies de Impacto Indígena News, regida por la Ley 19.628 y en adecuación a la Ley 21.719, que rige desde el 15 de octubre de 2027. Sin cookies de rastreo ni publicidad; analítica agregada sin cookies."
         />
         <meta property="og:title" content={`Política de Cookies - ${SEO.siteName}`} />
         <meta
@@ -27,7 +27,7 @@ export default function CookiesPage() {
 
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 1.4 · vigente desde el 4 de octubre de 2026.
+            Versión 1.5 · vigente desde el 27 de noviembre de 2026.
           </p>
           <h2 className="section-heading mt-8">Responsable</h2>
           <p>
@@ -52,7 +52,8 @@ export default function CookiesPage() {
             La normativa vigente hoy en Chile es la <strong>Ley N° 19.628</strong>{" "}
             sobre Protección de la Vida Privada, y conforme a ella tratamos los
             datos. La <strong>Ley N° 21.719</strong>{" "}
-            <strong>entrará en vigencia el 1 de diciembre de 2026</strong>: las
+            <strong>entrará en vigencia el 15 de octubre de 2027</strong>, fecha
+            que fijó la Ley N° 21.855 (publicada el 23 de noviembre de 2026): las
             categorías que siguen describen el estándar al que nos estamos
             adecuando y no importan la asunción de obligaciones exigibles con
             anterioridad a esa fecha. Como no instalamos cookies de seguimiento,
