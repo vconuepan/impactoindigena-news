@@ -2,8 +2,10 @@
 
 > Procedimiento del responsable (Fundación KM) para el deber del **art. 14 sexies** de la
 > Ley 19.628 en el texto que le da el artículo primero de la Ley 21.719 (Diario Oficial
-> N° 44.023, 13-dic-2024), que **rige desde el 1-dic-2026** (art. primero transitorio: el
-> primer día del mes vigésimo cuarto posterior a la publicación). Se aplica desde ya como
+> N° 44.023, 13-dic-2024), que **rige desde el 15-oct-2027**: la Ley 21.855 (Diario Oficial,
+> 23-nov-2026, art. único N° 2) sustituyó en el art. primero transitorio la regla anterior
+> («el primer día del mes vigésimo cuarto posterior a la publicación», que daba el
+> 1-dic-2026) por «15 de octubre de 2027». Se aplica desde ya como
 > práctica. No es asesoría legal: lo revisa el abogado junto con la consulta de octubre.
 
 ## Lo que la ley exige, textual y sin agregados
