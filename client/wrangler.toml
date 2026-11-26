@@ -5,7 +5,10 @@ pages_build_output_dir = "dist"
 compatibility_date = "2026-11-01"
 
 [vars]
-# Desde el corte (24-nov-2026) se reenvía directo a la API. El candado es el
-# secreto ORIGIN_SECRET (`wrangler pages secret put ORIGIN_SECRET`), el mismo
-# que la API tiene en su App Service (server/src/middleware/originSecret.ts).
-ORIGIN = "https://impactoindigena-news-api.azurewebsites.net"
+# Se reenvía directo a la API. El candado es el secreto ORIGIN_SECRET
+# (`wrangler pages secret put ORIGIN_SECRET`), el mismo que tiene la API
+# (server/src/middleware/originSecret.ts).
+# 26-nov-2026: la API se mudó de Azure (impactoindigena-news-api.azurewebsites.net,
+# detenido a las 12:29Z) a AWS región São Paulo, de forma temporal hasta que AWS
+# abra Santiago. Decisión del director; el corte lo hizo la sesión «Créditos AWS».
+ORIGIN = "https://origen-api.impactoindigena.news"
