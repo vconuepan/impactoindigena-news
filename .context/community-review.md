@@ -2,7 +2,7 @@
 
 > Spec: `.specs/story-pipeline.allium`, regla `CommunityReview`. Diseño completo y decisiones: `.plans/2026-10-04_retencion-por-vertical.md`.
 
-A story can be published on Voces Indígenas (the main site) and **held** in a vertical (Voces Mapuche, Voces Araucanía) until an editor releases it. `Story.status` is untouched: it stays the switch for the main site and its ~100 readers. Retention lives in two new tables.
+A story can be published on Impacto Indígena News (the main site) and **held** in a vertical (Voces Mapuche, Voces Araucanía) until an editor releases it. `Story.status` is untouched: it stays the switch for the main site and its ~100 readers. Retention lives in two new tables.
 
 ## Tables
 

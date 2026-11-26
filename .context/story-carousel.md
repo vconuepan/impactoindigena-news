@@ -10,7 +10,7 @@ Pedido del director el 23-oct-2026. Sus decisiones:
 | Decisión | Qué quedó |
 |---|---|
 | Voz | Informativo por defecto. Una casilla agrega **la lectura de Venancio Coñuepán Mesías**: una lámina en su voz, marcada con su nombre, que no se le atribuye al medio |
-| Marca | Sale como Voces Indígenas: el lienzo, la paleta, el logo y el pie de `lib/carouselGen.ts` |
+| Marca | Sale como Impacto Indígena News: el lienzo, la paleta, el logo y el pie de `lib/carouselGen.ts` |
 
 ## La regla de fondo: el original, no el resumen
 

@@ -1,10 +1,10 @@
-# Voces Indígenas
+# Impacto Indígena News
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 
 Plataforma editorial que cubre a los pueblos indígenas como protagonistas activos: innovadores, titulares de derechos y constructores de futuro. Rastrea fuentes de noticias de siete regiones del mundo, evalúa su relevancia mediante inteligencia artificial y publica historias que importan a pueblos indígenas, territorios, liderazgo y desarrollo sostenible.
 
-**Sitio en vivo:** [vocesindigenas.org](https://vocesindigenas.org) · **Fuentes rastreadas:** [/fuentes](https://vocesindigenas.org/fuentes) · **API pública:** [/api/docs/openapi.json](https://vocesindigenas.org/api/docs/openapi.json)
+**Sitio en vivo:** [impactoindigena.news](https://impactoindigena.news) · **Fuentes rastreadas:** [/fuentes](https://impactoindigena.news/fuentes) · **API pública:** [/api/docs/openapi.json](https://impactoindigena.news/api/docs/openapi.json)
 
 ## Qué hace la plataforma
 
@@ -70,7 +70,7 @@ El país no lo decide el modelo. Un detector determinista lo resuelve en código
 
 1. Clonar el repositorio:
    ```bash
-   git clone https://github.com/vconuepan/impactoindigena-news.git
+   git clone https://github.com/Fundacion-KM/impactoindigena-news.git
    cd impactoindigena-news
    ```
 
@@ -137,10 +137,10 @@ Configura `LLM_PROVIDER` en `server/.env`:
 El backend expone una especificación OpenAPI generada desde los esquemas Zod:
 
 ```
-https://vocesindigenas.org/api/docs/openapi.json
+https://impactoindigena.news/api/docs/openapi.json
 ```
 
-Cubre los endpoints de lectura del sitio (portada, historias, temas, feed). Requieren autenticación las rutas bajo `/api/admin`. La página [/developers](https://vocesindigenas.org/developers) documenta el uso previsto.
+Cubre los endpoints de lectura del sitio (portada, historias, temas, feed). Requieren autenticación las rutas bajo `/api/admin`. La página [/developers](https://impactoindigena.news/developers) documenta el uso previsto.
 
 ## Deployment (Azure)
 
@@ -191,7 +191,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f server/prisma/migrations/<carpeta>/mi
 cd /home/site/wwwroot && npx tsx src/scripts/create-admin.ts
 
 # 3. Verificar que el backend responde y llega a la base
-curl -o /dev/null -w '%{http_code}\n' https://vocesindigenas.org/api/homepage
+curl -o /dev/null -w '%{http_code}\n' https://impactoindigena.news/api/homepage
 # Respuesta esperada: 200
 ```
 
@@ -228,7 +228,7 @@ Para reportar una vulnerabilidad de seguridad, ver [SECURITY.md](SECURITY.md) �
 
 ## Stewardship
 
-Voces Indígenas es un programa y un bien público de la [Fundación KM](https://fundacionkm.org), organización sin fines de lucro con sede en Temuco, La Araucanía. La Fundación es la responsable del sitio y la titular de la adaptación del código. Para colaborar o proponer una alianza, escribe a [contacto@fundacionkm.org](mailto:contacto@fundacionkm.org).
+Impacto Indígena News es un programa y un bien público de la [Fundación KM](https://fundacionkm.org), organización sin fines de lucro con sede en Temuco, La Araucanía. La Fundación es la responsable del sitio y la titular de la adaptación del código. Para colaborar o proponer una alianza, escribe a [contacto@fundacionkm.org](mailto:contacto@fundacionkm.org).
 
 ## License
 

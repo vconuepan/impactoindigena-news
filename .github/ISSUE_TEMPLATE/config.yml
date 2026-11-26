@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Vulnerabilidad de seguridad
-    url: https://github.com/vconuepan/impactoindigena-news/blob/main/SECURITY.md
+    url: https://github.com/Fundacion-KM/impactoindigena-news/blob/main/SECURITY.md
     about: No abras un issue público. Acá está el canal privado de reporte.
   - name: Pregunta general o contacto
     url: mailto:contacto@fundacionkm.org
@@ -10,5 +10,5 @@ contact_links:
   # 17-sep-2026, devuelve el SPA generico. El modelo de custodia vive hoy en
   # CONTRIBUTING.md.
   - name: Custodia institucional del proyecto
-    url: https://github.com/vconuepan/impactoindigena-news/blob/main/CONTRIBUTING.md#contributor-license-agreement
+    url: https://github.com/Fundacion-KM/impactoindigena-news/blob/main/CONTRIBUTING.md#contributor-license-agreement
     about: Si tu organización puede darle un hogar permanente a la plataforma.

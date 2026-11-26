@@ -2,7 +2,7 @@
 
 > **Spec:** [`.specs/own-content.allium`](../.specs/own-content.allium) — entidad, reglas de borrador y publicación, candados e invariantes. Este archivo cubre cómo está hecho y cómo se opera.
 
-Lo que Voces Indígenas escribe y firma, a diferencia de las noticias curadas
+Lo que Impacto Indígena News escribe y firma, a diferencia de las noticias curadas
 (`story-pipeline.md`). Decisión del director del 25-oct-2026, plan
 `.plans/2026-10-25_contenido-propio-y-ficha-con-claves.md`. Hoy existe una pieza, la
 **editorial**; las guías y explicadores (B8 del plan) entrarán aquí.

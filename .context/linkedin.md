@@ -125,24 +125,21 @@ https://impactoindigena.news/api/linkedin/oauth/callback
 The exchange fails without it. The app also needs the product that grants
 `w_member_social` (Share on LinkedIn).
 
-**Why this is still the old domain.** Every other URL in the project moved to
-`vocesindigenas.org`; this one did not, and that is deliberate. The redirect URL
-is matched *by LinkedIn* against what the app registration lists, so it can only
-change in two steps and in this order:
-
-1. Add `https://vocesindigenas.org/api/linkedin/oauth/callback` to the app's
-   Authorized redirect URLs in the LinkedIn Developer Portal (LinkedIn allows
-   several, so the old one keeps working meanwhile).
-2. Only then set `LINKEDIN_REDIRECT_URI` to the new URL in Azure and update the
-   default in `server/src/config.ts`.
-
-Doing step 2 first breaks reauthorization with `redirect_uri_mismatch`, and the
-member token cannot be renewed until it is undone. The old domain still 301s to
-the new one, but a 301 does not help here: LinkedIn compares strings.
+**Why it never moved, and why it is fine now.** From 4-sep to 25-nov-2026 every
+other URL in the project lived on `vocesindigenas.org`; this one stayed on
+`impactoindigena.news` on purpose, because LinkedIn matches the redirect URL as a
+string against the app registration, so changing it needs two steps in order
+(add the new URL in the Developer Portal first, then change
+`LINKEDIN_REDIRECT_URI` in Azure and the default in `server/src/config.ts`;
+the reverse order breaks reauthorization with `redirect_uri_mismatch`). On
+25-nov-2026 `impactoindigena.news` became the main domain again and now serves
+the site and `/api` through Cloudflare Pages, so this URL is simply current and
+nothing needs to change.
 
 Verified 17-sep-2026: `impactoindigena.news` has **no MX record**, so the domain
 receives no mail — it only redirects HTTP. That does not affect this callback,
-which is HTTP, but it does mean any `@impactoindigena.news` address is dead.
+which is HTTP, but it does mean any `@impactoindigena.news` address is dead. The
+25-nov-2026 domain change did not add mail either: the zone still has no MX.
 
 ## OAuth reauthorization flow
 

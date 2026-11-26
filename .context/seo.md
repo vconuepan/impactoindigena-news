@@ -15,11 +15,11 @@ Static file that rarely changes. Points crawlers to the sitemap.
 User-agent: *
 Allow: /
 
-Sitemap: https://vocesindigenas.org/sitemap.xml
-Sitemap: https://vocesindigenas.org/sitemap-news.xml
+Sitemap: https://impactoindigena.news/sitemap.xml
+Sitemap: https://impactoindigena.news/sitemap-news.xml
 ```
 
-> El dominio es `vocesindigenas.org` desde el rebrand del 4-sep-2026.
+> El dominio es `impactoindigena.news` desde el 25-nov-2026 (decisión del director). Del 4-sep al 25-nov fue `vocesindigenas.org`, que hoy redirige con 301 de un salto, salvo `/api/`; el cambio de dirección quedó registrado en Search Console.
 > `impactoindigena.news` solo redirige — y su `robots.txt` bloquea nueve bots de
 > IA, por lo que **no** sirve como referencia de este archivo.
 
@@ -118,7 +118,7 @@ What stops it now:
 
 **The secret that takes the build out of the limit.** Even without page views, a build needs more than 100 requests, so the lock alone would leave deploys depending on luck with the quota. With `PRERENDER_BYPASS_TOKEN` set **to the same value** as a GitHub Actions secret and as an App Service app setting, the build sends it in `x-prerender-token` (only from Node: it is not `VITE_*`, so it never reaches the bundle, and the lock fails if it appears in any baked page) and the server skips `apiLimiter` for those requests (`server/src/lib/prerenderBypass.ts`: constant-time comparison, at least 32 characters, empty = nobody skips). It skips **only** `apiLimiter` and **only for GET/HEAD**, so a leaked secret would not lift the limit on public writes such as joining and leaving a community (one Brevo email per round trip); search, login, subscription and feedback limits still count. Generate it with `openssl rand -hex 32`: a value with spaces or line breaks (`openssl rand -base64 64` prints two lines) stops the build before use, because `fetch` would copy the whole value into its error message, and so does one shorter than the server's 32 characters, which the server would always ignore (a test pins that both minimums match). A skipped request carries no `RateLimit-*` headers, so the build log shows whether it worked: `0 pasaron por el limitador`. If the secret is set but the API still applied the limit, the build warns that it is missing from the App Service or does not match.
 
-**To measure it again:** point `PRERENDER_API_URL` at a local proxy that forwards to `https://vocesindigenas.org` and logs each request with its status and `RateLimit-Remaining`. The measurement is spent against your own IP's quota: wait 15 minutes between builds, or the second one starts with no quota and tells you nothing.
+**To measure it again:** point `PRERENDER_API_URL` at a local proxy that forwards to `https://impactoindigena.news` and logs each request with its status and `RateLimit-Remaining`. The measurement is spent against your own IP's quota: wait 15 minutes between builds, or the second one starts with no quota and tells you nothing.
 
 ### Priority Guidelines
 

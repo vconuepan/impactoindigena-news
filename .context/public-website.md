@@ -35,8 +35,8 @@ Hooks: `usePublicStories.ts`, `usePublicIssues.ts`
 Public RSS 2.0 feeds are available without authentication:
 
 - `GET /api/feed` — Global feed of the 50 most recent published stories
-- `GET /api/feed/:issueSlug` — Per-issue feed (e.g., `https://vocesindigenas.org/api/feed/cambio-climatico`)
-- `GET /api/feed/comunidad/:slug` — Per-community feed (e.g., `https://vocesindigenas.org/api/feed/comunidad/mapuche`), registered before `/:issueSlug` in `feed.ts`
+- `GET /api/feed/:issueSlug` — Per-issue feed (e.g., `https://impactoindigena.news/api/feed/cambio-climatico`)
+- `GET /api/feed/comunidad/:slug` — Per-community feed (e.g., `https://impactoindigena.news/api/feed/comunidad/mapuche`), registered before `/:issueSlug` in `feed.ts`
 
 Feed items include: title, link to story page, AI-generated summary, publish date, and issue category. Responses use `Content-Type: application/rss+xml` with a 15-minute cache (`Cache-Control: public, max-age=900`).
 
