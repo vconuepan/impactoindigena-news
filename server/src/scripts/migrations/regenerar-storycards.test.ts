@@ -9,7 +9,7 @@ vi.mock('@aws-sdk/client-s3', () => ({
   ListObjectsV2Command: vi.fn(),
 }))
 
-const { nombreDeTarjeta, tituloDeTarjeta } = await import('./regenerar-storycards.js')
+const { nombreDeTarjeta, tituloDeTarjeta, altoFranjaLimpia } = await import('./regenerar-storycards.js')
 
 describe('nombreDeTarjeta', () => {
   const R2 = 'https://pub-9cecf62dfd8c4e5e9b7b30b54cc1acba.r2.dev/social/'
@@ -45,5 +45,13 @@ describe('tituloDeTarjeta', () => {
   it('cae al titulo de la fuente si no hay editorial', () => {
     expect(tituloDeTarjeta({ title: null, sourceTitle: 'Titulo de la fuente' })).toBe('Titulo de la fuente')
     expect(tituloDeTarjeta({ title: '  ', sourceTitle: 'Titulo de la fuente' })).toBe('Titulo de la fuente')
+  })
+})
+
+describe('altoFranjaLimpia', () => {
+  it('corta por encima del texto de la tarjeta (420 de 630)', () => {
+    expect(altoFranjaLimpia(630)).toBe(420)
+    // Proporcional: vale igual para una tarjeta del doble de alto.
+    expect(altoFranjaLimpia(1260)).toBe(840)
   })
 })

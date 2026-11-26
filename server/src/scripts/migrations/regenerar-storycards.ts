@@ -34,6 +34,12 @@
  *   npx tsx src/scripts/migrations/regenerar-storycards.ts --apply --limit=20
  *   npx tsx src/scripts/migrations/regenerar-storycards.ts --apply
  *   npx tsx src/scripts/migrations/regenerar-storycards.ts --revertir --apply
+ *
+ * `--franja` (25-nov-2026, decisión del director, opción «d»): cuando el medio ya no tiene la
+ * foto (34 de 808 en la corrida del 25-nov), en vez de dejar la tarjeta vieja se usa, en este
+ * orden, la primera foto del cuerpo del artículo guardada en R2 (`ogfoto-<id>-NN`) o la franja
+ * superior de la propia tarjeta vieja, que es foto limpia: el degradado empieza al 35 % y el
+ * texto cerca de 440 de 630 px. Se recorta antes de sobrescribir y queda respaldada igual.
  */
 // Va PRIMERO: config.ts lee process.env al evaluarse (ver recomprimir-imagenes-r2.ts).
 import 'dotenv/config'
@@ -44,7 +50,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3'
-import { loadImage } from '@napi-rs/canvas'
+import { createCanvas, loadImage, type Image } from '@napi-rs/canvas'
 import { appendFileSync, mkdirSync } from 'node:fs'
 import path from 'node:path'
 import { config } from '../../config.js'
@@ -55,6 +61,15 @@ import { subirVariantesWeb } from '../../lib/imagen-variantes.js'
 
 export const PREFIJO_TARJETA = 'storycard-'
 export const PREFIJO_RESPALDO = 'social/original-storycard/'
+
+/**
+ * Alto de la franja sin texto de una tarjeta compuesta. En `composeBrandedStoryCard` el texto
+ * más alto (rótulo sobre un título de tres líneas) empieza cerca de los 440 px de 630; se corta
+ * en 420 para dejar margen.
+ */
+export function altoFranjaLimpia(altoTarjeta: number): number {
+  return Math.round((altoTarjeta * 420) / 630)
+}
 
 /** Nombre de archivo de la tarjeta (`storycard-<uuid>.jpg`) a partir de su URL pública, o null. */
 export function nombreDeTarjeta(imageUrl: string | null | undefined): string | null {
@@ -81,6 +96,7 @@ interface Historia {
 const args = process.argv.slice(2)
 const APLICAR = args.includes('--apply')
 const REVERTIR = args.includes('--revertir')
+const FRANJA = args.includes('--franja')
 const LIMITE = Number(args.find((a) => a.startsWith('--limit='))?.split('=')[1] ?? Infinity)
 /** Pocos y con pausa: cada tarjeta pide una página a un medio ajeno. */
 const CONCURRENCIA = 4
@@ -141,6 +157,29 @@ async function listarTarjetas(hasta: number): Promise<Historia[]> {
   return out
 }
 
+/** Cuando el medio ya no tiene la foto: la primera del artículo en R2, o la franja limpia de la tarjeta vieja. */
+async function fotoAlternativa(
+  id: string,
+  nombre: string,
+): Promise<{ img: Image; origen: string } | null> {
+  const r = await client.send(new ListObjectsV2Command({ Bucket, Prefix: `social/ogfoto-${id}` }))
+  const fotos = (r.Contents ?? [])
+    .map((o) => o.Key!)
+    .filter((k) => !/-w(800|1200)\.[a-z]+$/i.test(k))
+    .sort()
+  if (fotos.length) {
+    const img = await loadImage(await bajar(fotos[0])).catch(() => null)
+    if (img) return { img, origen: 'foto del artículo' }
+  }
+  // La tarjeta vieja todavía está en su clave: sin respaldo, nadie la sobrescribió.
+  const vieja = await loadImage(await bajar(`social/${nombre}`)).catch(() => null)
+  if (!vieja) return null
+  const alto = altoFranjaLimpia(vieja.height)
+  const lienzo = createCanvas(vieja.width, alto)
+  lienzo.getContext('2d').drawImage(vieja, 0, 0)
+  return { img: await loadImage(lienzo.toBuffer('image/png')), origen: 'franja de la tarjeta vieja' }
+}
+
 async function revertir(): Promise<void> {
   const copias: string[] = []
   let token: string | undefined
@@ -197,19 +236,21 @@ async function main(): Promise<void> {
           continue
         }
         const og = await fetchOgImage(s.sourceUrl)
-        if (!og) {
-          anotar(s, 'la fuente ya no tiene foto')
-          continue
+        const dl = og ? await downloadExternalImage(og) : null
+        let img: Image | null = dl ? await loadImage(dl.buffer).catch(() => null) : null
+        let origen = 'foto del medio'
+        if (!img && FRANJA) {
+          const alt = await fotoAlternativa(s.id, nombre)
+          img = alt?.img ?? null
+          origen = alt?.origen ?? origen
         }
-        const dl = await downloadExternalImage(og)
-        const img = dl ? await loadImage(dl.buffer).catch(() => null) : null
         if (!img) {
-          anotar(s, 'la foto no se pudo bajar o leer', { og })
+          anotar(s, og ? 'la foto no se pudo bajar o leer' : 'la fuente ya no tiene foto', { og })
           continue
         }
         const titulo = tituloDeTarjeta(s)
         if (!APLICAR) {
-          anotar(s, 'recomponible', { ancho: img.width })
+          anotar(s, 'recomponible', { ancho: img.width, origen })
           continue
         }
         // Respaldo primero: si la copia falla, no se pisa nada.
@@ -223,7 +264,7 @@ async function main(): Promise<void> {
         const tarjeta = composeBrandedStoryCard(img, titulo)
         await uploadImageToR2(tarjeta, nombre, 'image/jpeg')
         await subirVariantesWeb(tarjeta, nombre)
-        anotar(s, 'regenerada', { ancho: img.width })
+        anotar(s, 'regenerada', { ancho: img.width, origen })
       } catch (err) {
         anotar(s, 'error', { error: err instanceof Error ? err.message : String(err) })
       } finally {
