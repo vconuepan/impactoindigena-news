@@ -184,13 +184,17 @@ function NarrativeFrameTag({ frame, dark = false }: { frame: string; dark?: bool
  * Sello editorial: la marca de excelencia sobre la foto de una historia con
  * `relevance >= 8`. Jerarquia sin recurrir a un badge generico de «DESTACADO».
  *
- * SVG en linea de TRAZO BLANCO -circulo exterior + estrella de siete puntas-,
- * que es lo que especifica DESIGN.md. El codigo usaba
- * `/images/logo-no-text-square.png`, el emblema multicolor completo de la marca,
- * reducido a 36px y bajado al 32% de opacidad: a ese tamaño sus siete colores se
- * mezclan en una mancha y, sobre una fotografia cualquiera, ni se distingue la
- * forma ni se reconoce la marca. Un trazo blanco si sostiene su silueta sobre
- * cualquier fondo, que es justo el requisito.
+ * SVG en linea de TRAZO BLANCO: un anillo con la estrella de Impacto Indigena
+ * adentro. Desde el 25-nov-2026 la estrella es la del grupo (10 puntas), el
+ * mismo signo del logotipo; antes era la estrella de siete puntas de la marca
+ * Voces Indigenas. Decision del director: con anillo, para conservar la lectura
+ * de «sello» que el lector ya conocia. El contorno se trazo del archivo maestro
+ * `client/scripts/marca/estrella-grupo.png` y se simplifico a 25 puntos.
+ *
+ * Por que trazo blanco y no el emblema a color: hasta septiembre se usaba el
+ * PNG multicolor reducido a 36px y al 32% de opacidad, y a ese tamaño los
+ * colores se mezclaban en una mancha sobre cualquier fotografia. Un trazo
+ * blanco sostiene la silueta sobre cualquier fondo, que es justo el requisito.
  */
 function EditorialSeal() {
   return (
@@ -205,8 +209,8 @@ function EditorialSeal() {
         strokeLinejoin="round"
         style={{ opacity: 0.32 }}
       >
-        <circle cx="18" cy="18" r="16" />
-        <path d="M18 6.5 L20.6 14.2 L28.4 12.6 L23.4 18 L28.4 23.4 L20.6 21.8 L18 29.5 L15.4 21.8 L7.6 23.4 L12.6 18 L7.6 12.6 L15.4 14.2 Z" />
+        <circle cx="18" cy="18" r="17" />
+        <path d="M19.9 5.7 L21.6 10.7 L21.7 10.8 L26.7 9.2 L25.1 14.3 L25.3 14.4 L30.2 16.0 L25.9 19.2 L29.0 23.5 L23.8 23.5 L23.5 23.8 L23.5 29.0 L19.2 25.9 L16.0 30.2 L14.3 25.1 L9.2 26.7 L10.8 21.7 L5.7 19.9 L10.0 16.7 L6.9 12.3 L12.1 12.3 L12.3 12.1 L12.3 6.9 L16.8 10.0 L19.8 5.8 Z" />
       </svg>
     </div>
   )

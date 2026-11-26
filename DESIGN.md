@@ -34,9 +34,8 @@ impactoindigena.legal:
   `npm run images:og --prefix client`.
 - El sello anterior (`logo-sello.svg`, estrella de ocho puntas en anillo dorado) queda para la
   carátula del podcast, que conserva el nombre Voces Indígenas.
-- **Pendiente de decisión:** el sello editorial de las fotos (`EditorialSeal`, SVG en línea en
-  `StoryCard.tsx`: círculo y estrella de siete puntas en trazo blanco) conserva la forma de la marca
-  anterior.
+- El sello editorial de las fotos (`EditorialSeal`, SVG en línea en `StoryCard.tsx`) es la estrella
+  del grupo dentro de un anillo, en trazo blanco (decisión del 25-nov-2026, ver `.editorial-seal`).
 
 ## Tipografía
 
@@ -524,7 +523,7 @@ pointer-events: none;
 user-select: none;
 ```
 
-SVG: versión simplificada del sello del logo — círculo exterior + estrella de 7 puntas interior, trazo blanco sobre cualquier fondo de imagen.
+SVG: anillo exterior + la estrella de Impacto Indígena (10 puntas, contorno trazado del archivo maestro) en trazo blanco sobre cualquier fondo de imagen. Hasta el 25-nov-2026 la estrella era la de siete puntas de la marca Voces Indígenas; el director eligió conservar el anillo para que siga leyéndose como sello.
 
 **Regla:** Solo historias con `relevanceScore ≥ 8`. No mostrar si la imagen no carga (fallback: ocultar).
 
