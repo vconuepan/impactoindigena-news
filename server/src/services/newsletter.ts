@@ -772,7 +772,7 @@ ${flashSection}
               </p>
               <p style="margin: 0 0 14px; font-size: 12px; color: #6ee7b7;">
                 <a href="https://x.com/impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Twitter / X</a>
-                <a href="https://www.instagram.com/impactoindigena" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Instagram</a>
+                <a href="https://www.instagram.com/impactoindigena.news" style="color: #6ee7b7; text-decoration: none; margin-right: 16px;">Instagram</a>
                 <a href="https://impactoindigena.news/feedback" style="color: #6ee7b7; text-decoration: none;">Feedback</a>
               </p>
               <p style="margin: 0; font-size: 11px; color: #4ade80; opacity: 0.6;">

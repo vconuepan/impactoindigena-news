@@ -16,7 +16,7 @@ import { PositivityProvider } from "../contexts/PositivityContext";
 import { MoodDialPanel } from "../components/PositivitySlider";
 import CurationStatsBar from "../components/CurationStatsBar";
 
-const INSTAGRAM_URL = "https://www.instagram.com/impactoindigena";
+const INSTAGRAM_URL = "https://www.instagram.com/impactoindigena.news";
 const TWITTER_URL = "https://x.com/impactoindigena";
 const YOUTUBE_URL = "https://www.youtube.com/@impactoindigena/";
 const GITHUB_URL = GITHUB_REPO_URL;
