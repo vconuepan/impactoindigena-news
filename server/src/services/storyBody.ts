@@ -19,6 +19,7 @@ import {
 } from '../lib/storyBodyGuards.js'
 import { seleccionarParaRedactar } from '../lib/storyBodySeleccion.js'
 import { limpiarCampos } from '../lib/personasSensibles.js'
+import { fechaDelOriginal, anioDelOriginal } from '../lib/fechaDelOriginal.js'
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 
 const log = createLogger('story-body')
@@ -53,9 +54,10 @@ export class StoryBodyError extends Error {
   }
 }
 
-const FORMATO_FECHA = new Intl.DateTimeFormat('es-CL', {
-  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago',
-})
+// La fecha y el año del original salen de lib/fechaDelOriginal.ts desde el
+// 25-nov-2026. Hasta ese día se leían en hora de Chile sin distinguir un día
+// sin hora, que el análisis guarda a medianoche UTC: una nota del 21 llegaba al
+// modelo, y al respaldo del candado de cifras, como del 20.
 
 /** P2021: la tabla no existe todavía en esta base. */
 function tablaAusente(err: unknown): boolean {
@@ -100,7 +102,7 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
   // La fecha va siempre: sin ella, el modelo puso «la elección de 2023» a una
   // nota de The Guardian sobre la elección de este año (medido el 25-oct-2026).
   const fechaRef = story.sourceDatePublished ?? story.datePublished ?? story.dateCrawled
-  const fecha = FORMATO_FECHA.format(fechaRef)
+  const fecha = fechaDelOriginal(fechaRef)
   const prompt = buildStoryBodyPrompt({
     sourceTitle: story.sourceTitle,
     sourceContent: recortar(original, config.storyBody.maxSourceChars),
@@ -120,7 +122,7 @@ export async function draftStoryBody(storyId: string): Promise<DraftOutcome> {
     return { outcome: 'failed', reason: err instanceof Error ? err.message : String(err) }
   }
   const uso = (raw as { usage_metadata?: { input_tokens?: number; output_tokens?: number } } | null)?.usage_metadata
-  const anio = fechaRef.getFullYear()
+  const anio = anioDelOriginal(fechaRef)
   // Candado de personas sobre las cinco claves, antes de los demás candados.
   // Ver lib/personasSensibles.ts.
   const { registro: cuerpo, resumen: candadoDePersonas } = limpiarCampos(limpiarCuerpo(parsed as StoryBodyResult, original), {
@@ -249,8 +251,8 @@ export async function updateStoryBody(
   }
   const original = story.sourceContent ?? ''
   const fechaRef = story.sourceDatePublished ?? story.datePublished ?? story.dateCrawled
-  const anio = fechaRef.getFullYear()
-  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, FORMATO_FECHA.format(fechaRef), story.sourceTitle), anio)
+  const anio = anioDelOriginal(fechaRef)
+  const avisos = revisarCuerpo(cuerpo, respaldoConFecha(original, fechaDelOriginal(fechaRef), story.sourceTitle), anio)
   const bloqueantes = avisosBloqueantes(avisos)
   if (bloqueantes.length > 0) {
     throw new StoryBodyError(`No se guarda: ${bloqueantes.map((a) => a.mensaje).join(' ')}`, avisos)

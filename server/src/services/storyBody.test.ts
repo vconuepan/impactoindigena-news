@@ -183,3 +183,38 @@ describe('updateStoryBody', () => {
     expect(mockPrisma.storyBody.update).not.toHaveBeenCalled()
   })
 })
+
+// ---------------------------------------------------------------------------
+// La fecha del original sin el día menos (25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('la fecha que recibe el cuerpo', () => {
+  // El análisis guarda el día a medianoche UTC; leído en hora de Chile era el
+  // día anterior, y el modelo y el candado de cifras recibían «22 de octubre»
+  // para una nota del 23.
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockConfig.storyBody.enabled = true
+    mockPrisma.storyBody.upsert.mockResolvedValue({})
+  })
+
+  it('el modelo recibe el día del original, no el anterior', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(story())
+    mockInvoke.mockResolvedValue({ raw: {}, parsed: cuerpoFiel })
+
+    await draftStoryBody('s1')
+
+    const prompt = mockInvoke.mock.calls[0][0][0].content as string
+    expect(prompt).toContain('23 de octubre de 2026')
+    expect(prompt).not.toContain('22 de octubre de 2026')
+  })
+
+  it('el candado de cifras acepta el día de la nota', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(story())
+    mockInvoke.mockResolvedValue({ raw: {}, parsed: { ...cuerpoFiel, bajada: cuerpoFiel.bajada.replace('aprobada por', 'aprobada el 23 de octubre por') } })
+
+    const r = await draftStoryBody('s1')
+
+    expect(r.outcome).toBe('saved')
+  })
+})
