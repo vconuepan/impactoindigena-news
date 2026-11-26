@@ -10,7 +10,7 @@ export default function PrivacyPage() {
         <title>Política de Privacidad - {SEO.siteName}</title>
         <meta
           name="description"
-          content="Política de privacidad de Impacto Indígena News. Regida por la Ley 19.628 y en adecuación a la Ley 21.719, vigente desde diciembre de 2026. Analítica sin cookies, datos mínimos y tus derechos."
+          content="Política de privacidad de Impacto Indígena News. Regida por la Ley 19.628 y en adecuación a la Ley 21.719, que rige desde el 15 de octubre de 2027. Analítica sin cookies, datos mínimos y tus derechos."
         />
         <meta
           property="og:title"
@@ -42,8 +42,19 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.8 · vigente desde el 24 de noviembre de 2026.
+            Versión 3.9 · vigente desde el 29 de noviembre de 2026.
           </p>
+          {/* Aviso del cambio sustancial (la política promete avisar «por los canales
+              del sitio»). Texto aprobado por el director el 26-nov-2026, fuente:
+              impactoindigena/docs/POLITICAS_SAO_PAULO_BORRADOR_2026-11-25.md, §5. */}
+          <div className="not-prose mb-8 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-neutral-700">
+            <strong className="text-neutral-900">Cambio en esta versión.</strong>{" "}
+            Desde el 29 de noviembre de 2026, el servidor y la base de datos de
+            Impacto Indígena News pasan de Microsoft Azure en Chile a Amazon Web
+            Services en São Paulo, Brasil. Es un traslado temporal: cuando Amazon
+            Web Services abra su región en Chile, los datos vuelven a Chile. No
+            cambia qué datos guardamos, para qué los usamos ni tus derechos.
+          </div>
 
           {/* 1. Responsable */}
           <h2 className="section-heading mt-4">Responsable del tratamiento</h2>
@@ -78,7 +89,8 @@ export default function PrivacyPage() {
           <p className="mt-3">
             La <strong>Ley N° 21.719</strong>, que regula la protección de los
             datos personales y crea la Agencia de Protección de Datos Personales,{" "}
-            <strong>entrará en vigencia el 1 de diciembre de 2026</strong>.
+            <strong>entrará en vigencia el 15 de octubre de 2027</strong>, fecha
+            que fijó la Ley N° 21.855 (publicada el 23 de noviembre de 2026).
             Estamos adecuando la plataforma a lo que esa ley mandata, con el
             objeto de cumplirla desde el día en que corresponda. Las referencias
             que esta política hace a sus artículos describen el estándar al que
@@ -138,9 +150,9 @@ export default function PrivacyPage() {
           </p>
           <ul className="list-disc pl-6 space-y-1 mt-2">
             <li>Enviarte el boletín o las alertas que solicitaste — tu <strong>consentimiento</strong>, que puedes retirar cuando quieras. Es la misma base en ambos regímenes.</li>
-            <li>Operar y asegurar el sitio (sesiones de miembros y administración) — el tratamiento es <strong>necesario para prestarte el servicio que tú mismo solicitaste</strong> al iniciar sesión, y se limita a eso. Desde el 1 de diciembre de 2026 se apoyará además en el <strong>interés legítimo</strong> en la seguridad de la información y la prevención de abuso.</li>
+            <li>Operar y asegurar el sitio (sesiones de miembros y administración) — el tratamiento es <strong>necesario para prestarte el servicio que tú mismo solicitaste</strong> al iniciar sesión, y se limita a eso. Desde el 15 de octubre de 2027 se apoyará además en el <strong>interés legítimo</strong> en la seguridad de la información y la prevención de abuso.</li>
             <li>Medir audiencia de forma agregada — <strong>no tratamos datos personales para esto</strong>: no almacenamos tu IP ni tu navegador, y el identificador diario no es reversible ni permite seguirte entre días. Al no haber dato que permita identificarte, no se requiere una base de licitud.</li>
-            <li>Rastrear, organizar y divulgar noticias de pueblos indígenas publicadas por medios de acceso público — el <strong>artículo 9° de la Ley 19.628</strong>, que exceptúa a los datos provenientes de fuentes accesibles al público de la limitación de finalidad, en cumplimiento de nuestra misión sin fines de lucro, informativa y educativa. Desde el 1 de diciembre de 2026 se sumará el <strong>interés legítimo</strong> en informar sobre asuntos indígenas de interés público.</li>
+            <li>Rastrear, organizar y divulgar noticias de pueblos indígenas publicadas por medios de acceso público — el <strong>artículo 9° de la Ley 19.628</strong>, que exceptúa a los datos provenientes de fuentes accesibles al público de la limitación de finalidad, en cumplimiento de nuestra misión sin fines de lucro, informativa y educativa. Desde el 15 de octubre de 2027 se sumará el <strong>interés legítimo</strong> en informar sobre asuntos indígenas de interés público.</li>
             <li>Cumplir obligaciones legales — <strong>obligación legal</strong>. Es la misma base en ambos regímenes.</li>
           </ul>
           <p className="mt-3">
@@ -172,7 +184,7 @@ export default function PrivacyPage() {
             solicitamos de forma específica al unirte y que puedes retirar en cualquier
             momento abandonando la comunidad. Su base de licitud es el consentimiento
             del titular, que hoy admite el artículo 10 de la Ley 19.628 y que
-            desde el 1 de diciembre de 2026 recogerá el artículo 16 de la Ley
+            desde el 15 de octubre de 2027 recogerá el artículo 16 de la Ley
             21.719.
           </p>
 
@@ -194,16 +206,16 @@ export default function PrivacyPage() {
               </thead>
               <tbody className="text-neutral-600">
                 <tr className="border-b border-neutral-100">
-                  <td className="align-top py-2 pr-4">Microsoft Azure</td>
+                  <td className="align-top py-2 pr-4">Amazon Web Services</td>
                   <td className="align-top py-2 pr-4">Base de datos y servidor de la API</td>
-                  <td className="align-top py-2 pr-4">Chile (Región Chile Central)</td>
+                  <td className="align-top py-2 pr-4">Brasil (región São Paulo), de forma temporal</td>
                   <td className="align-top py-2">Toda la base, incluidos correos de suscriptores</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Cloudflare (Pages)</td>
                   <td className="align-top py-2 pr-4">Entrega de las páginas del sitio y paso de las peticiones a la API</td>
                   <td className="align-top py-2 pr-4">EE.&nbsp;UU. (red de distribución global)</td>
-                  <td className="align-top py-2">Las páginas del sitio y, en tránsito entre tu navegador y el servidor en Chile, todo lo que envías y recibes: entre otros, tu correo al suscribirte al boletín o a alertas o al iniciar sesión, tus membresías a comunidades, tus comentarios y búsquedas, y la descarga o eliminación de tus datos. Como en toda conexión por internet, también tu dirección IP</td>
+                  <td className="align-top py-2">Las páginas del sitio y, en tránsito entre tu navegador y el servidor de la API, todo lo que envías y recibes: entre otros, tu correo al suscribirte al boletín o a alertas o al iniciar sesión, tus membresías a comunidades, tus comentarios y búsquedas, y la descarga o eliminación de tus datos. Como en toda conexión por internet, también tu dirección IP</td>
                 </tr>
                 <tr className="border-b border-neutral-100">
                   <td className="align-top py-2 pr-4">Anthropic (API de Claude)</td>
@@ -248,9 +260,11 @@ export default function PrivacyPage() {
           {/* 7. Transferencias */}
           <h2 className="section-heading mt-10">Transferencias internacionales</h2>
           <p>
-            Tu registro de suscriptor y de miembro se guarda en Chile: la base de
-            datos y el servidor de la API están en Microsoft Azure, Región Chile
-            Central. Para llegar a ese servidor, lo que envías desde el sitio
+            Desde el 29 de noviembre de 2026, tu registro de suscriptor y de
+            miembro se guarda en Brasil: la base de datos y el servidor de la API
+            están en Amazon Web Services, región São Paulo. Es un traslado
+            temporal mientras Amazon Web Services abre su región en Chile;
+            entonces volverán a Chile. Para llegar a ese servidor, lo que envías desde el sitio
             (suscripción al boletín o a alertas, inicio de sesión, membresía a
             comunidades, comentarios, búsquedas, descarga o eliminación de tus
             datos), y lo que el servidor te devuelve, pasa por Cloudflare, una
@@ -271,8 +285,8 @@ export default function PrivacyPage() {
           </p>
           <p className="mt-3">
             La Ley 19.628, vigente hoy, no contiene reglas específicas sobre
-            transferencias internacionales de datos. Desde el 1 de diciembre de
-            2026, la Ley
+            transferencias internacionales de datos. Desde el 15 de octubre de
+            2027, la Ley
             21.719 las permite, entre otras vías, hacia países que la Agencia de
             Protección de Datos Personales declare con un nivel adecuado de
             protección, o con garantías adecuadas suscritas con quien recibe los
@@ -303,15 +317,15 @@ export default function PrivacyPage() {
             Acusaremos recibo y <strong>nos pronunciaremos sobre tu solicitud
             dentro de dos días hábiles</strong>, que es el plazo que hoy fija el
             artículo 16 de la Ley 19.628; si no lo hiciéramos, puedes recurrir al
-            juez de letras en lo civil de nuestro domicilio. Desde el 1 de
-            diciembre de 2026, cuando rija la Ley 21.719, el plazo de respuesta
+            juez de letras en lo civil de nuestro domicilio. Desde el 15 de
+            octubre de 2027, cuando rija la Ley 21.719, el plazo de respuesta
             pasará a ser de <strong>30 días corridos</strong>, prorrogable por una
             sola vez hasta por 30 días adicionales (artículo 11).{" "}
             <strong>Ejercer tus derechos no tiene costo.</strong> Hoy la ley
             dispone que «la información, modificación o eliminación de los datos
             serán absolutamente gratuitas» (artículo 12, inciso quinto, de la Ley
             19.628); desde
-            el 1 de diciembre de 2026, la rectificación, la supresión y la
+            el 15 de octubre de 2027, la rectificación, la supresión y la
             oposición serán siempre gratuitas, y el acceso, al menos una vez por
             trimestre (artículo 10 de la Ley 21.719). Nosotros no cobraremos por
             ninguno.
@@ -341,7 +355,7 @@ export default function PrivacyPage() {
             reclamar. <strong>Hoy</strong> la vía es el{" "}
             <strong>juez de letras en lo civil</strong> del domicilio del
             responsable, conforme al artículo 16 de la Ley 19.628.{" "}
-            <strong>Desde el 1 de diciembre de 2026</strong>, cuando rija la Ley
+            <strong>Desde el 15 de octubre de 2027</strong>, cuando rija la Ley
             21.719, podrás reclamar ante la <strong>Agencia de Protección de
             Datos Personales</strong>, que esa misma ley crea.
           </p>
@@ -364,8 +378,8 @@ export default function PrivacyPage() {
             tránsito, contraseñas con hashing (bcrypt), control de acceso,
             rotación de tokens y registro de actividad. Ante un incidente que
             afecte datos personales, notificaremos sin dilaciones indebidas,
-            conforme al estándar que la Ley 21.719 exigirá desde el 1 de
-            diciembre de 2026.
+            conforme al estándar que la Ley 21.719 exigirá desde el 15 de
+            octubre de 2027.
           </p>
 
           {/* 12. Cookies / Términos */}
