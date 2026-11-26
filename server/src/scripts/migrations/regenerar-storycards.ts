@@ -108,19 +108,35 @@ async function bajar(Key: string): Promise<Buffer> {
   return Buffer.from(await r.Body!.transformToByteArray())
 }
 
-/** Las publicadas con tarjeta compuesta, leídas por la API pública (100 por página). */
-async function listarTarjetas(): Promise<Historia[]> {
+/**
+ * Las publicadas con tarjeta compuesta, leídas por la API pública (100 por página).
+ *
+ * El límite público es 100 consultas cada 15 minutos por IP, y el listado completo gasta 55:
+ * el 25-nov una corrida con `--limit=20` justo después de la simulación cayó en un 429 en la
+ * página 46. Por eso, con `--limit`, deja de paginar en cuanto junta las que necesita, y ante un
+ * 429 espera lo que diga `Retry-After` (o un minuto) y reintenta.
+ */
+async function listarTarjetas(hasta: number): Promise<Historia[]> {
   const base = config.siteUrl.replace(/\/$/, '')
   const out: Historia[] = []
   for (let page = 1; ; page++) {
-    const r = await fetch(`${base}/api/stories?pageSize=100&page=${page}`, {
-      headers: { 'User-Agent': 'regenerar-storycards/1.0' },
-    })
-    if (!r.ok) throw new Error(`API pública: HTTP ${r.status} en la página ${page}`)
-    const d = (await r.json()) as { data: Historia[]; totalPages: number }
+    let d: { data: Historia[]; totalPages: number } | null = null
+    for (let intento = 1; !d; intento++) {
+      const r = await fetch(`${base}/api/stories?pageSize=100&page=${page}`, {
+        headers: { 'User-Agent': 'regenerar-storycards/1.0' },
+      })
+      if (r.status === 429 && intento <= 20) {
+        const espera = Math.max(Number(r.headers.get('retry-after')) || 60, 10)
+        console.log(`  límite de la API (429) en la página ${page}: espero ${espera} s`)
+        await dormir(espera * 1000)
+        continue
+      }
+      if (!r.ok) throw new Error(`API pública: HTTP ${r.status} en la página ${page}`)
+      d = (await r.json()) as { data: Historia[]; totalPages: number }
+    }
     out.push(...d.data.filter((s) => nombreDeTarjeta(s.imageUrl)))
-    if (page >= d.totalPages) break
-    await dormir(400) // el límite público es 100 consultas cada 15 minutos por IP
+    if (page >= d.totalPages || out.length >= hasta) break
+    await dormir(400)
   }
   return out
 }
@@ -153,9 +169,12 @@ async function main(): Promise<void> {
   mkdirSync(logDir, { recursive: true })
   const logFile = path.join(logDir, `regenerar-storycards-${Date.now()}.jsonl`)
 
-  const todas = await listarTarjetas()
+  const todas = await listarTarjetas(LIMITE)
   const candidatas = todas.slice(0, LIMITE)
-  console.log(`${todas.length} noticias publicadas con tarjeta compuesta`)
+  console.log(
+    `${todas.length} noticias publicadas con tarjeta compuesta` +
+      (Number.isFinite(LIMITE) ? ' (listado cortado al juntar el lote)' : ''),
+  )
   if (candidatas.length < todas.length) console.log(`este lote toma ${candidatas.length}`)
   console.log(APLICAR ? '=== APLICANDO ===' : '=== SIMULACIÓN (sin --apply no escribe) ===')
 
