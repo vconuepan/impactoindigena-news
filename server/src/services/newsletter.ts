@@ -13,8 +13,8 @@ import { withRetry } from '../lib/retry.js'
 import { buildNewsletterSelectPrompt, buildNewsletterIntroPrompt } from '../prompts/index.js'
 import { newsletterSelectResultSchema, newsletterIntroSchema } from '../schemas/llm.js'
 import { publisherFromUrl } from '../lib/publisher.js'
-import { PREFIJO_AVISO_LARGO } from '../lib/avisoClientes.js'
-import { lineaDeAvisoParaPublicar } from './avisoClientes.js'
+import { PREFIJO_AVISO_LARGO, fraseDelAviso } from '../lib/avisoClientes.js'
+import { avisoParaPublicar, lineaDeAvisoParaPublicar } from './avisoClientes.js'
 
 const log = createLogger('newsletter')
 
@@ -345,13 +345,20 @@ export async function generateCarouselForNewsletter(newsletterId: string): Promi
     return nameA.localeCompare(nameB)
   })
 
-  const carouselStories: CarouselStory[] = stories.map(s => ({
-    title: s.title || s.sourceTitle,
-    category: s.issue?.name || s.feed?.issue?.name || 'General',
-    summary: s.summary || '',
-    publisher: publisherFromUrl(s.sourceUrl, s.feed?.displayTitle || s.feed?.title) || 'Unknown',
-    date: s.sourceDatePublished?.toISOString() || null,
-  }))
+  const carouselStories: CarouselStory[] = []
+  for (const s of stories) {
+    // Regla 2: el aviso de independencia en la imagen de la nota. Las imágenes
+    // se descargan y se publican a mano: si no se puede calcular, no se arman.
+    const aviso = await avisoParaPublicar(s.id)
+    carouselStories.push({
+      title: s.title || s.sourceTitle,
+      category: s.issue?.name || s.feed?.issue?.name || 'General',
+      summary: s.summary || '',
+      publisher: publisherFromUrl(s.sourceUrl, s.feed?.displayTitle || s.feed?.title) || 'Unknown',
+      date: s.sourceDatePublished?.toISOString() || null,
+      avisoIndependencia: aviso ? fraseDelAviso(aviso) : null,
+    })
+  }
 
   const outputDir = join(tmpdir(), `carousel_${newsletterId}_${Date.now()}`)
   return generateCarouselZip(carouselStories, outputDir)

@@ -25,7 +25,16 @@ export interface CarouselStory {
   summary: string
   publisher: string
   date: string | null
+  /**
+   * Regla 2 de la independencia editorial: la frase del aviso genérico
+   * («Esta nota menciona a una organización que es cliente de …», nunca el
+   * nombre), o null. Va en una franja propia al pie de la imagen.
+   */
+  avisoIndependencia?: string | null
 }
+
+/** Donde empieza la franja del aviso; el resumen se detiene antes. */
+const AVISO_Y = HEIGHT - 115
 
 function wrapText(ctx: any, text: string, maxWidth: number): string[] {
   const words = text.split(' ')
@@ -104,10 +113,25 @@ export function createStoryImage(story: CarouselStory): Buffer {
   ctx.fillStyle = '#374151'
   ctx.font = `400 20px '${FONT}'`
   const summaryLines = wrapText(ctx, story.summary, WIDTH - PADDING * 2)
+  // Con aviso, el resumen termina antes: la franja del aviso no la pisa nada.
+  const limiteResumen = story.avisoIndependencia ? AVISO_Y - 28 : HEIGHT - PADDING - 80
   for (const line of summaryLines) {
-    if (currentY > HEIGHT - PADDING - 80) break // Leave room for logo area
+    if (currentY > limiteResumen) break // Leave room for logo area
     ctx.fillText(line, PADDING, currentY)
     currentY += 30
+  }
+
+  // Regla 2 (director, 25-nov-2026): el aviso de independencia, dibujado por el
+  // código en su franja fija. La frase entera: se reparte en líneas, nunca se corta.
+  if (story.avisoIndependencia) {
+    ctx.fillStyle = '#2563eb'
+    ctx.font = `700 13px '${FONT}'`
+    ctx.fillText('AVISO DE INDEPENDENCIA', PADDING, AVISO_Y)
+    ctx.fillStyle = '#374151'
+    ctx.font = `400 15px '${FONT}'`
+    wrapText(ctx, story.avisoIndependencia, WIDTH - PADDING * 2).forEach((linea, i) => {
+      ctx.fillText(linea, PADDING, AVISO_Y + 22 + i * 20)
+    })
   }
 
   // Logo placeholder (bottom-right)

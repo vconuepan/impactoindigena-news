@@ -71,3 +71,46 @@ describe('generateCarouselZip', () => {
     expect(existsSync(zipPath)).toBe(true)
   })
 })
+
+// ---------------------------------------------------------------------------
+// Regla 2: el aviso de independencia (director, 25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('el aviso de independencia en la imagen de la nota', async () => {
+  const { loadImage, createCanvas } = await import('@napi-rs/canvas')
+  const FRASE = 'Esta nota menciona a organizaciones que son o fueron clientes de impactoindigena.ai y de impactoindigena.legal.'
+  const LARGO = { ...sampleStory, summary: 'Un resumen largo que llena el espacio disponible de la imagen. '.repeat(20) }
+
+  /** Píxeles que no son blancos en la franja del aviso (y de 545 a 615). */
+  async function tintaEnLaFranja(png: Buffer): Promise<number> {
+    const img = await loadImage(png)
+    const c = createCanvas(img.width, img.height)
+    const ctx = c.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const { data } = ctx.getImageData(0, 545, 1100, 70)
+    let n = 0
+    for (let i = 0; i < data.length; i += 4) if (data[i] < 200 || data[i + 1] < 200 || data[i + 2] < 200) n++
+    return n
+  }
+
+  it('con aviso: la franja lleva texto, aun con un resumen que llena la imagen', async () => {
+    expect(await tintaEnLaFranja(createStoryImage({ ...LARGO, avisoIndependencia: FRASE }))).toBeGreaterThan(200)
+  })
+
+  it('sin aviso, con un resumen corto, la franja queda en blanco', async () => {
+    expect(await tintaEnLaFranja(createStoryImage({ ...sampleStory, avisoIndependencia: null }))).toBe(0)
+    expect(await tintaEnLaFranja(createStoryImage(sampleStory))).toBe(0)
+  })
+
+  it('con aviso, el resumen se detiene antes de la franja', async () => {
+    // El rótulo empieza en y=560; de 530 a 545 no puede haber resumen.
+    const img = await loadImage(createStoryImage({ ...LARGO, avisoIndependencia: FRASE }))
+    const c = createCanvas(img.width, img.height)
+    const ctx = c.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const { data } = ctx.getImageData(0, 530, 1100, 15)
+    let n = 0
+    for (let i = 0; i < data.length; i += 4) if (data[i] < 200) n++
+    expect(n).toBe(0)
+  })
+})

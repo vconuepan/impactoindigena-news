@@ -16,8 +16,18 @@ const mockPrisma = vi.hoisted(() => ({
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
 // Regla 2: por defecto ninguna nota menciona a un cliente.
-const mockAviso = vi.hoisted(() => ({ lineaDeAvisoParaPublicar: vi.fn(async () => null as string | null) }))
+const mockAviso = vi.hoisted(() => ({
+  lineaDeAvisoParaPublicar: vi.fn(async () => null as string | null),
+  avisoParaPublicar: vi.fn(async () => null as unknown),
+}))
 vi.mock('./avisoClientes.js', () => mockAviso)
+
+// El ZIP del carrusel se prueba en carousel.test.ts; acá solo qué recibe.
+const mockZip = vi.hoisted(() => vi.fn(async () => '/tmp/carrusel.zip'))
+vi.mock('./carousel.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./carousel.js')>()),
+  generateCarouselZip: mockZip,
+}))
 vi.mock('./llm.js', () => ({
   getLLMByTier: vi.fn(() => ({
     withStructuredOutput: vi.fn(() => ({
@@ -30,7 +40,7 @@ vi.mock('../lib/retry.js', () => ({
   withRetry: vi.fn((fn: () => Promise<any>) => fn()),
 }))
 
-const { generateHtmlContent, generateContent, assignStories } = await import('./newsletter.js')
+const { generateHtmlContent, generateContent, generateCarouselForNewsletter, assignStories } = await import('./newsletter.js')
 
 describe('generateHtmlContent', () => {
   beforeEach(() => {
@@ -343,5 +353,46 @@ describe('el aviso de independencia en el boletín', () => {
     const html = await generateHtmlContent('nl-1')
 
     expect(html).not.toContain('Aviso de independencia')
+  })
+})
+
+describe('el aviso de independencia en el carrusel del boletín', () => {
+  const nota = (id: string) => ({
+    id, title: `Nota ${id}`, sourceTitle: `Nota ${id}`, sourceUrl: `https://medio.cl/${id}`, summary: 'Resumen.',
+    sourceDatePublished: null, feed: { title: 'Medio', displayTitle: 'Medio', issue: null }, issue: { name: 'Territorio' },
+  })
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockPrisma.newsletter.findUnique.mockResolvedValue({ id: 'nl-1', selectedStoryIds: ['a', 'b'] })
+    mockPrisma.story.findMany.mockResolvedValue([nota('a'), nota('b')])
+  })
+
+  it('cada imagen lleva el aviso de su nota, y solo la que lo requiere', async () => {
+    mockAviso.avisoParaPublicar.mockImplementation(async (id: string) =>
+      id === 'a' ? { verticals: ['legal'], current: true, plural: false } : null)
+
+    await generateCarouselForNewsletter('nl-1')
+
+    const enviadas = mockZip.mock.calls[0][0] as Array<{ title: string; avisoIndependencia: string | null }>
+    expect(enviadas.find((n) => n.title === 'Nota a')!.avisoIndependencia)
+      .toBe('Esta nota menciona a una organización que es cliente de impactoindigena.legal.')
+    expect(enviadas.find((n) => n.title === 'Nota b')!.avisoIndependencia).toBeNull()
+  })
+
+  it('sin aviso, ninguna imagen lo lleva', async () => {
+    mockAviso.avisoParaPublicar.mockResolvedValue(null)
+
+    await generateCarouselForNewsletter('nl-1')
+
+    const enviadas = mockZip.mock.calls[0][0] as Array<{ avisoIndependencia: string | null }>
+    expect(enviadas.every((n) => n.avisoIndependencia === null)).toBe(true)
+  })
+
+  it('si el aviso no se puede calcular, el carrusel no se arma', async () => {
+    mockAviso.avisoParaPublicar.mockRejectedValue(new Error('db down'))
+
+    await expect(generateCarouselForNewsletter('nl-1')).rejects.toThrow('db down')
+    expect(mockZip).not.toHaveBeenCalled()
   })
 })

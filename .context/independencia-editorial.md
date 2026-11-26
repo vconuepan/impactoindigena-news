@@ -85,6 +85,7 @@ Las funciones puras viven en `lib/avisoClientes.ts` (`fraseDelAviso`, `textoDelA
 | Instagram (pie) | larga | Después de «Reporteó» y el enlace, antes de la línea de IA | 2200: cede el texto del modelo (`pieConAtribucion`) |
 | Carrusel (panel, Instagram, PDF de LinkedIn) | frase de la ficha | Cierre, entre el logo y el título, con el rótulo «AVISO DE INDEPENDENCIA» | Hueco fijo de tres líneas; si no cupiera, aviso `espacio` (nunca se recorta) |
 | Boletín | larga | Párrafo propio bajo el texto de la nota, con enlace a `/about#independencia` | — |
+| Carrusel del boletín (una PNG por nota, `services/carousel.ts`) | frase de la ficha | Franja fija al pie, con el rótulo «AVISO DE INDEPENDENCIA»; el resumen se detiene antes | La frase se reparte en líneas, nunca se corta |
 
 Corta: «Aviso: la nota menciona a un cliente / un excliente / clientes o exclientes / exclientes
 de impactoindigena.legal.». Larga: «Aviso de independencia: esta nota menciona a …», la frase de
@@ -113,5 +114,4 @@ regenere la edición.
 
 ## Lo que no cubre (todavía)
 
-Las imágenes del carrusel del boletín (`services/carousel.ts`, una PNG por nota) y la vista para
-bots (`routes/og.ts`, que solo sirve el `<head>`) no llevan el aviso.
+La vista para bots (`routes/og.ts`, que solo sirve el `<head>`) no lleva el aviso.
