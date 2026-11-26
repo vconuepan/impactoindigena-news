@@ -42,14 +42,14 @@ export default function PrivacyPage() {
       <div className="page-section">
         <div className="prose max-w-none">
           <p className="text-sm text-neutral-500 not-prose mb-6">
-            Versión 3.9 · vigente desde el 29 de noviembre de 2026.
+            Versión 3.9 · vigente desde el 26 de noviembre de 2026.
           </p>
           {/* Aviso del cambio sustancial (la política promete avisar «por los canales
               del sitio»). Texto aprobado por el director el 26-nov-2026, fuente:
               impactoindigena/docs/POLITICAS_SAO_PAULO_BORRADOR_2026-11-25.md, §5. */}
           <div className="not-prose mb-8 rounded-lg border border-brand-100 bg-brand-50 px-4 py-3 text-sm text-neutral-700">
             <strong className="text-neutral-900">Cambio en esta versión.</strong>{" "}
-            Desde el 29 de noviembre de 2026, el servidor y la base de datos de
+            Desde el 26 de noviembre de 2026, el servidor y la base de datos de
             Impacto Indígena News pasan de Microsoft Azure en Chile a Amazon Web
             Services en São Paulo, Brasil. Es un traslado temporal: cuando Amazon
             Web Services abra su región en Chile, los datos vuelven a Chile. No
@@ -260,7 +260,7 @@ export default function PrivacyPage() {
           {/* 7. Transferencias */}
           <h2 className="section-heading mt-10">Transferencias internacionales</h2>
           <p>
-            Desde el 29 de noviembre de 2026, tu registro de suscriptor y de
+            Desde el 26 de noviembre de 2026, tu registro de suscriptor y de
             miembro se guarda en Brasil: la base de datos y el servidor de la API
             están en Amazon Web Services, región São Paulo. Es un traslado
             temporal mientras Amazon Web Services abre su región en Chile;
