@@ -34,6 +34,10 @@ const mockCarrusel = vi.hoisted(() => ({
 }))
 const mockLLM = vi.hoisted(() => ({ invoke: vi.fn() }))
 
+// Regla 2: por defecto ninguna nota menciona a un cliente.
+const mockAviso = vi.hoisted(() => ({ lineaDeAvisoParaPublicar: vi.fn(async () => null as string | null) }))
+vi.mock('./avisoClientes.js', () => mockAviso)
+
 vi.mock('../lib/linkedin.js', () => ({ ...mockLib, LinkedInAuthError }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('../lib/logger.js', () => ({
@@ -219,5 +223,98 @@ describe('la galería de LinkedIn', () => {
 
     const imagenes = mockLib.createUgcPost.mock.calls[0][4]
     expect(imagenes).toEqual(['https://medio.test/foto.jpg'])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Regla 2: el aviso de independencia (director, 25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('aviso de independencia (regla 2)', () => {
+  const AVISO = 'Aviso de independencia: esta nota menciona a una organización que es cliente de impactoindigena.legal.'
+  const CON_AVISO = ['https://pub.r2.test/social/s1-original-aviso-01-1.jpg', 'https://pub.r2.test/social/s1-original-aviso-02-1.jpg']
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(null)
+    mockPrisma.story.findUnique.mockResolvedValue(noticia())
+    mockPrisma.linkedInPost.findFirst.mockResolvedValue(null)
+    mockPrisma.linkedInPost.create.mockImplementation(async ({ data }: any) => ({ id: 'li-1', ...data }))
+    mockPrisma.linkedInPost.update.mockResolvedValue({})
+    mockLLM.invoke.mockResolvedValue({ postText: 'Texto del post' })
+    mockLib.isLinkedInConfigured.mockReturnValue(true)
+    mockLib.createUgcPost.mockResolvedValue({ id: 'urn:li:share:1', permalink: 'https://linkedin.com/x' })
+  })
+
+  it('con aviso: el texto lo lleva al final y no reutiliza láminas de Instagram sin el aviso en el cierre', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    mockPrisma.instagramPost.findUnique.mockResolvedValue({ slideUrls: NUEVAS })
+    mockCarrusel.buildStoryCarouselForSocial.mockResolvedValue({ imagenes: [Buffer.from('a')], avisoIndependencia: { verticals: ['legal'], current: true, plural: false } })
+    mockCarrusel.subirCarrusel.mockResolvedValue(CON_AVISO)
+
+    const post = await generateDraft('s1')
+
+    expect(post.postText).toBe(`Texto del post\n\n${AVISO}`)
+    expect(mockCarrusel.subirCarrusel).toHaveBeenCalledWith('s1', [Buffer.from('a')], true)
+    expect(post.slideUrls).toEqual(CON_AVISO)
+  })
+
+  it('con aviso: reutiliza las láminas de Instagram si su cierre ya lo lleva', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    mockPrisma.instagramPost.findUnique.mockResolvedValue({ slideUrls: CON_AVISO })
+
+    const post = await generateDraft('s1')
+
+    expect(post.slideUrls).toEqual(CON_AVISO)
+    expect(mockCarrusel.buildStoryCarouselForSocial).not.toHaveBeenCalled()
+  })
+
+  it('sin aviso: el texto es el del modelo y no reutiliza láminas con un aviso que ya no corresponde', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue({ slideUrls: CON_AVISO })
+    mockCarrusel.buildStoryCarouselForSocial.mockResolvedValue({ imagenes: [Buffer.from('a')], avisoIndependencia: null })
+    mockCarrusel.subirCarrusel.mockResolvedValue(NUEVAS)
+
+    const post = await generateDraft('s1')
+
+    expect(post.postText).toBe('Texto del post')
+    expect(mockCarrusel.subirCarrusel).toHaveBeenCalledWith('s1', [Buffer.from('a')], false)
+  })
+
+  it('al publicar con aviso: va antes de la línea de IA, y una galería sin el aviso en el cierre no sale', async () => {
+    const { AI_LABEL } = await import('../lib/ai-label.js')
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    mockPrisma.linkedInPost.findUnique.mockResolvedValue({
+      id: 'li-1', status: 'draft', postText: 'Texto', slideUrls: NUEVAS, story: noticia(),
+    })
+
+    await publishPost('li-1')
+
+    const [texto, , , , imagenes] = mockLib.createUgcPost.mock.calls[0]
+    expect(texto).toBe(`Texto\n\n${AVISO}\n\n${AI_LABEL}`)
+    expect(imagenes).toEqual(['https://medio.test/foto.jpg'])
+  })
+
+  it('al publicar con aviso y la galería al día, la galería sale', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    mockPrisma.linkedInPost.findUnique.mockResolvedValue({
+      id: 'li-1', status: 'draft', postText: `Texto\n\n${AVISO}`, slideUrls: CON_AVISO, story: noticia(),
+    })
+
+    await publishPost('li-1')
+
+    expect(mockLib.createUgcPost.mock.calls[0][4]).toEqual(CON_AVISO)
+    expect((mockLib.createUgcPost.mock.calls[0][0] as string).split(AVISO)).toHaveLength(2)
+  })
+
+  it('al publicar sin aviso: la galería sin aviso sale y el texto no lo lleva', async () => {
+    const { AI_LABEL } = await import('../lib/ai-label.js')
+    mockPrisma.linkedInPost.findUnique.mockResolvedValue({
+      id: 'li-1', status: 'draft', postText: 'Texto', slideUrls: NUEVAS, story: noticia(),
+    })
+
+    await publishPost('li-1')
+
+    expect(mockLib.createUgcPost.mock.calls[0][0]).toBe(`Texto\n\n${AI_LABEL}`)
+    expect(mockLib.createUgcPost.mock.calls[0][4]).toEqual(NUEVAS)
   })
 })

@@ -1,12 +1,23 @@
 import prisma from '../lib/prisma.js'
 import { createLogger } from '../lib/logger.js'
 import { createTweet, getTweetMetrics, isTwitterConfigured } from '../lib/twitter.js'
+import { conAvisoDeIndependencia, sinAvisoDeIndependencia } from '../lib/avisoClientes.js'
+import { lineaDeAvisoParaPublicar } from './avisoClientes.js'
 
 const log = createLogger('twitter-service')
 
 // ---------------------------------------------------------------------------
 // Draft generation
 // ---------------------------------------------------------------------------
+
+/** X admite 280; 275 deja margen. */
+const TOPE_X = 275
+
+/** Texto, aviso (si corresponde) y enlace, dentro del tope de X. */
+export function textoDelTweet(texto: string, storyUrl: string, avisoIndependencia: string | null): string {
+  const cola = `\n\n${storyUrl}`
+  return conAvisoDeIndependencia(`${sinAvisoDeIndependencia(texto)}${cola}`, avisoIndependencia, { tope: TOPE_X, separador: '\n', cola })
+}
 
 export async function generateDraft(storyId: string) {
   const story = await prisma.story.findUnique({
@@ -29,14 +40,15 @@ export async function generateDraft(storyId: string) {
     orderBy: { createdAt: 'desc' },
   })
 
-  const baseText = blueskyPost?.postText || story.marketingBlurb || story.summary || story.title || ''
+  // El texto de Bluesky puede traer su propio aviso: se saca y se vuelve a
+  // poner abajo, para que el recorte de X nunca se lo coma.
+  const baseText = sinAvisoDeIndependencia(blueskyPost?.postText || story.marketingBlurb || story.summary || story.title || '')
   const storyUrl = `https://impactoindigena.news/stories/${story.slug}`
 
-  // Agregar link al final
-  const textWithLink = `${baseText}\n\n${storyUrl}`
-  const trimmed = textWithLink.length > 275
-    ? baseText.slice(0, 235) + '…\n\n' + storyUrl
-    : textWithLink
+  // Regla 2: el aviso corto va en la última línea del texto, antes del enlace.
+  // Si no cabe, cede el texto, nunca el aviso ni el enlace.
+  const avisoIndependencia = await lineaDeAvisoParaPublicar(storyId, 'corta')
+  const trimmed = textoDelTweet(baseText, storyUrl, avisoIndependencia)
 
   // La imagen es la que la historia ya tiene (su hero propio o el og:image de la
   // fuente, re-hospedado en R2 al publicar): no se genera una nueva con IA.
@@ -144,11 +156,16 @@ export async function publishPost(postId: string) {
   if (post.status !== 'draft') throw new Error('Can only publish draft posts')
 
   try {
-    const result = await createTweet(post.postText, post.imageUrl ?? undefined)
+    // Regla 2: el aviso se vuelve a calcular al publicar (ver bluesky.ts).
+    const avisoIndependencia = await lineaDeAvisoParaPublicar(post.story.id, 'corta')
+    const cola = `\n\nhttps://impactoindigena.news/stories/${post.story.slug}`
+    const texto = conAvisoDeIndependencia(post.postText, avisoIndependencia, { tope: TOPE_X, separador: '\n', cola })
+    const result = await createTweet(texto, post.imageUrl ?? undefined)
 
     const updated = await prisma.twitterPost.update({
       where: { id: postId },
       data: {
+        postText: texto,
         status: 'published',
         tweetId: result.id,
         tweetUrl: result.url,

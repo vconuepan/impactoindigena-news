@@ -17,6 +17,10 @@ const mockPrisma = vi.hoisted(() => ({
 }))
 vi.mock('../../lib/prisma.js', () => ({ default: mockPrisma }))
 
+// Regla 2: por defecto ninguna nota menciona a un cliente.
+const mockAviso = vi.hoisted(() => ({ avisoParaPublicar: vi.fn(async () => null as unknown) }))
+vi.mock('../../services/avisoClientes.js', () => mockAviso)
+
 const mockLLM = vi.hoisted(() => ({
   invoke: vi.fn(),
   withStructuredOutput: vi.fn(),

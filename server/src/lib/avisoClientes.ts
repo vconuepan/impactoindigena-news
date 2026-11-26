@@ -154,3 +154,98 @@ export function motivoRutInvalido(rut: string): string | null {
   }
   return null
 }
+
+// ---------------------------------------------------------------------------
+// El aviso fuera de la ficha: redes, boletín y carrusel
+// ---------------------------------------------------------------------------
+//
+// Formato aprobado por el director el 25-nov-2026. Las mismas frases que la
+// ficha (`storyPage.independence` en client/src/locales/es.json), sin nombre ni
+// enlace: el enlace a la ficha que ya lleva cada post muestra el aviso completo.
+
+const DOMINIO_VERTICAL: Record<VerticalCliente, string> = {
+  ai: 'impactoindigena.ai',
+  legal: 'impactoindigena.legal',
+}
+
+function verticalesEnTexto(aviso: AvisoIndependencia): string {
+  return aviso.verticals.map((v) => DOMINIO_VERTICAL[v]).join(' y de ')
+}
+
+/** La frase de la ficha: «Esta nota menciona a una organización que es cliente de …». */
+export function fraseDelAviso(aviso: AvisoIndependencia): string {
+  const quien = aviso.plural
+    ? aviso.current ? 'organizaciones que son o fueron clientes' : 'organizaciones que fueron clientes'
+    : aviso.current ? 'una organización que es cliente' : 'una organización que fue cliente'
+  return `Esta nota menciona a ${quien} de ${verticalesEnTexto(aviso)}.`
+}
+
+export const PREFIJO_AVISO_LARGO = 'Aviso de independencia: '
+export const PREFIJO_AVISO_CORTO = 'Aviso: la nota menciona '
+
+/**
+ * `larga`: Mastodon, Facebook, LinkedIn, el pie de Instagram y el boletín.
+ * `corta`: X y Bluesky, donde cada carácter le quita espacio al gancho.
+ */
+export function textoDelAviso(aviso: AvisoIndependencia | null, forma: 'larga' | 'corta'): string | null {
+  if (!aviso || aviso.verticals.length === 0) return null
+  if (forma === 'larga') {
+    const frase = fraseDelAviso(aviso)
+    return PREFIJO_AVISO_LARGO + frase.charAt(0).toLowerCase() + frase.slice(1)
+  }
+  const quien = aviso.plural
+    ? aviso.current ? 'a clientes o exclientes' : 'a exclientes'
+    : aviso.current ? 'a un cliente' : 'a un excliente'
+  return `${PREFIJO_AVISO_CORTO}${quien} de ${verticalesEnTexto(aviso)}.`
+}
+
+function esLineaDeAviso(linea: string): boolean {
+  const t = linea.trim()
+  return t.startsWith(PREFIJO_AVISO_LARGO) || t.startsWith(PREFIJO_AVISO_CORTO)
+}
+
+/** El texto sin las líneas de aviso que agregó el código (las dos formas). */
+export function sinAvisoDeIndependencia(texto: string): string {
+  return texto
+    .split('\n')
+    .filter((l) => !esLineaDeAviso(l))
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trimEnd()
+}
+
+export interface OpcionesDelAviso {
+  /** Tope de caracteres del texto entero. El que cede es el cuerpo, nunca el aviso ni la cola. */
+  tope?: number
+  /** Entre el cuerpo y el aviso. Por defecto, un párrafo aparte. */
+  separador?: string
+  /** Final del texto que no se recorta (enlaces, «Reporteó»). Si el texto no termina así, no hay cola. */
+  cola?: string
+  /** true: el aviso va después de la cola; false (por defecto): antes. */
+  alFinal?: boolean
+}
+
+/**
+ * Pone el aviso que corresponde HOY y saca el que ya no corresponde. Idempotente:
+ * se llama al armar el borrador y otra vez al publicar, así que una edición en el
+ * panel no lo borra y un cliente agregado o descartado entre medio queda al día.
+ * Mismo método que `withAiLabel`: si no cabe, se acorta el cuerpo, nunca el aviso.
+ */
+export function conAvisoDeIndependencia(texto: string, aviso: string | null, o: OpcionesDelAviso = {}): string {
+  const separador = o.separador ?? '\n\n'
+  let cuerpo = sinAvisoDeIndependencia(texto)
+  let cola = ''
+  if (o.cola && cuerpo.endsWith(o.cola)) {
+    cola = o.cola
+    cuerpo = cuerpo.slice(0, cuerpo.length - cola.length).trimEnd()
+  }
+  const espacio = (o.tope ?? Infinity) - (aviso ? separador.length + aviso.length : 0) - cola.length
+  if (cuerpo.length > espacio) {
+    let corte = Math.max(0, espacio - 1)
+    const codigo = cuerpo.charCodeAt(corte - 1)
+    if (codigo >= 0xd800 && codigo <= 0xdbff) corte -= 1 // no partir un emoji
+    cuerpo = cuerpo.slice(0, corte).trimEnd() + '…'
+  }
+  if (!aviso) return cuerpo + cola
+  return o.alFinal ? `${cuerpo}${cola}${separador}${aviso}` : `${cuerpo}${separador}${aviso}${cola}`
+}

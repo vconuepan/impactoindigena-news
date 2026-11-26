@@ -35,15 +35,23 @@ describe('cada red publica con la línea de IA, no con el borrador crudo', () =>
   const servicio = (nombre: string) =>
     readFileSync(path.resolve(__dirname, `../services/${nombre}.ts`), 'utf8')
 
+  // Desde el 25-nov-2026 el texto pasa antes por el aviso de independencia
+  // (regla 2), y la línea de IA se agrega a ese texto, siempre al final.
   it('Facebook', () => {
-    expect(servicio('facebook')).toMatch(/createPagePost\(withAiLabel\(post\.postText\)/)
+    const fuente = servicio('facebook')
+    expect(fuente).toMatch(/const texto = conAvisoDeIndependencia\(post\.postText, /)
+    expect(fuente).toMatch(/createPagePost\(withAiLabel\(texto\)/)
   })
 
   it('Instagram', () => {
-    expect(servicio('instagram')).toMatch(/runPublish\(postId, slideUrls, withAiLabel\(post\.caption, 2200\)\)/)
+    const fuente = servicio('instagram')
+    expect(fuente).toMatch(/const caption = conAvisoDeIndependencia\(post\.caption, /)
+    expect(fuente).toMatch(/runPublish\(postId, slideUrls, withAiLabel\(caption, 2200\)\)/)
   })
 
   it('LinkedIn', () => {
-    expect(servicio('linkedin')).toMatch(/createUgcPost\(\s*withAiLabel\(post\.postText, 3000\)/)
+    const fuente = servicio('linkedin')
+    expect(fuente).toMatch(/const texto = conAvisoDeIndependencia\(post\.postText, /)
+    expect(fuente).toMatch(/createUgcPost\(\s*withAiLabel\(texto, 3000\)/)
   })
 })

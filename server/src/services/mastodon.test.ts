@@ -29,7 +29,11 @@ const mockLlm = vi.hoisted(() => ({
   invoke: vi.fn(),
 }))
 
+// Regla 2: por defecto ninguna nota menciona a un cliente.
+const mockAviso = vi.hoisted(() => ({ lineaDeAvisoParaPublicar: vi.fn(async () => null as string | null) }))
+
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
+vi.mock('./avisoClientes.js', () => mockAviso)
 vi.mock('../lib/mastodon.js', () => mockMastodonClient)
 vi.mock('./llm.js', () => ({
   getLLMByTier: vi.fn(() => ({
@@ -438,5 +442,68 @@ describe('getFeed', () => {
     const result = await getFeed({ maxId: 'some-id' })
 
     expect(result.dbOnlyPosts).toHaveLength(0)
+  })
+})
+
+describe('aviso de independencia (regla 2)', async () => {
+  const { config } = await import('../config.js')
+  const AVISO = 'Aviso de independencia: esta nota menciona a una organización que es cliente de impactoindigena.ai.'
+  const story = {
+    id: 'story-1', title: 'T', titleLabel: '', summary: 'S', relevanceSummary: 'R', emotionTag: 'uplifting',
+    slug: 'la-nota', sourceUrl: 'https://medio.cl/nota', feed: { title: 'Medio', displayTitle: 'Medio' }, issue: { name: 'Tierra' },
+  }
+  const storyUrl = `${config.siteUrl}/stories/la-nota`
+  const cola = `\n${story.sourceUrl}\n${storyUrl}`
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(null)
+    mockPrisma.mastodonPost.create.mockImplementation(async ({ data }: any) => ({ id: 'p', ...data }))
+    mockPrisma.mastodonPost.update.mockImplementation(async ({ data }: any) => ({ id: 'p', ...data }))
+    mockMastodonClient.createStatus.mockResolvedValue({ id: '1', url: 'https://m/1' })
+  })
+
+  it('con aviso: el borrador lo lleva al final, después de las dos URL', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.mastodonPost.findFirst.mockResolvedValue(null)
+    mockLlm.invoke.mockResolvedValue({ postText: 'Gancho.' })
+
+    await generateDraft('story-1')
+
+    expect(mockAviso.lineaDeAvisoParaPublicar).toHaveBeenCalledWith('story-1', 'larga')
+    const texto = mockPrisma.mastodonPost.create.mock.calls[0][0].data.postText as string
+    expect(texto.endsWith(`${cola}\n${AVISO}`)).toBe(true)
+  })
+
+  it('sin aviso: el borrador termina en la URL de la ficha', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.mastodonPost.findFirst.mockResolvedValue(null)
+    mockLlm.invoke.mockResolvedValue({ postText: 'Gancho.' })
+
+    await generateDraft('story-1')
+
+    expect((mockPrisma.mastodonPost.create.mock.calls[0][0].data.postText as string).endsWith(storyUrl)).toBe(true)
+  })
+
+  it('al publicar: agrega el aviso, recorta el gancho y nunca las URL', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    const largo = 'g'.repeat(config.mastodon.charLimit) + `\nTierra | found on Medio${cola}`
+    mockPrisma.mastodonPost.findUnique.mockResolvedValue({ id: 'p', status: 'draft', postText: largo, story })
+
+    await publishPost('p')
+
+    const enviado = mockMastodonClient.createStatus.mock.calls[0][0] as string
+    expect(enviado.length).toBeLessThanOrEqual(config.mastodon.charLimit)
+    expect(enviado.endsWith(`${cola}\n${AVISO}`)).toBe(true)
+  })
+
+  it('al publicar sin aviso: el texto sale tal cual', async () => {
+    const texto = `Gancho.\nTierra | found on Medio${cola}`
+    mockPrisma.mastodonPost.findUnique.mockResolvedValue({ id: 'p', status: 'draft', postText: texto, story })
+
+    await publishPost('p')
+
+    expect(mockMastodonClient.createStatus).toHaveBeenCalledWith(texto)
   })
 })

@@ -557,6 +557,24 @@ invariant IndependenceNoticeIsGeneric {
         story.independence_notice has only verticals, current, plural
 }
 
+rule IndependenceNoticeOutsideTheStoryPage {
+    -- Director 2026-11-25: the same generic notice goes wherever a story
+    -- leaves the site: the six social channels, the newsletter card and the
+    -- story carousel's closing slide. Same computation as the story page.
+    when: DraftGenerated(story, surface) or Published(story, surface)
+    let notice = ComputeIndependenceNotice(story)          -- recomputed at publish
+    ensures: notice = null implies surface.text has no notice line
+    ensures: notice != null implies surface.text has exactly one notice line,
+             placed last (before the AI label where the channel has one)
+    ensures: a length cap trims the body, never the notice, the links or
+             the attribution
+    -- Unlike the story page, a failure to compute it BLOCKS the publication:
+    -- a post published without its notice stays that way. Missing tables
+    -- are not a failure (empty list, no notice).
+    -- Slides are drawn at draft time and carry the notice state in their
+    -- name; at publish a mismatch blocks Instagram and drops LinkedIn's gallery.
+}
+
 invariant ClientListIsAdminOnly {
     -- Reading or changing the list, and dismissing a match, requires the
     -- admin role; every write lands in audit_log.

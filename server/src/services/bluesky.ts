@@ -11,6 +11,11 @@ import { blueskyPostTextSchema, blueskyPickBestSchema } from '../schemas/bluesky
 import type { AuthorFeedResult } from '../lib/bluesky.js'
 import { TTLCache, cached } from '../lib/cache.js'
 import { limpiarPost } from '../lib/personasSensibles.js'
+import { conAvisoDeIndependencia } from '../lib/avisoClientes.js'
+import { lineaDeAvisoParaPublicar } from './avisoClientes.js'
+
+/** Tope de Bluesky, en grafemas. Se mide en caracteres, que nunca son menos. */
+const TOPE_BLUESKY = 300
 
 const log = createLogger('bluesky-service')
 
@@ -59,9 +64,12 @@ export function assemblePostText(parts: {
   issueName: string | null
   emotionTag: string | null
   publisherName: string
+  /** Regla 2: la línea corta del aviso de independencia, o null. Va al final. */
+  avisoIndependencia?: string | null
 }): string {
   const metaLine = buildMetaLine(parts)
-  return `${parts.blurb}\n${metaLine}`
+  const texto = `${parts.blurb}\n${metaLine}`
+  return parts.avisoIndependencia ? `${texto}\n${parts.avisoIndependencia}` : texto
 }
 
 /**
@@ -71,10 +79,12 @@ function calcMaxBlurbChars(parts: {
   issueName: string | null
   emotionTag: string | null
   publisherName: string
+  avisoIndependencia?: string | null
 }): number {
   const metaLine = buildMetaLine(parts)
-  // 300 grapheme limit minus metadata line and newline
-  return Math.max(50, 300 - metaLine.length - 1)
+  const aviso = parts.avisoIndependencia ? parts.avisoIndependencia.length + 1 : 0
+  // 300 grapheme limit minus metadata line, newline and the independence notice
+  return Math.max(50, TOPE_BLUESKY - metaLine.length - 1 - aviso)
 }
 
 /**
@@ -116,10 +126,13 @@ export async function generateDraft(storyId: string) {
   const emotionTag = story.emotionTag
   const titleLabel = story.titleLabel || ''
 
+  // Regla 2 (independencia editorial): el aviso le quita espacio al gancho, no al revés.
+  const avisoIndependencia = await lineaDeAvisoParaPublicar(storyId, 'corta')
   const maxChars = calcMaxBlurbChars({
     issueName,
     emotionTag,
     publisherName,
+    avisoIndependencia,
   })
 
   const storyForPrompt: StoryForBlueskyPost = {
@@ -154,6 +167,7 @@ export async function generateDraft(storyId: string) {
     issueName,
     emotionTag,
     publisherName,
+    avisoIndependencia,
   })
 
   // Final grapheme count safety check
@@ -329,11 +343,17 @@ export async function publishPost(postId: string) {
   linkCard.thumbUrl = ogImageUrl
 
   try {
-    const result = await createPost(post.postText, linkCard, publisherName, publisherUrl)
+    // Regla 2: el aviso se vuelve a calcular al publicar. Una edición en el panel
+    // no lo borra, y si la lista cambió desde el borrador sale el de hoy. Si no
+    // se puede calcular, el post no sale (queda `failed`).
+    const avisoIndependencia = await lineaDeAvisoParaPublicar(story.id, 'corta')
+    const texto = conAvisoDeIndependencia(post.postText, avisoIndependencia, { tope: TOPE_BLUESKY, separador: '\n' })
+    const result = await createPost(texto, linkCard, publisherName, publisherUrl)
 
     const updated = await prisma.blueskyPost.update({
       where: { id: postId },
       data: {
+        postText: texto,
         status: 'published',
         postUri: result.uri,
         postCid: result.cid,

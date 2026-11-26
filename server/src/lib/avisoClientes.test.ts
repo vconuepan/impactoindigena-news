@@ -127,3 +127,73 @@ describe('motivoRutInvalido', () => {
     expect(motivoRutInvalido('76.707.746-1')).toMatch(/verificador/)
   })
 })
+
+// ---------------------------------------------------------------------------
+// El aviso fuera de la ficha: redes, boletín y carrusel (director, 25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('el texto del aviso fuera de la ficha', async () => {
+  const { textoDelAviso, fraseDelAviso, conAvisoDeIndependencia, sinAvisoDeIndependencia } = await import('./avisoClientes.js')
+  const uno = { verticals: ['legal' as const], current: true, plural: false }
+
+  it('la frase larga repite la de la ficha, en sus cuatro casos', () => {
+    expect(fraseDelAviso(uno)).toBe('Esta nota menciona a una organización que es cliente de impactoindigena.legal.')
+    expect(fraseDelAviso({ ...uno, current: false })).toBe('Esta nota menciona a una organización que fue cliente de impactoindigena.legal.')
+    expect(fraseDelAviso({ verticals: ['ai', 'legal'], current: true, plural: true }))
+      .toBe('Esta nota menciona a organizaciones que son o fueron clientes de impactoindigena.ai y de impactoindigena.legal.')
+    expect(fraseDelAviso({ verticals: ['ai'], current: false, plural: true }))
+      .toBe('Esta nota menciona a organizaciones que fueron clientes de impactoindigena.ai.')
+    expect(textoDelAviso(uno, 'larga'))
+      .toBe('Aviso de independencia: esta nota menciona a una organización que es cliente de impactoindigena.legal.')
+  })
+
+  it('la corta, para X y Bluesky', () => {
+    expect(textoDelAviso(uno, 'corta')).toBe('Aviso: la nota menciona a un cliente de impactoindigena.legal.')
+    expect(textoDelAviso({ ...uno, current: false }, 'corta')).toBe('Aviso: la nota menciona a un excliente de impactoindigena.legal.')
+    expect(textoDelAviso({ verticals: ['ai', 'legal'], current: true, plural: true }, 'corta'))
+      .toBe('Aviso: la nota menciona a clientes o exclientes de impactoindigena.ai y de impactoindigena.legal.')
+    expect(textoDelAviso({ verticals: ['ai'], current: false, plural: true }, 'corta'))
+      .toBe('Aviso: la nota menciona a exclientes de impactoindigena.ai.')
+  })
+
+  it('sin aviso no hay línea', () => {
+    expect(textoDelAviso(null, 'larga')).toBeNull()
+    expect(textoDelAviso({ verticals: [], current: true, plural: false }, 'corta')).toBeNull()
+  })
+
+  it('el texto sale solo del aviso genérico: no hay de dónde sacar un nombre', () => {
+    // La entrada no trae nombre ni id; el texto solo puede decir la vertical.
+    const lineas = [textoDelAviso(uno, 'larga'), textoDelAviso(uno, 'corta'), fraseDelAviso(uno)]
+    for (const l of lineas) expect(l).toMatch(/impactoindigena\.legal\.$/)
+  })
+
+  it('poner el aviso es idempotente, y quitarlo deja el texto como estaba', () => {
+    const aviso = textoDelAviso(uno, 'larga')!
+    const una = conAvisoDeIndependencia('Texto.', aviso)
+    expect(una).toBe(`Texto.\n\n${aviso}`)
+    expect(conAvisoDeIndependencia(una, aviso)).toBe(una)
+    expect(conAvisoDeIndependencia(una, null)).toBe('Texto.')
+    expect(sinAvisoDeIndependencia(una)).toBe('Texto.')
+  })
+
+  it('cambia la forma sin duplicar: la larga reemplaza a la corta', () => {
+    const corta = textoDelAviso(uno, 'corta')!
+    const larga = textoDelAviso(uno, 'larga')!
+    expect(conAvisoDeIndependencia(`Texto.\n${corta}`, larga)).toBe(`Texto.\n\n${larga}`)
+  })
+
+  it('con tope, cede el cuerpo: nunca el aviso ni la cola', () => {
+    const aviso = textoDelAviso(uno, 'corta')!
+    const cola = '\n\nhttps://impactoindigena.news/stories/x'
+    const r = conAvisoDeIndependencia('a'.repeat(400) + cola, aviso, { tope: 275, separador: '\n', cola })
+    expect(r.length).toBeLessThanOrEqual(275)
+    expect(r.endsWith(`…\n${aviso}${cola}`)).toBe(true)
+  })
+
+  it('alFinal: el aviso va después de la cola', () => {
+    const r = conAvisoDeIndependencia('Texto.\n\nReporteó: Medio\nhttps://x', 'Aviso de independencia: z.', {
+      cola: '\n\nReporteó: Medio\nhttps://x', alFinal: true,
+    })
+    expect(r).toBe('Texto.\n\nReporteó: Medio\nhttps://x\n\nAviso de independencia: z.')
+  })
+})

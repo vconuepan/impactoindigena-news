@@ -12,6 +12,7 @@ import {
   avisoDeIndependencia,
   clientesMencionados,
   textosDeNota,
+  textoDelAviso,
   type AvisoIndependencia,
   type ClienteParaCruce,
   type TextosDeNota,
@@ -58,19 +59,45 @@ export async function listaDeClientes(): Promise<ClienteParaCruce[]> {
  */
 export async function avisoParaNota(storyId: string, nota: TextosDeNota): Promise<AvisoIndependencia | null> {
   try {
-    const clientes = await listaDeClientes()
-    if (clientes.length === 0) return null
-    const mencionados = clientesMencionados(textosDeNota(nota), clientes)
-    if (mencionados.length === 0) return null
-    const descartes = await prisma.storyDisclosureDismissal.findMany({
-      where: { storyId, clientId: { in: mencionados.map((c) => c.id) } },
-      select: { clientId: true },
-    })
-    return avisoDeIndependencia(mencionados, new Set(descartes.map((d) => d.clientId)))
+    return await calcularAviso(storyId, nota)
   } catch (err) {
     log.error({ err, storyId }, 'no se pudo calcular el aviso de independencia; la ficha sale sin él')
     return null
   }
+}
+
+/** El cruce de la ficha, sin red: lanza si la base falla (salvo tablas sin crear). */
+async function calcularAviso(storyId: string, nota: TextosDeNota): Promise<AvisoIndependencia | null> {
+  const clientes = await listaDeClientes()
+  if (clientes.length === 0) return null
+  const mencionados = clientesMencionados(textosDeNota(nota), clientes)
+  if (mencionados.length === 0) return null
+  const descartes = await prisma.storyDisclosureDismissal.findMany({
+    where: { storyId, clientId: { in: mencionados.map((c) => c.id) } },
+    select: { clientId: true },
+  })
+  return avisoDeIndependencia(mencionados, new Set(descartes.map((d) => d.clientId)))
+}
+
+const SELECT_TEXTOS = {
+  title: true, sourceTitle: true, summary: true, quote: true, quoteAttribution: true,
+  body: { select: { bajada: true, quePaso: true, porQueImporta: true, contexto: true, queSigue: true } },
+} as const
+
+/**
+ * El aviso para lo que sale de la ficha y no se puede corregir después: un post
+ * en redes, una edición del boletín, un carrusel. A diferencia de la ficha, que
+ * lo vuelve a calcular en cada lectura, acá un fallo LANZA: un post publicado
+ * sin el aviso que le correspondía queda así para siempre, así que se frena la
+ * publicación. Las tablas sin crear no son un fallo: la lista está vacía y la
+ * nota sale sin aviso, igual que la ficha.
+ */
+export async function avisoParaPublicar(storyId: string): Promise<AvisoIndependencia | null> {
+  const clientes = await listaDeClientes()
+  if (clientes.length === 0) return null
+  const nota = await prisma.story.findUnique({ where: { id: storyId }, select: SELECT_TEXTOS })
+  if (!nota) return null
+  return calcularAviso(storyId, nota)
 }
 
 export interface NotaConMencion {
@@ -130,4 +157,9 @@ export async function notasQueMencionan(clientId: string, tope = 200): Promise<N
     const d = porNota.get(n.id)
     return { ...n, dismissed: d ? { reason: d.reason, dismissedBy: d.dismissedBy, createdAt: d.createdAt } : null }
   })
+}
+
+/** La línea que se agrega al texto de un post, o null. Lanza como `avisoParaPublicar`. */
+export async function lineaDeAvisoParaPublicar(storyId: string, forma: 'larga' | 'corta'): Promise<string | null> {
+  return textoDelAviso(await avisoParaPublicar(storyId), forma)
 }
