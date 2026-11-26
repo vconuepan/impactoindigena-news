@@ -27,6 +27,8 @@ export const SITE_HOST: string = SITE_URL.replace(/^https?:\/\//, '')
 
 // Centralized brand copy used across the site
 export const ECOSYSTEM_AI_URL = 'https://impactoindigena.ai'
+/** La casa del grupo Impacto Indígena: enlace de pertenencia, no de patrocinio (25-nov-2026). */
+export const GROUP_HOME_URL = 'https://impactoindigena.com'
 
 export const BRAND = {
   claim: 'Noticias que importan a los pueblos indígenas.',

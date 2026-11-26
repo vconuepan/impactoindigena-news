@@ -5,7 +5,7 @@ import { Helmet } from "react-helmet-async";
 import { useTranslation } from "react-i18next";
 import { getCategoryColor } from "../lib/category-colors";
 import { API_BASE, memberAuth } from "../lib/api";
-import { GITHUB_REPO_URL, ECOSYSTEM_AI_URL } from "../config";
+import { GITHUB_REPO_URL, ECOSYSTEM_AI_URL, GROUP_HOME_URL } from "../config";
 import { SEO } from "../lib/seo";
 import { getSavedSlugs } from "../lib/preferences";
 import SubscribeProvider, {
@@ -723,6 +723,21 @@ function PublicLayoutInner() {
                 <span className="sr-only"> {t('storyCard.opensInNewTab')}</span>
               </a>
             </div>
+            {/* Pertenencia al grupo, no patrocinio (regla editorial del 25-nov-2026:
+                el medio no cobra por publicar y lo editorial no pasa por la SpA ni
+                por el estudio). Lleva a la casa, impactoindigena.com, que presenta
+                las partes del grupo. */}
+            <p className="mt-4 text-sm text-neutral-500">
+              <a
+                href={GROUP_HOME_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 hover:text-white transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded"
+              >
+                {t('colophon.partOfGroup')} ↗
+                <span className="sr-only"> {t('storyCard.opensInNewTab')}</span>
+              </a>
+            </p>
           </div>
 
           {/* Indice — filas densas, no columnas de SaaS */}
