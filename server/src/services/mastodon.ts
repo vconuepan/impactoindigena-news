@@ -10,6 +10,8 @@ import { mastodonPostTextSchema } from '../schemas/mastodon.js'
 import { TTLCache, cached } from '../lib/cache.js'
 import type { AccountStatusesResult } from '../lib/mastodon.js'
 import { limpiarPost } from '../lib/personasSensibles.js'
+import { conAvisoDeIndependencia } from '../lib/avisoClientes.js'
+import { lineaDeAvisoParaPublicar } from './avisoClientes.js'
 
 const log = createLogger('mastodon-service')
 
@@ -57,9 +59,12 @@ export function assemblePostText(parts: {
   publisherName: string
   sourceUrl: string
   storyUrl: string
+  /** Regla 2: la línea larga del aviso de independencia, o null. Va al final, después de las URL. */
+  avisoIndependencia?: string | null
 }): string {
   const metaLine = buildMetaLine(parts)
-  return `${parts.blurb}\n${metaLine}\n${parts.sourceUrl}\n${parts.storyUrl}`
+  const texto = `${parts.blurb}\n${metaLine}\n${parts.sourceUrl}\n${parts.storyUrl}`
+  return parts.avisoIndependencia ? `${texto}\n${parts.avisoIndependencia}` : texto
 }
 
 /**
@@ -71,10 +76,12 @@ function calcMaxBlurbChars(parts: {
   publisherName: string
   sourceUrl: string
   storyUrl: string
+  avisoIndependencia?: string | null
 }): number {
   const metaLine = buildMetaLine(parts)
-  // charLimit minus metadata line, source URL, story URL, and three newlines
-  return Math.max(50, config.mastodon.charLimit - metaLine.length - parts.sourceUrl.length - parts.storyUrl.length - 3)
+  const aviso = parts.avisoIndependencia ? parts.avisoIndependencia.length + 1 : 0
+  // charLimit minus metadata line, source URL, story URL, three newlines and the independence notice
+  return Math.max(50, config.mastodon.charLimit - metaLine.length - parts.sourceUrl.length - parts.storyUrl.length - 3 - aviso)
 }
 
 // ---------------------------------------------------------------------------
@@ -109,12 +116,15 @@ export async function generateDraft(storyId: string) {
   const sourceUrl = story.sourceUrl
   const storyUrl = `${config.siteUrl}/stories/${story.slug}`
 
+  // Regla 2 (independencia editorial): el aviso le quita espacio al gancho, no al revés.
+  const avisoIndependencia = await lineaDeAvisoParaPublicar(storyId, 'larga')
   const maxChars = calcMaxBlurbChars({
     issueName,
     emotionTag,
     publisherName,
     sourceUrl,
     storyUrl,
+    avisoIndependencia,
   })
 
   const storyForPrompt: StoryForMastodonPost = {
@@ -151,6 +161,7 @@ export async function generateDraft(storyId: string) {
     publisherName,
     sourceUrl,
     storyUrl,
+    avisoIndependencia,
   })
 
   // Character count safety check
@@ -246,11 +257,20 @@ export async function publishPost(postId: string) {
   if (post.status !== 'draft') throw new Error('Can only publish draft posts')
 
   try {
-    const result = await createStatus(post.postText)
+    // Regla 2: el aviso se vuelve a calcular al publicar (ver bluesky.ts). Las dos
+    // URL del final no se recortan; si no cabe, cede el gancho.
+    const story = post.story
+    const cola = `\n${story.sourceUrl}\n${config.siteUrl}/stories/${story.slug}`
+    const avisoIndependencia = await lineaDeAvisoParaPublicar(story.id, 'larga')
+    const texto = conAvisoDeIndependencia(post.postText, avisoIndependencia, {
+      tope: config.mastodon.charLimit, separador: '\n', cola, alFinal: true,
+    })
+    const result = await createStatus(texto)
 
     const updated = await prisma.mastodonPost.update({
       where: { id: postId },
       data: {
+        postText: texto,
         status: 'published',
         statusId: result.id,
         statusUrl: result.url,

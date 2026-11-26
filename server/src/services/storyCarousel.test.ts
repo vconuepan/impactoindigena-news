@@ -9,6 +9,10 @@ vi.mock('@napi-rs/canvas', async (importOriginal) => {
 const mockPrisma = vi.hoisted(() => ({ story: { findUnique: vi.fn() }, storyImage: { findMany: vi.fn() } }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
+// Regla 2: por defecto ninguna nota menciona a un cliente.
+const mockAviso = vi.hoisted(() => ({ avisoParaPublicar: vi.fn(async () => null as unknown) }))
+vi.mock('./avisoClientes.js', () => mockAviso)
+
 const mockLLM = vi.hoisted(() => ({ invoke: vi.fn(), withStructuredOutput: vi.fn() }))
 vi.mock('./llm.js', () => ({
   getLLMByTier: () => ({ withStructuredOutput: mockLLM.withStructuredOutput }),
@@ -27,7 +31,7 @@ const mockOgImage = vi.hoisted(() => vi.fn())
 vi.mock('../lib/extract-og-image.js', () => ({ fetchOgImage: mockOgImage }))
 
 const {
-  buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError,
+  buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, carruselConAviso, StoryCarouselError,
   atribucionDe, autorNombrable, fechaDelOriginal,
 } = await import('./storyCarousel.js')
 
@@ -347,5 +351,57 @@ describe('el autor que se nombra', () => {
   it('la atribución completa deja fuera la cuenta del sitio', () => {
     const a = atribucionDe({ ...noticia(), sourceAuthor: 'ZAP' } as any)
     expect(a.autor).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Regla 2: el aviso de independencia en la lámina de cierre (director, 25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('el aviso de independencia en el cierre', () => {
+  const AVISO = { verticals: ['ai', 'legal'], current: false, plural: true }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAviso.avisoParaPublicar.mockResolvedValue(null)
+    mockPrisma.story.findUnique.mockResolvedValue(noticia())
+    mockPrisma.storyImage.findMany.mockResolvedValue([])
+  })
+
+  it('con aviso: el cierre cambia, las demás láminas no, y no aparece ningún aviso de espacio', async () => {
+    elModeloDevuelve(FIEL)
+    const sin = await buildStoryCarouselForSocial('story-1')
+    mockAviso.avisoParaPublicar.mockResolvedValue(AVISO)
+    elModeloDevuelve(FIEL)
+    const con = await buildStoryCarouselForSocial('story-1')
+
+    expect(mockAviso.avisoParaPublicar).toHaveBeenCalledWith('story-1')
+    expect(con.avisoIndependencia).toEqual(AVISO)
+    expect(con.imagenes).toHaveLength(sin.imagenes.length)
+    const ultima = con.imagenes.length - 1
+    expect(con.imagenes[ultima].equals(sin.imagenes[ultima])).toBe(false)
+    for (let i = 0; i < ultima; i++) expect(con.imagenes[i].equals(sin.imagenes[i])).toBe(true)
+  })
+
+  it('sin aviso: el carrusel no lo lleva', async () => {
+    elModeloDevuelve(FIEL)
+    const carrusel = await buildStoryCarouselForSocial('story-1')
+    expect(carrusel.avisoIndependencia).toBeNull()
+  })
+
+  it('si el aviso no se puede calcular, no hay carrusel', async () => {
+    mockAviso.avisoParaPublicar.mockRejectedValue(new Error('db down'))
+    elModeloDevuelve(FIEL)
+    await expect(buildStoryCarouselForSocial('story-1')).rejects.toThrow('db down')
+  })
+
+  it('las láminas con el aviso llevan su marca en el nombre, y siguen siendo del original', async () => {
+    const con = await subirCarrusel('story-1', [Buffer.from('a')], true)
+    const sin = await subirCarrusel('story-1', [Buffer.from('a')])
+
+    expect(con[0]).toMatch(/\/story-1-original-aviso-01-\d+\.jpg$/)
+    expect(armadoDesdeElOriginal(con)).toBe(true)
+    expect(carruselConAviso(con)).toBe(true)
+    expect(carruselConAviso(sin)).toBe(false)
   })
 })

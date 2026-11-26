@@ -35,6 +35,15 @@ const publicStoryBodySchema = z.object({
   updatedAt: z.string().datetime(),
 }).openapi({ ref: 'PublicStoryBody' })
 
+// Regla 2 de la independencia editorial (25-nov-2026): la nota menciona a una
+// organización que es o fue cliente de impactoindigena.ai o impactoindigena.legal.
+// Genérico por decisión del director: nunca trae el nombre de la organización.
+const publicIndependenceNoticeSchema = z.object({
+  verticals: z.array(z.enum(['ai', 'legal'])).min(1).openapi({ description: 'Which part of Impacto Indígena the organization is a client of: impactoindigena.ai, impactoindigena.legal, or both' }),
+  current: z.boolean().openapi({ description: 'True while at least one relationship is ongoing ("is a client"); false when all ended ("was a client")' }),
+  plural: z.boolean().openapi({ description: 'True when two or more organizations are involved' }),
+}).openapi({ ref: 'PublicIndependenceNotice' })
+
 const publicStorySchema = z.object({
   id: z.string().uuid(),
   slug: z.string().nullable().openapi({ example: 'comunidad-achuar-impulsa-observatorio-tecnologico-en-ecuador' }),
@@ -67,6 +76,7 @@ const publicStorySchema = z.object({
   issue: issueRefSchema.nullable(),
   feed: feedRefSchema,
   body: publicStoryBodySchema.nullable().optional().openapi({ description: 'Only on GET /stories/{slug}; absent from lists' }),
+  independenceNotice: publicIndependenceNoticeSchema.nullable().optional().openapi({ description: 'Only on GET /stories/{slug}; absent from lists. Null when the story mentions no client' }),
 }).openapi({ ref: 'PublicStory' })
 
 // The homepage omits these three fields from each story (HOMEPAGE_OMITE in

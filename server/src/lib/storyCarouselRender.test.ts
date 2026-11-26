@@ -143,3 +143,43 @@ describe('las fotos del artículo en las láminas de desarrollo', () => {
     expect(r.fotosDibujadas).toBe(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// Regla 2: el aviso de independencia en la lámina de cierre (director, 25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('el aviso de independencia en el cierre', () => {
+  const FRASE = 'Esta nota menciona a organizaciones que son o fueron clientes de impactoindigena.ai y de impactoindigena.legal.'
+  // El cierre con su texto al máximo: seis líneas.
+  const CIERRE_LLENO = { titulo: 'Qué viene ahora para el plan del bosque', texto: ('La Corporación Nacional Forestal revisará el documento durante noviembre y su aprobación permitiría postular a fondos. ').repeat(2) }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockFoto.mockImplementation(async () => fotoDe(1600, 900))
+  })
+
+  it('va en el hueco fijo del cierre: con el texto al máximo no aparece ningún aviso de espacio nuevo', async () => {
+    const base = { laminas: [PORTADA, CORTA, CIERRE_LLENO], lectura: null, atribucion: ATRIBUCION, categoria: '' }
+    const sin = await renderStoryCarousel(base)
+    const con = await renderStoryCarousel({ ...base, avisoIndependencia: FRASE })
+
+    expect(con.avisos).toEqual(sin.avisos)
+    expect(con.imagenes[2].equals(sin.imagenes[2])).toBe(false)
+    expect(con.imagenes[0].equals(sin.imagenes[0])).toBe(true)
+  })
+
+  it('una frase que no cabe en sus tres líneas da un aviso de espacio, nunca se recorta en silencio', async () => {
+    const r = await renderStoryCarousel({
+      laminas: [PORTADA, CORTA, CIERRE], lectura: null, atribucion: ATRIBUCION, categoria: '',
+      avisoIndependencia: FRASE.repeat(4),
+    })
+    expect(r.avisos).toEqual([expect.objectContaining({ lamina: 2, tipo: 'espacio', mensaje: expect.stringContaining('aviso de independencia') })])
+  })
+
+  it('sin aviso, el cierre no cambia', async () => {
+    const base = { laminas: [PORTADA, CORTA, CIERRE], lectura: null, atribucion: ATRIBUCION, categoria: '' }
+    const a = await renderStoryCarousel(base)
+    const b = await renderStoryCarousel({ ...base, avisoIndependencia: null })
+    expect(a.imagenes[2].equals(b.imagenes[2])).toBe(true)
+  })
+})

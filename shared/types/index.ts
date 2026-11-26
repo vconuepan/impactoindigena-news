@@ -186,9 +186,24 @@ export interface StoryBodyAdmin extends PublicStoryBody {
   createdAt: string
 }
 
+/**
+ * Regla 2 de la independencia editorial (25-nov-2026): la nota menciona a una
+ * organización que es o fue cliente de impactoindigena.ai o impactoindigena.legal.
+ * Genérico por decisión del director: nunca trae el nombre de la organización.
+ */
+export interface IndependenceNotice {
+  verticals: Array<'ai' | 'legal'>
+  /** true: «es cliente»; false: todas las relaciones terminaron («fue cliente»). */
+  current: boolean
+  /** true: dos o más organizaciones. */
+  plural: boolean
+}
+
 export interface PublicStory extends Story {
   /** Solo en la ficha; null cuando un candado la bloqueó o la nota es anterior al cuerpo. */
   body?: PublicStoryBody | null
+  /** Solo en la ficha; null cuando la nota no menciona a ningún cliente. */
+  independenceNotice?: IndependenceNotice | null
   /**
    * Nota que entró a una vertical por la marca (D5): no tiene slug global y su
    * ficha vive en la vertical, en /comunidad/:communitySlug/n/:brandSlug.

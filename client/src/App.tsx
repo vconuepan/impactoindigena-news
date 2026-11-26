@@ -86,6 +86,7 @@ const ReviewsPage = lazy(() => import('./pages/admin/ReviewsPage'))
 const BrandPage = lazy(() => import('./pages/admin/BrandPage'))
 const MaintenancePage = lazy(() => import('./pages/admin/MaintenancePage'))
 const SpotlightsAdminPage = lazy(() => import('./pages/admin/SpotlightsAdminPage'))
+const AvisoClientesPage = lazy(() => import('./pages/admin/AvisoClientesPage'))
 const CasesAdminPage = lazy(() => import('./pages/admin/CasesAdminPage'))
 const AgendaPage = lazy(() => import('./pages/admin/AgendaPage'))
 const SubscribersPage = lazy(() => import('./pages/admin/SubscribersPage'))
@@ -241,6 +242,7 @@ export default function App() {
         <Route path="subscribers" element={<SubscribersPage />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="spotlights" element={<SpotlightsAdminPage />} />
+        <Route path="aviso-clientes" element={<AvisoClientesPage />} />
         <Route path="casos" element={<CasesAdminPage />} />
         <Route path="agenda" element={<AgendaPage />} />
       </Route>

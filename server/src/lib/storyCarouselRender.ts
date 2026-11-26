@@ -82,6 +82,12 @@ export interface RenderInput {
    * se dibujan.
    */
   fotosDesarrollo?: FotoDeNoticia[]
+  /**
+   * Regla 2 de la independencia editorial: la frase del aviso genérico
+   * («Esta nota menciona a una organización que es cliente de …», nunca el
+   * nombre), o null. Va en la lámina de cierre, entre el logo y el título.
+   */
+  avisoIndependencia?: string | null
 }
 
 const log = createLogger('story-carousel-render')
@@ -383,6 +389,24 @@ async function cierre(l: CarouselSlideText, indice: number, input: RenderInput, 
   await drawLogo(ctx, M, M, s(72))
   const a = input.atribucion
 
+  // Regla 2 (director, 25-nov-2026): el aviso de independencia, dibujado por el
+  // código en el hueco fijo entre el logo y el título. No le quita líneas al
+  // texto, así que no produce un aviso `espacio` que antes no existía; si la
+  // frase no cupiera en sus tres líneas, el aviso `espacio` rechaza la lámina
+  // en vez de recortarla en silencio.
+  const avisosDelAviso: CarouselAviso[] = []
+  if (input.avisoIndependencia) {
+    ctx.textAlign = 'left'
+    ctx.fillStyle = C.accent
+    ctx.font = `700 ${s(22)}px '${FONT}'`
+    ctx.fillText('AVISO DE INDEPENDENCIA', M, s(205))
+    const fAviso = `500 ${s(24)}px '${FONT}'`, maxA = 3
+    const bloque = medir(ctx, input.avisoIndependencia, fAviso, ANCHO, maxA)
+    ctx.font = fAviso
+    dibujarLineas(ctx, bloque.lineas, M, s(245), s(32), C.white)
+    avisosDelAviso.push(...avisoDeEspacio(indice, 'aviso de independencia', bloque, maxA))
+  }
+
   const fTitulo = `700 ${s(52)}px '${FONT}'`, lhT = s(64), maxT = 3
   const fTexto = `500 ${s(34)}px '${FONT}'`, lhX = s(48), maxX = 6
   const titulo = medir(ctx, l.titulo, fTitulo, ANCHO, maxT)
@@ -419,7 +443,7 @@ async function cierre(l: CarouselSlideText, indice: number, input: RenderInput, 
   footerUrl(ctx, n, total)
   return {
     imagen: exportCanvas(canvas),
-    avisos: [...avisoDeEspacio(indice, 'título', titulo, maxT), ...avisoDeEspacio(indice, 'texto', texto, maxX)],
+    avisos: [...avisosDelAviso, ...avisoDeEspacio(indice, 'título', titulo, maxT), ...avisoDeEspacio(indice, 'texto', texto, maxX)],
   }
 }
 

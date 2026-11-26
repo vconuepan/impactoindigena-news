@@ -13,6 +13,8 @@ import { withRetry } from '../lib/retry.js'
 import { buildNewsletterSelectPrompt, buildNewsletterIntroPrompt } from '../prompts/index.js'
 import { newsletterSelectResultSchema, newsletterIntroSchema } from '../schemas/llm.js'
 import { publisherFromUrl } from '../lib/publisher.js'
+import { PREFIJO_AVISO_LARGO, fraseDelAviso } from '../lib/avisoClientes.js'
+import { avisoParaPublicar, lineaDeAvisoParaPublicar } from './avisoClientes.js'
 
 const log = createLogger('newsletter')
 
@@ -311,6 +313,12 @@ export async function generateContent(newsletterId: string) {
       const summary = story.relevanceSummary || story.marketingBlurb || ''
       if (summary) content += `${summary}\n\n`
     }
+
+    // Regla 2 (independencia editorial): una línea propia bajo el texto de la
+    // nota. Se calcula al generar la edición; si no se puede calcular, la
+    // generación falla en vez de mandar el boletín sin el aviso.
+    const avisoIndependencia = await lineaDeAvisoParaPublicar(story.id, 'larga')
+    if (avisoIndependencia) content += `${avisoIndependencia}\n\n`
   }
 
   return prisma.newsletter.update({
@@ -337,13 +345,20 @@ export async function generateCarouselForNewsletter(newsletterId: string): Promi
     return nameA.localeCompare(nameB)
   })
 
-  const carouselStories: CarouselStory[] = stories.map(s => ({
-    title: s.title || s.sourceTitle,
-    category: s.issue?.name || s.feed?.issue?.name || 'General',
-    summary: s.summary || '',
-    publisher: publisherFromUrl(s.sourceUrl, s.feed?.displayTitle || s.feed?.title) || 'Unknown',
-    date: s.sourceDatePublished?.toISOString() || null,
-  }))
+  const carouselStories: CarouselStory[] = []
+  for (const s of stories) {
+    // Regla 2: el aviso de independencia en la imagen de la nota. Las imágenes
+    // se descargan y se publican a mano: si no se puede calcular, no se arman.
+    const aviso = await avisoParaPublicar(s.id)
+    carouselStories.push({
+      title: s.title || s.sourceTitle,
+      category: s.issue?.name || s.feed?.issue?.name || 'General',
+      summary: s.summary || '',
+      publisher: publisherFromUrl(s.sourceUrl, s.feed?.displayTitle || s.feed?.title) || 'Unknown',
+      date: s.sourceDatePublished?.toISOString() || null,
+      avisoIndependencia: aviso ? fraseDelAviso(aviso) : null,
+    })
+  }
 
   const outputDir = join(tmpdir(), `carousel_${newsletterId}_${Date.now()}`)
   return generateCarouselZip(carouselStories, outputDir)
@@ -525,6 +540,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
       let metaLine = ''
       const summaryLines: string[] = []
       const quoteParts: string[] = []
+      let avisoIndependencia = ''
       let inQuote = false
 
       for (const trimmed of storyLines) {
@@ -535,6 +551,10 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
           continue
         } else if (!metaLine && trimmed.match(/\[.*\]\(https?:\/\//)) {
           metaLine = trimmed
+          inQuote = false
+        } else if (trimmed.startsWith(PREFIJO_AVISO_LARGO)) {
+          // Regla 2: va aparte, nunca dentro del recuadro «¿Por qué es importante?».
+          avisoIndependencia = trimmed.slice(PREFIJO_AVISO_LARGO.length)
           inQuote = false
         } else if (trimmed.startsWith('> "') || trimmed.startsWith('> “')) {
           inQuote = true
@@ -596,6 +616,11 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
         }
       }
 
+      // Regla 2: el aviso de independencia, genérico, con el enlace a las reglas.
+      const avisoHtml = avisoIndependencia
+        ? `<p style="margin: 4px 0 12px; font-size: 12px; color: #6b7280; line-height: 1.5;"><strong style="color: #374151;">Aviso de independencia:</strong> ${escapeHtml(avisoIndependencia)} <a href="https://impactoindigena.news/about#independencia" style="color: #2563eb; text-decoration: none;">Nuestras reglas de independencia</a></p>`
+        : ''
+
       htmlBlocks.push(`
     <tr>
       <td style="padding: 20px 0 8px; border-bottom: 1px solid #f3f4f6;">
@@ -603,6 +628,7 @@ export async function generateHtmlContent(newsletterId: string): Promise<string>
         ${metaHtml}
         ${bodyHtml}
         ${quoteHtml}
+        ${avisoHtml}
       </td>
     </tr>`)
     }

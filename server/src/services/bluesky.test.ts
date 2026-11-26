@@ -29,7 +29,11 @@ const mockLlm = vi.hoisted(() => ({
   invoke: vi.fn(),
 }))
 
+// Regla 2: por defecto ninguna nota menciona a un cliente.
+const mockAviso = vi.hoisted(() => ({ lineaDeAvisoParaPublicar: vi.fn(async () => null as string | null) }))
+
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
+vi.mock('./avisoClientes.js', () => mockAviso)
 vi.mock('../lib/bluesky.js', () => mockBlueskyClient)
 vi.mock('./llm.js', () => ({
   getLLMByTier: vi.fn(() => ({
@@ -463,5 +467,82 @@ describe('getFeed', () => {
 
     expect(result.dbOnlyPosts).toHaveLength(0)
     // Only one findMany call (for cross-reference, not draft/failed)
+  })
+})
+
+describe('aviso de independencia (regla 2)', () => {
+  const AVISO = 'Aviso: la nota menciona a un cliente de impactoindigena.legal.'
+  const story = {
+    id: 'story-1', title: 'Test Story', titleLabel: '', summary: 'A summary', relevanceSummary: 'Why',
+    emotionTag: 'uplifting', slug: 'test-story', sourceUrl: 'https://example.com/a', sourceTitle: 'Original',
+    marketingBlurb: 'Blurb', feed: { title: 'Example News', displayTitle: 'Example' }, issue: { name: 'Technology' },
+  }
+  const meta = 'Technology | Uplifting | found on Example'
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(null)
+    mockPrisma.blueskyPost.create.mockImplementation(async ({ data }: any) => ({ id: 'post-1', ...data }))
+    mockPrisma.blueskyPost.update.mockImplementation(async ({ data }: any) => ({ id: 'post-1', ...data }))
+    mockBlueskyClient.createPost.mockResolvedValue({ uri: 'at://did/post/1', cid: 'cid' })
+  })
+
+  it('con aviso: el borrador lo lleva en la última línea y el gancho recibe menos espacio', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.blueskyPost.findFirst.mockResolvedValue(null)
+    mockLlm.invoke.mockResolvedValue({ postText: 'A hook.' })
+    const { buildBlueskyPostPrompt } = await import('../prompts/index.js')
+
+    await generateDraft('story-1')
+
+    expect(mockAviso.lineaDeAvisoParaPublicar).toHaveBeenCalledWith('story-1', 'corta')
+    const texto = mockPrisma.blueskyPost.create.mock.calls[0][0].data.postText
+    expect(texto).toBe(`A hook.\n${meta}\n${AVISO}`)
+    expect(vi.mocked(buildBlueskyPostPrompt).mock.calls[0][0].maxChars).toBe(300 - meta.length - 1 - AVISO.length - 1)
+  })
+
+  it('sin aviso: el borrador queda como siempre', async () => {
+    mockPrisma.story.findUnique.mockResolvedValue(story)
+    mockPrisma.blueskyPost.findFirst.mockResolvedValue(null)
+    mockLlm.invoke.mockResolvedValue({ postText: 'A hook.' })
+
+    await generateDraft('story-1')
+
+    expect(mockPrisma.blueskyPost.create.mock.calls[0][0].data.postText).toBe(`A hook.\n${meta}`)
+  })
+
+  const post = (postText: string) => ({
+    id: 'post-1', status: 'draft', postText,
+    story: { ...story, feed: { title: 'Feed', displayTitle: 'Feed Name' } },
+  })
+
+  it('al publicar agrega el aviso aunque el borrador no lo tenga, y sin pasarse de 300', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockResolvedValue(AVISO)
+    mockPrisma.blueskyPost.findUnique.mockResolvedValue(post('x'.repeat(290)))
+
+    await publishPost('post-1')
+
+    const enviado = mockBlueskyClient.createPost.mock.calls[0][0] as string
+    expect(enviado.endsWith(`\n${AVISO}`)).toBe(true)
+    expect(enviado.length).toBeLessThanOrEqual(300)
+    expect(mockPrisma.blueskyPost.update.mock.calls[0][0].data.postText).toBe(enviado)
+  })
+
+  it('al publicar quita un aviso que ya no corresponde', async () => {
+    mockPrisma.blueskyPost.findUnique.mockResolvedValue(post(`Hook.\n${meta}\n${AVISO}`))
+
+    await publishPost('post-1')
+
+    expect(mockBlueskyClient.createPost.mock.calls[0][0]).toBe(`Hook.\n${meta}`)
+  })
+
+  it('si el aviso no se puede calcular, no publica y queda failed', async () => {
+    mockAviso.lineaDeAvisoParaPublicar.mockRejectedValue(new Error('db down'))
+    mockPrisma.blueskyPost.findUnique.mockResolvedValue(post('Hook.'))
+
+    await expect(publishPost('post-1')).rejects.toThrow('db down')
+    expect(mockBlueskyClient.createPost).not.toHaveBeenCalled()
+    expect(mockPrisma.blueskyPost.update.mock.calls[0][0].data).toMatchObject({ status: 'failed' })
   })
 })

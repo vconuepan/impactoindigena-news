@@ -5,8 +5,10 @@ import { createLogger } from '../lib/logger.js'
 import { createUgcPost, getOrgPostMetrics, isLinkedInConfigured, LinkedInAuthError } from '../lib/linkedin.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildLinkedInPostPrompt } from '../prompts/linkedin.js'
-import { withAiLabel } from '../lib/ai-label.js'
-import { buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, StoryCarouselError } from './storyCarousel.js'
+import { withAiLabel, AI_LABEL } from '../lib/ai-label.js'
+import { conAvisoDeIndependencia } from '../lib/avisoClientes.js'
+import { lineaDeAvisoParaPublicar } from './avisoClientes.js'
+import { buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, carruselConAviso, StoryCarouselError } from './storyCarousel.js'
 import { config } from '../config.js'
 import { limpiarPost } from '../lib/personasSensibles.js'
 
@@ -59,19 +61,20 @@ export async function generateDraft(storyId: string) {
     sourceCountry: story.feed?.url ?? null,
   })
 
+  // Regla 2: el aviso de independencia, para el texto y para la lámina de cierre.
+  const avisoIndependencia = await lineaDeAvisoParaPublicar(storyId, 'larga')
+
   // The text and the carousel slides go in parallel: the carousel makes its own
   // model call, and this request is synchronous (the panel waits on it).
   const [result, slideUrls] = await Promise.all([
     structuredLlm.invoke([new HumanMessage(prompt)]),
-    buildCarouselSlides(story),
+    buildCarouselSlides(story, avisoIndependencia !== null),
   ])
 
   // Candado de personas antes de recortar. Ver lib/personasSensibles.ts.
   const candado = limpiarPost(result.postText)
   if (candado.resumen.hubo) log.warn({ storyId, red: 'linkedin', campos: candado.resumen.campos }, 'candado de personas: post editado antes de guardar')
-  const rawPostText = candado.texto.length > 2900
-    ? candado.texto.slice(0, 2897) + '…'
-    : candado.texto
+  const rawPostText = conAvisoDeIndependencia(candado.texto, avisoIndependencia, { tope: 2900 })
 
   const post = await prisma.linkedInPost.create({
     data: {
@@ -95,15 +98,16 @@ export async function generateDraft(storyId: string) {
  * del artículo), nunca con el carrusel anterior, que se armaba con el resumen
  * y las razones de la IA de Voces.
  */
-async function buildCarouselSlides(story: { id: string }): Promise<string[]> {
+async function buildCarouselSlides(story: { id: string }, conAviso: boolean): Promise<string[]> {
   try {
     const igPost = await prisma.instagramPost.findUnique({ where: { storyId: story.id } })
-    if (igPost && armadoDesdeElOriginal(igPost.slideUrls)) {
+    // Las de Instagram solo si su lámina de cierre lleva el aviso que corresponde hoy.
+    if (igPost && armadoDesdeElOriginal(igPost.slideUrls) && carruselConAviso(igPost.slideUrls) === conAviso) {
       log.info({ storyId: story.id, slideCount: igPost.slideUrls.length }, 'reusing Instagram carousel slides for LinkedIn')
       return igPost.slideUrls
     }
     const carrusel = await buildStoryCarouselForSocial(story.id)
-    return await subirCarrusel(story.id, carrusel.imagenes)
+    return await subirCarrusel(story.id, carrusel.imagenes, carrusel.avisoIndependencia != null)
   } catch (err) {
     if (err instanceof StoryCarouselError) {
       log.info({ storyId: story.id, motivo: err.message, avisos: err.avisos.length }, 'carousel did not pass the guards — LinkedIn post goes without gallery')
@@ -193,14 +197,21 @@ export async function publishPost(postId: string) {
   // story's single image, then to an article link card. A gallery from the
   // previous generator (AI summary) is never published: a draft saved before
   // 25-oct-2026 goes out without it.
-  const imageUrls = armadoDesdeElOriginal(post.slideUrls)
-    ? post.slideUrls
-    : (story.imageUrl ? [story.imageUrl] : [])
-
   try {
-    // 3000: tope de caracteres del texto de un post en LinkedIn.
+    // Regla 2: el aviso se vuelve a calcular al publicar (ver bluesky.ts). Si la
+    // lámina de cierre de la galería no lleva el aviso que corresponde hoy, la
+    // galería no sale, igual que cuando no pasa los candados: el texto lo lleva.
+    const avisoIndependencia = await lineaDeAvisoParaPublicar(story.id, 'larga')
+    const galeriaAlDia = armadoDesdeElOriginal(post.slideUrls)
+      && carruselConAviso(post.slideUrls) === (avisoIndependencia !== null)
+    const imageUrls = galeriaAlDia
+      ? post.slideUrls
+      : (story.imageUrl ? [story.imageUrl] : [])
+    // 3000: tope de caracteres del texto de un post en LinkedIn. La línea de IA
+    // va después del aviso y las dos caben enteras.
+    const texto = conAvisoDeIndependencia(post.postText, avisoIndependencia, { tope: 3000 - AI_LABEL.length - 2 })
     const result = await createUgcPost(
-      withAiLabel(post.postText, 3000),
+      withAiLabel(texto, 3000),
       storyUrl,
       story.title ?? story.sourceTitle,
       story.summary || '',
@@ -210,6 +221,7 @@ export async function publishPost(postId: string) {
     const updated = await prisma.linkedInPost.update({
       where: { id: postId },
       data: {
+        postText: texto,
         status: 'published',
         linkedinPostId: result.id,
         postUrl: result.permalink,

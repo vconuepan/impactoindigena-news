@@ -875,6 +875,21 @@ export const adminApi = {
       request<ResultadoSupresion>('/supresion', { method: 'POST', body: JSON.stringify({ email, confirm: 'SUPRIMIR' }) }),
   },
 
+  // Aviso de independencia (regla 2, 25-nov-2026). Solo administradores.
+  avisoClientes: {
+    list: () => request<{ data: ClienteAviso[] }>('/aviso-clientes'),
+    create: (body: ClienteAvisoBody) =>
+      request<ClienteAviso>('/aviso-clientes', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id: string, body: Partial<ClienteAvisoBody>) =>
+      request<ClienteAviso>(`/aviso-clientes/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    delete: (id: string) => request<void>(`/aviso-clientes/${id}`, { method: 'DELETE' }),
+    notas: (id: string) => request<{ data: NotaConMencion[] }>(`/aviso-clientes/${id}/notas`),
+    descartar: (id: string, storyId: string, reason: string) =>
+      request<unknown>(`/aviso-clientes/${id}/notas/${storyId}/descarte`, { method: 'PUT', body: JSON.stringify({ reason }) }),
+    restaurar: (id: string, storyId: string) =>
+      request<void>(`/aviso-clientes/${id}/notas/${storyId}/descarte`, { method: 'DELETE' }),
+  },
+
   // Spotlights (En Foco)
   spotlights: {
     list: () => request<AdminSpotlight[]>('/spotlights'),
@@ -1141,4 +1156,34 @@ export interface BrandSelection {
   banderas: string[]
   fecha: string | null
   brandSlug: string | null
+}
+
+// ─── Aviso de independencia (regla 2) ────────────────────────────────────────
+
+export interface ClienteAviso {
+  id: string
+  name: string
+  aliases: string[]
+  vertical: 'ai' | 'legal'
+  rut: string | null
+  /** YYYY-MM-DD (o ISO) cuando la relación terminó; null mientras sigue. */
+  endedOn: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ClienteAvisoBody {
+  name: string
+  aliases: string[]
+  vertical: 'ai' | 'legal'
+  rut: string | null
+  endedOn: string | null
+}
+
+export interface NotaConMencion {
+  id: string
+  slug: string | null
+  title: string | null
+  datePublished: string | null
+  dismissed: { reason: string; dismissedBy: string; createdAt: string } | null
 }

@@ -30,6 +30,7 @@ import integrationHealthRouter from './integration-health.js'
 import agendaRouter from './agenda.js'
 import reviewsRouter from './reviews.js'
 import brandRouter from './brand.js'
+import avisoClientesRouter from './aviso-clientes.js'
 
 const router = Router()
 
@@ -66,5 +67,6 @@ router.use('/integration-health', integrationHealthRouter)
 router.use('/agenda', agendaRouter)
 router.use('/reviews', reviewsRouter)
 router.use('/brand', brandRouter)
+router.use('/aviso-clientes', avisoClientesRouter)
 
 export default router

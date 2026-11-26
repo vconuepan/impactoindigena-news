@@ -11,6 +11,8 @@ import {
 import { getMediumLLM, rateLimitDelay } from './llm.js'
 import { buildFacebookPostPrompt } from '../prompts/facebook.js'
 import { withAiLabel } from '../lib/ai-label.js'
+import { conAvisoDeIndependencia } from '../lib/avisoClientes.js'
+import { lineaDeAvisoParaPublicar } from './avisoClientes.js'
 import { config } from '../config.js'
 import { limpiarPost } from '../lib/personasSensibles.js'
 
@@ -70,8 +72,12 @@ export async function generateDraft(storyId: string) {
   const candado = limpiarPost(result.postText)
   if (candado.resumen.hubo) log.warn({ storyId, red: 'facebook', campos: candado.resumen.campos }, 'candado de personas: post editado antes de guardar')
 
+  // Regla 2: el aviso de independencia, párrafo final (la línea de IA va después, al publicar).
+  const avisoIndependencia = await lineaDeAvisoParaPublicar(storyId, 'larga')
+  const postText = conAvisoDeIndependencia(candado.texto, avisoIndependencia)
+
   const post = await prisma.facebookPost.create({
-    data: { storyId, postText: candado.texto, status: 'draft' },
+    data: { storyId, postText, status: 'draft' },
     include: STORY_INCLUDE,
   })
 
@@ -165,11 +171,15 @@ export async function publishPost(postId: string) {
   const storyUrl = `${config.siteUrl}/stories/${post.story.slug}`
 
   try {
-    const result = await createPagePost(withAiLabel(post.postText), storyUrl)
+    // Regla 2: el aviso se vuelve a calcular al publicar (ver bluesky.ts).
+    const avisoIndependencia = await lineaDeAvisoParaPublicar(post.story.id, 'larga')
+    const texto = conAvisoDeIndependencia(post.postText, avisoIndependencia)
+    const result = await createPagePost(withAiLabel(texto), storyUrl)
 
     const updated = await prisma.facebookPost.update({
       where: { id: postId },
       data: {
+        postText: texto,
         status: 'published',
         facebookPostId: result.id,
         permalink: result.permalink,

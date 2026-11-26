@@ -25,6 +25,7 @@ import {
   AtSymbolIcon,
   ScaleIcon,
   AdjustmentsHorizontalIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline'
 
 export interface NavItem {
@@ -62,6 +63,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { name: 'Incidencia', href: '/admin/agenda', icon: GlobeAltIcon },
       { name: 'Revisión por marca', href: '/admin/revision', icon: ScaleIcon },
       { name: 'Criterio por marca', href: '/admin/marca', icon: AdjustmentsHorizontalIcon },
+      { name: 'Aviso de clientes', href: '/admin/aviso-clientes', icon: InformationCircleIcon },
     ],
   },
   {

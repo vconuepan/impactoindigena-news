@@ -5,7 +5,7 @@ import { createLogger } from '../lib/logger.js'
 import { createCarouselPost, createSingleImagePost, getPostMetrics, isInstagramConfigured, InstagramAuthError } from '../lib/instagram.js'
 import { revisarPie } from '../lib/storyCarouselGuards.js'
 import {
-  buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, avisosEnTexto,
+  buildStoryCarouselForSocial, subirCarrusel, armadoDesdeElOriginal, carruselConAviso, avisosEnTexto,
   StoryCarouselError, type SocialCarousel,
 } from './storyCarousel.js'
 import { getMediumLLM, rateLimitDelay } from './llm.js'
@@ -14,6 +14,8 @@ import { withAiLabel, AI_LABEL } from '../lib/ai-label.js'
 import { config } from '../config.js'
 import { limpiarPost } from '../lib/personasSensibles.js'
 import { firmaDelOriginal } from '../lib/firmaDelOriginal.js'
+import { conAvisoDeIndependencia, sinAvisoDeIndependencia, textoDelAviso } from '../lib/avisoClientes.js'
+import { avisoParaPublicar } from './avisoClientes.js'
 const log = createLogger('instagram-service')
 
 const instagramCaptionSchema = z.object({
@@ -120,16 +122,28 @@ async function rechazar(postId: string, storyId: string, motivo: string): Promis
  * la ficha. Si no cabe junto a la línea de IA que se agrega al publicar, se
  * acorta el texto del modelo, nunca la atribución ni el enlace.
  */
-export function pieConAtribucion(texto: string, medio: string, storyUrl: string, comunicadoDe: string | null = null): string {
+export function pieConAtribucion(
+  texto: string,
+  medio: string,
+  storyUrl: string,
+  comunicadoDe: string | null = null,
+  avisoIndependencia: string | null = null,
+): string {
   // B4 · 19-11-2026: la misma firma que las láminas, sin la fecha (ver `lib/firmaDelOriginal.ts`).
   const cola = `\n\n${firmaDelOriginal({ medio, comunicadoDe }, false)}\n${storyUrl}`
-  const espacio = TOPE_PIE - cola.length - AI_LABEL.length - 2
-  const cuerpo = texto.trim()
-  if (cuerpo.length <= espacio) return cuerpo + cola
-  let corte = espacio - 1
-  const codigo = cuerpo.charCodeAt(corte - 1)
-  if (codigo >= 0xd800 && codigo <= 0xdbff) corte -= 1 // no partir un emoji
-  return cuerpo.slice(0, corte).trimEnd() + '…' + cola
+  // Regla 2: el aviso de independencia va después de la atribución y antes de la
+  // línea de IA. Tampoco se recorta: cede el texto del modelo.
+  return conAvisoDeIndependencia(texto.trim() + cola, avisoIndependencia, {
+    tope: TOPE_PIE - AI_LABEL.length - 2, cola, alFinal: true,
+  })
+}
+
+/** La atribución y el enlace del final de un pie ya armado, para no recortarlos. */
+function colaDelPie(caption: string): string {
+  // La cola es el último párrafo: la firma («Reporteó: …» o «Comunicado de …»)
+  // y la dirección de la ficha en la línea siguiente.
+  const m = /\n\n[^\n]+\nhttps?:\/\/\S+$/.exec(sinAvisoDeIndependencia(caption))
+  return m ? m[0] : ''
 }
 
 /**
@@ -141,6 +155,8 @@ export function cuerpoDelPie(caption: string): string {
   return caption
     .split('\n')
     .filter((linea) => !/^\s*(Reporte[oó]\s*:|https?:\/\/)/i.test(linea))
+    // El aviso de independencia (regla 2) también lo agrega el código, no el modelo.
+    .filter((linea) => sinAvisoDeIndependencia(linea) !== '' || linea.trim() === '')
     .join('\n')
 }
 
@@ -187,10 +203,14 @@ async function runGeneration(postId: string, story: any): Promise<void> {
   if (avisosDelPie.length > 0) {
     return rechazar(postId, storyId, `Pie: ${avisosEnTexto(avisosDelPie)}`)
   }
-  const caption = pieConAtribucion(candado.texto, carrusel.atribucion.medio, storyUrl, carrusel.atribucion.comunicadoDe ?? null)
+  const caption = pieConAtribucion(
+    candado.texto, carrusel.atribucion.medio, storyUrl, carrusel.atribucion.comunicadoDe ?? null,
+    textoDelAviso(carrusel.avisoIndependencia, 'larga'),
+  )
 
-  // 3. Recién ahora se sube: un rechazo no deja láminas sueltas en R2.
-  const imageUrls = await subirCarrusel(storyId, carrusel.imagenes)
+  // 3. Recién ahora se sube: un rechazo no deja láminas sueltas en R2. El nombre
+  // dice si el cierre lleva el aviso de independencia, para cotejarlo al publicar.
+  const imageUrls = await subirCarrusel(storyId, carrusel.imagenes, carrusel.avisoIndependencia != null)
 
   await prisma.instagramPost.update({
     where: { id: postId },
@@ -287,6 +307,18 @@ export async function publishPost(postId: string) {
     throw new Error(`El pie no pasó los candados: ${avisosEnTexto(avisosDelPie)}`)
   }
 
+  // Regla 2: el aviso de independencia se vuelve a calcular al publicar. Las
+  // láminas ya están dibujadas: si su cierre no dice lo que corresponde hoy (la
+  // lista cambió desde el borrador), no se publica. Si no se puede calcular,
+  // tampoco: un post publicado sin su aviso queda así para siempre.
+  const aviso = await avisoParaPublicar(post.story.id)
+  if (carruselConAviso(slideUrls) !== (aviso !== null)) {
+    throw new Error('El aviso de independencia de esta nota cambió desde que se armó el borrador (regla 2). Bórralo y genera uno nuevo.')
+  }
+  const caption = conAvisoDeIndependencia(post.caption, textoDelAviso(aviso, 'larga'), {
+    tope: TOPE_PIE - AI_LABEL.length - 2, cola: colaDelPie(post.caption), alFinal: true,
+  })
+
   // Publishing a carousel uploads each slide to Instagram one by one (~50s for
   // 5 slides), which exceeds the Azure Static Web Apps proxy timeout (~45s) and
   // made the client show a false "failed" while the server actually published.
@@ -300,7 +332,7 @@ export async function publishPost(postId: string) {
 
   // 2200: tope de caracteres del caption en Instagram (el mismo con que se
   // recorta el borrador al generarlo). La línea de IA cabe siempre entera.
-  void runPublish(postId, slideUrls, withAiLabel(post.caption, 2200)).catch(async (err) => {
+  void runPublish(postId, slideUrls, withAiLabel(caption, 2200)).catch(async (err) => {
     log.error({ err, postId }, 'background Instagram publish crashed')
     await prisma.instagramPost
       .update({ where: { id: postId }, data: { status: 'failed', error: err instanceof Error ? err.message : 'Publish failed' } })

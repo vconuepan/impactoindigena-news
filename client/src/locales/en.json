@@ -122,6 +122,16 @@
     "whyItMatters": "Why it matters",
     "caveats": "Caveats",
     "howWeScored": "How we scored it",
+    "independence": {
+      "label": "Independence notice",
+      "one_current": "This story mentions an organization that is a client of {{verticals}}.",
+      "one_past": "This story mentions an organization that was a client of {{verticals}}.",
+      "many_current": "This story mentions organizations that are or were clients of {{verticals}}.",
+      "many_past": "This story mentions organizations that were clients of {{verticals}}.",
+      "and": " and of ",
+      "rules": "Impacto Indígena News does not charge to publish, and its editorial decisions do not go through Impacto Indígena SpA or the law firm Impacto Indígena Legal.",
+      "link": "Our independence rules"
+    },
     "body": {
       "label": "Story",
       "quePaso": "What happened",

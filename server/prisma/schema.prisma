@@ -118,6 +118,7 @@ model Story {
   brandAssessments       StoryBrandAssessment[]
   images                 StoryImage[]
   body                   StoryBody?
+  disclosureDismissals   StoryDisclosureDismissal[]
   createdAt              DateTime     @default(now()) @map("created_at")
   updatedAt              DateTime     @updatedAt @map("updated_at")
 
@@ -186,6 +187,51 @@ model StoryBody {
   story           Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
 
   @@map("story_bodies")
+}
+
+// Regla 2 de la independencia editorial (director, 25-nov-2026): el medio avisa
+// cuando una nota informa sobre un cliente de impactoindigena.ai o de
+// impactoindigena.legal. El aviso es GENÉRICO: nunca nombra a la organización.
+// La lista la mantiene un administrador en el panel; el cruce se hace al leer la
+// ficha (lib/avisoClientes.ts), así cubre las notas ya publicadas y el cuerpo que
+// llega después de publicar. Solo organizaciones, nunca personas: si se anota un
+// RUT, el código rechaza uno de persona natural. Ningún campo dice origen étnico.
+// Tablas nuevas y no columnas de stories (lección P2022 del 26-oct): el código
+// tolera que no existan y la ficha sale sin aviso.
+model DisclosureClient {
+  id         String    @id @default(uuid())
+  /// Nombre de la organización, como aparece en la prensa.
+  name       String
+  /// Otras formas de nombrarla (siglas, nombre corto). Mínimo 3 letras cada una.
+  aliases    String[]  @default([])
+  /// 'ai' | 'legal' (TEXT + CHECK en la base)
+  vertical   String
+  /// Opcional. Si se anota, debe ser de persona jurídica (>= 50.000.000).
+  rut        String?
+  /// Vacío mientras la relación sigue; con fecha, el aviso dice «fue cliente».
+  endedOn    DateTime? @map("ended_on") @db.Date
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  dismissals StoryDisclosureDismissal[]
+
+  @@map("disclosure_clients")
+}
+
+/// Un falso positivo: el cruce marcó a este cliente en esta nota y un
+/// administrador dijo que la nota no informa sobre él (un homónimo, una mención
+/// al pasar). Borrar la fila devuelve el aviso.
+model StoryDisclosureDismissal {
+  id          String           @id @default(uuid())
+  storyId     String           @map("story_id")
+  clientId    String           @map("client_id")
+  reason      String
+  dismissedBy String           @default("") @map("dismissed_by")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  story       Story            @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  client      DisclosureClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, clientId])
+  @@map("story_disclosure_dismissals")
 }
 
 model StoryCluster {

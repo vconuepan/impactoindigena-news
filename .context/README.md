@@ -55,6 +55,7 @@ spec wins and the context file is what gets corrected.
 | `facebook.md` | Page token vs Instagram token, link-card posting, groups impossible | `social-posting.allium` |
 | `story-carousel.md` | Carrusel de una noticia desde el artículo original: rutas, candados, formato, costo medido | — |
 | `own-content.md` | Contenido propio firmado: la editorial desde las notas del director, firma, método, fuentes, candados | `own-content.allium` |
+| `independencia-editorial.md` | Regla 2: aviso genérico en la ficha cuando una nota menciona a un cliente del `.ai` o del `.legal`; lista en el panel, cruce al leer, candados | `story-pipeline.allium` |
 
 ### Interface
 

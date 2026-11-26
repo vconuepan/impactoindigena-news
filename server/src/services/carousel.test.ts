@@ -3,7 +3,7 @@ import { existsSync, unlinkSync, mkdirSync } from 'fs'
 import { rm } from 'fs/promises'
 import { join } from 'path'
 import { tmpdir } from 'os'
-import { createStoryImage, generateCarouselZip, type CarouselStory } from './carousel.js'
+import { createStoryImage, generateCarouselZip, lineaDelMedio, type CarouselStory } from './carousel.js'
 
 const sampleStory: CarouselStory = {
   title: 'Major AI breakthrough in quantum computing research',
@@ -69,5 +69,71 @@ describe('generateCarouselZip', () => {
   it('handles a single story', async () => {
     const zipPath = await generateCarouselZip([sampleStory], outputDir)
     expect(existsSync(zipPath)).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Regla 2: el aviso de independencia (director, 25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('el aviso de independencia en la imagen de la nota', async () => {
+  const { loadImage, createCanvas } = await import('@napi-rs/canvas')
+  const FRASE = 'Esta nota menciona a organizaciones que son o fueron clientes de impactoindigena.ai y de impactoindigena.legal.'
+  const LARGO = { ...sampleStory, summary: 'Un resumen largo que llena el espacio disponible de la imagen. '.repeat(20) }
+
+  /** Píxeles que no son blancos en la franja del aviso (y de 545 a 615). */
+  async function tintaEnLaFranja(png: Buffer): Promise<number> {
+    const img = await loadImage(png)
+    const c = createCanvas(img.width, img.height)
+    const ctx = c.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const { data } = ctx.getImageData(0, 545, 1100, 70)
+    let n = 0
+    for (let i = 0; i < data.length; i += 4) if (data[i] < 200 || data[i + 1] < 200 || data[i + 2] < 200) n++
+    return n
+  }
+
+  it('con aviso: la franja lleva texto, aun con un resumen que llena la imagen', async () => {
+    expect(await tintaEnLaFranja(createStoryImage({ ...LARGO, avisoIndependencia: FRASE }))).toBeGreaterThan(200)
+  })
+
+  it('sin aviso, con un resumen corto, la franja queda en blanco', async () => {
+    expect(await tintaEnLaFranja(createStoryImage({ ...sampleStory, avisoIndependencia: null }))).toBe(0)
+    expect(await tintaEnLaFranja(createStoryImage(sampleStory))).toBe(0)
+  })
+
+  it('con aviso, el resumen se detiene antes de la franja', async () => {
+    // El rótulo empieza en y=560; de 530 a 545 no puede haber resumen.
+    const img = await loadImage(createStoryImage({ ...LARGO, avisoIndependencia: FRASE }))
+    const c = createCanvas(img.width, img.height)
+    const ctx = c.getContext('2d')
+    ctx.drawImage(img, 0, 0)
+    const { data } = ctx.getImageData(0, 530, 1100, 15)
+    let n = 0
+    for (let i = 0; i < data.length; i += 4) if (data[i] < 200) n++
+    expect(n).toBe(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// La fecha: en español y sin el día menos (25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('la fecha de la imagen', () => {
+  // La muestra del 25-nov dibujó «Oct 20» para una nota del 21: el día se guarda
+  // a medianoche UTC y se leía en inglés y en la hora del servidor.
+  it('un día sin hora dice el mismo día, en español', () => {
+    expect(lineaDelMedio({ publisher: 'BioBío Chile', date: '2026-10-21T00:00:00.000Z' }))
+      .toBe('BioBío Chile, 21 de octubre de 2026')
+  })
+
+  it('una fecha con hora se lee en hora de Chile', () => {
+    // 02:00 UTC del 22 son las 23:00 del 21 en Chile.
+    expect(lineaDelMedio({ publisher: 'Medio', date: '2026-10-22T02:00:00Z' })).toBe('Medio, 21 de octubre de 2026')
+  })
+
+  it('sin fecha, o con una que no se puede leer, solo el medio', () => {
+    expect(lineaDelMedio({ publisher: 'Medio', date: null })).toBe('Medio')
+    expect(lineaDelMedio({ publisher: 'Medio', date: 'no es fecha' })).toBe('Medio')
   })
 })

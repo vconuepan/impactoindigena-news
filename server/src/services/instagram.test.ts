@@ -36,6 +36,10 @@ const mockCarrusel = vi.hoisted(() => ({
 
 const mockLLM = vi.hoisted(() => ({ invoke: vi.fn() }))
 
+// Regla 2: por defecto ninguna nota menciona a un cliente.
+const mockAviso = vi.hoisted(() => ({ avisoParaPublicar: vi.fn(async () => null as unknown) }))
+vi.mock('./avisoClientes.js', () => mockAviso)
+
 vi.mock('../lib/instagram.js', () => ({ ...mockLib, InstagramAuthError }))
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 vi.mock('../lib/logger.js', () => ({
@@ -383,5 +387,107 @@ describe('pieConAtribucion y cuerpoDelPie', () => {
     expect(pie.endsWith('\n\nReporteó: Radio Kurruf\nhttps://v.org/s/x')).toBe(true)
     // Cabe junto a la línea de IA que se agrega al publicar.
     expect(pie.length + 2 + 'Texto elaborado con apoyo de IA a partir de la noticia original.'.length).toBeLessThanOrEqual(2200)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Regla 2: el aviso de independencia (director, 25-nov-2026)
+// ---------------------------------------------------------------------------
+
+describe('aviso de independencia (regla 2)', async () => {
+  const { AI_LABEL } = await import('../lib/ai-label.js')
+  const AVISO_OBJ = { verticals: ['legal'], current: true, plural: false }
+  const AVISO = 'Aviso de independencia: esta nota menciona a una organización que es cliente de impactoindigena.legal.'
+  const URL = 'https://impactoindigena.news/stories/mapuches-enfrentan-desalojo'
+  const CON_AVISO = ['https://pub.r2.test/social/s1-original-aviso-01-1.jpg', 'https://pub.r2.test/social/s1-original-aviso-02-1.jpg']
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockAviso.avisoParaPublicar.mockResolvedValue(null)
+    mockLib.isInstagramConfigured.mockReturnValue(true)
+    mockPrisma.story.findUnique.mockResolvedValue(noticia())
+    mockPrisma.instagramPost.findFirst.mockResolvedValue(null)
+    mockPrisma.instagramPost.create.mockResolvedValue({ id: 'p1', status: 'generating' })
+    mockPrisma.instagramPost.update.mockResolvedValue({})
+    mockCarrusel.subirCarrusel.mockResolvedValue(LAMINAS_NUEVAS)
+    mockLLM.invoke.mockResolvedValue({ caption: 'El Lof Juan Currin resiste en Temuco.' })
+    mockLib.createCarouselPost.mockResolvedValue({ id: 'ig-1', permalink: 'https://instagram.com/p/x' })
+  })
+
+  it('con aviso: el pie lo lleva después de la atribución y las láminas se marcan', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue({ id: 'p1', status: 'draft' })
+    mockCarrusel.buildStoryCarouselForSocial.mockResolvedValue({ ...carrusel(), avisoIndependencia: AVISO_OBJ })
+
+    await generateDraft('s1', { esperar: true })
+
+    expect(mockCarrusel.subirCarrusel).toHaveBeenCalledWith('s1', expect.any(Array), true)
+    expect(estadoFinal().caption).toBe(`El Lof Juan Currin resiste en Temuco.\n\nReporteó: Radio Kurruf\n${URL}\n\n${AVISO}`)
+  })
+
+  it('sin aviso: el pie termina en el enlace y las láminas no se marcan', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue({ id: 'p1', status: 'draft' })
+    mockCarrusel.buildStoryCarouselForSocial.mockResolvedValue({ ...carrusel(), avisoIndependencia: null })
+
+    await generateDraft('s1', { esperar: true })
+
+    expect(mockCarrusel.subirCarrusel).toHaveBeenCalledWith('s1', expect.any(Array), false)
+    expect(estadoFinal().caption.endsWith(URL)).toBe(true)
+  })
+
+  function borrador(slideUrls: string[], caption = `El Lof Juan Currin resiste.\n\nReporteó: Radio Kurruf\n${URL}`) {
+    return { id: 'p1', status: 'draft', slideUrls, imageUrl: slideUrls[0], caption, story: noticia() }
+  }
+
+  it('al publicar con aviso: el pie lo lleva antes de la línea de IA', async () => {
+    mockAviso.avisoParaPublicar.mockResolvedValue(AVISO_OBJ)
+    mockPrisma.instagramPost.findUnique.mockResolvedValue(borrador(CON_AVISO))
+
+    await publishPost('p1')
+
+    await vi.waitFor(() => expect(mockLib.createCarouselPost).toHaveBeenCalled())
+    expect(mockLib.createCarouselPost.mock.calls[0][1]).toBe(
+      `El Lof Juan Currin resiste.\n\nReporteó: Radio Kurruf\n${URL}\n\n${AVISO}\n\n${AI_LABEL}`,
+    )
+  })
+
+  it('al publicar sin aviso: el pie sale sin él', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue(borrador(LAMINAS_NUEVAS))
+
+    await publishPost('p1')
+
+    await vi.waitFor(() => expect(mockLib.createCarouselPost).toHaveBeenCalled())
+    expect(mockLib.createCarouselPost.mock.calls[0][1]).toBe(`El Lof Juan Currin resiste.\n\nReporteó: Radio Kurruf\n${URL}\n\n${AI_LABEL}`)
+  })
+
+  it('no publica si el cierre de las láminas no lleva el aviso que hoy corresponde', async () => {
+    mockAviso.avisoParaPublicar.mockResolvedValue(AVISO_OBJ)
+    mockPrisma.instagramPost.findUnique.mockResolvedValue(borrador(LAMINAS_NUEVAS))
+
+    await expect(publishPost('p1')).rejects.toThrow(/aviso de independencia/)
+    expect(mockPrisma.instagramPost.update).not.toHaveBeenCalled()
+  })
+
+  it('no publica láminas con un aviso que ya no corresponde', async () => {
+    mockPrisma.instagramPost.findUnique.mockResolvedValue(borrador(CON_AVISO))
+
+    await expect(publishPost('p1')).rejects.toThrow(/aviso de independencia/)
+  })
+
+  it('si el aviso no se puede calcular, no publica', async () => {
+    mockAviso.avisoParaPublicar.mockRejectedValue(new Error('db down'))
+    mockPrisma.instagramPost.findUnique.mockResolvedValue(borrador(LAMINAS_NUEVAS))
+
+    await expect(publishPost('p1')).rejects.toThrow('db down')
+    expect(mockLib.createCarouselPost).not.toHaveBeenCalled()
+  })
+
+  it('si no cabe, cede el texto del modelo: ni la atribución ni el aviso', () => {
+    const pie = pieConAtribucion('a'.repeat(3000), 'Radio Kurruf', 'https://v.org/s/x', null, AVISO)
+    expect(pie.endsWith(`\n\nReporteó: Radio Kurruf\nhttps://v.org/s/x\n\n${AVISO}`)).toBe(true)
+    expect(pie.length + 2 + AI_LABEL.length).toBeLessThanOrEqual(2200)
+  })
+
+  it('los candados del pie no leen el aviso, que lo agrega el código', () => {
+    expect(cuerpoDelPie(`Texto.\n\nReporteó: Radio Kurruf\n${URL}\n\n${AVISO}`)).not.toContain('Aviso')
   })
 })

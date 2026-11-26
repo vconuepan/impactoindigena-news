@@ -14,6 +14,9 @@ import { storyCarouselSchema, storyCarouselWithReadingSchema } from '../schemas/
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { config } from '../config.js'
 import { emisorRespaldado } from '../lib/firmaDelOriginal.js'
+import { fechaDelOriginal } from '../lib/fechaDelOriginal.js'
+import { fraseDelAviso, type AvisoIndependencia } from '../lib/avisoClientes.js'
+import { avisoParaPublicar } from './avisoClientes.js'
 
 const log = createLogger('story-carousel')
 
@@ -75,26 +78,9 @@ export function autorNombrable(autor: string | null | undefined, medio: string):
   return a
 }
 
-const FORMATO_FECHA = new Intl.DateTimeFormat('es-CL', {
-  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago',
-})
-const FORMATO_FECHA_UTC = new Intl.DateTimeFormat('es-CL', {
-  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
-})
-
-/**
- * La fecha del original, como la dice la firma. Una fecha sin hora (la que
- * devuelve el análisis, «2026-10-21 00:00:00», o un feed que solo da el día)
- * queda guardada a medianoche UTC, y dibujada en hora de Chile caía en el día
- * anterior: el 26-oct-2026 el carrusel de Belo Sun firmó «20 de octubre» sobre
- * un comunicado del 21. Esa medianoche es un día del calendario, no una hora,
- * así que se lee en UTC; una fecha con hora se lee en hora de Chile.
- */
-export function fechaDelOriginal(fecha: Date): string {
-  const sinHora = fecha.getUTCHours() === 0 && fecha.getUTCMinutes() === 0
-    && fecha.getUTCSeconds() === 0 && fecha.getUTCMilliseconds() === 0
-  return (sinHora ? FORMATO_FECHA_UTC : FORMATO_FECHA).format(fecha)
-}
+// La fecha de la firma vive en lib/ desde el 25-nov-2026: la usa también el
+// carrusel del boletín (services/carousel.ts). Se reexporta para no mover a nadie.
+export { fechaDelOriginal } from '../lib/fechaDelOriginal.js'
 
 async function cargarNoticia(storyId: string) {
   const story = await prisma.story.findUnique({
@@ -311,6 +297,10 @@ export async function renderStoryCarouselImages(storyId: string, req: RenderRequ
   // La foto con que el medio publicó la nota, acreditada a ese medio. Una
   // imagen de IA o la tarjeta compuesta no van (decisión del director, 29-oct).
   const fotoUrl = await fotoDePortada(story)
+  // Regla 2: el aviso de independencia en la lámina de cierre. Un carrusel se
+  // descarga o se publica y no se corrige después: si no se puede calcular, lanza.
+  const aviso = await avisoParaPublicar(storyId)
+  const avisoIndependencia = aviso ? fraseDelAviso(aviso) : null
   const { imagenes, avisos: avisosDeEspacio, fotosDibujadas } = await renderStoryCarousel({
     laminas,
     lectura,
@@ -320,10 +310,11 @@ export async function renderStoryCarouselImages(storyId: string, req: RenderRequ
     // Las demás fotos del artículo, una por lámina de desarrollo mientras
     // quepan sin quitarle espacio al texto (ver `desarrollo` en el render).
     fotosDesarrollo: await fotosDelArticulo(storyId, atribucion.medio),
+    avisoIndependencia,
   })
-  log.info({ storyId, laminas: imagenes.length, fotosDibujadas }, 'carousel rendered')
+  log.info({ storyId, laminas: imagenes.length, fotosDibujadas, conAvisoIndependencia: avisoIndependencia !== null }, 'carousel rendered')
 
-  return { story, imagenes, avisos: [...avisosDeTexto, ...avisosDeEspacio] }
+  return { story, imagenes, avisos: [...avisosDeTexto, ...avisosDeEspacio], avisoIndependencia: aviso }
 }
 
 // ---------------------------------------------------------------------------
@@ -349,6 +340,8 @@ export interface SocialCarousel {
   original: string
   /** El mismo, recortado al tope que se le manda al modelo. */
   originalParaElModelo: string
+  /** El aviso de independencia dibujado en el cierre, o null (regla 2). */
+  avisoIndependencia: AvisoIndependencia | null
 }
 
 export async function buildStoryCarouselForSocial(storyId: string): Promise<SocialCarousel> {
@@ -356,7 +349,7 @@ export async function buildStoryCarouselForSocial(storyId: string): Promise<Soci
   if (borrador.avisos.length > 0) {
     throw new StoryCarouselError('El texto del carrusel no pasó los candados.', borrador.avisos)
   }
-  const { story, imagenes, avisos } = await renderStoryCarouselImages(storyId, {
+  const { story, imagenes, avisos, avisoIndependencia } = await renderStoryCarouselImages(storyId, {
     laminas: borrador.laminas,
     lectura: null,
     comunicadoDe: borrador.atribucion.comunicadoDe ?? null,
@@ -371,6 +364,7 @@ export async function buildStoryCarouselForSocial(storyId: string): Promise<Soci
     atribucion: borrador.atribucion,
     original,
     originalParaElModelo: recortar(original.trim(), config.storyCarousel.maxSourceChars),
+    avisoIndependencia,
   }
 }
 
@@ -385,12 +379,25 @@ export function armadoDesdeElOriginal(slideUrls: string[]): boolean {
   return slideUrls.length > 0 && slideUrls.every((url) => url.includes(MARCA_ORIGINAL))
 }
 
+/**
+ * Marca de las láminas cuyo cierre lleva el aviso de independencia (regla 2).
+ * Las láminas se suben al armar el borrador y se publican después: al publicar
+ * se compara con el aviso de ese momento, y si la lista cambió entre medio el
+ * carrusel no sale con un aviso que ya no corresponde, ni sin uno que sí.
+ */
+const MARCA_AVISO = '-original-aviso-'
+
+export function carruselConAviso(slideUrls: string[]): boolean {
+  return slideUrls.length > 0 && slideUrls.every((url) => url.includes(MARCA_AVISO))
+}
+
 /** Sube las láminas a R2 en orden y devuelve sus direcciones públicas. */
-export async function subirCarrusel(storyId: string, imagenes: Buffer[]): Promise<string[]> {
+export async function subirCarrusel(storyId: string, imagenes: Buffer[], conAviso = false): Promise<string[]> {
   const momento = Date.now()
+  const marca = conAviso ? MARCA_AVISO : MARCA_ORIGINAL
   const urls: string[] = []
   for (let i = 0; i < imagenes.length; i++) {
-    const nombre = `${storyId}${MARCA_ORIGINAL}${String(i + 1).padStart(2, '0')}-${momento}.jpg`
+    const nombre = `${storyId}${marca}${String(i + 1).padStart(2, '0')}-${momento}.jpg`
     urls.push(await uploadImageToR2(imagenes[i], nombre, 'image/jpeg'))
   }
   log.info({ storyId, laminas: urls.length }, 'carousel uploaded to R2')

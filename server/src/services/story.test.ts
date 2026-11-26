@@ -26,6 +26,12 @@ const mockPrisma = vi.hoisted(() => ({
   storyCluster: {
     delete: vi.fn(),
   },
+  disclosureClient: {
+    findMany: vi.fn(),
+  },
+  storyDisclosureDismissal: {
+    findMany: vi.fn(),
+  },
   $disconnect: vi.fn(),
   $transaction: vi.fn((args: any) => Array.isArray(args) ? Promise.all(args) : args()),
 }))
@@ -33,6 +39,7 @@ const mockPrisma = vi.hoisted(() => ({
 vi.mock('../lib/prisma.js', () => ({ default: mockPrisma }))
 
 const { getStoryIdsByStatus, generateUniqueSlugs, getStories, deleteStory, dissolveCluster, getClusterRedirectSlug, getPublishedStories, getHomepageData, getPublishedStoryBySlug } = await import('./story.js')
+const { invalidarListaDeClientes } = await import('./avisoClientes.js')
 
 describe('getStories', () => {
   beforeEach(() => {
@@ -721,5 +728,65 @@ describe('getPublishedStoryBySlug · cuerpo sin revisar (C7, 3-nov-2026)', () =>
     expect((await getPublishedStoryBySlug('nota'))?.body).toBeNull()
     mockPrisma.story.findFirst.mockResolvedValue(null)
     expect(await getPublishedStoryBySlug('nada')).toBeNull()
+  })
+})
+
+describe('getPublishedStoryBySlug · aviso de independencia (regla 2, 25-nov-2026)', () => {
+  // Organizaciones ficticias: los tests no nombran clientes reales.
+  const clientes = [
+    { id: 'c1', name: 'Minera Ejemplo del Norte', aliases: ['MENSA'], vertical: 'legal', endedOn: null },
+    { id: 'c2', name: 'Forestal Los Robles', aliases: [], vertical: 'ai', endedOn: null },
+  ]
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    invalidarListaDeClientes()
+    mockPrisma.disclosureClient.findMany.mockResolvedValue(clientes)
+    mockPrisma.storyDisclosureDismissal.findMany.mockResolvedValue([])
+  })
+
+  it('positivo: la nota que menciona a un cliente trae el aviso, sin su nombre', async () => {
+    mockPrisma.story.findFirst.mockResolvedValue({
+      id: 's1', slug: 'nota', title: 'Acuerdo en Atacama', summary: 'La comunidad firmó con Minera Ejemplo del Norte.', body: null,
+    })
+    const story = await getPublishedStoryBySlug('nota')
+    expect(story?.independenceNotice).toEqual({ verticals: ['legal'], current: true, plural: false })
+    expect(JSON.stringify(story?.independenceNotice)).not.toMatch(/Minera|MENSA|c1/)
+  })
+
+  it('negativo: la nota que no menciona clientes no trae aviso', async () => {
+    mockPrisma.story.findFirst.mockResolvedValue({
+      id: 's1', slug: 'nota', title: 'Semillas nativas en el lof', summary: 'Familias guardan semillas.', body: null,
+    })
+    expect((await getPublishedStoryBySlug('nota'))?.independenceNotice).toBeNull()
+    expect(mockPrisma.storyDisclosureDismissal.findMany).not.toHaveBeenCalled()
+  })
+
+  it('alias: la sigla en el cuerpo oculto (sin revisar) también avisa', async () => {
+    mockPrisma.story.findFirst.mockResolvedValue({
+      id: 's1', slug: 'nota', title: 'Monitoreo de agua', summary: 'Una minera y la comunidad.',
+      body: { bajada: 'Bajada', contexto: 'MENSA opera desde 2010.', method: 'ia_sin_revision' },
+    })
+    const story = await getPublishedStoryBySlug('nota')
+    expect(story?.body).toBeNull()
+    expect(story?.independenceNotice).toEqual({ verticals: ['legal'], current: true, plural: false })
+  })
+
+  it('un falso positivo descartado en esta nota no avisa', async () => {
+    mockPrisma.story.findFirst.mockResolvedValue({
+      id: 's1', slug: 'nota', title: 'Los Robles', summary: 'Forestal Los Robles, el fundo del vecino.', body: null,
+    })
+    mockPrisma.storyDisclosureDismissal.findMany.mockResolvedValue([{ clientId: 'c2' }])
+    expect((await getPublishedStoryBySlug('nota'))?.independenceNotice).toBeNull()
+  })
+
+  it('sin la tabla (migración sin aplicar) la ficha sale igual, sin aviso', async () => {
+    mockPrisma.disclosureClient.findMany.mockRejectedValue(Object.assign(new Error('no table'), { code: 'P2021' }))
+    mockPrisma.story.findFirst.mockResolvedValue({
+      id: 's1', slug: 'nota', title: 'Minera Ejemplo del Norte', summary: 'x', body: null,
+    })
+    const story = await getPublishedStoryBySlug('nota')
+    expect(story?.slug).toBe('nota')
+    expect(story?.independenceNotice).toBeNull()
   })
 })

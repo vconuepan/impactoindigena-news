@@ -22,6 +22,11 @@ const mockPrisma = vi.hoisted(() => ({
 }))
 
 vi.mock('../../lib/prisma.js', () => ({ default: mockPrisma }))
+// Regla 2: por defecto ninguna nota menciona a un cliente (se prueba en services/newsletter.test.ts).
+vi.mock('../../services/avisoClientes.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/avisoClientes.js')>()),
+  lineaDeAvisoParaPublicar: vi.fn(async () => null),
+}))
 vi.mock('../../services/crawler.js', () => ({
   crawlFeed: vi.fn(),
   crawlAllDueFeeds: vi.fn(),

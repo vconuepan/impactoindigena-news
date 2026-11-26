@@ -16,6 +16,7 @@ import { buildRelatedStoriesPrompt } from '../prompts/related-stories.js'
 import { relatedStoriesResultSchema } from '../schemas/llm.js'
 import { canonicalIssueSlug } from '../lib/issue-slug.js'
 import { registerCommunityReviews } from './communityReview.js'
+import { avisoParaNota } from './avisoClientes.js'
 
 const log = createLogger('story')
 
@@ -1195,14 +1196,20 @@ export async function getPublishedStoryBySlug(slug: string) {
       where: { slug, status: 'published' },
       select: { ...PUBLIC_STORY_SELECT, body: { select: PUBLIC_STORY_BODY_SELECT } },
     })
-    return story ? { ...story, body: cuerpoPublico(story.body) } : null
+    if (!story) return null
+    // El aviso de independencia (regla 2) se cruza con el cuerpo aunque la
+    // ficha no lo muestre (C7): es parte de la nota. Genérico, sin nombre.
+    const independenceNotice = await avisoParaNota(story.id, story)
+    return { ...story, body: cuerpoPublico(story.body), independenceNotice }
   } catch (err) {
     // La tabla story_bodies la aplica el director a mano; hasta entonces la
     // ficha sale como siempre, sin cuerpo, en vez de responder 500.
     const code = (err as { code?: string } | null)?.code
     if (code !== 'P2021' && code !== 'P2022') throw err
     const story = await prisma.story.findFirst({ where: { slug, status: 'published' }, select: PUBLIC_STORY_SELECT })
-    return story ? { ...story, body: null } : null
+    if (!story) return null
+    const independenceNotice = await avisoParaNota(story.id, story)
+    return { ...story, body: null, independenceNotice }
   }
 }
 
