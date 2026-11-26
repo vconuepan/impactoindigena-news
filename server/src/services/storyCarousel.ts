@@ -14,6 +14,7 @@ import { storyCarouselSchema, storyCarouselWithReadingSchema } from '../schemas/
 import { getLLMByTier, rateLimitDelay } from './llm.js'
 import { config } from '../config.js'
 import { emisorRespaldado } from '../lib/firmaDelOriginal.js'
+import { fechaDelOriginal } from '../lib/fechaDelOriginal.js'
 import { fraseDelAviso, type AvisoIndependencia } from '../lib/avisoClientes.js'
 import { avisoParaPublicar } from './avisoClientes.js'
 
@@ -77,26 +78,9 @@ export function autorNombrable(autor: string | null | undefined, medio: string):
   return a
 }
 
-const FORMATO_FECHA = new Intl.DateTimeFormat('es-CL', {
-  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Santiago',
-})
-const FORMATO_FECHA_UTC = new Intl.DateTimeFormat('es-CL', {
-  day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
-})
-
-/**
- * La fecha del original, como la dice la firma. Una fecha sin hora (la que
- * devuelve el análisis, «2026-10-21 00:00:00», o un feed que solo da el día)
- * queda guardada a medianoche UTC, y dibujada en hora de Chile caía en el día
- * anterior: el 26-oct-2026 el carrusel de Belo Sun firmó «20 de octubre» sobre
- * un comunicado del 21. Esa medianoche es un día del calendario, no una hora,
- * así que se lee en UTC; una fecha con hora se lee en hora de Chile.
- */
-export function fechaDelOriginal(fecha: Date): string {
-  const sinHora = fecha.getUTCHours() === 0 && fecha.getUTCMinutes() === 0
-    && fecha.getUTCSeconds() === 0 && fecha.getUTCMilliseconds() === 0
-  return (sinHora ? FORMATO_FECHA_UTC : FORMATO_FECHA).format(fecha)
-}
+// La fecha de la firma vive en lib/ desde el 25-nov-2026: la usa también el
+// carrusel del boletín (services/carousel.ts). Se reexporta para no mover a nadie.
+export { fechaDelOriginal } from '../lib/fechaDelOriginal.js'
 
 async function cargarNoticia(storyId: string) {
   const story = await prisma.story.findUnique({

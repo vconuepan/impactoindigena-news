@@ -12,6 +12,7 @@ import { join } from 'path'
 // que no encuentra: el texto de estas láminas salía en blanco, igual que el
 // del carrusel de Instagram antes de 97cb6ac.
 import { FONT } from '../lib/carouselGen.js'
+import { fechaDelOriginal } from '../lib/fechaDelOriginal.js'
 
 // Image dimensions (matching PHP version)
 const WIDTH = 1200
@@ -55,6 +56,19 @@ function wrapText(ctx: any, text: string, maxWidth: number): string[] {
   return lines
 }
 
+/**
+ * «BioBío Chile, 21 de octubre de 2026». Hasta el 25-nov-2026 la fecha salía en
+ * inglés («Oct 20») y con un día menos: el análisis guarda el día a medianoche
+ * UTC y se leía en la hora del servidor. Ahora la dice igual que la firma del
+ * carrusel de una noticia (`fechaDelOriginal`).
+ */
+export function lineaDelMedio(story: Pick<CarouselStory, 'publisher' | 'date'>): string {
+  if (!story.date) return story.publisher
+  const d = new Date(story.date)
+  if (Number.isNaN(d.getTime()) || d.getTime() <= 0) return story.publisher
+  return `${story.publisher}, ${fechaDelOriginal(d)}`
+}
+
 export function createStoryImage(story: CarouselStory): Buffer {
   const canvas = createCanvas(WIDTH, HEIGHT)
   const ctx = canvas.getContext('2d')
@@ -94,19 +108,7 @@ export function createStoryImage(story: CarouselStory): Buffer {
   // Publisher + date
   ctx.fillStyle = '#374151'
   ctx.font = `400 20px '${FONT}'`
-  let publisherText = story.publisher
-  if (story.date) {
-    try {
-      const d = new Date(story.date)
-      if (d.getTime() > 0) {
-        const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        publisherText += `, ${formatted}`
-      }
-    } catch {
-      // Ignore invalid dates
-    }
-  }
-  ctx.fillText(publisherText, PADDING, currentY)
+  ctx.fillText(lineaDelMedio(story), PADDING, currentY)
   currentY += 35
 
   // Summary (word-wrapped)
