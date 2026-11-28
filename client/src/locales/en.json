@@ -232,7 +232,7 @@
   },
   "language": {
     "toggle": "ES",
-    "current": "Current language: English"
+    "switch": "ES: read in Spanish"
   },
   "spotlight": {
     "label": "In Focus",

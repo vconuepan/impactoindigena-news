@@ -10,6 +10,7 @@
  *   /sitemap-news.xml  → ORIGIN/api/sitemap-news.xml
  *   /feed              → ORIGIN/api/feed
  *   /podcast/feed.xml  → ORIGIN/api/podcast/feed.xml
+ *   /.well-known/*, /llms.txt → 404 si solo existe el respaldo del SPA
  *
  * Solo corre en esas rutas: `public/_routes.json` deja todo lo demás como
  * estático, así el sitio no gasta invocaciones de Functions en cada archivo.
@@ -87,10 +88,33 @@ export function rutaDestino(url: URL): string | null {
   return null
 }
 
+/**
+ * Rutas que sondean los agentes y Lighthouse (`/.well-known/*`, `/llms.txt`) y
+ * que el sitio no publica. Pages no tiene la lista `navigationFallback.exclude`
+ * de Static Web Apps: sin esto respondía la portada con 200, y Lighthouse leía
+ * ese HTML como un manifiesto y un llms.txt rotos (PageSpeed 27-nov-2026,
+ * navegación agéntica 1/4). Con 404 las dos auditorías quedan «no aplica».
+ * `public/_routes.json` las incluye para que pasen por aquí.
+ */
+export function esSondaSinArchivo(pathname: string): boolean {
+  return pathname.startsWith('/.well-known/') || pathname === '/llms.txt'
+}
+
 export async function onRequest({ request, env, next }: Ctx): Promise<Response> {
   const url = new URL(request.url)
   const destino = rutaDestino(url)
-  if (!destino) return next()
+  if (!destino) {
+    const estatico = await next()
+    // Si algún día se publica un archivo real en esas rutas, pasa tal cual: solo
+    // se corta el respaldo del SPA, que es HTML.
+    if (esSondaSinArchivo(url.pathname) && (estatico.headers.get('content-type') || '').includes('text/html')) {
+      return new Response('Not found', {
+        status: 404,
+        headers: { 'Content-Type': 'text/plain; charset=utf-8', ...CABECERAS_SEGURIDAD },
+      })
+    }
+    return estatico
+  }
 
   const cabeceras = new Headers()
   for (const [nombre, valor] of request.headers) {

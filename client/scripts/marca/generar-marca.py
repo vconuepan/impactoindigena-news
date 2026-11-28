@@ -106,6 +106,8 @@ def main():
     # Emblema: tarjetas sin foto, widget incrustado, cabecera del sitio.
     guardar(cuadrado(512), IMAGENES, 'logo-no-text-square.png')
     guardar(cuadrado(192, margen=0.0), IMAGENES, 'logo-estrella.png')
+    # Variante liviana para la cabecera (44-56 px en CSS): srcset en PublicLayout.
+    guardar(cuadrado(112, margen=0.0), IMAGENES, 'logo-estrella-112.png')
     # Íconos. Apple no admite transparencia: fondo blanco.
     guardar(cuadrado(180, fondo=(255, 255, 255, 255)), PUBLICO, 'apple-touch-icon.png')
     guardar(cuadrado(192), PUBLICO, 'android-chrome-192x192.png')

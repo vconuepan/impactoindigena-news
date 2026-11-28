@@ -260,7 +260,12 @@ function BrandLogo({ onClick }: { onClick?: () => void }) {
       aria-label="Impacto Indígena News"
     >
       <img
-        src="/images/logo-estrella.png"
+        src="/images/logo-estrella-112.png"
+        /* 112 px cubre 44 px en movil a DPR 2,5 y 56 px en escritorio a DPR 2;
+           la de 192 (25 KB) queda para pantallas mas densas. PageSpeed 27-nov-2026
+           marcaba 24 KB de sobra en la de 192. */
+        srcSet="/images/logo-estrella-112.png 112w, /images/logo-estrella.png 192w"
+        sizes="(min-width: 768px) 56px, 44px"
         alt=""
         aria-hidden="true"
         width={96}
@@ -414,7 +419,7 @@ function PublicLayoutInner() {
                 <NewsletterIcon className="w-3.5 h-3.5 shrink-0" />
                 {t('nav.subscribe')}
               </button>
-              <button onClick={toggleLanguage} className="inline-flex items-center text-xs font-bold tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-2.5 min-h-[44px] text-neutral-400 hover:text-brand-700 border border-neutral-200 hover:border-brand-300" aria-label={t('language.current')}>
+              <button onClick={toggleLanguage} className="inline-flex items-center text-xs font-bold tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-2.5 min-h-[44px] text-neutral-400 hover:text-brand-700 border border-neutral-200 hover:border-brand-300" aria-label={t('language.switch')}>
                 {t('language.toggle')}
               </button>
             </div>
@@ -422,7 +427,7 @@ function PublicLayoutInner() {
               <button onClick={() => { setSearchOpen(!searchOpen); setMenuOpen(false); }} className={`p-2 rounded transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 ${searchOpen ? "text-brand-800" : "text-neutral-400 hover:text-neutral-600"}`} aria-label={searchOpen ? t('nav.closeSearch') : t('nav.openSearch')} aria-expanded={searchOpen} aria-controls="search-panel">
                 <SearchIcon className="w-5 h-5" />
               </button>
-              <button onClick={toggleLanguage} className="text-xs font-bold tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-1 text-neutral-400 hover:text-neutral-600 border border-neutral-200" aria-label={t('language.current')}>
+              <button onClick={toggleLanguage} className="text-xs font-bold tracking-widest uppercase transition-colors focus-visible:ring-2 focus-visible:ring-brand-500 rounded px-2 py-1 text-neutral-400 hover:text-neutral-600 border border-neutral-200" aria-label={t('language.switch')}>
                 {t('language.toggle')}
               </button>
               <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 rounded focus-visible:ring-2 focus-visible:ring-brand-500" aria-expanded={menuOpen} aria-controls="mobile-nav-menu" aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}>
@@ -646,7 +651,7 @@ function PublicLayoutInner() {
                   <NewsletterIcon className="w-3.5 h-3.5 shrink-0" />
                   {t('nav.subscribe')}
                 </button>
-                <button onClick={() => { setMenuOpen(false); toggleLanguage(); }} className="flex items-center gap-2 py-2.5 text-sm font-bold text-neutral-500 hover:text-neutral-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded" aria-label={t('language.current')}>
+                <button onClick={() => { setMenuOpen(false); toggleLanguage(); }} className="flex items-center gap-2 py-2.5 text-sm font-bold text-neutral-500 hover:text-neutral-700 focus-visible:ring-2 focus-visible:ring-brand-500 rounded" aria-label={t('language.switch')}>
                   {t('language.toggle')}
                 </button>
               </div>
@@ -683,7 +688,7 @@ function PublicLayoutInner() {
           {/* Colofon — el medio hablando antes que el indice de enlaces */}
           <div className="max-w-2xl">
             <Link to="/" className="inline-flex items-center gap-2.5 mb-4 text-white hover:opacity-90 transition-opacity focus-visible:ring-2 focus-visible:ring-brand-500 rounded">
-              <img src="/images/logo-estrella.png" alt="" aria-hidden="true" width={96} height={96} loading="lazy" className="h-9 w-9 shrink-0" />
+              <img src="/images/logo-estrella-112.png" alt="" aria-hidden="true" width={96} height={96} loading="lazy" className="h-9 w-9 shrink-0" />
               {/* El logotipo del grupo sobre el pie oscuro: «News» en #A7E3BF, 12:1 sobre #1C1917. */}
               <span className="brand-nombre text-white" style={{ fontSize: '22px', color: '#FFFFFF' }}>
                 Impacto Indígena <span style={{ color: '#A7E3BF' }}>News</span>

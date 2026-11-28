@@ -412,7 +412,10 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
   if (variant === 'equal') {
     return (
       <article className={`group relative overflow-hidden rounded-lg border border-neutral-200 bg-white h-full`}>
-        <Link to={href} className="block focus-visible:ring-2 focus-visible:ring-brand-500 rounded-t-lg overflow-hidden">
+        {/* La imagen repite el enlace del titular de abajo: fuera del orden de
+            tabulación y del árbol accesible. Sin esto, una tarjeta sin foto
+            dejaba un enlace sin nombre (axe link-name, PageSpeed 27-nov-2026). */}
+        <Link to={href} tabIndex={-1} aria-hidden="true" className="block rounded-t-lg overflow-hidden">
           <div className="relative aspect-video overflow-hidden bg-neutral-100">
             {imageUrl ? (
               <CardImage
@@ -488,7 +491,8 @@ export default function StoryCard({ story, variant = 'featured', hideSummary = f
            * frase. En movil no pasaba: ahi la caja es `h-44` a ancho completo,
            * casi la proporcion del origen.
            */}
-          <Link to={href} className="md:w-64 md:shrink-0 overflow-hidden rounded-b-lg md:rounded-b-none md:rounded-r-lg focus-visible:ring-2 focus-visible:ring-brand-500">
+          {/* Mismo enlace que el titular: fuera del tab y del árbol accesible (ver variante equal). */}
+          <Link to={href} tabIndex={-1} aria-hidden="true" className="md:w-64 md:shrink-0 overflow-hidden rounded-b-lg md:rounded-b-none md:rounded-r-lg">
             <div className="h-44 md:h-auto md:self-start md:aspect-[4/3] min-h-[160px] overflow-hidden bg-neutral-100 relative">
               {imageUrl ? (
                 <CardImage

@@ -232,7 +232,7 @@
   },
   "language": {
     "toggle": "EN",
-    "current": "Idioma actual: Español"
+    "switch": "EN: leer en inglés"
   },
   "spotlight": {
     "label": "En Foco",
